@@ -11,6 +11,13 @@ import {
     addGrassInstance
 } from './foliage.js';
 import { ParticleSystem } from './particles.js';
+import { 
+    SporeCloud, 
+    createChromaShiftRock, 
+    updateChromaRock,
+    createFracturedGeode,
+    updateGeode
+} from './geological.js';
 
 // --- Configuration ---
 const CONFIG = {
@@ -594,6 +601,59 @@ scene.add(galaxy3);
 // PARTICLE SYSTEM (engine trails & explosions)
 const particleSystem = new ParticleSystem(scene);
 
+// =============================================================================
+// GEOLOGICAL OBJECTS & ANOMALIES (from plan.md)
+// =============================================================================
+
+// Spore Clouds - floating clouds of glowing spores
+const sporeClouds = [];
+
+function createSporeCloudAtPosition(x, y, z) {
+    const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(Math.random() * 500));
+    sporeClouds.push(cloud);
+    return cloud;
+}
+
+// Add some spore clouds along the path
+createSporeCloudAtPosition(100, 10, -20);
+createSporeCloudAtPosition(200, -5, 15);
+createSporeCloudAtPosition(350, 8, -10);
+
+// Chroma-Shift Rocks - color-shifting crystalline rocks
+const chromaRocks = [];
+
+function createChromaRockAtPosition(x, y, z) {
+    const rock = createChromaShiftRock({ size: 2 + Math.random() * 2 });
+    rock.position.set(x, y, z);
+    scene.add(rock);
+    chromaRocks.push(rock);
+    return rock;
+}
+
+// Scatter some chroma rocks
+for (let i = 0; i < 8; i++) {
+    const x = 50 + i * 60;
+    const y = (Math.random() - 0.5) * 20;
+    const z = (Math.random() - 0.5) * 30;
+    createChromaRockAtPosition(x, y, z);
+}
+
+// Fractured Geodes - safe harbors with EM fields
+const geodes = [];
+
+function createGeodeAtPosition(x, y, z) {
+    const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
+    geode.position.set(x, y, z);
+    scene.add(geode);
+    geodes.push(geode);
+    return geode;
+}
+
+// Add geodes at strategic points
+createGeodeAtPosition(150, 5, -25);
+createGeodeAtPosition(300, -8, 20);
+createGeodeAtPosition(450, 12, -15);
+
 // Store plants that live on the moon to animate them later
 const moonPlants = [];
 
@@ -1001,6 +1061,16 @@ function animate() {
     // --- NEW: Update Particles (engine trails & explosions)
     particleSystem.update(delta);
     updateCamera();
+    
+    // --- NEW: Update Geological Objects ---
+    // Update spore clouds (brownian motion)
+    sporeClouds.forEach(cloud => cloud.update(delta));
+    
+    // Update chroma-shift rocks (color animation)
+    chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta));
+    
+    // Update geodes (EM field pulse)
+    geodes.forEach(geode => updateGeode(geode, delta));
     
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
