@@ -10,11 +10,7 @@ import {
     initGrassSystem,
     addGrassInstance
 } from './foliage.js';
-
-// =============================================================================
-// DOG DASH - 2.5D Side-Scroller
-// Inspired by Inside, Little Nightmares, Metroid Dread
-// =============================================================================
+import { ParticleSystem } from './particles.js';
 
 // --- Configuration ---
 const CONFIG = {
@@ -153,6 +149,7 @@ loadWasm();
 function createRocket() {
     const group = new THREE.Group();
 
+    // Materials
     const rocketMat = new THREE.MeshStandardMaterial({
         color: 0xeeeeee, // White/Silver body
         roughness: 0.3,
@@ -165,12 +162,14 @@ function createRocket() {
         metalness: 0.2
     });
 
+    // UPDATED: Glass is now transparent
     const windowMat = new THREE.MeshStandardMaterial({
-        color: 0x00ffff, // Cyan window
-        roughness: 0.2,
-        metalness: 0.8,
-        emissive: 0x00ffff,
-        emissiveIntensity: 0.2
+        color: 0x88ffff, // Light Blue
+        roughness: 0.1,
+        metalness: 0.9,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.DoubleSide
     });
 
     const glowMat = new THREE.MeshStandardMaterial({
@@ -179,40 +178,96 @@ function createRocket() {
         emissiveIntensity: 1.0
     });
 
-    // 1. Fuselage (Main Body)
+    const dogMat = new THREE.MeshStandardMaterial({
+        color: 0xd2b48c, // Tan/Brown doggy color
+        roughness: 0.8
+    });
+    
+    const blackMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
+
+    // 1. Fuselage
     const fuselageGeo = new THREE.CylinderGeometry(0.35, 0.35, 1.4, 16);
     const fuselage = new THREE.Mesh(fuselageGeo, rocketMat);
-    fuselage.position.y = 0.7; // Center vertically
+    fuselage.position.y = 0.7;
     fuselage.castShadow = true;
     group.add(fuselage);
 
     // 2. Nose Cone
     const noseGeo = new THREE.ConeGeometry(0.35, 0.6, 16);
     const nose = new THREE.Mesh(noseGeo, highlightMat);
-    nose.position.y = 1.7; // On top of fuselage (0.7 + 0.7 + 0.3)
+    nose.position.y = 1.7;
     nose.castShadow = true;
     group.add(nose);
 
-    // 3. Fins (3 fins at equal spacing)
+    // 3. Fins
     const finGeo = new THREE.BoxGeometry(0.1, 0.6, 0.6);
-    // Cut the box to look like a fin? Primitives are limited, let's use thin boxes rotated
     for (let i = 0; i < 4; i++) {
         const angle = (i / 4) * Math.PI * 2;
         const finGroup = new THREE.Group();
-
         const fin = new THREE.Mesh(finGeo, highlightMat);
-        fin.position.set(0.4, 0.3, 0); // Offset from center
+        fin.position.set(0.4, 0.3, 0);
         fin.castShadow = true;
-
         finGroup.rotation.y = angle;
         finGroup.add(fin);
         group.add(finGroup);
     }
 
-    // 4. Window (Porthole)
+    // --- NEW: THE DOG PILOT ---
+    const pilotGroup = new THREE.Group();
+    pilotGroup.name = 'pilotGroup';
+    pilotGroup.position.set(0, 1.0, 0.15); // Centered in window, slightly back
+
+    // Head
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), dogMat);
+    head.name = 'pilotHead';
+    pilotGroup.add(head);
+
+    // Ears
+    const earGeo = new THREE.ConeGeometry(0.04, 0.1, 8);
+    const leftEar = new THREE.Mesh(earGeo, dogMat);
+    leftEar.name = 'leftEar';
+    leftEar.position.set(-0.08, 0.08, 0);
+    leftEar.rotation.z = 0.5;
+    leftEar.rotation.x = -0.2;
+    pilotGroup.add(leftEar);
+
+    const rightEar = new THREE.Mesh(earGeo, dogMat);
+    rightEar.name = 'rightEar';
+    rightEar.position.set(0.08, 0.08, 0);
+    rightEar.rotation.z = -0.5;
+    rightEar.rotation.x = -0.2;
+    pilotGroup.add(rightEar);
+
+    // Eyes (Black dots)
+    const eyeGeo = new THREE.SphereGeometry(0.015, 8, 8);
+    const leftEye = new THREE.Mesh(eyeGeo, blackMat);
+    leftEye.position.set(-0.04, 0.02, 0.1);
+    pilotGroup.add(leftEye);
+
+    const rightEye = new THREE.Mesh(eyeGeo, blackMat);
+    rightEye.position.set(0.04, 0.02, 0.1);
+    pilotGroup.add(rightEye);
+
+    // Snout
+    const snout = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), new THREE.MeshStandardMaterial({ color: 0x8b4513 }));
+    snout.name = 'pilotSnout';
+    snout.position.set(0, -0.02, 0.11);
+    pilotGroup.add(snout);
+
+    // store base transform data for animation
+    pilotGroup.userData.animationOffset = Math.random() * 10;
+    pilotGroup.userData.baseY = pilotGroup.position.y;
+    head.userData.baseRotationY = head.rotation.y;
+    leftEar.userData.baseRotationZ = leftEar.rotation.z;
+    rightEar.userData.baseRotationZ = rightEar.rotation.z;
+
+    group.add(pilotGroup);
+    // ---------------------------
+
+    // 4. Window Frame & Glass
     const windowFrameGeo = new THREE.TorusGeometry(0.15, 0.03, 8, 16);
     const windowFrame = new THREE.Mesh(windowFrameGeo, rocketMat);
-    windowFrame.position.set(0, 1.0, 0.35); // Front of fuselage
+    windowFrame.position.set(0, 1.0, 0.35);
     group.add(windowFrame);
 
     const windowGlassGeo = new THREE.CircleGeometry(0.15, 16);
@@ -220,13 +275,12 @@ function createRocket() {
     windowGlass.position.set(0, 1.0, 0.35);
     group.add(windowGlass);
 
-    // 5. Thruster Nozzle
+    // 5. Thruster & Flame
     const nozzleGeo = new THREE.CylinderGeometry(0.2, 0.3, 0.3, 16);
     const nozzle = new THREE.Mesh(nozzleGeo, new THREE.MeshStandardMaterial({ color: 0x333333 }));
     nozzle.position.y = -0.15;
     group.add(nozzle);
 
-    // 6. Flame (Animated later)
     const flameGeo = new THREE.ConeGeometry(0.15, 0.5, 8);
     const flame = new THREE.Mesh(flameGeo, glowMat);
     flame.position.y = -0.5;
@@ -234,16 +288,13 @@ function createRocket() {
     group.add(flame);
     group.userData.flame = flame;
 
-    // Position player logic
+    // Final Transforms
     group.position.set(0, 0, 0);
+    group.rotation.z = -Math.PI / 2; // Point right
 
-    // ROTATE HORIZONTAL: Nose points RIGHT (+X direction)
-    group.rotation.z = -Math.PI / 2;
-
-    // Container for pitch animation
     const tiltGroup = new THREE.Group();
     tiltGroup.add(group);
-    tiltGroup.position.set(0, 5, 0); // Start higher in space
+    tiltGroup.position.set(0, 5, 0);
 
     return tiltGroup;
 }
@@ -351,6 +402,9 @@ function updateObstacles(delta) {
         if (hitIndex !== -1) {
             const obs = obstacles[hitIndex];
             if (obs) {
+                // --- NEW: Emit Explosion Particles ---
+                particleSystem.emit(obs.position.clone(), 0xff5555, 15, 10.0, 1.2, 1.0);
+                particleSystem.emit(obs.position.clone(), 0xaaaaaa, 10, 8.0, 0.8, 1.0);
                  // Collision! Flash red and bounce
                  obs.material.emissive = new THREE.Color(0xff0000);
                  obs.material.emissiveIntensity = 1.0;
@@ -536,6 +590,9 @@ scene.add(galaxy2);
 
 const galaxy3 = createGalaxy(300, 10, -90, 0xff4488);
 scene.add(galaxy3);
+
+// PARTICLE SYSTEM (engine trails & explosions)
+const particleSystem = new ParticleSystem(scene);
 
 // Store plants that live on the moon to animate them later
 const moonPlants = [];
@@ -858,6 +915,12 @@ function updatePlayer(delta) {
         if (rocket && rocket.userData.flame) {
             rocket.userData.flame.scale.set(1.5, 3.0, 1.5); // Big flame
         }
+
+        // --- NEW: Emit Engine Trail ---
+        const exhaustPos = player.position.clone();
+        exhaustPos.x -= 0.5; // slightly behind the rocket
+        exhaustPos.y -= 0.5; // at the nozzle
+        particleSystem.emit(exhaustPos, 0xffaa00, 2, 5.0, 0.8, 0.2);
     }
 
     // Gravity
@@ -934,6 +997,9 @@ function animate() {
 
     updatePlayer(delta);
     updateObstacles(delta);
+
+    // --- NEW: Update Particles (engine trails & explosions)
+    particleSystem.update(delta);
     updateCamera();
     
     // Rotate galaxies slowly
@@ -953,6 +1019,37 @@ function animate() {
     moonPlants.forEach(plant => {
         animateFoliage(plant, time, null, false);
     });
+
+    // --- NEW: Pilot/Player Animations ---
+    try {
+        const rocketRoot = player.children[0];
+        if (rocketRoot) {
+            // Tilt rocket slightly based on vertical velocity
+            const targetTilt = THREE.MathUtils.clamp(-playerState.velocity.y * 0.025, -0.35, 0.35);
+            rocketRoot.rotation.x += (targetTilt - rocketRoot.rotation.x) * 0.06;
+
+            // Animate pilot bob and ears
+            const pilot = rocketRoot.getObjectByName('pilotGroup');
+            if (pilot) {
+                const offset = pilot.userData.animationOffset || 0;
+                const baseY = pilot.userData.baseY ?? pilot.position.y;
+                const bobAmp = keys.jump ? 0.05 : 0.02;
+                const bob = Math.sin(time * 2 + offset) * bobAmp;
+                pilot.position.y = baseY + bob;
+
+                const head = pilot.getObjectByName('pilotHead');
+                const leftEar = pilot.getObjectByName('leftEar');
+                const rightEar = pilot.getObjectByName('rightEar');
+                if (head) {
+                    head.rotation.y = head.userData.baseRotationY + Math.sin(time * 1.5 + offset) * 0.08;
+                }
+                if (leftEar && rightEar) {
+                    leftEar.rotation.z = leftEar.userData.baseRotationZ + Math.sin(time * 6 + offset) * 0.3 * (keys.jump ? 1.5 : 1.0);
+                    rightEar.rotation.z = rightEar.userData.baseRotationZ + Math.sin(time * 6 + offset + Math.PI) * 0.3 * (keys.jump ? 1.5 : 1.0);
+                }
+            }
+        }
+    } catch (e) { /* swallow animation errors gracefully */ }
     
     // Update distance display
     updateDistanceDisplay();
