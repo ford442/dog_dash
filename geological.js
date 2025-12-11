@@ -271,28 +271,30 @@ export function createChromaShiftRock(options = {}) {
         type: 'chromaRock',
         originalColor: color,
         baseEmissive: 0.2,
-        rock: rock
+        rock: rock,
+        timeOffset: Math.random() * 100
     };
     
     return group;
 }
 
 // Update chroma-shift effect based on distance
-export function updateChromaRock(rock, cameraPosition, delta) {
+export function updateChromaRock(rock, cameraPosition, delta, time) {
     if (!rock.userData || rock.userData.type !== 'chromaRock') return;
     
     const distance = rock.position.distanceTo(cameraPosition);
     const maxDistance = 50;
     const normalizedDist = Math.min(distance / maxDistance, 1.0);
     
-    // Shift hue based on distance
-    const hue = (normalizedDist * 0.3 + Date.now() * 0.0001) % 1.0;
+    // Shift hue based on distance and time
+    const timeValue = time + rock.userData.timeOffset;
+    const hue = (normalizedDist * 0.3 + timeValue * 0.1) % 1.0;
     const color = new THREE.Color().setHSL(hue, 0.8, 0.5);
     
     const rockMesh = rock.userData.rock;
     if (rockMesh && rockMesh.material) {
         rockMesh.material.emissive.lerp(color, 0.05);
-        rockMesh.material.emissiveIntensity = 0.2 + Math.sin(Date.now() * 0.001) * 0.1;
+        rockMesh.material.emissiveIntensity = 0.2 + Math.sin(timeValue) * 0.1;
     }
     
     // Slow rotation
@@ -364,20 +366,22 @@ export function createFracturedGeode(options = {}) {
     group.userData = {
         type: 'geode',
         glow: glow,
-        baseColor: color
+        baseColor: color,
+        timeOffset: Math.random() * 100
     };
     
     return group;
 }
 
 // Update geode EM field animation
-export function updateGeode(geode, delta) {
+export function updateGeode(geode, delta, time) {
     if (!geode.userData || geode.userData.type !== 'geode') return;
     
     const glow = geode.userData.glow;
     if (glow) {
         // Pulse the EM field
-        const pulse = Math.sin(Date.now() * 0.002) * 0.5 + 0.5;
+        const timeValue = time + geode.userData.timeOffset;
+        const pulse = Math.sin(timeValue * 2) * 0.5 + 0.5;
         glow.material.opacity = 0.1 + pulse * 0.15;
         glow.scale.setScalar(1 + pulse * 0.1);
     }

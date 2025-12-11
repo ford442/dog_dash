@@ -965,7 +965,6 @@ canvas.addEventListener('click', (event) => {
 });
 
 // Track when game starts
-const originalInstructionsClick = instructions.onclick;
 instructions.addEventListener('click', () => {
     gameStarted = true;
 }, { once: true });
@@ -1130,14 +1129,13 @@ function animate() {
     sporeClouds.forEach(cloud => cloud.update(delta));
     
     // Update chroma-shift rocks (color animation)
-    chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta));
+    chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta, time));
     
     // Update geodes (EM field pulse)
-    geodes.forEach(geode => updateGeode(geode, delta));
+    geodes.forEach(geode => updateGeode(geode, delta, time));
     
     // Update nebula jelly-moss (pulsing and drifting)
     jellyMosses.forEach(jellyMoss => updateNebulaJellyMoss(jellyMoss, delta, time));
-    geodes.forEach(geode => updateGeode(geode, delta));
     
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
