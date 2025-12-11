@@ -1,822 +1,472 @@
 import * as THREE from 'three';
-import { PointerLockControls } from 'three/examples/jsm/controls/PointerLockControls.js';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
-import { WebGPURenderer, PointsNodeMaterial } from 'three/webgpu';
-import { color, float, vec3, time, positionLocal, attribute, storage, uniform, uv } from 'three/tsl';
-import { createFlower, createGrass, createFloweringTree, createShrub, animateFoliage, createGlowingFlower, createFloatingOrb, createVine, createStarflower, createBellBloom, createWisteriaCluster, createRainingCloud, createLeafParticle, createGlowingFlowerPatch, createFloatingOrbCluster, createVineCluster, createBubbleWillow, createPuffballFlower, createHelixPlant, createBalloonBush, createPrismRoseBush, initGrassSystem, addGrassInstance, updateFoliageMaterials, createSubwooferLotus, createAccordionPalm, createFiberOpticWillow } from './foliage.js';
-import { createSky, uSkyTopColor, uSkyBottomColor } from './sky.js';
-// FIX: Add uStarOpacity to imports
-import { createStars, uStarPulse, uStarColor, uStarOpacity } from './stars.js';
-import { AudioSystem } from './audio-system.js';
+import { WebGPURenderer } from 'three/webgpu';
+
+// =============================================================================
+// DOG DASH - 2.5D Side-Scroller
+// Inspired by Inside, Little Nightmares, Metroid Dread
+// =============================================================================
 
 // --- Configuration ---
-const PALETTE = {
-    day: {
-        skyTop: new THREE.Color(0x87CEEB),
-        skyBot: new THREE.Color(0xADD8E6),
-        fog: new THREE.Color(0xFFB6C1),
-        sun: new THREE.Color(0xFFFFFF),
-        amb: new THREE.Color(0xFFFFFF),
-        sunInt: 0.8,
-        ambInt: 0.6
-    },
-    sunset: {
-        skyTop: new THREE.Color(0x483D8B),
-        skyBot: new THREE.Color(0xFF4500),
-        fog: new THREE.Color(0xDB7093),
-        sun: new THREE.Color(0xFF8C00),
-        amb: new THREE.Color(0x800000),
-        sunInt: 0.5,
-        ambInt: 0.4
-    },
-    night: {
-        skyTop: new THREE.Color(0x020205),
-        skyBot: new THREE.Color(0x050510),
-        fog: new THREE.Color(0x050510),
-        sun: new THREE.Color(0x223355),
-        amb: new THREE.Color(0x050510),
-        sunInt: 0.1,
-        ambInt: 0.05
-    },
-    sunrise: {
-        skyTop: new THREE.Color(0x40E0D0),
-        skyBot: new THREE.Color(0xFF69B4),
-        fog: new THREE.Color(0xFFDAB9),
-        sun: new THREE.Color(0xFFD700),
-        amb: new THREE.Color(0xFFB6C1),
-        sunInt: 0.6,
-        ambInt: 0.5
-    }
-};
-
 const CONFIG = {
-    colors: { ground: 0x98FB98 }
+    // Visual style (dark, atmospheric like Inside/Little Nightmares)
+    colors: {
+        background: 0x1a1a2e,
+        ground: 0x2d2d44,
+        platform: 0x3d3d5c,
+        player: 0xe94560,    // Dog - warm red/orange
+        accent: 0x0f3460
+    },
+    // Camera
+    cameraDistance: 15,
+    cameraHeight: 3,
+    // Player physics
+    player: {
+        speed: 8,
+        runSpeed: 14,
+        jumpForce: 12,
+        gravity: 30,
+        groundFriction: 0.85,
+        airFriction: 0.95
+    },
+    // World
+    groundLevel: 0
 };
-
-const CYCLE_DURATION = 420;
 
 // --- Scene Setup ---
 const canvas = document.querySelector('#glCanvas');
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(PALETTE.day.fog, 20, 100);
+scene.background = new THREE.Color(CONFIG.colors.background);
+scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
 
-const sky = createSky();
-scene.add(sky);
-
-const stars = createStars();
-scene.add(stars);
-
-const audioSystem = new AudioSystem();
-let isNight = false;
-let timeOffset = 0; // Manual time shift for Day/Night toggle
-
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 2000); // Increased far plane
-camera.position.set(0, 5, 0);
-
+// Check WebGPU
 if (!WebGPU.isAvailable()) {
     const warning = WebGPU.getErrorMessage();
     document.body.appendChild(warning);
     throw new Error('WebGPU not supported');
 }
 
+// --- Camera (Side-view, follows player on X axis) ---
+const aspect = window.innerWidth / window.innerHeight;
+const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
+// Camera positioned to the side, looking at Z=0 plane
+camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
+camera.lookAt(0, CONFIG.cameraHeight, 0);
+
+// --- Renderer ---
 const renderer = new WebGPURenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = 1.2;
 
-// --- Lighting ---
-const ambientLight = new THREE.HemisphereLight(PALETTE.day.skyTop, CONFIG.colors.ground, 1.0);
+// --- Lighting (Moody, atmospheric) ---
+const ambientLight = new THREE.AmbientLight(0x404060, 0.4);
 scene.add(ambientLight);
 
-const sunLight = new THREE.DirectionalLight(PALETTE.day.sun, 0.8);
-sunLight.position.set(50, 80, 30);
-sunLight.castShadow = true;
-sunLight.shadow.mapSize.width = 2048;
-sunLight.shadow.mapSize.height = 2048;
-scene.add(sunLight);
+// Main directional light (from the side for dramatic shadows)
+const mainLight = new THREE.DirectionalLight(0xffffff, 0.6);
+mainLight.position.set(-5, 10, 10);
+mainLight.castShadow = true;
+mainLight.shadow.mapSize.width = 2048;
+mainLight.shadow.mapSize.height = 2048;
+mainLight.shadow.camera.near = 0.5;
+mainLight.shadow.camera.far = 50;
+mainLight.shadow.camera.left = -30;
+mainLight.shadow.camera.right = 30;
+mainLight.shadow.camera.top = 20;
+mainLight.shadow.camera.bottom = -10;
+scene.add(mainLight);
+
+// Rim light from behind (cinematic depth)
+const rimLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+rimLight.position.set(5, 5, -10);
+scene.add(rimLight);
 
 // --- Materials ---
-function createClayMaterial(color) {
-    return new THREE.MeshStandardMaterial({
-        color: color,
-        metalness: 0.0,
-        roughness: 0.8, // Matte surface
-        flatShading: false,
-    });
-}
-
 const materials = {
-    ground: createClayMaterial(CONFIG.colors.ground),
-    trunk: createClayMaterial(0x8B5A2B), // Brownish
-    leaves: [
-        createClayMaterial(0xFF69B4), // Hot Pink
-        createClayMaterial(0x87CEEB), // Sky Blue
-        createClayMaterial(0xDDA0DD), // Plum
-        createClayMaterial(0xFFD700), // Gold
-    ],
-    mushroomStem: createClayMaterial(0xF5DEB3), // Wheat
-    mushroomCap: [
-        createClayMaterial(0xFF6347), // Tomato
-        createClayMaterial(0xDA70D6), // Orchid
-        createClayMaterial(0xFFA07A), // Light Salmon
-    ],
-    eye: new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1 }),
-    mouth: new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 }),
-    cloud: new THREE.MeshStandardMaterial({
-        color: 0xFFFFFF,
-        roughness: 0.3,
-        transparent: true,
-        opacity: 0.9
+    ground: new THREE.MeshStandardMaterial({
+        color: CONFIG.colors.ground,
+        roughness: 0.9,
+        metalness: 0.1
     }),
-    drivableMushroomCap: createClayMaterial(0x00BFFF)
+    platform: new THREE.MeshStandardMaterial({
+        color: CONFIG.colors.platform,
+        roughness: 0.7,
+        metalness: 0.2
+    }),
+    player: new THREE.MeshStandardMaterial({
+        color: CONFIG.colors.player,
+        roughness: 0.4,
+        metalness: 0.1,
+        emissive: CONFIG.colors.player,
+        emissiveIntensity: 0.1
+    }),
+    background: new THREE.MeshStandardMaterial({
+        color: CONFIG.colors.accent,
+        roughness: 1.0,
+        metalness: 0.0
+    })
 };
 
-// --- Helper Objects ---
-const eyeGeo = new THREE.SphereGeometry(0.05, 16, 16);
-
-function createCloud() {
+// =============================================================================
+// PLAYER (Dog Character)
+// =============================================================================
+function createPlayer() {
     const group = new THREE.Group();
-    const blobs = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < blobs; i++) {
-        const size = 2 + Math.random() * 2;
-        const geo = new THREE.SphereGeometry(size, 16, 16);
-        const mesh = new THREE.Mesh(geo, materials.cloud);
-        mesh.position.set(
-            (Math.random() - 0.5) * size * 1.5,
-            (Math.random() - 0.5) * size * 0.5,
-            (Math.random() - 0.5) * size * 1.5
-        );
-        group.add(mesh);
-    }
+
+    // Body (capsule-like shape for the dog)
+    const bodyGeo = new THREE.CapsuleGeometry(0.3, 0.6, 8, 16);
+    const body = new THREE.Mesh(bodyGeo, materials.player);
+    body.rotation.z = Math.PI / 2; // Lay horizontal
+    body.castShadow = true;
+    group.add(body);
+
+    // Head
+    const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
+    const head = new THREE.Mesh(headGeo, materials.player);
+    head.position.set(0.5, 0.1, 0);
+    head.castShadow = true;
+    group.add(head);
+
+    // Ears
+    const earGeo = new THREE.ConeGeometry(0.1, 0.2, 8);
+    const leftEar = new THREE.Mesh(earGeo, materials.player);
+    leftEar.position.set(0.55, 0.35, -0.1);
+    leftEar.rotation.z = -0.3;
+    group.add(leftEar);
+
+    const rightEar = new THREE.Mesh(earGeo, materials.player);
+    rightEar.position.set(0.55, 0.35, 0.1);
+    rightEar.rotation.z = -0.3;
+    group.add(rightEar);
+
+    // Snout
+    const snoutGeo = new THREE.CylinderGeometry(0.08, 0.12, 0.2, 8);
+    const snout = new THREE.Mesh(snoutGeo, materials.player);
+    snout.position.set(0.7, 0.05, 0);
+    snout.rotation.z = Math.PI / 2;
+    group.add(snout);
+
+    // Legs (4 small cylinders)
+    const legGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.3, 8);
+    const legPositions = [
+        { x: 0.25, z: 0.15 },  // Front right
+        { x: 0.25, z: -0.15 }, // Front left
+        { x: -0.25, z: 0.15 }, // Back right
+        { x: -0.25, z: -0.15 } // Back left
+    ];
+
+    group.userData.legs = [];
+    legPositions.forEach((pos, i) => {
+        const leg = new THREE.Mesh(legGeo, materials.player);
+        leg.position.set(pos.x, -0.3, pos.z);
+        leg.castShadow = true;
+        group.add(leg);
+        group.userData.legs.push(leg);
+    });
+
+    // Tail
+    const tailGeo = new THREE.CylinderGeometry(0.04, 0.06, 0.3, 8);
+    const tail = new THREE.Mesh(tailGeo, materials.player);
+    tail.position.set(-0.55, 0.15, 0);
+    tail.rotation.z = Math.PI / 4;
+    group.add(tail);
+    group.userData.tail = tail;
+
+    // Eyes
+    const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+    const eyeMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const leftEye = new THREE.Mesh(eyeGeo, eyeMat);
+    leftEye.position.set(0.65, 0.15, -0.12);
+    group.add(leftEye);
+
+    const rightEye = new THREE.Mesh(eyeGeo, eyeMat);
+    rightEye.position.set(0.65, 0.15, 0.12);
+    group.add(rightEye);
+
+    // Position player
+    group.position.set(0, 1, 0);
+
     return group;
 }
 
-function createWaterfall(height, colorHex = 0x87CEEB) {
-    const particleCount = 2000;
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(particleCount * 3);
-    const speeds = new Float32Array(particleCount);
-    const offsets = new Float32Array(particleCount);
+const player = createPlayer();
+scene.add(player);
 
-    for (let i = 0; i < particleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 2.0;
-        positions[i * 3 + 1] = 0;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 2.0;
-        speeds[i] = 1.0 + Math.random() * 2.0;
-        offsets[i] = Math.random() * height;
-    }
+// Player state
+const playerState = {
+    velocity: new THREE.Vector3(0, 0, 0),
+    isGrounded: false,
+    facingRight: true,
+    isRunning: false
+};
 
-    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geo.setAttribute('aSpeed', new THREE.BufferAttribute(speeds, 1));
-    geo.setAttribute('aOffset', new THREE.BufferAttribute(offsets, 1));
+// =============================================================================
+// LEVEL GEOMETRY
+// =============================================================================
 
-    const mat = new PointsNodeMaterial({
-        color: colorHex,
-        size: 0.4,
-        transparent: true,
-        opacity: 0.8,
-        blending: THREE.AdditiveBlending
-    });
-
-    const aSpeed = attribute('aSpeed', 'float');
-    const aOffset = attribute('aOffset', 'float');
-    const uSpeed = uniform(1.0);
-    mat.uSpeed = uSpeed;
-
-    const t = time.mul(uSpeed);
-    const fallHeight = float(height);
-    const currentDist = aOffset.add(aSpeed.mul(t));
-    const modDist = currentDist.mod(fallHeight);
-    const newY = modDist.negate();
-
-    mat.positionNode = vec3(
-        positionLocal.x,
-        newY,
-        positionLocal.z
-    );
-
-    const waterfall = new THREE.Points(geo, mat);
-    waterfall.userData = { animationType: 'gpuWaterfall' };
-    return waterfall;
-}
-
-function createGiantMushroom(x, z, scale = 8) {
-    const height = getGroundHeight(x, z);
-    const group = new THREE.Group();
-    group.position.set(x, height, z);
-
-    const stemH = (1.5 + Math.random()) * scale;
-    const stemR = (0.3 + Math.random() * 0.2) * scale;
-    const stemGeo = new THREE.CylinderGeometry(stemR * 0.8, stemR, stemH, 16);
-    const stem = new THREE.Mesh(stemGeo, materials.mushroomStem);
-    stem.castShadow = true;
-    group.add(stem);
-
-    const capR = stemR * 3 + Math.random() * scale;
-    const capGeo = new THREE.SphereGeometry(capR, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
-    const matIndex = Math.floor(Math.random() * materials.mushroomCap.length);
-    const capMaterial = materials.mushroomCap[matIndex];
-    const cap = new THREE.Mesh(capGeo, capMaterial);
-    cap.position.y = stemH;
-
-    const faceGroup = new THREE.Group();
-    faceGroup.position.set(0, stemH * 0.6, stemR * 0.95);
-    faceGroup.scale.set(scale, scale, scale);
-
-    const leftEye = new THREE.Mesh(eyeGeo, materials.eye);
-    leftEye.position.set(-0.15, 0.1, 0);
-    const rightEye = new THREE.Mesh(eyeGeo, materials.eye);
-    rightEye.position.set(0.15, 0.1, 0);
-
-    const smileGeo = new THREE.TorusGeometry(0.12, 0.03, 6, 12, Math.PI);
-    const smile = new THREE.Mesh(smileGeo, materials.mouth);
-    smile.rotation.z = Math.PI;
-    smile.position.set(0, -0.05, 0);
-
-    faceGroup.add(leftEye, rightEye, smile);
-    group.add(faceGroup);
-    group.add(cap);
-
-    worldGroup.add(group);
-    obstacles.push({
-        position: new THREE.Vector3(x, height, z),
-        radius: stemR * 1.2
-    });
-
-    const anims = ['wobble', 'bounce', 'accordion'];
-    const chosenAnim = anims[Math.floor(Math.random() * anims.length)];
-    group.userData.animationType = chosenAnim;
-    group.userData.type = 'mushroom';
-
-    const giantMushroom = { mesh: group, type: 'mushroom', speed: Math.random() * 0.02 + 0.01, offset: Math.random() * 100, drivable: false };
-}
-
-function createGiantRainCloud(options = {}) {
-    const { color = 0x555555, rainIntensity = 200 } = options;
-    const group = new THREE.Group();
-
-    const cloudGeo = new THREE.SphereGeometry(4.5, 32, 32);
-    const cloudMat = materials.cloud.clone();
-    cloudMat.color.setHex(color);
-    const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-    cloud.castShadow = true;
-    group.add(cloud);
-
-    const rainGeo = new THREE.BufferGeometry();
-    const positions = new Float32Array(rainIntensity * 3);
-    for (let i = 0; i < rainIntensity; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 9.0;
-        positions[i * 3 + 1] = Math.random() * -6.0;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 9.0;
-    }
-    rainGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-
-    const rainMat = new THREE.PointsMaterial({ color: 0x87CEEB, size: 0.05 });
-    const rain = new THREE.Points(rainGeo, rainMat);
-    group.add(rain);
-
-    group.userData.animationType = 'rain';
-    return group;
-}
-
-// --- Procedural Generation ---
-function getGroundHeight(x, z) {
-    if (isNaN(x) || isNaN(z)) return 0; // Guard
-    return Math.sin(x * 0.05) * 2 + Math.cos(z * 0.05) * 2 + (Math.sin(x * 0.2) * 0.3 + Math.cos(z * 0.15) * 0.3);
-}
-
-// FIX: Increased ground size to prevent falling off into the void
-const groundGeo = new THREE.PlaneGeometry(2000, 2000, 256, 256);
-const posAttribute = groundGeo.attributes.position;
-for (let i = 0; i < posAttribute.count; i++) {
-    const x = posAttribute.getX(i);
-    const y = posAttribute.getY(i);
-    const zWorld = -y;
-    const height = getGroundHeight(x, zWorld);
-    posAttribute.setZ(i, height);
-}
-groundGeo.computeVertexNormals();
-const groundMat = new THREE.MeshStandardMaterial({
-    color: CONFIG.colors.ground,
-    roughness: 0.8,
-    flatShading: false,
-});
-const ground = new THREE.Mesh(groundGeo, groundMat);
-ground.rotation.x = -Math.PI / 2;
+// Ground (extends infinitely in X, flat in Z)
+const groundGeo = new THREE.BoxGeometry(200, 2, 20);
+const ground = new THREE.Mesh(groundGeo, materials.ground);
+ground.position.set(0, -1, 0);
 ground.receiveShadow = true;
 scene.add(ground);
 
-const worldGroup = new THREE.Group();
-scene.add(worldGroup);
-const obstacles = [];
-const animatedFoliage = [];
-const foliageGroup = new THREE.Group();
-worldGroup.add(foliageGroup);
+// Platforms array for collision detection
+const platforms = [];
 
-// Foliage disabled for blank map
-// initGrassSystem(scene, 20000);
+function createPlatform(x, y, width, height = 0.4, depth = 4) {
+    const geo = new THREE.BoxGeometry(width, height, depth);
+    const platform = new THREE.Mesh(geo, materials.platform);
+    platform.position.set(x, y, 0);
+    platform.receiveShadow = true;
+    platform.castShadow = true;
+    scene.add(platform);
 
-function safeAddFoliage(obj, isObstacle = false, radius = 1.0) {
-    if (animatedFoliage.length > 2500) return;
-    foliageGroup.add(obj);
-    animatedFoliage.push(obj);
-    if (isObstacle) obstacles.push({ position: obj.position.clone(), radius });
-}
-
-// --- Spawn Logic (Disabled for blank map) ---
-// --- Spawn Logic ---
-const CLUSTER_COUNT = 0; // Disabled - was 60
-for (let i = 0; i < CLUSTER_COUNT; i++) {
-    const cx = (Math.random() - 0.5) * 260;
-    const cz = (Math.random() - 0.5) * 260;
-    const type = Math.random();
-    const subRoll = Math.random();
-
-    if (type < 0.2) { // Swamp
-        for (let j = 0; j < 5; j++) {
-            const x = cx + (Math.random() - 0.5) * 15;
-            const z = cz + (Math.random() - 0.5) * 15;
-            const y = getGroundHeight(x, z);
-            const lotus = createSubwooferLotus({ color: 0x2E8B57 });
-            lotus.position.set(x, y + 0.5, z);
-            safeAddFoliage(lotus);
-        }
-        for (let j = 0; j < 2; j++) {
-            const x = cx + (Math.random() - 0.5) * 20;
-            const z = cz + (Math.random() - 0.5) * 20;
-            const y = getGroundHeight(x, z);
-            const willow = createFiberOpticWillow();
-            willow.position.set(x, y, z);
-            safeAddFoliage(willow, true, 1.0);
-        }
-    } else if (type < 0.4) { // Accordion
-        for (let j = 0; j < 6; j++) {
-            const x = cx + (Math.random() - 0.5) * 15;
-            const z = cz + (Math.random() - 0.5) * 15;
-            const y = getGroundHeight(x, z);
-            const palm = createAccordionPalm({ color: 0xFF6347 });
-            palm.position.set(x, y, z);
-            safeAddFoliage(palm, true, 0.8);
-        }
-    } else if (type < 0.6) { // Meadow
-        for (let j = 0; j < 150; j++) {
-            const r = Math.random() * 10;
-            const theta = Math.random() * Math.PI * 2;
-            const x = cx + r * Math.cos(theta);
-            const z = cz + r * Math.sin(theta);
-            const y = getGroundHeight(x, z);
-            addGrassInstance(x, y, z);
-        }
-        for (let j = 0; j < 8; j++) {
-            const r = Math.random() * 8;
-            const theta = Math.random() * Math.PI * 2;
-            const x = cx + r * Math.cos(theta);
-            const z = cz + r * Math.sin(theta);
-            const y = getGroundHeight(x, z);
-            const f = createFlower({ color: 0xFF69B4 });
-            f.position.set(x, y, z);
-            safeAddFoliage(f);
-        }
-    } else if (type < 0.8) { // Fantasy (Mushroom Zone)
-        for (let j = 0; j < 8; j++) {
-            const x = cx + (Math.random() - 0.5) * 15;
-            const z = cz + (Math.random() - 0.5) * 15;
-            if (subRoll < 0.3) {
-                // Small Mushrooms
-                const m = createMushroom(x, z);
-                // m is a wrapper { mesh: group } to support animation targeting
-                if (m && m.mesh) {
-                    safeAddFoliage(m.mesh, false);
-                }
-            } else {
-                // Other fantasy plants
-                const y = getGroundHeight(x, z);
-                const plant = createPuffballFlower();
-                plant.position.set(x, y, z);
-                safeAddFoliage(plant);
-            }
-        }
-    } else { // Weird
-        for (let j = 0; j < 5; j++) {
-            const x = cx + (Math.random() - 0.5) * 15;
-            const z = cz + (Math.random() - 0.5) * 15;
-            const y = getGroundHeight(x, z);
-            const obj = Math.random() < 0.5 ? createPrismRoseBush() : createBubbleWillow();
-            obj.position.set(x, y, z);
-            safeAddFoliage(obj);
-        }
-    }
-}
-
-function createMushroom(x, z) {
-    const height = getGroundHeight(x, z);
-    const group = new THREE.Group();
-    group.position.set(x, height, z);
-
-    // Stem
-    const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.1, 0.15, 0.4, 8),
-        materials.mushroomStem
-    );
-    stem.position.y = 0.2;
-    stem.castShadow = true;
-    group.add(stem);
-
-    // Cap
-    const cap = new THREE.Mesh(
-        new THREE.SphereGeometry(0.3, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
-        materials.mushroomCap[Math.floor(Math.random() * materials.mushroomCap.length)]
-    );
-    cap.position.y = 0.4;
-    cap.castShadow = true;
-    group.add(cap);
-
-    group.userData.animationType = 'bounce'; // Use bounce/squash
-    group.userData.type = 'mushroom';
-
-    return { mesh: group, type: 'mushroom' };
-}
-
-// Clouds disabled for blank map
-/*
-const rainingClouds = [];
-for (let i = 0; i < 25; i++) {
-    const isRaining = Math.random() > 0.6;
-    const cloud = isRaining ? createRainingCloud({ rainIntensity: 100 }) : createCloud();
-    cloud.position.set((Math.random() - 0.5) * 200, 25 + Math.random() * 10, (Math.random() - 0.5) * 200);
-    scene.add(cloud);
-    if (cloud.userData.animationType === 'rain') {
-        animatedFoliage.push(cloud);
-        rainingClouds.push(cloud);
-    }
-}
-*/
-const rainingClouds = [];
-
-// --- OVERGROWN & KING MUSHROOM ZONES ---
-function spawnKingMushroomZone(cx, cz) {
-    const scale = 12;
-    const stemH = 2.5 * scale;
-    const stemR = 0.4 * scale;
-    const capR = 1.5 * scale;
-
-    const group = new THREE.Group();
-    group.position.set(cx, getGroundHeight(cx, cz), cz);
-
-    const stem = new THREE.Mesh(
-        new THREE.CylinderGeometry(stemR * 0.8, stemR, stemH, 32),
-        materials.mushroomStem
-    );
-    stem.position.y = stemH / 2;
-    stem.castShadow = true;
-    group.add(stem);
-
-    const cap = new THREE.Mesh(
-        new THREE.SphereGeometry(capR, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2),
-        materials.mushroomCap[0]
-    );
-    cap.position.y = stemH;
-    group.add(cap);
-
-    const poolGeo = new THREE.CylinderGeometry(capR * 0.8, capR * 0.8, 0.5, 32);
-    const poolMat = new THREE.MeshStandardMaterial({
-        color: 0x0099FF,
-        roughness: 0.1,
-        metalness: 0.5
+    // Store collision box
+    platforms.push({
+        mesh: platform,
+        minX: x - width / 2,
+        maxX: x + width / 2,
+        minY: y - height / 2,
+        maxY: y + height / 2
     });
-    const pool = new THREE.Mesh(poolGeo, poolMat);
-    pool.position.y = stemH + (capR * 0.2);
-    group.add(pool);
 
-    const waterfallOffset = capR * 0.8;
-    const waterfall = createWaterfall(stemH);
-    waterfall.position.set(0, stemH + 0.5, waterfallOffset);
-    group.add(waterfall);
-
-    obstacles.push({ position: group.position.clone(), radius: stemR * 1.2 });
-    scene.add(group);
-    animatedFoliage.push(waterfall);
-
-    const splashZone = new THREE.Object3D();
-    splashZone.position.set(cx, 0, cz + waterfallOffset);
-    splashZone.userData = { animationType: 'rain' };
-    rainingClouds.push(splashZone);
-
-    for (let i = 0; i < 20; i++) {
-        const r = 15 + Math.random() * 30;
-        const theta = Math.random() * Math.PI * 2;
-        const x = cx + r * Math.cos(theta);
-        const z = cz + r * Math.sin(theta);
-
-        const type = Math.random();
-        let plant;
-        if (type < 0.33) plant = createBubbleWillow({ color: 0xDA70D6 });
-        else if (type < 0.66) plant = createHelixPlant({ color: 0x7FFFD4 });
-        else plant = createStarflower({ color: 0xFFD700 });
-
-        const pScale = 4 + Math.random() * 4;
-        plant.position.set(x, getGroundHeight(x, z), z);
-        plant.scale.set(pScale, pScale, pScale);
-
-        safeAddFoliage(plant, true, 1.0 * pScale);
-    }
+    return platform;
 }
 
-function spawnOvergrownZone(cx, cz) {
-    const radius = 50;
-    for (let i = 0; i < 3; i++) {
-        const cloud = createGiantRainCloud({ rainIntensity: 200, color: 0x555555 });
-        cloud.position.set(
-            cx + (Math.random() - 0.5) * 30,
-            60 + Math.random() * 10,
-            cz + (Math.random() - 0.5) * 30
+// Create some test platforms
+createPlatform(5, 1.5, 4);
+createPlatform(10, 3, 3);
+createPlatform(15, 2, 5);
+createPlatform(-5, 2, 4);
+createPlatform(-10, 3.5, 3);
+createPlatform(-15, 1, 6);
+
+// Background elements (parallax layers for depth)
+function createBackgroundLayer(zOffset, color, count) {
+    const group = new THREE.Group();
+    const mat = new THREE.MeshStandardMaterial({
+        color: color,
+        roughness: 1.0,
+        metalness: 0
+    });
+
+    for (let i = 0; i < count; i++) {
+        const width = 2 + Math.random() * 6;
+        const height = 3 + Math.random() * 10;
+        const geo = new THREE.BoxGeometry(width, height, 1);
+        const box = new THREE.Mesh(geo, mat);
+        box.position.set(
+            (Math.random() - 0.5) * 100,
+            height / 2,
+            zOffset
         );
-        scene.add(cloud);
-        animatedFoliage.push(cloud);
+        group.add(box);
     }
 
-    // Increased Mushrooms from 15 to 30
-    for (let i = 0; i < 30; i++) {
-        const r = Math.random() * radius;
-        const theta = Math.random() * Math.PI * 2;
-        const x = cx + r * Math.cos(theta);
-        const z = cz + r * Math.sin(theta);
-        createGiantMushroom(x, z, 8 + Math.random() * 7);
-    }
-
-    for (let i = 0; i < 30; i++) {
-        const r = Math.random() * radius;
-        const theta = Math.random() * Math.PI * 2;
-        const x = cx + r * Math.cos(theta);
-        const z = cz + r * Math.sin(theta);
-        const y = getGroundHeight(x, z);
-
-        const type = Math.random();
-        let plant;
-
-        if (type < 0.4) {
-            plant = createHelixPlant({ color: 0x00FF00 });
-            plant.scale.set(5, 5, 5);
-        } else if (type < 0.7) {
-            plant = createStarflower({ color: 0xFF00FF });
-            plant.scale.set(4, 4, 4);
-        } else {
-            plant = createBubbleWillow({ color: 0x00BFFF });
-            plant.scale.set(3, 3, 3);
-        }
-
-        plant.position.set(x, y, z);
-        safeAddFoliage(plant, true, 2.0);
-    }
+    scene.add(group);
+    return group;
 }
 
-// Disabled for blank map
-// spawnOvergrownZone(-100, -100);
-// spawnKingMushroomZone(-100, -100);
+// Create parallax background layers
+const bgLayer1 = createBackgroundLayer(-8, 0x15152a, 20);  // Far
+const bgLayer2 = createBackgroundLayer(-5, 0x1a1a35, 15);  // Mid
+const bgLayer3 = createBackgroundLayer(-3, 0x202045, 10);  // Near
 
-// --- Inputs ---
-const controls = new PointerLockControls(camera, document.body);
-const instructions = document.getElementById('instructions');
-instructions.addEventListener('click', () => controls.lock());
-controls.addEventListener('lock', () => instructions.style.display = 'none');
-controls.addEventListener('unlock', () => instructions.style.display = 'flex');
-
-// Control State
-const keyStates = {
-    forward: false,
-    backward: false,
+// =============================================================================
+// INPUT HANDLING
+// =============================================================================
+const keys = {
     left: false,
     right: false,
     jump: false,
-    sneak: false,
-    sprint: false
+    run: false
 };
 
-// Helper function to toggle day/night
-function toggleDayNight() {
-    timeOffset += CYCLE_DURATION / 2;
+function onKeyDown(event) {
+    switch (event.code) {
+        case 'KeyA':
+        case 'ArrowLeft':
+            keys.left = true;
+            break;
+        case 'KeyD':
+        case 'ArrowRight':
+            keys.right = true;
+            break;
+        case 'KeyW':
+        case 'ArrowUp':
+        case 'Space':
+            keys.jump = true;
+            break;
+        case 'ShiftLeft':
+        case 'ShiftRight':
+            keys.run = true;
+            break;
+    }
 }
 
-// Key Handlers
-const onKeyDown = function (event) {
-    if (event.ctrlKey && event.code !== 'ControlLeft' && event.code !== 'ControlRight') {
-        event.preventDefault();
-    }
+function onKeyUp(event) {
     switch (event.code) {
+        case 'KeyA':
+        case 'ArrowLeft':
+            keys.left = false;
+            break;
+        case 'KeyD':
+        case 'ArrowRight':
+            keys.right = false;
+            break;
         case 'KeyW':
-            // W is now JUMP
-            keyStates.jump = true;
-            break;
-        case 'KeyA': keyStates.left = true; break;
-        case 'KeyS': keyStates.backward = true; break;
-        case 'KeyD': keyStates.right = true; break;
-        case 'Space': keyStates.jump = true; break; // Space also Jumps
-        case 'KeyN':
-            toggleDayNight();
-            break;
-        case 'ControlLeft':
-        case 'ControlRight':
-            keyStates.sneak = true;
-            event.preventDefault();
+        case 'ArrowUp':
+        case 'Space':
+            keys.jump = false;
             break;
         case 'ShiftLeft':
         case 'ShiftRight':
-            keyStates.sprint = true;
+            keys.run = false;
             break;
     }
-};
-
-const onKeyUp = function (event) {
-    switch (event.code) {
-        case 'KeyW': keyStates.jump = false; break;
-        case 'KeyA': keyStates.left = false; break;
-        case 'KeyS': keyStates.backward = false; break;
-        case 'KeyD': keyStates.right = false; break;
-        case 'Space': keyStates.jump = false; break;
-        case 'ControlLeft':
-        case 'ControlRight':
-            keyStates.sneak = false;
-            break;
-        case 'ShiftLeft':
-        case 'ShiftRight':
-            keyStates.sprint = false;
-            break;
-    }
-};
-
-const onMouseDown = function (event) {
-    if (event.button === 2) { // Right Click
-        keyStates.forward = true;
-    }
-};
-
-const onMouseUp = function (event) {
-    if (event.button === 2) {
-        keyStates.forward = false;
-    }
-};
+}
 
 document.addEventListener('keydown', onKeyDown);
 document.addEventListener('keyup', onKeyUp);
-document.addEventListener('mousedown', onMouseDown);
-document.addEventListener('mouseup', onMouseUp);
 
-// Player State
-const player = {
-    velocity: new THREE.Vector3(),
-    speed: 10.0, // Reduced from 15.0
-    sprintSpeed: 18.0, // Reduced from 25.0
-    sneakSpeed: 5.0,
-    gravity: 20.0
-};
+// Click to start (hide instructions)
+const instructions = document.getElementById('instructions');
+instructions.addEventListener('click', () => {
+    instructions.style.display = 'none';
+});
 
-// --- Cycle Interpolation ---
-function getCycleState(progress) {
-    if (progress < 0.40) return PALETTE.day;
-    else if (progress < 0.50) return lerpPalette(PALETTE.day, PALETTE.sunset, (progress - 0.40) / 0.10);
-    else if (progress < 0.55) return lerpPalette(PALETTE.sunset, PALETTE.night, (progress - 0.50) / 0.05);
-    else if (progress < 0.90) return PALETTE.night;
-    else if (progress < 0.95) return lerpPalette(PALETTE.night, PALETTE.sunrise, (progress - 0.90) / 0.05);
-    else return lerpPalette(PALETTE.sunrise, PALETTE.day, (progress - 0.95) / 0.05);
-}
+// =============================================================================
+// PHYSICS & COLLISION
+// =============================================================================
+function checkPlatformCollision(x, y, radius = 0.3) {
+    // Check ground
+    if (y - radius <= CONFIG.groundLevel) {
+        return { collided: true, groundY: CONFIG.groundLevel };
+    }
 
-function lerpPalette(p1, p2, t) {
-    return {
-        skyTop: p1.skyTop.clone().lerp(p2.skyTop, t),
-        skyBot: p1.skyBot.clone().lerp(p2.skyBot, t),
-        fog: p1.fog.clone().lerp(p2.fog, t),
-        sun: p1.sun.clone().lerp(p2.sun, t),
-        amb: p1.amb.clone().lerp(p2.amb, t),
-        sunInt: THREE.MathUtils.lerp(p1.sunInt, p2.sunInt, t),
-        ambInt: THREE.MathUtils.lerp(p1.ambInt, p2.ambInt, t)
-    };
-}
-
-// --- Animation ---
-const clock = new THREE.Clock();
-let audioState = null;
-
-function animate() {
-    // 1. Time & Safety
-    const rawDelta = clock.getDelta();
-    // Prevent explosion on lag spikes (cap at 0.1s)
-    const delta = Math.min(rawDelta, 0.1);
-    const t = clock.getElapsedTime();
-
-    audioState = audioSystem.update();
-
-    // 2. Day/Night Cycle with Manual Toggle Support
-    const effectiveTime = t + timeOffset;
-    const progress = (effectiveTime % CYCLE_DURATION) / CYCLE_DURATION;
-
-    isNight = (progress > 0.50 && progress < 0.95);
-    const currentState = getCycleState(progress);
-
-    uSkyTopColor.value.copy(currentState.skyTop);
-    uSkyBottomColor.value.copy(currentState.skyBot);
-    scene.fog.color.copy(currentState.fog);
-
-    // Smooth Fog transition
-    const targetNear = isNight ? 5 : (progress > 0.4 && progress < 0.55 ? 10 : 20);
-    const targetFar = isNight ? 40 : (progress > 0.4 && progress < 0.55 ? 60 : 100);
-    scene.fog.near += (targetNear - scene.fog.near) * delta * 0.5;
-    scene.fog.far += (targetFar - scene.fog.far) * delta * 0.5;
-
-    sunLight.color.copy(currentState.sun);
-    sunLight.intensity = currentState.sunInt;
-    ambientLight.color.copy(currentState.amb);
-    ambientLight.intensity = currentState.ambInt;
-
-    // --- FIX: Update the WebGPU Uniform for Star Opacity ---
-    let starOp = 0;
-    if (progress > 0.50 && progress < 0.95) starOp = 1;
-    else if (progress > 0.45 && progress <= 0.50) starOp = (progress - 0.45) / 0.05;
-    else if (progress >= 0.95) starOp = 1.0 - (progress - 0.95) / 0.05;
-
-    // Instead of setting material.opacity, we set the node uniform value
-    uStarOpacity.value = starOp;
-
-    updateFoliageMaterials(audioState, isNight);
-    animatedFoliage.forEach(f => animateFoliage(f, t, audioState, !isNight));
-
-    // 3. Robust Player Movement (Direct Velocity Control)
-    if (controls.isLocked) {
-        // Determine base speed
-        let moveSpeed = player.speed;
-        if (keyStates.sprint) moveSpeed = player.sprintSpeed;
-        if (keyStates.sneak) moveSpeed = player.sneakSpeed;
-
-        // A. Calculate Target Velocity based on keys
-        const targetVelocity = new THREE.Vector3();
-        if (keyStates.forward) targetVelocity.z += moveSpeed;
-        if (keyStates.backward) targetVelocity.z -= moveSpeed;
-        if (keyStates.left) targetVelocity.x -= moveSpeed;
-        if (keyStates.right) targetVelocity.x += moveSpeed;
-
-        // B. Normalize to prevent fast diagonals
-        if (targetVelocity.lengthSq() > 0) {
-            targetVelocity.normalize().multiplyScalar(moveSpeed);
-        }
-
-        // C. Smoothly interpolate current velocity to target (10.0 = responsiveness)
-        // FIX: Clamp smoothing factor to prevent overshoot/explosion
-        const smoothing = Math.min(1.0, 15.0 * delta);
-        player.velocity.x += (targetVelocity.x - player.velocity.x) * smoothing;
-        player.velocity.z += (targetVelocity.z - player.velocity.z) * smoothing;
-
-        // D. Apply Gravity (Independent of smoothing)
-        player.velocity.y -= player.gravity * delta;
-
-        // E. NaN Guard: Reset if physics broke
-        if (isNaN(player.velocity.x) || isNaN(player.velocity.z) || isNaN(player.velocity.y)) {
-            player.velocity.set(0, 0, 0);
-        }
-
-        // F. Move Camera
-        // PointerLockControls moves relative to camera look direction
-        controls.moveRight(player.velocity.x * delta);
-        controls.moveForward(player.velocity.z * delta);
-
-        // G. Ground Collision
-        const groundY = getGroundHeight(camera.position.x, camera.position.z);
-        // Safety check for NaN ground
-        const safeGroundY = isNaN(groundY) ? 0 : groundY;
-
-        if (camera.position.y < safeGroundY + 1.8) {
-            camera.position.y = safeGroundY + 1.8;
-            player.velocity.y = 0;
-            if (keyStates.jump) player.velocity.y = 10;
-        } else {
-            camera.position.y += player.velocity.y * delta;
+    // Check platforms
+    for (const platform of platforms) {
+        // Simple AABB collision for standing on platforms
+        if (x >= platform.minX && x <= platform.maxX) {
+            // Check if player is falling onto platform
+            if (y - radius <= platform.maxY && y - radius >= platform.maxY - 0.5) {
+                if (playerState.velocity.y <= 0) {
+                    return { collided: true, groundY: platform.maxY };
+                }
+            }
         }
     }
+
+    return { collided: false, groundY: null };
+}
+
+function updatePlayer(delta) {
+    const speed = keys.run ? CONFIG.player.runSpeed : CONFIG.player.speed;
+
+    // Horizontal movement
+    if (keys.left) {
+        playerState.velocity.x = -speed;
+        playerState.facingRight = false;
+    } else if (keys.right) {
+        playerState.velocity.x = speed;
+        playerState.facingRight = true;
+    } else {
+        // Apply friction
+        const friction = playerState.isGrounded ? CONFIG.player.groundFriction : CONFIG.player.airFriction;
+        playerState.velocity.x *= friction;
+    }
+
+    // Jump
+    if (keys.jump && playerState.isGrounded) {
+        playerState.velocity.y = CONFIG.player.jumpForce;
+        playerState.isGrounded = false;
+    }
+
+    // Gravity
+    if (!playerState.isGrounded) {
+        playerState.velocity.y -= CONFIG.player.gravity * delta;
+    }
+
+    // Apply velocity
+    player.position.x += playerState.velocity.x * delta;
+    player.position.y += playerState.velocity.y * delta;
+
+    // Collision detection
+    const collision = checkPlatformCollision(player.position.x, player.position.y);
+    if (collision.collided) {
+        player.position.y = collision.groundY + 0.5; // Player height offset
+        playerState.velocity.y = 0;
+        playerState.isGrounded = true;
+    } else {
+        playerState.isGrounded = false;
+    }
+
+    // Face direction
+    player.scale.x = playerState.facingRight ? 1 : -1;
+
+    // Animate legs when moving
+    if (Math.abs(playerState.velocity.x) > 0.5 && playerState.isGrounded) {
+        const legAnim = Math.sin(Date.now() * 0.02) * 0.3;
+        player.userData.legs.forEach((leg, i) => {
+            leg.rotation.x = legAnim * (i < 2 ? 1 : -1);
+        });
+    }
+
+    // Animate tail
+    player.userData.tail.rotation.z = Math.PI / 4 + Math.sin(Date.now() * 0.005) * 0.2;
+}
+
+// =============================================================================
+// CAMERA FOLLOW
+// =============================================================================
+function updateCamera() {
+    // Smooth follow player on X axis
+    const targetX = player.position.x;
+    const targetY = Math.max(player.position.y + 1, CONFIG.cameraHeight);
+
+    camera.position.x += (targetX - camera.position.x) * 0.08;
+    camera.position.y += (targetY - camera.position.y) * 0.05;
+
+    // Look slightly ahead of player
+    const lookAhead = playerState.facingRight ? 2 : -2;
+    camera.lookAt(
+        camera.position.x + lookAhead,
+        camera.position.y - 1,
+        0
+    );
+
+    // Update main light to follow
+    mainLight.position.x = camera.position.x - 5;
+    mainLight.target.position.x = camera.position.x;
+}
+
+// =============================================================================
+// ANIMATION LOOP
+// =============================================================================
+const clock = new THREE.Clock();
+
+function animate() {
+    const delta = Math.min(clock.getDelta(), 0.1); // Cap delta
+
+    updatePlayer(delta);
+    updateCamera();
 
     renderer.render(scene, camera);
 }
 
 renderer.setAnimationLoop(animate);
 
-// --- Music Upload Handler ---
-const musicUpload = document.getElementById('musicUpload');
-if (musicUpload) {
-    musicUpload.addEventListener('change', (event) => {
-        const files = event.target.files;
-        if (files && files.length > 0) {
-            console.log(`Selected ${files.length} file(s) for upload`);
-            audioSystem.addToQueue(files);
-        }
-    });
-}
-
-// --- Toggle Day/Night Button ---
-const toggleDayNightBtn = document.getElementById('toggleDayNight');
-if (toggleDayNightBtn) {
-    toggleDayNightBtn.addEventListener('click', toggleDayNight);
-}
-
+// =============================================================================
+// RESIZE HANDLER
+// =============================================================================
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+console.log('🐕 Dog Dash - 2.5D Side-Scroller loaded!');
+console.log('Controls: A/D or Arrow Keys to move, W/Space to jump, Shift to run');
