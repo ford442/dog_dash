@@ -24,13 +24,13 @@ const CONFIG = {
     player: {
         speed: 8,
         runSpeed: 14,
-        jumpForce: 12,
-        gravity: 30,
+        thrustForce: 25, // Upward force
+        gravity: 8,      // Low gravity for space
         groundFriction: 0.85,
-        airFriction: 0.95
+        airFriction: 0.98 // Less drag in space
     },
     // World
-    groundLevel: 0
+    groundLevel: -50 // effectively no ground collision near 0
 };
 
 // --- Scene Setup ---
@@ -215,7 +215,7 @@ function createRocket() {
     return tiltGroup;
 }
 
-const player = createPlayer();
+const player = createRocket();
 scene.add(player);
 
 // Player state
@@ -231,11 +231,12 @@ const playerState = {
 // =============================================================================
 
 // Ground (extends infinitely in X, flat in Z)
-const groundGeo = new THREE.BoxGeometry(200, 2, 20);
-const ground = new THREE.Mesh(groundGeo, materials.ground);
-ground.position.set(0, -1, 0);
-ground.receiveShadow = true;
-scene.add(ground);
+// Ground removed for space theme
+// const groundGeo = new THREE.BoxGeometry(200, 2, 20);
+// const ground = new THREE.Mesh(groundGeo, materials.ground);
+// ground.position.set(0, -1, 0);
+// ground.receiveShadow = true;
+// scene.add(ground);
 
 // Platforms array for collision detection
 const platforms = [];
@@ -403,20 +404,27 @@ function updatePlayer(delta) {
         playerState.velocity.x *= friction;
     }
 
-    // Jump
-    if (keys.jump && playerState.isGrounded) {
-        playerState.velocity.y = CONFIG.player.jumpForce;
+    // Thrust (Flight)
+    if (keys.jump) {
+        playerState.velocity.y += CONFIG.player.thrustForce * delta;
         playerState.isGrounded = false;
+
+        // Boost flame when thrusting
+        const rocket = player.children[0];
+        if (rocket && rocket.userData.flame) {
+            rocket.userData.flame.scale.set(1.5, 3.0, 1.5); // Big flame
+        }
     }
 
     // Gravity
-    if (!playerState.isGrounded) {
-        playerState.velocity.y -= CONFIG.player.gravity * delta;
-    }
+    playerState.velocity.y -= CONFIG.player.gravity * delta;
 
     // Apply velocity
     player.position.x += playerState.velocity.x * delta;
     player.position.y += playerState.velocity.y * delta;
+
+    // Cap vertical speed (terminal velocity)
+    playerState.velocity.y = Math.max(Math.min(playerState.velocity.y, 10), -15);
 
     // Collision detection
     const collision = checkPlatformCollision(player.position.x, player.position.y);
