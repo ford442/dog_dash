@@ -2,6 +2,14 @@ import * as THREE from 'three';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
 import { createStars, uStarOpacity } from './stars.js';
+import { 
+    createSubwooferLotus, 
+    createFiberOpticWillow, 
+    createGlowingFlower, 
+    animateFoliage,
+    initGrassSystem,
+    addGrassInstance
+} from './foliage.js';
 
 // =============================================================================
 // DOG DASH - 2.5D Side-Scroller
@@ -529,17 +537,20 @@ scene.add(galaxy2);
 const galaxy3 = createGalaxy(300, 10, -90, 0xff4488);
 scene.add(galaxy3);
 
+// Store plants that live on the moon to animate them later
+const moonPlants = [];
+
 // Create the distant moon (goal)
 function createMoon() {
     const group = new THREE.Group();
     
-    // Moon surface
+    // 1. Moon Surface (alien palette)
     const moonGeo = new THREE.SphereGeometry(8, 32, 32);
     const moonMat = new THREE.MeshStandardMaterial({
-        color: 0xcccccc,
-        roughness: 0.9,
-        metalness: 0.1,
-        emissive: 0xaaaaaa,
+        color: 0x222244, // Darker, alien purple-grey
+        roughness: 0.8,
+        metalness: 0.2,
+        emissive: 0x111122,
         emissiveIntensity: 0.2
     });
     const moon = new THREE.Mesh(moonGeo, moonMat);
@@ -565,11 +576,12 @@ function createMoon() {
     }
     
     // Moon glow/atmosphere
-    const atmosphereGeo = new THREE.SphereGeometry(9, 32, 32);
+    // 2. Atmosphere
+    const atmosphereGeo = new THREE.SphereGeometry(9.5, 32, 32);
     const atmosphereMat = new THREE.MeshBasicMaterial({
-        color: 0x88aaff,
+        color: 0x8844ff,
         transparent: true,
-        opacity: 0.1,
+        opacity: 0.15,
         blending: THREE.AdditiveBlending,
         side: THREE.BackSide
     });
@@ -577,6 +589,34 @@ function createMoon() {
     group.add(atmosphere);
     
     group.userData.atmosphere = atmosphere;
+
+    // 3. Populate with Alien Plants
+    const plantCount = 15;
+    for (let i = 0; i < plantCount; i++) {
+        let plant;
+        const type = Math.random();
+        if (type < 0.3) {
+            plant = createSubwooferLotus({ color: 0x00ff88 });
+        } else if (type < 0.6) {
+            plant = createFiberOpticWillow({ color: 0xff00ff });
+        } else {
+            plant = createGlowingFlower({ color: 0x00ffff, intensity: 2.0 });
+        }
+
+        // Random position on the top hemisphere so plants are visible
+        const phi = Math.random() * Math.PI * 0.4; // 0..PI/2 mostly
+        const theta = Math.random() * Math.PI * 2;
+        const r = 7.8; // Slightly embedded in surface
+        plant.position.set(
+            r * Math.sin(phi) * Math.cos(theta),
+            r * Math.cos(phi),
+            r * Math.sin(phi) * Math.sin(theta)
+        );
+        plant.lookAt(0, 0, 0);
+        plant.rotateX(-Math.PI / 2);
+        group.add(plant);
+        moonPlants.push(plant);
+    }
     return group;
 }
 
@@ -890,6 +930,7 @@ const clock = new THREE.Clock();
 
 function animate() {
     const delta = Math.min(clock.getDelta(), 0.1); // Cap delta
+    const time = clock.getElapsedTime(); // For foliage animation and time-based motion
 
     updatePlayer(delta);
     updateObstacles(delta);
@@ -906,6 +947,12 @@ function animate() {
         const pulse = Math.sin(Date.now() * 0.001) * 0.5 + 0.5;
         moon.userData.atmosphere.material.opacity = 0.1 + pulse * 0.1;
     }
+
+    // --- NEW: Animate Alien Moon Plants ---
+    // We pass 'false' for isDay because it's space (always night!) and null for audio
+    moonPlants.forEach(plant => {
+        animateFoliage(plant, time, null, false);
+    });
     
     // Update distance display
     updateDistanceDisplay();
