@@ -11,9 +11,9 @@ import {
     addGrassInstance
 } from './foliage.js';
 import { ParticleSystem } from './particles.js';
-import { 
-    SporeCloud, 
-    createChromaShiftRock, 
+import {
+    SporeCloud,
+    createChromaShiftRock,
     updateChromaRock,
     createFracturedGeode,
     updateGeode,
@@ -389,11 +389,19 @@ function updateObstacles(delta) {
     // Only run if WASM is loaded and player is vulnerable
     if (wasmExports && wasmMemory && !playerState.invincible && obstacles.length > 0) {
         
-        // A. Sync Data to WASM Memory
+        // A. Allocate Memory for Obstacles
+        // We use the new allocAsteroids function to get a safe pointer
+        const ptr = wasmExports.allocAsteroids(obstacles.length);
+
+        // Calculate the offset in the Float32Array (pointer is in bytes, divide by 4)
+        // Use unsigned right shift for integer division
+        const floatOffset = ptr >>> 2;
+
+        // B. Sync Data to WASM Memory
         // We write [x, y, radius] for every asteroid into the shared memory buffer
         for (let i = 0; i < obstacles.length; i++) {
             const obs = obstacles[i];
-            const offset = i * 3; // 3 floats per object
+            const offset = floatOffset + (i * 3); // 3 floats per object
             
             // Check to ensure we don't overflow the memory (default is usually 1 page / 64KB)
             if (offset + 2 < wasmMemory.length) {
@@ -403,11 +411,11 @@ function updateObstacles(delta) {
             }
         }
 
-        // B. Call WASM function
+        // C. Call WASM function
         // checkCollision(playerX, playerY, playerRadius, count)
         const hitIndex = wasmExports.checkCollision(playerX, playerY, 0.5, obstacles.length);
 
-        // C. Handle Hit
+        // D. Handle Hit
         if (hitIndex !== -1) {
             const obs = obstacles[hitIndex];
             if (obs) {
@@ -934,27 +942,27 @@ let gameStarted = false;
 
 canvas.addEventListener('click', (event) => {
     if (!gameStarted) return;
-    
+
     // Get mouse position in normalized device coordinates
     const rect = canvas.getBoundingClientRect();
     const mouse = new THREE.Vector2();
     mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    
+
     // Create raycaster
     const raycaster = new THREE.Raycaster();
     raycaster.setFromCamera(mouse, camera);
-    
+
     // Check intersection with spore clouds
     sporeClouds.forEach(cloud => {
         if (!cloud.active) return;
-        
+
         // Check each spore in the cloud
         const intersects = raycaster.intersectObjects(cloud.spores, false);
         if (intersects.length > 0) {
             const hitPoint = intersects[0].point;
             const triggered = cloud.triggerChainReaction(hitPoint);
-            
+
             if (triggered > 0) {
                 // Add explosion particles at hit point
                 particleSystem.emit(hitPoint, 0x88ff88, 20, 8.0, 1.0, 2.0);
@@ -1127,16 +1135,16 @@ function animate() {
     // --- NEW: Update Geological Objects ---
     // Update spore clouds (brownian motion)
     sporeClouds.forEach(cloud => cloud.update(delta));
-    
+
     // Update chroma-shift rocks (color animation)
     chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta, time));
-    
+
     // Update geodes (EM field pulse)
     geodes.forEach(geode => updateGeode(geode, delta, time));
-    
+
     // Update nebula jelly-moss (pulsing and drifting)
     jellyMosses.forEach(jellyMoss => updateNebulaJellyMoss(jellyMoss, delta, time));
-    
+
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
     if (galaxy2) galaxy2.rotation.z += galaxy2.userData.rotationSpeed;
@@ -1212,4 +1220,3 @@ window.addEventListener('resize', () => {
 console.log('🚀 Space Dash - Journey to the Moon!');
 console.log('Controls: SPACE to thrust up, A to dive down');
 console.log('Objective: Reach the moon while surviving asteroid impacts (3 lives)');
-
