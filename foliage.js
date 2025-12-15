@@ -864,6 +864,197 @@ export function createFiberOpticWillow(options = {}) {
     return group;
 }
 
+/**
+ * 4. Solar Sails / Light Leaves
+ * From plan.md: Thin-film catching solar wind with iridescence.
+ * - 5-12 leaves, 10-20m long, attached to a crystalline pod.
+ * - Thin-film interference shader for iridescence, rippling leaves.
+ * - Unfold when near star/light source.
+ */
+export function createSolarSail(options = {}) {
+    const { 
+        color = 0x88aaff, 
+        leafCount = 5 + Math.floor(Math.random() * 8),
+        leafLength = 10 + Math.random() * 10
+    } = options;
+    const group = new THREE.Group();
+
+    // Crystalline pod (center attachment point)
+    const podGeo = new THREE.OctahedronGeometry(0.8, 1);
+    const podMat = new THREE.MeshStandardMaterial({
+        color: 0xaaddff,
+        roughness: 0.1,
+        metalness: 0.8,
+        emissive: 0x446688,
+        emissiveIntensity: 0.3,
+        transparent: true,
+        opacity: 0.9
+    });
+    const pod = new THREE.Mesh(podGeo, podMat);
+    pod.castShadow = true;
+    group.add(pod);
+
+    // Inner glow for pod
+    const podGlowGeo = new THREE.SphereGeometry(1.2, 16, 16);
+    const podGlowMat = new THREE.MeshBasicMaterial({
+        color: 0x88ccff,
+        transparent: true,
+        opacity: 0.15,
+        blending: THREE.AdditiveBlending,
+        side: THREE.BackSide
+    });
+    const podGlow = new THREE.Mesh(podGlowGeo, podGlowMat);
+    group.add(podGlow);
+
+    // Solar sail leaves (thin film with iridescence simulation)
+    const leaves = [];
+    for (let i = 0; i < leafCount; i++) {
+        const leafGroup = new THREE.Group();
+        
+        // Create a thin, elongated leaf shape
+        const leafWidth = 0.5 + Math.random() * 0.5;
+        const leafLen = leafLength * (0.7 + Math.random() * 0.3);
+        
+        // Use a plane geometry for the thin film
+        const leafGeo = new THREE.PlaneGeometry(leafWidth, leafLen, 4, 12);
+        
+        // Thin-film interference shader simulation using MeshPhysicalMaterial
+        // with high iridescence and low thickness
+        const hue = (i / leafCount) * 0.3; // Spread hues
+        const leafColor = new THREE.Color().setHSL(0.55 + hue, 0.8, 0.6);
+        
+        const leafMat = new THREE.MeshPhysicalMaterial({
+            color: leafColor,
+            roughness: 0.1,
+            metalness: 0.0,
+            transmission: 0.6, // Partially transparent
+            thickness: 0.1,    // Thin film
+            ior: 1.5,          // Index of refraction
+            iridescence: 1.0,  // Maximum iridescence
+            iridescenceIOR: 1.8,
+            iridescenceThicknessRange: [100, 400], // nm range for color shifting
+            transparent: true,
+            opacity: 0.8,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        registerReactiveMaterial(leafMat);
+
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        
+        // Position leaf extending outward from pod
+        leaf.position.y = leafLen / 2 + 0.8; // Start from pod surface
+        leafGroup.add(leaf);
+        
+        // Rotate around pod
+        const angle = (i / leafCount) * Math.PI * 2;
+        leafGroup.rotation.y = angle;
+        leafGroup.rotation.z = Math.PI / 6 + Math.random() * 0.2; // Slight outward angle
+        
+        // Store leaf animation data
+        leafGroup.userData = {
+            index: i,
+            baseAngleZ: leafGroup.rotation.z,
+            unfoldProgress: 0, // 0 = folded, 1 = fully unfolded
+            phaseOffset: Math.random() * Math.PI * 2,
+            rippleSpeed: 0.5 + Math.random() * 0.5,
+            leaf: leaf
+        };
+
+        leaves.push(leafGroup);
+        group.add(leafGroup);
+    }
+
+    // Store group data for animation
+    group.userData = {
+        type: 'solarSail',
+        animationType: 'solarSail',
+        animationOffset: Math.random() * 10,
+        leaves: leaves,
+        pod: pod,
+        podGlow: podGlow,
+        isUnfolded: false,
+        unfoldProgress: 0,
+        nearLightSource: false
+    };
+
+    return group;
+}
+
+/**
+ * Update Solar Sail animation
+ * - Rippling leaf effect
+ * - Unfold/fold based on light proximity
+ * - Iridescent color shifting
+ */
+export function updateSolarSail(solarSail, delta, time, lightPosition = null) {
+    if (!solarSail.userData || solarSail.userData.type !== 'solarSail') return;
+
+    const data = solarSail.userData;
+    const leaves = data.leaves;
+
+    // Check distance to light source for unfolding
+    let targetUnfold = 0.3; // Default partially folded
+    if (lightPosition) {
+        const distance = solarSail.position.distanceTo(lightPosition);
+        const maxDistance = 100;
+        if (distance < maxDistance) {
+            targetUnfold = 1.0 - (distance / maxDistance) * 0.7;
+        }
+    } else {
+        // Default slow unfold animation
+        targetUnfold = 0.5 + Math.sin(time * 0.2 + data.animationOffset) * 0.3;
+    }
+
+    // Smooth unfold transition
+    data.unfoldProgress += (targetUnfold - data.unfoldProgress) * delta * 2;
+
+    // Animate each leaf
+    leaves.forEach((leafGroup, i) => {
+        const leafData = leafGroup.userData;
+        const leaf = leafData.leaf;
+
+        // Unfold angle (more horizontal when unfolded)
+        const unfoldAngle = Math.PI / 2 - (Math.PI / 3) * data.unfoldProgress;
+        leafGroup.rotation.z = leafData.baseAngleZ * (1 - data.unfoldProgress) + unfoldAngle * data.unfoldProgress;
+
+        // Ripple effect on leaf geometry
+        if (leaf && leaf.geometry) {
+            const positions = leaf.geometry.attributes.position;
+            const waveTime = time * leafData.rippleSpeed + leafData.phaseOffset;
+            
+            for (let j = 0; j < positions.count; j++) {
+                const y = positions.getY(j);
+                const normalizedY = (y / (leaf.geometry.parameters.height / 2)); // -1 to 1
+                
+                // Wave amplitude increases toward tip
+                const waveAmplitude = 0.1 * Math.abs(normalizedY) * data.unfoldProgress;
+                const wave = Math.sin(waveTime * 3 + normalizedY * 4) * waveAmplitude;
+                
+                positions.setZ(j, wave);
+            }
+            positions.needsUpdate = true;
+            leaf.geometry.computeVertexNormals();
+        }
+
+        // Update material iridescence based on viewing angle (simulated)
+        if (leaf && leaf.material) {
+            const shimmer = Math.sin(time * 2 + i) * 0.2 + 0.8;
+            leaf.material.iridescenceIOR = 1.5 + shimmer * 0.5;
+        }
+    });
+
+    // Pod glow pulse
+    if (data.podGlow) {
+        const pulse = Math.sin(time * 1.5 + data.animationOffset) * 0.5 + 0.5;
+        data.podGlow.material.opacity = 0.1 + pulse * 0.15 * data.unfoldProgress;
+        data.podGlow.scale.setScalar(1 + pulse * 0.1);
+    }
+
+    // Slow rotation
+    solarSail.rotation.y += delta * 0.1;
+}
+
 // --- Instancing System (Grass) ---
 let grassMeshes = [];
 const dummy = new THREE.Object3D();
