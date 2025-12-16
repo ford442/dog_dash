@@ -8,7 +8,9 @@ import {
     createGlowingFlower, 
     animateFoliage,
     initGrassSystem,
-    addGrassInstance
+    addGrassInstance,
+    createSolarSail,
+    updateSolarSail
 } from './foliage.js';
 import { ParticleSystem } from './particles.js';
 import {
@@ -681,6 +683,27 @@ createJellyMossAtPosition(180, -8, 22, 8);  // Medium
 createJellyMossAtPosition(280, 15, -12, 15); // Large specimen
 createJellyMossAtPosition(400, 5, 25, 6);   // Medium
 
+// Solar Sails / Light Leaves - thin-film iridescent organisms catching solar wind
+const solarSails = [];
+
+function createSolarSailAtPosition(x, y, z) {
+    const solarSail = createSolarSail({ 
+        leafCount: 6 + Math.floor(Math.random() * 6),
+        leafLength: 8 + Math.random() * 8
+    });
+    solarSail.position.set(x, y, z);
+    scene.add(solarSail);
+    solarSails.push(solarSail);
+    return solarSail;
+}
+
+// Add solar sails along the path - they unfold as you approach
+createSolarSailAtPosition(60, 8, -15);
+createSolarSailAtPosition(120, -5, 18);
+createSolarSailAtPosition(220, 12, -20);
+createSolarSailAtPosition(320, -10, 15);
+createSolarSailAtPosition(420, 6, -25);
+
 // Store plants that live on the moon to animate them later
 const moonPlants = [];
 
@@ -1144,6 +1167,9 @@ function animate() {
 
     // Update nebula jelly-moss (pulsing and drifting)
     jellyMosses.forEach(jellyMoss => updateNebulaJellyMoss(jellyMoss, delta, time));
+
+    // Update solar sails (iridescent rippling, unfold near player)
+    solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
 
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
