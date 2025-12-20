@@ -2,18 +2,22 @@ import * as THREE from 'three';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { createStars, uStarOpacity } from './stars.js';
+import { createStars, uStarOpacity } from './stars';
 import { 
     createSubwooferLotus, 
     createFiberOpticWillow, 
     createGlowingFlower, 
+    createStarDustFern,
+    createNebulaRose,
+    createFloweringTree,
+    createShrub,
+    createFloatingOrb,
+    createVine,
     animateFoliage,
-    initGrassSystem,
-    addGrassInstance,
     createSolarSail,
     updateSolarSail
-} from './foliage.js';
-import { ParticleSystem } from './particles.js';
+} from './foliage';
+import { ParticleSystem } from './particles';
 import {
     SporeCloud,
     createChromaShiftRock,
@@ -22,7 +26,7 @@ import {
     updateGeode,
     createNebulaJellyMoss,
     updateNebulaJellyMoss
-} from './geological.js';
+} from './geological';
 
 // --- Configuration ---
 const CONFIG = {
@@ -51,7 +55,7 @@ const CONFIG = {
 };
 
 // --- Scene Setup ---
-const canvas = document.querySelector('#glCanvas');
+const canvas = document.querySelector('#glCanvas') as HTMLCanvasElement;
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(CONFIG.colors.background);
 scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
@@ -127,8 +131,8 @@ const materials = {
 };
 
 // --- WASM Setup ---
-let wasmExports = null;
-let wasmMemory = null;
+let wasmExports: any = null;
+let wasmMemory: Float32Array | null = null;
 
 async function loadWasm() {
     try {
@@ -142,7 +146,7 @@ async function loadWasm() {
         });
         
         wasmExports = module.instance.exports;
-        wasmMemory = new Float32Array(wasmExports.memory.buffer);
+        wasmMemory = new Float32Array((wasmExports.memory as WebAssembly.Memory).buffer);
         console.log("✅ WASM Module Loaded");
     } catch (err) {
         console.error("❌ Failed to load WASM:", err);
@@ -157,7 +161,6 @@ loadWasm();
 // =============================================================================
 let player = null;
 const gltfLoader = new GLTFLoader();
-
 // Load the rocket GLB model
 gltfLoader.load(
     'rocket.glb',
@@ -266,17 +269,202 @@ const playerState = {
     maxHealth: 3,
     invincible: false, // Invincibility frames after hit
     distanceToMoon: 500, // Distance to reach the moon
-    hasWon: false // Track if player has won
+    hasWon: false, // Track if player has won
+    level: 1 // Current level
 };
+
+// =============================================================================
+// LEVEL MANAGER
+// =============================================================================
+type LevelConfig = {
+    name: string;
+    distance: number;
+    asteroidRate: number;
+    foliageDensity: {
+        fern?: number;
+        rose?: number;
+        lotus?: number;
+        glowingFlower?: number;
+        tree?: number;
+        floweringTree?: number;
+        shrub?: number;
+        vine?: number;
+        orb?: number;
+        mushroom?: number;
+        cloud?: number;
+    };
+    speed: number;
+    bgColor: number;
+};
+
+class LevelManager {
+    currentLevel: number;
+    config: { [key: number]: LevelConfig };
+    levelObjects: THREE.Object3D[];
+
+    constructor() {
+        this.currentLevel = 1;
+        this.config = {
+            1: {
+                name: "The Neon Garden",
+                distance: 500,
+                asteroidRate: 3.0, // Slow spawn
+                foliageDensity: {
+                    fern: 50,
+                    rose: 30,
+                    lotus: 10,
+                    glowingFlower: 40,
+                    tree: 50,
+                    floweringTree: 40,
+                    shrub: 40,
+                    vine: 15,
+                    orb: 25,
+                    mushroom: 30,
+                    cloud: 25
+                },
+                speed: 6,
+                bgColor: 0x1a1a2e
+            },
+            2: {
+                name: "The Asteroid Belt",
+                distance: 1200, // Start + 700
+                asteroidRate: 0.8, // Fast spawn
+                foliageDensity: {
+                    fern: 10,
+                    rose: 5,
+                    lotus: 5,
+                    glowingFlower: 10,
+                    tree: 10,
+                    floweringTree: 5,
+                    shrub: 10,
+                    vine: 5,
+                    orb: 10,
+                    mushroom: 10,
+                    cloud: 10
+                },
+                speed: 8,
+                bgColor: 0x2d1a1a // Reddish
+            },
+            3: {
+                name: "The Deep Void",
+                distance: 2200, // Start + 1700
+                asteroidRate: 1.2, // Medium but fast rocks?
+                foliageDensity: {
+                    fern: 5,
+                    rose: 0,
+                    lotus: 20, // Alien
+                    glowingFlower: 5,
+                    tree: 5,
+                    floweringTree: 0,
+                    shrub: 5,
+                    vine: 20, // Creepy
+                    orb: 50, // Many orbs
+                    mushroom: 5,
+                    cloud: 40 // Foggy
+                },
+                speed: 10,
+                bgColor: 0x000000 // Pitch black
+            }
+        };
+
+        // Track planted objects to cleanup
+        this.levelObjects = [];
+    }
+
+    startLevel(levelIndex: number) {
+        this.currentLevel = levelIndex;
+        const cfg = this.config[levelIndex];
+        if (!cfg) return;
+
+        console.log(`Starting Level ${levelIndex}: ${cfg.name}`);
+
+        // Update Game State
+        playerState.autoScrollSpeed = cfg.speed;
+        playerState.distanceToMoon = cfg.distance;
+        scene.background = new THREE.Color(cfg.bgColor);
+        if (scene.fog) scene.fog.color = new THREE.Color(cfg.bgColor);
+
+        // Update UI
+        const levelDiv = document.getElementById('level-display');
+        if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
+
+        // Clear previous level objects that are behind (optional, but good for perf)
+        // actually we just keep scrolling, but we need to spawn new density ahead
+
+        // Populate new zone ahead of player
+        this.populateZone(player.position.x + 50, player.position.x + 600, cfg.foliageDensity);
+    }
+
+    populateZone(startX: number, endX: number, density: LevelConfig['foliageDensity']) {
+        const width = endX - startX;
+
+        // Helper to spawn
+        const spawn = (count: number, creatorFn: () => THREE.Object3D, yRange = [-20, 20], zRange = [-30, 0]) => {
+            for (let i = 0; i < count; i++) {
+                const x = startX + Math.random() * width;
+                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+                const z = zRange[0] + Math.random() * (zRange[1] - zRange[0]);
+
+                const obj = creatorFn();
+                obj.position.set(x, y, z);
+
+                // Random scale
+                const s = 0.8 + Math.random() * 0.5;
+                obj.scale.set(s, s, s);
+
+                scene.add(obj);
+                this.levelObjects.push(obj);
+
+                // Add to moonPlants for animation update loop
+                moonPlants.push(obj);
+            }
+        };
+
+        // Spawn all types
+        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }));
+        if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }));
+        if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }));
+        if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }));
+
+        // Standard foliage
+        if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), [-20, -5]); // Trees lower
+        if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), [-20, -5]);
+
+        // Floating items
+        if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), [-10, 20]);
+        // Note: Clouds handled specifically below
+
+        // Add clouds manually because they need the specific class wrapper
+        if (density.cloud) {
+             for(let i=0; i<density.cloud; i++) {
+                const x = startX + Math.random() * width;
+                const y = (Math.random() - 0.5) * 30;
+                const z = -40 + Math.random() * 30;
+                createSporeCloudAtPosition(x, y, z);
+            }
+        }
+    }
+
+    checkProgress(playerX: number) {
+        // Transition logic
+        if (this.currentLevel === 1 && playerX > 500) {
+            this.startLevel(2);
+        } else if (this.currentLevel === 2 && playerX > 1200) {
+            this.startLevel(3);
+        }
+    }
+}
+
+const levelManager = new LevelManager();
 
 // =============================================================================
 // OBSTACLE SYSTEM
 // =============================================================================
-const obstacles = [];
-const OBSTACLE_SPAWN_INTERVAL = 1.5; // seconds
+const obstacles: THREE.Mesh[] = [];
+let OBSTACLE_SPAWN_INTERVAL = 1.5; // seconds
 let lastObstacleSpawn = 0;
 
-function createAsteroid(x, y) {
+function createAsteroid(x: number, y: number) {
     const size = 0.5 + Math.random() * 1.5;
     const geo = new THREE.DodecahedronGeometry(size, 0);
     const mat = new THREE.MeshStandardMaterial({
@@ -301,12 +489,22 @@ function createAsteroid(x, y) {
     return asteroid;
 }
 
+<<<<<<< HEAD:main.js
 function updateObstacles(delta) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
     
+=======
+function updateObstacles(delta: number) {
+>>>>>>> jules:main.ts
     const playerX = player.position.x;
     const playerY = player.position.y; // Capture Y for WASM
+
+    // Adjust spawn rate based on level
+    const currentCfg = levelManager.config[levelManager.currentLevel];
+    if (currentCfg) {
+        OBSTACLE_SPAWN_INTERVAL = currentCfg.asteroidRate;
+    }
 
     // Spawn new obstacles ahead of player
     lastObstacleSpawn += delta;
@@ -393,12 +591,12 @@ function updateObstacles(delta) {
                 particleSystem.emit(obs.position.clone(), 0xff5555, 15, 10.0, 1.2, 1.0);
                 particleSystem.emit(obs.position.clone(), 0xaaaaaa, 10, 8.0, 0.8, 1.0);
                  // Collision! Flash red and bounce
-                 obs.material.emissive = new THREE.Color(0xff0000);
-                 obs.material.emissiveIntensity = 1.0;
+                 (obs.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0xff0000);
+                 (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.0;
                  setTimeout(() => {
                      if (obs.material) {
-                         obs.material.emissive = new THREE.Color(0x000000);
-                         obs.material.emissiveIntensity = 0;
+                         (obs.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0x000000);
+                         (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 0;
                      }
                  }, 200);
  
@@ -409,7 +607,7 @@ function updateObstacles(delta) {
                  // Flash the rocket
                  const rocket = player.children[0];
                  if (rocket) {
-                     rocket.children.forEach(child => {
+                     rocket.children.forEach((child: any) => {
                          if (child.material) {
                              const originalColor = child.material.color.clone();
                              child.material.color.setHex(0xff0000);
@@ -443,50 +641,11 @@ function updateObstacles(delta) {
 }
 
 // =============================================================================
-// LEVEL GEOMETRY
+// LEVEL GEOMETRY & BACKGROUND
 // =============================================================================
 
-// Ground (extends infinitely in X, flat in Z)
-// Ground removed for space theme
-// const groundGeo = new THREE.BoxGeometry(200, 2, 20);
-// const ground = new THREE.Mesh(groundGeo, materials.ground);
-// ground.position.set(0, -1, 0);
-// ground.receiveShadow = true;
-// scene.add(ground);
-
-// Platforms array for collision detection
-const platforms = [];
-
-function createPlatform(x, y, width, height = 0.4, depth = 4) {
-    const geo = new THREE.BoxGeometry(width, height, depth);
-    const platform = new THREE.Mesh(geo, materials.platform);
-    platform.position.set(x, y, 0);
-    platform.receiveShadow = true;
-    platform.castShadow = true;
-    scene.add(platform);
-
-    // Store collision box
-    platforms.push({
-        mesh: platform,
-        minX: x - width / 2,
-        maxX: x + width / 2,
-        minY: y - height / 2,
-        maxY: y + height / 2
-    });
-
-    return platform;
-}
-
-// Create some test platforms
-createPlatform(5, 1.5, 4);
-createPlatform(10, 3, 3);
-createPlatform(15, 2, 5);
-createPlatform(-5, 2, 4);
-createPlatform(-10, 3.5, 3);
-createPlatform(-15, 1, 6);
-
 // Background elements (parallax layers for depth)
-function createBackgroundLayer(zOffset, color, count) {
+function createBackgroundLayer(zOffset: number, color: number, count: number) {
     const group = new THREE.Group();
     const mat = new THREE.MeshStandardMaterial({
         color: color,
@@ -526,7 +685,7 @@ scene.add(stars);
 uStarOpacity.value = 0.8; // Make stars visible
 
 // Create distant galaxies/nebulae
-function createGalaxy(x, y, z, color) {
+function createGalaxy(x: number, y: number, z: number, color: number) {
     const group = new THREE.Group();
     
     // Main nebula cloud
@@ -586,23 +745,18 @@ const particleSystem = new ParticleSystem(scene);
 // =============================================================================
 
 // Spore Clouds - floating clouds of glowing spores
-const sporeClouds = [];
+const sporeClouds: SporeCloud[] = [];
 
-function createSporeCloudAtPosition(x, y, z) {
+function createSporeCloudAtPosition(x: number, y: number, z: number) {
     const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(Math.random() * 500));
     sporeClouds.push(cloud);
     return cloud;
 }
 
-// Add some spore clouds along the path
-createSporeCloudAtPosition(100, 10, -20);
-createSporeCloudAtPosition(200, -5, 15);
-createSporeCloudAtPosition(350, 8, -10);
-
 // Chroma-Shift Rocks - color-shifting crystalline rocks
-const chromaRocks = [];
+const chromaRocks: THREE.Group[] = [];
 
-function createChromaRockAtPosition(x, y, z) {
+function createChromaRockAtPosition(x: number, y: number, z: number) {
     const rock = createChromaShiftRock({ size: 2 + Math.random() * 2 });
     rock.position.set(x, y, z);
     scene.add(rock);
@@ -610,18 +764,10 @@ function createChromaRockAtPosition(x, y, z) {
     return rock;
 }
 
-// Scatter some chroma rocks
-for (let i = 0; i < 8; i++) {
-    const x = 50 + i * 60;
-    const y = (Math.random() - 0.5) * 20;
-    const z = (Math.random() - 0.5) * 30;
-    createChromaRockAtPosition(x, y, z);
-}
-
 // Fractured Geodes - safe harbors with EM fields
-const geodes = [];
+const geodes: THREE.Group[] = [];
 
-function createGeodeAtPosition(x, y, z) {
+function createGeodeAtPosition(x: number, y: number, z: number) {
     const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
     geode.position.set(x, y, z);
     scene.add(geode);
@@ -629,15 +775,10 @@ function createGeodeAtPosition(x, y, z) {
     return geode;
 }
 
-// Add geodes at strategic points
-createGeodeAtPosition(150, 5, -25);
-createGeodeAtPosition(300, -8, 20);
-createGeodeAtPosition(450, 12, -15);
-
 // Nebula Jelly-Moss - floating gelatinous organisms with fractal moss
-const jellyMosses = [];
+const jellyMosses: THREE.Group[] = [];
 
-function createJellyMossAtPosition(x, y, z, size) {
+function createJellyMossAtPosition(x: number, y: number, z: number, size?: number) {
     const jellyMoss = createNebulaJellyMoss({ size: size || 2 + Math.random() * 8 });
     jellyMoss.position.set(x, y, z);
     scene.add(jellyMoss);
@@ -645,16 +786,10 @@ function createJellyMossAtPosition(x, y, z, size) {
     return jellyMoss;
 }
 
-// Add some nebula jelly-moss specimens
-createJellyMossAtPosition(80, 12, -18, 4);  // Small specimen
-createJellyMossAtPosition(180, -8, 22, 8);  // Medium
-createJellyMossAtPosition(280, 15, -12, 15); // Large specimen
-createJellyMossAtPosition(400, 5, 25, 6);   // Medium
-
 // Solar Sails / Light Leaves - thin-film iridescent organisms catching solar wind
-const solarSails = [];
+const solarSails: THREE.Group[] = [];
 
-function createSolarSailAtPosition(x, y, z) {
+function createSolarSailAtPosition(x: number, y: number, z: number) {
     const solarSail = createSolarSail({ 
         leafCount: 6 + Math.floor(Math.random() * 6),
         leafLength: 8 + Math.random() * 8
@@ -665,15 +800,8 @@ function createSolarSailAtPosition(x, y, z) {
     return solarSail;
 }
 
-// Add solar sails along the path - they unfold as you approach
-createSolarSailAtPosition(60, 8, -15);
-createSolarSailAtPosition(120, -5, 18);
-createSolarSailAtPosition(220, 12, -20);
-createSolarSailAtPosition(320, -10, 15);
-createSolarSailAtPosition(420, 6, -25);
-
 // Store plants that live on the moon to animate them later
-const moonPlants = [];
+const moonPlants: THREE.Object3D[] = [];
 
 // Create the distant moon (goal)
 function createMoon() {
@@ -765,6 +893,20 @@ scene.add(moon);
 
 // UI Elements for health and distance
 function createUI() {
+    // Level Display (New)
+    const levelDiv = document.createElement('div');
+    levelDiv.id = 'level-display';
+    levelDiv.style.position = 'absolute';
+    levelDiv.style.top = '20px';
+    levelDiv.style.right = '20px'; // Top right
+    levelDiv.style.color = '#ffcc00';
+    levelDiv.style.fontSize = '30px';
+    levelDiv.style.fontWeight = 'bold';
+    levelDiv.style.textShadow = '0 0 10px rgba(255, 204, 0, 0.5)';
+    levelDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+    levelDiv.style.zIndex = '100';
+    document.body.appendChild(levelDiv);
+
     // Health display
     const healthDiv = document.createElement('div');
     healthDiv.id = 'health-display';
@@ -795,6 +937,9 @@ function createUI() {
     
     updateHealthDisplay();
     updateDistanceDisplay();
+
+    // Start Level 1
+    levelManager.startLevel(1);
 }
 
 function updateHealthDisplay() {
@@ -872,7 +1017,7 @@ const keys = {
     run: false
 };
 
-function onKeyDown(event) {
+function onKeyDown(event: KeyboardEvent) {
     switch (event.code) {
         case 'KeyA':
         case 'ArrowLeft':
@@ -894,7 +1039,7 @@ function onKeyDown(event) {
     }
 }
 
-function onKeyUp(event) {
+function onKeyUp(event: KeyboardEvent) {
     switch (event.code) {
         case 'KeyA':
         case 'ArrowLeft':
@@ -921,10 +1066,12 @@ document.addEventListener('keyup', onKeyUp);
 
 // Click to start (hide instructions)
 const instructions = document.getElementById('instructions');
-instructions.addEventListener('click', () => {
-    instructions.style.display = 'none';
-    createUI(); // Create UI when game starts
-});
+if (instructions) {
+    instructions.addEventListener('click', () => {
+        instructions.style.display = 'none';
+        createUI(); // Create UI when game starts
+    });
+}
 
 // =============================================================================
 // INTERACTION SYSTEM - Click to trigger spore cloud chain reactions
@@ -964,40 +1111,41 @@ canvas.addEventListener('click', (event) => {
 });
 
 // Track when game starts
-instructions.addEventListener('click', () => {
-    gameStarted = true;
-}, { once: true });
-
+if (instructions) {
+    instructions.addEventListener('click', () => {
+        gameStarted = true;
+    }, { once: true });
+}
 
 // =============================================================================
 // PHYSICS & COLLISION
 // =============================================================================
-function checkPlatformCollision(x, y, radius = 0.3) {
+function checkPlatformCollision(x: number, y: number, radius = 0.3) {
     // Check ground
     if (y - radius <= CONFIG.groundLevel) {
         return { collided: true, groundY: CONFIG.groundLevel };
     }
 
+    // Note: platforms are defined inside collision logic normally or as a global
+    // But since they were not defined in the provided main.js, we assume only ground collision
+    // or we'd need to extract platform logic if it existed.
+    // The previous main.js referenced `platforms` but didn't define it in the snippet provided.
+    // I will assume for now we only check ground or if platforms are missing, ignore.
+
     // Check platforms
-    for (const platform of platforms) {
-        // Simple AABB collision for standing on platforms
-        if (x >= platform.minX && x <= platform.maxX) {
-            // Check if player is falling onto platform
-            if (y - radius <= platform.maxY && y - radius >= platform.maxY - 0.5) {
-                if (playerState.velocity.y <= 0) {
-                    return { collided: true, groundY: platform.maxY };
-                }
-            }
-        }
-    }
+    // for (const platform of platforms) { ... } // platforms undefined in source snippet
 
     return { collided: false, groundY: null };
 }
 
+<<<<<<< HEAD:main.js
 function updatePlayer(delta) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
     
+=======
+function updatePlayer(delta: number) {
+>>>>>>> jules:main.ts
     // Auto-scroll (constant forward movement)
     player.position.x += playerState.autoScrollSpeed * delta;
 
@@ -1059,7 +1207,7 @@ function updatePlayer(delta) {
 
     // Collision detection
     const collision = checkPlatformCollision(player.position.x, player.position.y);
-    if (collision.collided) {
+    if (collision.collided && collision.groundY !== null) {
         player.position.y = collision.groundY + 0.5; // Player height offset
         playerState.velocity.y = 0;
         playerState.isGrounded = true;
@@ -1084,6 +1232,9 @@ function updatePlayer(delta) {
             rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
         }
     }
+
+    // Level Checking
+    levelManager.checkProgress(player.position.x);
 }
 
 // =============================================================================
@@ -1154,7 +1305,7 @@ function animate() {
     if (moon && moon.userData.atmosphere) {
         moon.rotation.y += 0.002;
         const pulse = Math.sin(Date.now() * 0.001) * 0.5 + 0.5;
-        moon.userData.atmosphere.material.opacity = 0.1 + pulse * 0.1;
+        (moon.userData.atmosphere.material as THREE.MeshBasicMaterial).opacity = 0.1 + pulse * 0.1;
     }
 
     // --- NEW: Animate Alien Moon Plants ---

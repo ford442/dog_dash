@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // --- Materials for Foliage ---
-function createClayMaterial(color) {
+function createClayMaterial(color: number | string) {
     return new THREE.MeshStandardMaterial({
         color: color,
         metalness: 0.0,
@@ -41,10 +41,10 @@ const foliageMaterials = {
 };
 
 // Registry for custom materials that should react to music
-export const reactiveMaterials = [];
+export const reactiveMaterials: THREE.Material[] = [];
 
 // Helper to register a material safely
-function registerReactiveMaterial(mat) {
+function registerReactiveMaterial(mat: THREE.Material) {
     if (reactiveMaterials.length < 3000) {
         reactiveMaterials.push(mat);
     }
@@ -52,7 +52,7 @@ function registerReactiveMaterial(mat) {
 
 // --- STANDARD PLANTS ---
 
-export function createGrass(options = {}) {
+export function createGrass(options: any = {}) {
     const { color = 0x7CFC00, shape = 'tall' } = options;
     const material = createClayMaterial(color);
     let geo;
@@ -72,6 +72,8 @@ export function createGrass(options = {}) {
         const height = 0.2 + Math.random() * 0.3;
         geo = new THREE.CylinderGeometry(0.1, 0.05, height, 8);
         geo.translate(0, height / 2, 0);
+    } else {
+        geo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     }
     geo.computeVertexNormals();
 
@@ -83,7 +85,7 @@ export function createGrass(options = {}) {
     return blade;
 }
 
-export function createFlower(options = {}) {
+export function createFlower(options: any = {}) {
     const { color = null, shape = 'simple' } = options;
     const group = new THREE.Group();
 
@@ -181,7 +183,7 @@ export function createFlower(options = {}) {
     return group;
 }
 
-export function createFloweringTree(options = {}) {
+export function createFloweringTree(options: any = {}) {
     const { color = 0xFF69B4 } = options;
     const group = new THREE.Group();
 
@@ -214,7 +216,7 @@ export function createFloweringTree(options = {}) {
     return group;
 }
 
-export function createShrub(options = {}) {
+export function createShrub(options: any = {}) {
     const { color = 0x32CD32 } = options;
     const group = new THREE.Group();
 
@@ -247,7 +249,7 @@ export function createShrub(options = {}) {
 
 // --- SPECIAL PLANTS (Restored) ---
 
-export function createGlowingFlower(options = {}) {
+export function createGlowingFlower(options: any = {}) {
     const { color = 0xFFD700, intensity = 1.5 } = options;
     const group = new THREE.Group();
 
@@ -283,7 +285,7 @@ export function createGlowingFlower(options = {}) {
     return group;
 }
 
-export function createFloatingOrb(options = {}) {
+export function createFloatingOrb(options: any = {}) {
     const { color = 0x87CEEB, size = 0.5 } = options;
     const geo = new THREE.SphereGeometry(size, 16, 16);
     const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8 });
@@ -297,7 +299,7 @@ export function createFloatingOrb(options = {}) {
     return orb;
 }
 
-export function createVine(options = {}) {
+export function createVine(options: any = {}) {
     const { color = 0x228B22, length = 3 } = options;
     const group = new THREE.Group();
 
@@ -315,7 +317,7 @@ export function createVine(options = {}) {
     return group;
 }
 
-export function createLeafParticle(options = {}) {
+export function createLeafParticle(options: any = {}) {
     const { color = 0x00ff00 } = options;
     const leafShape = new THREE.Shape();
     leafShape.moveTo(0, 0);
@@ -328,7 +330,7 @@ export function createLeafParticle(options = {}) {
     return leaf;
 }
 
-export function createStarflower(options = {}) {
+export function createStarflower(options: any = {}) {
     const { color = 0xFF6EC7 } = options;
     const group = new THREE.Group();
 
@@ -372,7 +374,7 @@ export function createStarflower(options = {}) {
     return group;
 }
 
-export function createBellBloom(options = {}) {
+export function createBellBloom(options: any = {}) {
     const { color = 0xFFD27F } = options;
     const group = new THREE.Group();
 
@@ -402,7 +404,7 @@ export function createBellBloom(options = {}) {
     return group;
 }
 
-export function createWisteriaCluster(options = {}) {
+export function createWisteriaCluster(options: any = {}) {
     const { color = 0xCFA0FF, strands = 4 } = options;
     const group = new THREE.Group();
 
@@ -437,7 +439,7 @@ export function createWisteriaCluster(options = {}) {
     return group;
 }
 
-export function createBubbleWillow(options = {}) {
+export function createBubbleWillow(options: any = {}) {
     const { color = 0x8A2BE2 } = options;
     const group = new THREE.Group();
 
@@ -474,7 +476,7 @@ export function createBubbleWillow(options = {}) {
     return group;
 }
 
-export function createPuffballFlower(options = {}) {
+export function createPuffballFlower(options: any = {}) {
     const { color = 0xFF69B4 } = options;
     const group = new THREE.Group();
 
@@ -520,16 +522,17 @@ export function createPuffballFlower(options = {}) {
     return group;
 }
 
-export function createHelixPlant(options = {}) {
+export function createHelixPlant(options: any = {}) {
     const { color = 0x00FA9A } = options;
     const group = new THREE.Group();
 
-    class SpiralCurve extends THREE.Curve {
+    class SpiralCurve extends THREE.Curve<THREE.Vector3> {
+        scale: number;
         constructor(scale = 1) {
             super();
             this.scale = scale;
         }
-        getPoint(t, optionalTarget = new THREE.Vector3()) {
+        getPoint(t: number, optionalTarget = new THREE.Vector3()) {
             const tx = Math.cos(t * Math.PI * 4) * 0.2 * t * this.scale;
             const ty = t * 2.0 * this.scale;
             const tz = Math.sin(t * Math.PI * 4) * 0.2 * t * this.scale;
@@ -563,7 +566,7 @@ export function createHelixPlant(options = {}) {
     return group;
 }
 
-export function createBalloonBush(options = {}) {
+export function createBalloonBush(options: any = {}) {
     const { color = 0xFF4500 } = options;
     const group = new THREE.Group();
 
@@ -591,7 +594,7 @@ export function createBalloonBush(options = {}) {
     return group;
 }
 
-export function createRainingCloud(options = {}) {
+export function createRainingCloud(options: any = {}) {
     const { color = 0xB0C4DE, rainIntensity = 50 } = options;
     const group = new THREE.Group();
 
@@ -621,7 +624,7 @@ export function createRainingCloud(options = {}) {
     return group;
 }
 
-export function createGlowingFlowerPatch(x, z) {
+export function createGlowingFlowerPatch(x: number, z: number) {
     const patch = new THREE.Group();
     patch.position.set(x, 0, z);
     for (let i = 0; i < 5; i++) {
@@ -632,7 +635,7 @@ export function createGlowingFlowerPatch(x, z) {
     return patch;
 }
 
-export function createFloatingOrbCluster(x, z) {
+export function createFloatingOrbCluster(x: number, z: number) {
     const cluster = new THREE.Group();
     cluster.position.set(x, 5, z);
     for (let i = 0; i < 3; i++) {
@@ -643,7 +646,7 @@ export function createFloatingOrbCluster(x, z) {
     return cluster;
 }
 
-export function createVineCluster(x, z) {
+export function createVineCluster(x: number, z: number) {
     const cluster = new THREE.Group();
     cluster.position.set(x, 0, z);
     for (let i = 0; i < 3; i++) {
@@ -654,7 +657,7 @@ export function createVineCluster(x, z) {
     return cluster;
 }
 
-export function createPrismRoseBush(options = {}) {
+export function createPrismRoseBush(options: any = {}) {
     const group = new THREE.Group();
 
     const stemsMat = createClayMaterial(0x5D4037);
@@ -727,7 +730,7 @@ export function createPrismRoseBush(options = {}) {
  * 1. The Subwoofer Lotus
  * Hovering lily pad that acts as a speaker cone.
  */
-export function createSubwooferLotus(options = {}) {
+export function createSubwooferLotus(options: any = {}) {
     const { color = 0x2E8B57 } = options;
     const group = new THREE.Group();
 
@@ -765,7 +768,7 @@ export function createSubwooferLotus(options = {}) {
  * 2. The Accordion Palm
  * Pleated trunk that stretches.
  */
-export function createAccordionPalm(options = {}) {
+export function createAccordionPalm(options: any = {}) {
     const { color = 0xFFD700 } = options;
     const group = new THREE.Group();
 
@@ -817,7 +820,7 @@ export function createAccordionPalm(options = {}) {
  * 3. The Fiber-Optic Weeping Willow
  * Glowing cables that whip around.
  */
-export function createFiberOpticWillow(options = {}) {
+export function createFiberOpticWillow(options: any = {}) {
     const { color = 0xFFFFFF } = options;
     const group = new THREE.Group();
 
@@ -871,7 +874,7 @@ export function createFiberOpticWillow(options = {}) {
  * - Thin-film interference shader for iridescence, rippling leaves.
  * - Unfold when near star/light source.
  */
-export function createSolarSail(options = {}) {
+export function createSolarSail(options: any = {}) {
     const { 
         color = 0x88aaff, 
         leafCount = 5 + Math.floor(Math.random() * 8),
@@ -907,7 +910,7 @@ export function createSolarSail(options = {}) {
     group.add(podGlow);
 
     // Solar sail leaves (thin film with iridescence simulation)
-    const leaves = [];
+    const leaves: THREE.Group[] = [];
     for (let i = 0; i < leafCount; i++) {
         const leafGroup = new THREE.Group();
         
@@ -987,7 +990,7 @@ export function createSolarSail(options = {}) {
  * - Unfold/fold based on light proximity
  * - Iridescent color shifting
  */
-export function updateSolarSail(solarSail, delta, time, lightPosition = null) {
+export function updateSolarSail(solarSail: THREE.Group, delta: number, time: number, lightPosition: THREE.Vector3 | null = null) {
     if (!solarSail.userData || solarSail.userData.type !== 'solarSail') return;
 
     const data = solarSail.userData;
@@ -1010,7 +1013,7 @@ export function updateSolarSail(solarSail, delta, time, lightPosition = null) {
     data.unfoldProgress += (targetUnfold - data.unfoldProgress) * delta * 2;
 
     // Animate each leaf
-    leaves.forEach((leafGroup, i) => {
+    leaves.forEach((leafGroup: THREE.Group, i: number) => {
         const leafData = leafGroup.userData;
         const leaf = leafData.leaf;
 
@@ -1058,11 +1061,11 @@ export function updateSolarSail(solarSail, delta, time, lightPosition = null) {
 }
 
 // --- Instancing System (Grass) ---
-let grassMeshes = [];
+let grassMeshes: THREE.InstancedMesh[] = [];
 const dummy = new THREE.Object3D();
 const MAX_PER_MESH = 1000;
 
-export function initGrassSystem(scene, count = 5000) {
+export function initGrassSystem(scene: THREE.Scene, count: number = 5000) {
     grassMeshes = [];
     const height = 0.8;
     const geo = new THREE.BoxGeometry(0.05, height, 0.05);
@@ -1084,7 +1087,7 @@ export function initGrassSystem(scene, count = 5000) {
     return grassMeshes;
 }
 
-export function addGrassInstance(x, y, z) {
+export function addGrassInstance(x: number, y: number, z: number) {
     const mesh = grassMeshes.find(m => m.count < m.instanceMatrix.count);
     if (!mesh) return;
 
@@ -1103,13 +1106,13 @@ export function addGrassInstance(x, y, z) {
 
 // --- Animation System ---
 
-function freqToHue(freq) {
+function freqToHue(freq: number) {
     if (!freq || freq < 50) return 0;
     const logF = Math.log2(freq / 55.0);
     return (logF * 0.1) % 1.0;
 }
 
-export function updateFoliageMaterials(audioData, isNight) {
+export function updateFoliageMaterials(audioData: any, isNight: boolean) {
     if (!audioData) return;
 
     if (isNight) {
@@ -1117,8 +1120,8 @@ export function updateFoliageMaterials(audioData, isNight) {
         if (!channels || channels.length === 0) return;
 
         // Helper to update a material list
-        const updateMats = (mats, startCh) => {
-            mats.forEach((mat, i) => {
+        const updateMats = (mats: THREE.Material[], startCh: number) => {
+            mats.forEach((mat: any, i) => {
                 const chIndex = startCh + (i % 4);
                 const ch = channels[Math.min(chIndex, channels.length - 1)];
 
@@ -1141,7 +1144,7 @@ export function updateFoliageMaterials(audioData, isNight) {
         };
 
         // 1. Update Petals and Custom Reactive Materials
-        updateMats(foliageMaterials.flowerPetal, 1);
+        updateMats(foliageMaterials.flowerPetal as unknown as THREE.Material[], 1);
         updateMats(reactiveMaterials, 1);
 
         // 2. Flower Center (Contrast Blink)
@@ -1179,14 +1182,14 @@ export function updateFoliageMaterials(audioData, isNight) {
         foliageMaterials.grass.emissiveIntensity = 0.2 + chordVol * 0.8;
 
     } else {
-        const resetMats = (mats) => {
-            mats.forEach(mat => {
+        const resetMats = (mats: THREE.Material[]) => {
+            mats.forEach((mat: any) => {
                 mat.emissive.setHex(0x000000);
                 mat.emissiveIntensity = 0;
             });
         };
 
-        resetMats(foliageMaterials.flowerPetal);
+        resetMats(foliageMaterials.flowerPetal as unknown as THREE.Material[]);
         resetMats(reactiveMaterials);
 
         foliageMaterials.flowerCenter.emissive.setHex(0x000000);
@@ -1202,7 +1205,7 @@ export function updateFoliageMaterials(audioData, isNight) {
 /**
  * Applies animations to foliage objects.
  */
-export function animateFoliage(foliageObject, time, audioData, isDay) {
+export function animateFoliage(foliageObject: any, time: number, audioData: any, isDay: boolean) {
     const offset = foliageObject.userData.animationOffset || 0;
     const type = foliageObject.userData.animationType || 'sway';
     const plantType = foliageObject.userData.type;
@@ -1320,7 +1323,7 @@ export function animateFoliage(foliageObject, time, audioData, isDay) {
         // Fiber Optic Willow
         foliageObject.rotation.y = Math.sin(time * 0.5 + offset) * 0.1;
         const whip = leadVol * 2.0;
-        foliageObject.children.forEach((branchGroup, i) => {
+        foliageObject.children.forEach((branchGroup: any, i: number) => {
             if (branchGroup === foliageObject.children[0]) return; // Skip trunk
             const childOffset = i * 0.5;
             const cable = branchGroup.children[0];
@@ -1336,7 +1339,7 @@ export function animateFoliage(foliageObject, time, audioData, isDay) {
     } else if (type === 'sway' || type === 'gentleSway' || type === 'vineSway' || type === 'spin') {
         const t = animTime + offset;
         if (type === 'vineSway') {
-            foliageObject.children.forEach((segment, i) => {
+            foliageObject.children.forEach((segment: any, i: number) => {
                 segment.rotation.z = Math.sin(t * 2 + i * 0.5) * 0.2 * intensity;
             });
         } else {
@@ -1377,4 +1380,139 @@ export function animateFoliage(foliageObject, time, audioData, isDay) {
             positions.needsUpdate = true;
         }
     }
+}
+
+// --- NEW PLANTS ---
+
+export function createStarDustFern(options: any = {}) {
+    const { color = 0x8A2BE2 } = options;
+    const group = new THREE.Group();
+
+    // Central small mound
+    const moundGeo = new THREE.SphereGeometry(0.3, 8, 8);
+    const moundMat = createClayMaterial(0x4B0082); // Indigo
+    const mound = new THREE.Mesh(moundGeo, moundMat);
+    mound.position.y = 0.1;
+    group.add(mound);
+
+    // Fern fronds with stardust tips
+    const frondCount = 6 + Math.floor(Math.random() * 4);
+    const frondMat = createClayMaterial(color);
+    registerReactiveMaterial(frondMat);
+
+    const tipMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF }); // Glowing white tips
+
+    for (let i = 0; i < frondCount; i++) {
+        const frondGroup = new THREE.Group();
+        const angle = (i / frondCount) * Math.PI * 2;
+        frondGroup.rotation.y = angle;
+        frondGroup.rotation.x = -Math.PI / 6; // Angle up slightly
+
+        const length = 0.8 + Math.random() * 0.5;
+        // Simple curved plane or series of small planes for the frond
+        const frondGeo = new THREE.BoxGeometry(0.1, length, 0.02);
+        frondGeo.translate(0, length / 2, 0);
+
+        // Bend the frond
+        const pos = frondGeo.attributes.position;
+        for(let v = 0; v < pos.count; v++){
+             const y = pos.getY(v);
+             const z = pos.getZ(v);
+             // Quadratic bend
+             const bend = (y / length) * (y / length) * 0.5;
+             pos.setZ(v, z - bend);
+        }
+        frondGeo.computeVertexNormals();
+
+        const frond = new THREE.Mesh(frondGeo, frondMat);
+        frondGroup.add(frond);
+
+        // Stardust particles at the tip
+        const particles = new THREE.Group();
+        particles.position.set(0, length, -0.5); // End of bent frond
+        for(let p=0; p<3; p++) {
+            const particle = new THREE.Mesh(new THREE.DodecahedronGeometry(0.04, 0), tipMat);
+            particle.position.set(
+                (Math.random() - 0.5) * 0.2,
+                (Math.random() - 0.5) * 0.2,
+                (Math.random() - 0.5) * 0.2
+            );
+            particles.add(particle);
+        }
+        frondGroup.add(particles);
+
+        group.add(frondGroup);
+    }
+
+    group.userData.animationType = 'gentleSway';
+    group.userData.animationOffset = Math.random() * 10;
+    group.userData.type = 'fern';
+    return group;
+}
+
+export function createNebulaRose(options: any = {}) {
+    const { color = 0xFF1493 } = options; // Deep Pink
+    const group = new THREE.Group();
+
+    // Thorny stem
+    const stemH = 1.2 + Math.random() * 0.5;
+    const stemGeo = new THREE.CylinderGeometry(0.06, 0.08, stemH, 8);
+    stemGeo.translate(0, stemH/2, 0);
+    const stem = new THREE.Mesh(stemGeo, createClayMaterial(0x2F4F4F)); // Dark Slate Gray
+    group.add(stem);
+
+    // Rose Head
+    const headGroup = new THREE.Group();
+    headGroup.position.y = stemH;
+    group.add(headGroup);
+
+    const petalMat = createClayMaterial(color);
+    registerReactiveMaterial(petalMat);
+
+    // Layers of petals
+    const layers = 3;
+    for (let l = 0; l < layers; l++) {
+        const count = 4 + l * 2;
+        const radius = 0.15 + l * 0.1;
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2 + (l * 0.5);
+            const petalGeo = new THREE.SphereGeometry(radius * 0.5, 8, 8);
+            // Squish to make petal shape
+            petalGeo.scale(1, 0.2, 1);
+
+            const petal = new THREE.Mesh(petalGeo, petalMat);
+
+            // Position in ring
+            const x = Math.cos(angle) * radius * 0.6;
+            const z = Math.sin(angle) * radius * 0.6;
+            const y = l * 0.1;
+
+            petal.position.set(x, y, z);
+
+            // Rotate to face outward and up
+            petal.lookAt(0, 0, 0);
+            petal.rotation.x = -Math.PI / 4 - (l * 0.2); // Outer layers open more
+
+            headGroup.add(petal);
+        }
+    }
+
+    // Nebulous Gas (Translucent Sphere around the flower)
+    const gasGeo = new THREE.SphereGeometry(0.8, 16, 16);
+    const gasMat = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent: true,
+        opacity: 0.15,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+    });
+    const gas = new THREE.Mesh(gasGeo, gasMat);
+    gas.position.y = 0.2;
+    headGroup.add(gas);
+
+    group.userData.animationType = 'sway';
+    group.userData.animationOffset = Math.random() * 10;
+    group.userData.type = 'flower';
+
+    return group;
 }
