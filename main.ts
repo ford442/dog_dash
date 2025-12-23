@@ -25,7 +25,17 @@ import {
     createFracturedGeode,
     updateGeode,
     createNebulaJellyMoss,
-    updateNebulaJellyMoss
+    updateNebulaJellyMoss,
+    createVoidRootBall,
+    updateVoidRootBall,
+    createVacuumKelp,
+    updateVacuumKelp,
+    createIceNeedleCluster,
+    updateIceNeedleCluster,
+    createLiquidMetalBlob,
+    updateLiquidMetalBlob,
+    createMagmaHeart,
+    updateMagmaHeart
 } from './geological';
 
 // --- Configuration ---
@@ -292,6 +302,12 @@ type LevelConfig = {
         orb?: number;
         mushroom?: number;
         cloud?: number;
+        // Geological objects from plan.md
+        voidRootBall?: number;
+        vacuumKelp?: number;
+        iceNeedle?: number;
+        liquidMetal?: number;
+        magmaHeart?: number;
     };
     speed: number;
     bgColor: number;
@@ -320,7 +336,13 @@ class LevelManager {
                     vine: 15,
                     orb: 25,
                     mushroom: 30,
-                    cloud: 25
+                    cloud: 25,
+                    // Geological objects - sparse in first level
+                    voidRootBall: 3,
+                    vacuumKelp: 5,
+                    iceNeedle: 8,
+                    liquidMetal: 4,
+                    magmaHeart: 2
                 },
                 speed: 6,
                 bgColor: 0x1a1a2e
@@ -340,7 +362,13 @@ class LevelManager {
                     vine: 5,
                     orb: 10,
                     mushroom: 10,
-                    cloud: 10
+                    cloud: 10,
+                    // More geological threats in asteroid belt
+                    voidRootBall: 8,
+                    vacuumKelp: 3,
+                    iceNeedle: 15,
+                    liquidMetal: 10,
+                    magmaHeart: 5
                 },
                 speed: 8,
                 bgColor: 0x2d1a1a // Reddish
@@ -360,7 +388,13 @@ class LevelManager {
                     vine: 20, // Creepy
                     orb: 50, // Many orbs
                     mushroom: 5,
-                    cloud: 40 // Foggy
+                    cloud: 40, // Foggy
+                    // Deep void has most dangerous geological objects
+                    voidRootBall: 12,
+                    vacuumKelp: 15,
+                    iceNeedle: 10,
+                    liquidMetal: 8,
+                    magmaHeart: 8
                 },
                 speed: 10,
                 bgColor: 0x000000 // Pitch black
@@ -443,6 +477,52 @@ class LevelManager {
                 createSporeCloudAtPosition(x, y, z);
             }
         }
+
+        // Geological objects from plan.md
+        if (density.voidRootBall) {
+            for(let i=0; i<density.voidRootBall; i++) {
+                const x = startX + Math.random() * width;
+                const y = (Math.random() - 0.5) * 25;
+                const z = -35 + Math.random() * 25;
+                createVoidRootBallAtPosition(x, y, z);
+            }
+        }
+
+        if (density.vacuumKelp) {
+            for(let i=0; i<density.vacuumKelp; i++) {
+                const x = startX + Math.random() * width;
+                const y = -20 + Math.random() * 15; // Lower, growing upward
+                const z = -35 + Math.random() * 25;
+                createVacuumKelpAtPosition(x, y, z);
+            }
+        }
+
+        if (density.iceNeedle) {
+            for(let i=0; i<density.iceNeedle; i++) {
+                const x = startX + Math.random() * width;
+                const y = (Math.random() - 0.5) * 30;
+                const z = -35 + Math.random() * 25;
+                createIceNeedleClusterAtPosition(x, y, z);
+            }
+        }
+
+        if (density.liquidMetal) {
+            for(let i=0; i<density.liquidMetal; i++) {
+                const x = startX + Math.random() * width;
+                const y = (Math.random() - 0.5) * 25;
+                const z = -35 + Math.random() * 25;
+                createLiquidMetalBlobAtPosition(x, y, z);
+            }
+        }
+
+        if (density.magmaHeart) {
+            for(let i=0; i<density.magmaHeart; i++) {
+                const x = startX + Math.random() * width;
+                const y = (Math.random() - 0.5) * 25;
+                const z = -35 + Math.random() * 25;
+                createMagmaHeartAtPosition(x, y, z);
+            }
+        }
     }
 
     checkProgress(playerX: number) {
@@ -489,14 +569,10 @@ function createAsteroid(x: number, y: number) {
     return asteroid;
 }
 
-<<<<<<< HEAD:main.js
-function updateObstacles(delta) {
+function updateObstacles(delta: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
     
-=======
-function updateObstacles(delta: number) {
->>>>>>> jules:main.ts
     const playerX = player.position.x;
     const playerY = player.position.y; // Capture Y for WASM
 
@@ -530,72 +606,23 @@ function updateObstacles(delta: number) {
         }
     }
 
-        // Collision check (simple sphere)
-        const dx = obs.position.x - player.position.x;
-        const dy = obs.position.y - player.position.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        const hitRadius = obs.userData.radius + 0.5; // player radius ~0.5
+    // C. Call WASM function
+    // checkCollision(playerX, playerY, playerRadius, count)
+    const hitIndex = wasmExports.checkCollision(playerX, playerY, 0.5, obstacles.length);
 
-        if (dist < hitRadius) {
-            // Only damage if not invincible
-            if (!playerState.invincible) {
-                // Collision! Flash red and bounce
-                obs.material.emissive = new THREE.Color(0xff0000);
-                obs.material.emissiveIntensity = 1.0;
-                setTimeout(() => {
-                    if (obs.material) {
-                        obs.material.emissive = new THREE.Color(0x000000);
-                        obs.material.emissiveIntensity = 0;
-                    }
-                }, 200);
-
-                // Reduce health
-                playerState.health--;
-                playerState.invincible = true;
-                
-                // Flash the rocket - traverse all children to find meshes
-                player.traverse(child => {
-                    if (child.isMesh && child.material) {
-                        const originalColor = child.material.color.clone();
-                        child.material.color.setHex(0xff0000);
-                        setTimeout(() => {
-                            if (child.material) {
-                                child.material.color.copy(originalColor);
-                            }
-                        }, 200);
-                    }
-                });
-                
-                // Invincibility frames (2 seconds)
-                setTimeout(() => {
-                    playerState.invincible = false;
-                }, 2000);
-                
-                // Update health display
-                updateHealthDisplay();
-                
-                // Check for game over
-                if (playerState.health <= 0) {
-                    gameOver();
-                }
-
-        // C. Call WASM function
-        // checkCollision(playerX, playerY, playerRadius, count)
-        const hitIndex = wasmExports.checkCollision(playerX, playerY, 0.5, obstacles.length);
-
-        // D. Handle Hit
-        if (hitIndex !== -1) {
-            const obs = obstacles[hitIndex];
-            if (obs) {
-                // --- NEW: Emit Explosion Particles ---
-                particleSystem.emit(obs.position.clone(), 0xff5555, 15, 10.0, 1.2, 1.0);
-                particleSystem.emit(obs.position.clone(), 0xaaaaaa, 10, 8.0, 0.8, 1.0);
-                 // Collision! Flash red and bounce
-                 (obs.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0xff0000);
-                 (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.0;
-                 setTimeout(() => {
-                     if (obs.material) {
-                         (obs.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0x000000);
+    // D. Handle Hit
+    if (hitIndex !== -1) {
+        const obs = obstacles[hitIndex];
+        if (obs) {
+            // --- NEW: Emit Explosion Particles ---
+            particleSystem.emit(obs.position.clone(), 0xff5555, 15, 10.0, 1.2, 1.0);
+            particleSystem.emit(obs.position.clone(), 0xaaaaaa, 10, 8.0, 0.8, 1.0);
+            // Collision! Flash red and bounce
+            (obs.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0xff0000);
+            (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.0;
+            setTimeout(() => {
+                if (obs.material) {
+                    (obs.material as THREE.MeshStandardMaterial).emissive = new THREE.Color(0x000000);
                          (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 0;
                      }
                  }, 200);
@@ -631,11 +658,10 @@ function updateObstacles(delta: number) {
                      gameOver();
                  }
 
-                 // Bounce player away
-                 const dy = obs.position.y - playerY;
-                 playerState.velocity.y += (dy > 0 ? -5 : 5);
-                 playerState.velocity.x -= 3;
-            }
+            // Bounce player away
+            const dy = obs.position.y - playerY;
+            playerState.velocity.y += (dy > 0 ? -5 : 5);
+            playerState.velocity.x -= 3;
         }
     }
 }
@@ -798,6 +824,61 @@ function createSolarSailAtPosition(x: number, y: number, z: number) {
     scene.add(solarSail);
     solarSails.push(solarSail);
     return solarSail;
+}
+
+// Void Root Balls - active threats with grapple mechanics
+const voidRootBalls: THREE.Group[] = [];
+
+function createVoidRootBallAtPosition(x: number, y: number, z: number) {
+    const rootBall = createVoidRootBall({ size: 2 + Math.random() * 2 });
+    rootBall.position.set(x, y, z);
+    scene.add(rootBall);
+    voidRootBalls.push(rootBall);
+    return rootBall;
+}
+
+// Vacuum Kelp - energy-draining tunnel obstacles
+const vacuumKelps: THREE.Group[] = [];
+
+function createVacuumKelpAtPosition(x: number, y: number, z: number) {
+    const kelp = createVacuumKelp({ length: 20 + Math.random() * 20, nodes: 5 + Math.floor(Math.random() * 4) });
+    kelp.position.set(x, y, z);
+    scene.add(kelp);
+    vacuumKelps.push(kelp);
+    return kelp;
+}
+
+// Ice Needle Clusters - super-bleed and thermal dynamics
+const iceNeedleClusters: THREE.Group[] = [];
+
+function createIceNeedleClusterAtPosition(x: number, y: number, z: number) {
+    const cluster = createIceNeedleCluster({ count: 15 + Math.floor(Math.random() * 15) });
+    cluster.position.set(x, y, z);
+    scene.add(cluster);
+    iceNeedleClusters.push(cluster);
+    return cluster;
+}
+
+// Liquid Metal Blobs - splitting and recombination
+const liquidMetalBlobs: THREE.Group[] = [];
+
+function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
+    const blob = createLiquidMetalBlob({ size: 2 + Math.random() * 3 });
+    blob.position.set(x, y, z);
+    scene.add(blob);
+    liquidMetalBlobs.push(blob);
+    return blob;
+}
+
+// Magma Hearts - eruption cycle mechanics
+const magmaHearts: THREE.Group[] = [];
+
+function createMagmaHeartAtPosition(x: number, y: number, z: number) {
+    const heart = createMagmaHeart({ size: 3 + Math.random() * 2 });
+    heart.position.set(x, y, z);
+    scene.add(heart);
+    magmaHearts.push(heart);
+    return heart;
 }
 
 // Store plants that live on the moon to animate them later
@@ -1138,14 +1219,10 @@ function checkPlatformCollision(x: number, y: number, radius = 0.3) {
     return { collided: false, groundY: null };
 }
 
-<<<<<<< HEAD:main.js
-function updatePlayer(delta) {
+function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
     
-=======
-function updatePlayer(delta: number) {
->>>>>>> jules:main.ts
     // Auto-scroll (constant forward movement)
     player.position.x += playerState.autoScrollSpeed * delta;
 
@@ -1295,6 +1372,13 @@ function animate() {
 
     // Update solar sails (iridescent rippling, unfold near player)
     solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
+
+    // Update new geological objects from plan.md
+    voidRootBalls.forEach(rootBall => updateVoidRootBall(rootBall, delta, time, player.position));
+    vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
+    iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
+    liquidMetalBlobs.forEach(blob => updateLiquidMetalBlob(blob, delta, time));
+    magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
