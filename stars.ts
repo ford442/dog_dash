@@ -57,7 +57,6 @@ export function createStars(count: number = 2000): THREE.Points {
     // Color mixing
     const finalRGB = mix(color(0xFFFFFF), uStarColor, uStarPulse.mul(0.8));
 
-<<<<<<< HEAD:stars.js
     // --- FIX: Combine RGB with the Opacity Uniform into a vec4 ---
     mat.colorNode = vec4(finalRGB, uStarOpacity).mul(mat.color as unknown as any);
 
