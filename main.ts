@@ -89,14 +89,16 @@ const renderer = new WebGPURenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.2;
+renderer.toneMappingExposure = 1.3; // Slightly higher for more vibrant colors
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 // --- Lighting (Moody, atmospheric) ---
-const ambientLight = new THREE.AmbientLight(0x404060, 0.4);
+const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
 scene.add(ambientLight);
 
 // Main directional light (from the side for dramatic shadows)
-const mainLight = new THREE.DirectionalLight(0xffffff, 0.6);
+const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
 mainLight.position.set(-5, 10, 10);
 mainLight.castShadow = true;
 mainLight.shadow.mapSize.width = 2048;
@@ -107,12 +109,22 @@ mainLight.shadow.camera.left = -30;
 mainLight.shadow.camera.right = 30;
 mainLight.shadow.camera.top = 20;
 mainLight.shadow.camera.bottom = -10;
+mainLight.shadow.bias = -0.0001;
 scene.add(mainLight);
 
-// Rim light from behind (cinematic depth)
-const rimLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+// Rim light from behind (cinematic depth) - enhanced
+const rimLight = new THREE.DirectionalLight(0x6699ff, 0.4);
 rimLight.position.set(5, 5, -10);
 scene.add(rimLight);
+
+// Add accent lights for more depth
+const accentLight1 = new THREE.PointLight(0xff8844, 0.6, 30);
+accentLight1.position.set(0, 5, 5);
+scene.add(accentLight1);
+
+const accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 25);
+accentLight2.position.set(0, 3, -5);
+scene.add(accentLight2);
 
 // --- Materials ---
 const materials = {
@@ -1067,11 +1079,30 @@ let lastObstacleSpawn = 0;
 
 function createAsteroid(x: number, y: number) {
     const size = 0.5 + Math.random() * 1.5;
-    const geo = new THREE.DodecahedronGeometry(size, 0);
+    
+    // Use IcosahedronGeometry with higher detail for more interesting shapes
+    const geo = new THREE.IcosahedronGeometry(size, 1);
+    
+    // Add some random deformation for more organic asteroids
+    const positions = geo.attributes.position;
+    for (let i = 0; i < positions.count; i++) {
+        const px = positions.getX(i);
+        const py = positions.getY(i);
+        const pz = positions.getZ(i);
+        const noise = (Math.random() - 0.5) * 0.4;
+        positions.setXYZ(i, px * (1 + noise), py * (1 + noise), pz * (1 + noise));
+    }
+    geo.computeVertexNormals();
+    
+    // Vary asteroid colors slightly
+    const colorVariation = Math.random() * 0.2;
+    const baseColor = 0x666666 + Math.floor(colorVariation * 0x222222);
+    
     const mat = new THREE.MeshStandardMaterial({
-        color: 0x666666,
-        roughness: 0.9,
-        metalness: 0.1
+        color: baseColor,
+        roughness: 0.95,
+        metalness: 0.05,
+        flatShading: true // More faceted look
     });
     const asteroid = new THREE.Mesh(geo, mat);
     asteroid.position.set(x, y, 0);
@@ -1081,8 +1112,11 @@ function createAsteroid(x: number, y: number) {
         Math.random() * Math.PI
     );
     asteroid.castShadow = true;
+    asteroid.receiveShadow = true;
     asteroid.userData = {
         rotationSpeed: (Math.random() - 0.5) * 2,
+        rotationSpeedY: (Math.random() - 0.5) * 1.5,
+        rotationSpeedZ: (Math.random() - 0.5) * 1.8,
         radius: size
     };
     scene.add(asteroid);
@@ -1116,9 +1150,10 @@ function updateObstacles(delta: number) {
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const obs = obstacles[i];
         
-        // Rotate asteroid
+        // Multi-axis rotation for more dynamic movement
         obs.rotation.x += obs.userData.rotationSpeed * delta;
-        obs.rotation.y += obs.userData.rotationSpeed * delta * 0.5;
+        obs.rotation.y += obs.userData.rotationSpeedY * delta;
+        obs.rotation.z += obs.userData.rotationSpeedZ * delta;
 
         // Remove if behind player
         if (obs.position.x < playerX - 30) {
@@ -1945,9 +1980,16 @@ function updateCamera() {
         0
     );
 
-    // Update main light to follow
+    // Update main light to follow player
     mainLight.position.x = camera.position.x - 5;
     mainLight.target.position.x = camera.position.x;
+    
+    // Update accent lights to follow player with offset
+    accentLight1.position.x = player.position.x + 10;
+    accentLight1.position.y = player.position.y + 5;
+    
+    accentLight2.position.x = player.position.x - 8;
+    accentLight2.position.y = player.position.y + 3;
 }
 
 // =============================================================================

@@ -49,16 +49,23 @@ export class ParticleSystem {
         this.colorG = new Float32Array(maxParticles);
         this.colorB = new Float32Array(maxParticles);
 
-        // Geometry: Low-poly debris/sparks
-        const geometry = new THREE.DodecahedronGeometry(0.15, 0);
+        // Geometry: More varied shapes for visual interest
+        const geometries = [
+            new THREE.DodecahedronGeometry(0.15, 0),
+            new THREE.OctahedronGeometry(0.15, 0),
+            new THREE.TetrahedronGeometry(0.15, 0)
+        ];
+        const geometry = geometries[Math.floor(Math.random() * geometries.length)];
         
-        // Material: Emissive for that "glowing plasma" look
+        // Material: Enhanced emissive for that "glowing plasma" look
         const material = new THREE.MeshStandardMaterial({
             color: 0xffffff,
-            roughness: 0.4,
-            metalness: 0.5,
+            roughness: 0.3,
+            metalness: 0.6,
             emissive: 0xffffff,
-            emissiveIntensity: 2.0
+            emissiveIntensity: 3.0,
+            transparent: true,
+            opacity: 0.9
         });
 
         this.mesh = new THREE.InstancedMesh(geometry, material, maxParticles);
