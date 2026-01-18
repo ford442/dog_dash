@@ -6,6 +6,7 @@ import {
 import {
     time,
     positionLocal,
+    positionWorld,
     uv,
     vec2,
     vec3,
@@ -19,7 +20,9 @@ import {
     step,
     fract,
     pow,
-    length
+    length,
+    smoothstep,
+    UniformNode
 } from 'three/tsl';
 
 /**
@@ -28,6 +31,7 @@ import {
  * - Procedural noise for gaseous texture.
  * - Pulsing opacity/brightness.
  * - Soft edges.
+ * - Dynamic interaction with player (glows when close).
  */
 function createNebulaMaterial(baseColorHex: number, secondaryColorHex: number, opacity: number) {
     const mat = new MeshBasicNodeMaterial({
@@ -40,6 +44,9 @@ function createNebulaMaterial(baseColorHex: number, secondaryColorHex: number, o
 
     const uTime = time;
     const uPulseSpeed = uniform(0.5);
+    const uPlayerPos = uniform(new THREE.Vector3(0, 0, 0)); // Player position
+    const uInteractionRadius = uniform(20.0); // Radius of glow effect
+    const uGlowColor = uniform(new THREE.Color(0xffaa00)); // Engine/Exhaust glow color
 
     // --- Fragment Shader ---
     const vUv = uv();
@@ -72,9 +79,25 @@ function createNebulaMaterial(baseColorHex: number, secondaryColorHex: number, o
 
     // Pulse between colors
     const pulse = sin(uTime.mul(uPulseSpeed)).add(1.0).mul(0.5); // 0..1
-    const finalColor = mix(col1, col2, pulse.mul(combinedNoise));
+    let finalColor = mix(col1, col2, pulse.mul(combinedNoise));
+
+    // 3. Dynamic Player Interaction
+    // Calculate distance from world position of this fragment/vertex to player
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+
+    // Smoothstep for glow falloff: 1.0 at center, 0.0 at radius
+    const glowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+
+    // Mix glow color into final color based on intensity
+    // We add it to make it look like illumination
+    finalColor = finalColor.add(uGlowColor.mul(glowIntensity.mul(0.8)));
 
     mat.colorNode = vec4(finalColor, density.mul(opacity));
+
+    // Store uniforms to update them
+    mat.userData = {
+        uPlayerPos: uPlayerPos
+    };
 
     return mat;
 }
@@ -183,11 +206,17 @@ export class NebulaCloudLayer {
         scene.add(this.mesh);
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         const margin = 50;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
         let needsUpdate = false;
+
+        // Update Uniforms
+        const mat = this.mesh.material as any;
+        if (mat.userData && mat.userData.uPlayerPos && playerPos) {
+            mat.userData.uPlayerPos.value.copy(playerPos);
+        }
 
         for (let i = 0; i < this.count; i++) {
             const idx = i * 3;
@@ -279,7 +308,7 @@ export class EnergyParticleLayer {
         scene.add(this.mesh);
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         const margin = 20;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
@@ -386,8 +415,8 @@ export class NebulaSystem {
         this.layers.forEach(l => l.mesh.visible = false);
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
-        this.layers.forEach(l => l.update(delta, cameraX));
+        this.layers.forEach(l => l.update(delta, cameraX, playerPos));
     }
 }

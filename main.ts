@@ -1024,15 +1024,24 @@ class LevelManager {
         this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
 
         // Special Effects per Level
-        if (levelIndex === 4) {
-            // Activate Re-Entry Heat in the Industrial Tunnel
+        if (levelIndex === 3) {
+            // Activate Planetary Horizon in Level 3
+            planetaryHorizonSystem.activate();
+            // Activate Re-Entry Heat in Level 3 "Orbital Descent"
             reEntrySystem.activate();
+        } else {
+            planetaryHorizonSystem.deactivate();
+            // Only deactivate reentry if not in level 3 (handled below generally, but explicit here for clarity)
+            if (levelIndex !== 3) reEntrySystem.deactivate();
+        }
+
+        if (levelIndex === 4) {
+            // Industrial Tunnel
             industrialSystem.activate();
 
             // Industrial background is heavy, maybe hide clouds?
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
-            reEntrySystem.deactivate();
             industrialSystem.deactivate();
         }
 
@@ -1047,17 +1056,6 @@ class LevelManager {
             asteroidFieldSystem.activate();
         } else {
             asteroidFieldSystem.deactivate();
-        }
-
-        // Activate Planetary Horizon in Level 3
-        if (levelIndex === 3) {
-            planetaryHorizonSystem.activate();
-            // Hide standard stars? No, let them mix or maybe hide if planet covers them.
-            // PlanetarySystem has its own deep space stars.
-            // We can keep the main scene stars (uStarOpacity) or fade them?
-            // uStarOpacity.value is global. Let's leave them.
-        } else {
-            planetaryHorizonSystem.deactivate();
         }
 
         if (levelIndex === 5) {
@@ -1078,7 +1076,8 @@ class LevelManager {
         this.cloudSystem.update(delta, cameraX, speed);
         waterfallSystem.update(cameraX, delta);
         industrialSystem.update(cameraX);
-        nebulaSystem.update(delta, cameraX);
+        // Pass player position to NebulaSystem for interactive lighting
+        nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
         if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
     }
