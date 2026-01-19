@@ -1456,9 +1456,8 @@ function handleCollision(hitIndex: number) {
 
         // Special Level 6 (Aqua Expanse) Splash Effect
         if (levelManager.currentLevel === 6) {
-             // Water splash: Blue/White particles with upward momentum
-             particleSystem.emit(obs.position.clone(), 0x88ccff, 20, 12.0, 1.5, 2.0); // Spray
-             particleSystem.emit(obs.position.clone(), 0xffffff, 10, 8.0, 0.8, 1.0);  // Foam
+             // Trigger specialized Splash System (Instanced gravity droplets)
+             waterfallSystem.triggerSplash(obs.position, 30);
         }
 
         // Trigger fracture/debris
@@ -1576,7 +1575,7 @@ const debrisSystem = new DebrisSystem(scene);
 const reEntrySystem = new ReEntrySystem(scene, camera);
 
 // WATERFALL SYSTEM (Vertical Water Effects)
-const waterfallSystem = new WaterfallSystem(scene);
+const waterfallSystem = new WaterfallSystem(scene, camera);
 
 // ASTEROID FIELD SYSTEM (Parallax Asteroids)
 const asteroidFieldSystem = new AsteroidFieldSystem(scene);

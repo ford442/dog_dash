@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
-    MeshStandardNodeMaterial
+    MeshStandardNodeMaterial,
+    MeshBasicNodeMaterial
 } from 'three/webgpu';
 import {
     time,
@@ -61,17 +62,12 @@ function createWaterMaterial(baseColorHex: number, opacity: number, speed: numbe
     const scrollY = uTime.mul(uSpeed);
 
     // Scroll UVs horizontally (Parallax)
-    // We add cameraX * factor to UV.x
-    // Note: If we move Right (+X), we want texture to move Left (UV increases? or decreases?)
-    // Usually UV mapping: 0..1. If we shift UV +offset, texture moves Left.
     const scrollX = uCameraX.mul(uParallaxFactor);
 
     const flowUv = vec2(vUv.x.add(scrollX), vUv.y.add(scrollY));
 
     // Sample simulated noise
     const noise1 = sin(flowUv.y.mul(20.0).add(flowUv.x.mul(10.0)));
-    
-    // CORRECTION HERE: Changed .minus() to .sub()
     const noise2 = cos(flowUv.y.mul(15.0).sub(flowUv.x.mul(5.0))); 
     
     const combinedNoise = noise1.add(noise2).mul(0.5); // Range -1 to 1
@@ -134,6 +130,45 @@ function createBubbleMaterial() {
     // Output color with opacity based on rim (more opaque at edges)
     mat.colorNode = vec4(finalColor, glow.add(0.2)); // Minimum opacity 0.2
     mat.emissiveNode = bubbleColor.mul(glow);
+
+    return mat;
+}
+
+/**
+ * Creates a TSL material for the Submersion Overlay (Camera effect).
+ * Visuals: Blue tint, screen distortion/wobble.
+ */
+function createSubmersionMaterial() {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        opacity: 0.0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+
+    const uTime = time;
+    const uIntensity = uniform(0.0); // 0 to 1
+
+    // Base Blue Tint
+    const tintColor = color(0x004488);
+
+    // Animated Wobble/Refraction logic could be added here if we had access to screen texture,
+    // but for a simple overlay, we just modulate opacity and maybe add some "caustic" patterns.
+
+    const vUv = uv();
+
+    // Simple plasma/caustic pattern
+    const pattern = sin(vUv.x.mul(10.0).add(uTime)).add(cos(vUv.y.mul(15.0).sub(uTime.mul(0.5))));
+    const caustic = pattern.mul(0.1); // Subtle variation
+
+    // Final Opacity depends on intensity
+    const baseOpacity = float(0.3).mul(uIntensity);
+    const finalOpacity = baseOpacity.add(caustic.mul(uIntensity)); // Add caustic flicker
+
+    mat.colorNode = vec4(tintColor, finalOpacity);
+
+    mat.userData.uIntensity = uIntensity;
 
     return mat;
 }
@@ -295,14 +330,160 @@ export class BubbleLayer {
     }
 }
 
+/**
+ * Splash System - Fast moving water droplets influenced by gravity.
+ */
+export class SplashSystem {
+    mesh: THREE.InstancedMesh;
+    dummy: THREE.Object3D;
+    count: number;
+
+    // Particle Data
+    positions: Float32Array;
+    velocities: Float32Array;
+    ages: Float32Array; // 0 to 1
+    activeParticles: boolean[];
+
+    constructor(scene: THREE.Scene, count: number = 200) {
+        this.count = count;
+
+        const geo = new THREE.SphereGeometry(0.15, 4, 4); // Low poly droplet
+        const mat = new THREE.MeshBasicMaterial({
+            color: 0xccffff,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
+        this.mesh.frustumCulled = false;
+
+        this.dummy = new THREE.Object3D();
+        this.positions = new Float32Array(this.count * 3);
+        this.velocities = new Float32Array(this.count * 3);
+        this.ages = new Float32Array(this.count);
+        this.activeParticles = new Array(this.count).fill(false);
+
+        // Hide all initially
+        for(let i=0; i<this.count; i++) {
+            this.dummy.position.set(0, -1000, 0); // Far away
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+        }
+
+        scene.add(this.mesh);
+    }
+
+    emit(position: THREE.Vector3, count: number) {
+        let spawned = 0;
+        for(let i=0; i<this.count && spawned < count; i++) {
+            if (!this.activeParticles[i]) {
+                this.activeParticles[i] = true;
+                this.ages[i] = 1.0; // Life starts at 1.0
+
+                // Position
+                this.positions[i*3] = position.x + (Math.random() - 0.5) * 0.5;
+                this.positions[i*3+1] = position.y + (Math.random() - 0.5) * 0.5;
+                this.positions[i*3+2] = position.z + (Math.random() - 0.5) * 0.5;
+
+                // Velocity (Explosive upward/outward)
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 5.0 + Math.random() * 5.0;
+                this.velocities[i*3] = Math.cos(angle) * speed;
+                this.velocities[i*3+1] = (Math.random() * 5.0) + 5.0; // Upward bias
+                this.velocities[i*3+2] = Math.sin(angle) * speed;
+
+                spawned++;
+            }
+        }
+    }
+
+    update(delta: number) {
+        let needsUpdate = false;
+        const gravity = 20.0;
+
+        for(let i=0; i<this.count; i++) {
+            if (this.activeParticles[i]) {
+                // Update Age
+                this.ages[i] -= delta * 1.5; // Life duration approx 0.6s
+                if (this.ages[i] <= 0) {
+                    this.activeParticles[i] = false;
+                    this.dummy.position.set(0, -1000, 0);
+                    this.dummy.updateMatrix();
+                    this.mesh.setMatrixAt(i, this.dummy.matrix);
+                    needsUpdate = true;
+                    continue;
+                }
+
+                // Physics
+                this.velocities[i*3+1] -= gravity * delta; // Gravity
+
+                this.positions[i*3] += this.velocities[i*3] * delta;
+                this.positions[i*3+1] += this.velocities[i*3+1] * delta;
+                this.positions[i*3+2] += this.velocities[i*3+2] * delta;
+
+                // Update Instance
+                this.dummy.position.set(
+                    this.positions[i*3],
+                    this.positions[i*3+1],
+                    this.positions[i*3+2]
+                );
+
+                // Scale shrinks with age
+                const s = this.ages[i];
+                this.dummy.scale.set(s, s, s);
+
+                this.dummy.updateMatrix();
+                this.mesh.setMatrixAt(i, this.dummy.matrix);
+                needsUpdate = true;
+            }
+        }
+
+        if (needsUpdate) {
+            this.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+}
+
+/**
+ * Submersion Overlay - Camera effect for being "underwater"
+ */
+export class SubmersionOverlay {
+    mesh: THREE.Mesh;
+    camera: THREE.Camera;
+
+    constructor(camera: THREE.Camera) {
+        this.camera = camera;
+        const geo = new THREE.PlaneGeometry(2, 2);
+        const mat = createSubmersionMaterial();
+
+        this.mesh = new THREE.Mesh(geo, mat);
+        // Position in front of camera (similar to ReEntrySystem)
+        this.mesh.position.set(0, 0, -1.05); // slightly closer than reentry?
+        // this.mesh.visible = false; // Managed by opacity
+
+        camera.add(this.mesh);
+    }
+
+    setIntensity(intensity: number) {
+        const mat = this.mesh.material as any;
+        if (mat.userData && mat.userData.uIntensity) {
+            mat.userData.uIntensity.value = intensity;
+        }
+    }
+}
+
 export class WaterfallSystem {
     scene: THREE.Scene;
+    camera: THREE.Camera;
     layers: WaterfallLayer[] = [];
     bubbles!: BubbleLayer;
+    splash!: SplashSystem;
+    submersion!: SubmersionOverlay;
     active: boolean = false;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, camera: THREE.Camera) {
         this.scene = scene;
+        this.camera = camera;
         this.initLayers();
     }
 
@@ -350,6 +531,12 @@ export class WaterfallSystem {
             z: -10, // In midground
             zRange: 20
         });
+
+        // Splash System
+        this.splash = new SplashSystem(this.scene, 300);
+
+        // Submersion Overlay
+        this.submersion = new SubmersionOverlay(this.camera);
     }
 
     activate() {
@@ -357,6 +544,10 @@ export class WaterfallSystem {
         this.active = true;
         this.layers.forEach(l => l.mesh.visible = true);
         this.bubbles.mesh.visible = true;
+        this.splash.mesh.visible = true;
+
+        // Fade in submersion
+        this.submersion.setIntensity(1.0);
     }
 
     deactivate() {
@@ -364,11 +555,22 @@ export class WaterfallSystem {
         this.active = false;
         this.layers.forEach(l => l.mesh.visible = false);
         this.bubbles.mesh.visible = false;
+        this.splash.mesh.visible = false;
+
+        this.submersion.setIntensity(0.0);
     }
 
     update(cameraX: number, delta: number = 0.016) {
+        // Always update splash particles (they might be finishing animation)
+        this.splash.update(delta);
+
         if (!this.active) return;
+
         this.layers.forEach(l => l.update(cameraX));
         this.bubbles.update(delta, cameraX);
+    }
+
+    triggerSplash(position: THREE.Vector3, count: number = 10) {
+        this.splash.emit(position, count);
     }
 }
