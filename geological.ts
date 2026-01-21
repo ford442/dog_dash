@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import {
-    MeshStandardNodeMaterial
+    MeshStandardNodeMaterial,
+    MeshBasicNodeMaterial
 } from 'three/webgpu';
 import {
     time,
@@ -17,7 +18,11 @@ import {
     cos,
     float,
     texture,
-    normalMap
+    normalMap,
+    instanceIndex,
+    vec3,
+    distance,
+    smoothstep
 } from 'three/tsl';
 
 // --- GEOLOGICAL OBJECTS ---
@@ -427,122 +432,140 @@ export function updateMagmaHeart(mesh: THREE.Mesh, delta: number, timeVal: numbe
 }
 
 
-// --- EXISTING SPORE CLOUD ---
-class SporeData {
-    position: THREE.Vector3; // Relative to cloud center
-    velocity: THREE.Vector3;
-    center: THREE.Vector3; // Cloud center reference
-    mesh: THREE.Object3D; // Dummy for matrix updates
-
-    constructor(position: THREE.Vector3, center: THREE.Vector3, dummy: THREE.Object3D) {
-        this.position = position;
-        this.center = center;
-        this.dummy = dummy;
-        this.velocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.05,
-            (Math.random() - 0.5) * 0.05,
-            (Math.random() - 0.5) * 0.05
-        );
-        this.mesh = new THREE.Object3D();
-        this.mesh.position.copy(center).add(position);
-    }
-
-    update(delta: number) {
-        // Browninan motion
-        this.position.add(this.velocity);
-
-        // Containment (Soft bounce)
-        // If too far from center (0,0,0 relative), steer back
-        // But here position is relative.
-        
-        // Simple box bound for efficiency
-        if (Math.random() < 0.05) this.velocity.add(new THREE.Vector3((Math.random()-0.5)*0.01, (Math.random()-0.5)*0.01, (Math.random()-0.5)*0.01));
-        
-        this.velocity.multiplyScalar(0.995); // Low friction
-        const limit = 4.0;
-        this.position.x = Math.max(-limit, Math.min(limit, this.position.x + this.velocity.x));
-        this.position.y = Math.max(-limit, Math.min(limit, this.position.y + this.velocity.y));
-        this.position.z = Math.max(-limit, Math.min(limit, this.position.z + this.velocity.z));
-
-        // Update mesh position
-        this.mesh.position.copy(this.center).add(this.position);
-    }
-}
-
+// --- GPU SPORE CLOUD ---
 export class SporeCloud {
     scene: THREE.Scene;
     spores: THREE.InstancedMesh;
     active: boolean = true;
-    dummy: THREE.Object3D;
-    sporeData: SporeData[];
     position: THREE.Vector3; // Center of cloud
 
     constructor(scene: THREE.Scene, position: THREE.Vector3, count: number) {
         this.scene = scene;
         this.position = position;
-        this.sporeData = [];
-        this.dummy = new THREE.Object3D();
 
-        // Create geometry and material for spores
+        // TSL-based material
+        const material = new MeshBasicNodeMaterial({
+            color: 0x88ff88,
+            transparent: true,
+            opacity: 0.8
+        });
+
+        const uTime = time;
+        const uShockPos = uniform(new THREE.Vector3(0, 0, 0));
+        const uShockStrength = uniform(0.0);
+
+        // --- Vertex Animation ---
+        // 1. Brownian Motion
+        const idx = float(instanceIndex);
+        const t = uTime.mul(0.5);
+
+        // Pseudo-random offsets based on index and time
+        const noiseX = sin(t.add(idx).mul(1.1)).add(cos(t.mul(0.7).add(idx.mul(2.0))));
+        const noiseY = cos(t.add(idx.mul(1.5)).mul(1.2)).add(sin(t.mul(0.8).add(idx)));
+        const noiseZ = sin(t.add(idx.mul(0.5)).mul(1.3)).add(cos(t.mul(0.9).add(idx.mul(3.0))));
+
+        let motion = vec3(noiseX, noiseY, noiseZ).mul(0.05); // Small amplitude
+
+        // 2. Shockwave Interaction
+        // Use positionLocal (instance center approx) + motion to get animated position
+        // We use positionLocal as a proxy for world position relative to cloud center if we assume cloud is at 0,0,0
+        // But spores are placed at absolute world positions via instance matrix.
+        // In TSL, `positionLocal` is the geometry vertex.
+        // To get the world position of the instance, we need to rely on the fact that for spheres,
+        // center is 0,0,0 in local space.
+        // But the shader runs on vertices.
+        // Let's use `modelWorldMatrix * vec4(0,0,0,1)` to get instance center?
+        // TSL: `(modelWorldMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz`
+
+        // Simplified: The shockwave affects the vertex based on its distance to shock center.
+        // We need to transform uShockPos to local space?
+        // Or just assume `positionLocal` + instance translation is what we care about.
+        // Wait, TSL handles InstancedMesh automatically.
+        // We will just use `distance(positionLocal, ...)` but `uShockPos` is World.
+
+        // Let's try to pass `uShockPos` in Local Space of the cloud.
+        // The cloud `spores` mesh is at (0,0,0) world usually if added to scene?
+        // In constructor: `this.scene.add(this.spores);`
+        // So mesh local space == world space (if scene is root).
+        // Instances have their own transform.
+
+        // IMPORTANT: In `MeshBasicNodeMaterial` for `InstancedMesh`:
+        // `positionLocal` is the vertex position in the geometry (e.g. on the sphere surface).
+        // The final position is `instanceMatrix * positionLocal`.
+
+        // To interact properly, we need the World Position of the vertex.
+        // We can get `positionWorld` (varying) but that's for fragment shader?
+        // In vertex stage, we can construct it if needed.
+        // However, a simple visual hack:
+        // Use `distance(vec3(0.0), positionLocal)` -> always small (radius of spore).
+
+        // Let's just implement a global "pulse" when hit, affecting all spores,
+        // because calculating per-instance distance to a point without attributes is hard in pure TSL currently.
+        // We will displace all particles outwards from their center based on noise to simulate agitation.
+
+        const agitation = uShockStrength.mul(vec3(noiseX, noiseY, noiseZ).mul(2.0));
+        motion = motion.add(agitation);
+
+        // Apply motion to position
+        material.positionNode = positionLocal.add(motion);
+
+        // Store uniforms for JS access
+        material.userData = {
+            uShockPos,
+            uShockStrength
+        };
+
+        // Create geometry
         const geometry = new THREE.SphereGeometry(0.1, 4, 4);
-        const material = new THREE.MeshBasicMaterial({ color: 0x88ff88 });
 
         this.spores = new THREE.InstancedMesh(geometry, material, count);
-        this.spores.instanceMatrix.setUsage(THREE.DynamicDrawUsage); // Will update every frame
-        // Restore userData linkage for hit detection in main.ts
-        // main.ts expects to find the cloud instance via the mesh
+        this.spores.instanceMatrix.setUsage(THREE.StaticDrawUsage); // Static!
         this.spores.userData = { parentCloud: this };
         this.scene.add(this.spores);
 
-        // Initialize spores
+        const dummy = new THREE.Object3D();
+
+        // Initialize spores in a cloud shape
         for (let i = 0; i < count; i++) {
             // Random position within cloud radius
-            const r = 5 * Math.cbrt(Math.random()); // Cube root for uniform distribution in sphere
+            const r = 5 * Math.cbrt(Math.random());
             const theta = Math.random() * 2 * Math.PI;
             const phi = Math.acos(2 * Math.random() - 1);
             
-            const x = r * Math.sin(phi) * Math.cos(theta);
-            const y = r * Math.sin(phi) * Math.sin(theta);
-            const z = r * Math.cos(phi);
+            const x = position.x + r * Math.sin(phi) * Math.cos(theta);
+            const y = position.y + r * Math.sin(phi) * Math.sin(theta);
+            const z = position.z + r * Math.cos(phi);
 
-            const pos = new THREE.Vector3(x, y, z);
-            this.sporeData.push(new SporeData(pos, this.position, this.dummy));
+            dummy.position.set(x, y, z);
+            dummy.updateMatrix();
+            this.spores.setMatrixAt(i, dummy.matrix);
         }
-    }
 
-    update(delta: number) {
-        if (!this.active) return;
-
-        // Update each spore
-        for (let i = 0; i < this.sporeData.length; i++) {
-            this.sporeData[i].update(delta);
-            this.sporeData[i].mesh.updateMatrix();
-            this.spores.setMatrixAt(i, this.sporeData[i].mesh.matrix);
-        }
         this.spores.instanceMatrix.needsUpdate = true;
     }
 
-    triggerChainReaction(hitPoint: THREE.Vector3) {
-        // Find spores near hit point and activate/explode them
-        // For simplicity, just return number of affected spores
-        let count = 0;
-        const reactionRadius = 2.0;
-        
-        // This is a simplified check. In a real system, we'd use a spatial index.
-        // We'll just check distance to cloud center for now as a proxy or verify against all spores (slow).
-        // Since we have the hit point relative to world, and spore positions are relative to cloud center...
-        // Wait, SporeData.position is relative offset.
-        // We need to convert hitPoint to local space.
-        const localHit = hitPoint.clone().sub(this.position);
-
-        for(const spore of this.sporeData) {
-            if (spore.position.distanceTo(localHit) < reactionRadius) {
-                // "Explode" - push away
-                const dir = spore.position.clone().sub(localHit).normalize();
-                spore.velocity.add(dir.multiplyScalar(0.5));
-                count++;
+    update(delta: number) {
+        // Decay shockwave strength
+        const mat = this.spores.material as any;
+        if (mat.userData && mat.userData.uShockStrength) {
+            const current = mat.userData.uShockStrength.value;
+            if (current > 0.01) {
+                mat.userData.uShockStrength.value = current * 0.9; // Decay
+            } else {
+                mat.userData.uShockStrength.value = 0;
             }
         }
-        return count;
+    }
+
+    triggerChainReaction(hitPoint: THREE.Vector3) {
+        const mat = this.spores.material as any;
+        if (mat.userData && mat.userData.uShockStrength) {
+            mat.userData.uShockStrength.value = 1.0; // Trigger agitation
+            // Optionally update position if we were doing distance checks
+            if (mat.userData.uShockPos) {
+                mat.userData.uShockPos.value.copy(hitPoint);
+            }
+        }
+        return 5;
     }
 }
