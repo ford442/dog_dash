@@ -19,9 +19,14 @@ import {
     smoothstep,
     dot,
     normalView,
+    normalWorld,
     positionLocal,
     cameraPosition
 } from 'three/tsl';
+
+// --- Global Config ---
+// Light coming from top-left-front: (-1, 0.5, 1) normalized
+const SUN_DIR = vec3(-0.8, 0.4, 0.8).normalize();
 
 // --- TSL Noise Helpers ---
 
@@ -75,6 +80,7 @@ const fbm = (v: any) => {
 
 /**
  * Creates a TSL material for the Planet Surface (High Detail).
+ * Features: Day/Night Cycle, City Lights, Specular Oceans
  */
 function createPlanetSurfaceMaterial(baseColorHex: number) {
     const mat = new MeshStandardNodeMaterial({
@@ -95,6 +101,9 @@ function createPlanetSurfaceMaterial(baseColorHex: number) {
     // Generate Height/Terrain Map
     const height = fbm(p); // 0..1
 
+    // Generate City Noise (High Frequency)
+    const cityNoise = fbm(p.mul(4.0)); // Finer detail for cities
+
     // Terrain Classification
     // Ocean < 0.45
     // Land 0.45 - 0.7
@@ -104,19 +113,38 @@ function createPlanetSurfaceMaterial(baseColorHex: number) {
     const coastColor = color(0x1a4080); // Lighter Blue
     const landColor = color(0x2a2a35);  // Alien Grey/Rock
     const mountainColor = color(0x555566); // Snowy/Rocky peaks
+    const cityLightColor = color(0xffaa44); // Sodium vapor orange
 
-    // Mix Colors
+    // Mix Colors (Daytime Albedo)
     // 1. Ocean vs Land
     const isLand = smoothstep(0.4, 0.45, height);
-    let finalColor = mix(oceanColor, landColor, isLand);
+    let albedo = mix(oceanColor, landColor, isLand);
 
     // 2. Coastline highlight (rim of land)
     const isCoast = smoothstep(0.4, 0.45, height).sub(smoothstep(0.45, 0.5, height));
-    finalColor = mix(finalColor, coastColor, isCoast.mul(0.5));
+    albedo = mix(albedo, coastColor, isCoast.mul(0.5));
 
     // 3. Mountains
     const isMountain = smoothstep(0.7, 0.8, height);
-    finalColor = mix(finalColor, mountainColor, isMountain);
+    albedo = mix(albedo, mountainColor, isMountain);
+
+    // --- LIGHTING LOGIC ---
+
+    // Day/Night Mask based on World Normal and Sun Direction
+    // Use normalWorld to get the actual lighting orientation relative to the "sun"
+    const NdotL = dot(normalWorld, SUN_DIR);
+    const dayFactor = smoothstep(-0.2, 0.2, NdotL); // Soft terminator
+    const nightFactor = float(1.0).sub(dayFactor);
+
+    // City Lights Logic
+    // Cities appear on Land, not Mountains (too high), not Ocean
+    // And primarily where cityNoise is high (clusters)
+    const isCityLocation = isLand.mul(float(1.0).sub(isMountain));
+    const cityPattern = smoothstep(0.6, 0.8, cityNoise); // Only peaks
+    const cityLights = cityPattern.mul(isCityLocation).mul(cityLightColor).mul(3.0); // Intense emission
+
+    // Only show city lights at night
+    const visibleCityLights = cityLights.mul(nightFactor);
 
     // Specular / Roughness Map
     // Oceans are smooth (low roughness), Land is rough
@@ -124,7 +152,9 @@ function createPlanetSurfaceMaterial(baseColorHex: number) {
     mat.roughnessNode = rough;
 
     // Output
-    mat.colorNode = vec4(finalColor, 1.0);
+    // We add the city lights to the emissive channel
+    mat.colorNode = vec4(albedo, 1.0);
+    mat.emissiveNode = visibleCityLights;
 
     return mat;
 }
@@ -156,6 +186,10 @@ function createPlanetCloudMaterial() {
 
     const cloudColor = color(0xaaccff);
 
+    // Lighting for clouds
+    // We don't need explicit lighting calculation here as standard material handles it,
+    // but we could modulate opacity at night if desired. keeping simple.
+
     // Shadows? Simple approximation: darken bottom of clouds?
     // For now just white/blue clouds
     mat.colorNode = vec4(cloudColor, density.mul(0.8)); // Max opacity 0.8
@@ -165,23 +199,46 @@ function createPlanetCloudMaterial() {
 
 /**
  * Creates a TSL material for the Atmosphere Halo.
+ * Enhanced for volumetric feel.
  */
 function createAtmosphereMaterial(atmosphereColorHex: number) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
-        side: THREE.FrontSide, // Outer shell
+        side: THREE.BackSide, // Render on the inside of a slightly larger sphere? Or BackSide of outer shell?
+        // Usually atmosphere is a shell larger than planet. BackSide allows seeing it "behind" the planet edge if we are outside?
+        // Actually FrontSide is fine if we use additive blending and Fresnel.
         depthWrite: false,
         blending: THREE.AdditiveBlending
     });
 
+    // We want the atmosphere to be visible on the limb (Fresnel)
+    // And also stronger on the day side (Sun direction)
+
     const nView = normalView;
-    // Edge glow (Fresnel)
+
+    // Fresnel / Rim
     // 0 at center, 1 at edge
     const rim = float(1.0).sub(nView.z.abs());
-    const glow = rim.pow(3.0);
+    const glow = rim.pow(4.0); // Sharper rim
 
+    // Day side mask
+    // We need normalWorld for sun direction
+    const NdotL = dot(normalWorld, SUN_DIR);
+    const dayFactor = smoothstep(-0.5, 0.5, NdotL); // Atmosphere wraps around slightly into night
+
+    // Color
     const atmColor = color(atmosphereColorHex);
-    mat.colorNode = vec4(atmColor, glow.mul(0.8));
+    const sunsetColor = color(0xff4400); // Orange tint at terminator?
+
+    // Mix sunset color near terminator (where NdotL is near 0)
+    const isTerminator = float(1.0).sub(NdotL.abs().mul(2.0).clamp(0.0, 1.0));
+    const finalColor = mix(atmColor, sunsetColor, isTerminator.mul(0.5));
+
+    // Final Intensity
+    // Glow * (DayFactor + ambient)
+    const intensity = glow.mul(dayFactor.add(0.1));
+
+    mat.colorNode = vec4(finalColor, intensity.mul(0.8));
 
     return mat;
 }
@@ -264,6 +321,7 @@ export class PlanetaryHorizonSystem {
         this.container.add(this.clouds);
 
         // 3. Atmosphere Halo
+        // Should be slightly larger and maybe FrontSide
         const atmGeo = new THREE.SphereGeometry(radius * 1.15, 64, 64);
         const atmMat = createAtmosphereMaterial(0x4488ff);
         this.atmosphere = new THREE.Mesh(atmGeo, atmMat);
