@@ -1,4 +1,22 @@
 import * as THREE from 'three';
+import {
+    MeshBasicNodeMaterial,
+    MeshPhysicalNodeMaterial // Using Node material for consistency if we update distortion later, but currently standard MeshPhysical
+} from 'three/webgpu';
+import {
+    time,
+    positionLocal,
+    uv,
+    vec2,
+    vec3,
+    vec4,
+    color,
+    uniform,
+    mix,
+    sin,
+    cos,
+    float
+} from 'three/tsl';
 
 // Generate a simple noise normal map for distortion
 function createNoiseNormalMap() {
@@ -24,6 +42,49 @@ function createNoiseNormalMap() {
 }
 
 const distortionMap = createNoiseNormalMap();
+const HEAT_COLOR = new THREE.Color(0xff4400);
+
+/**
+ * Creates a TSL material for fiery plasma streaks.
+ */
+function createPlasmaMaterial() {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+
+    const uTime = time;
+    const vUv = uv();
+
+    // Box Geometry is (0.05, 0.05, 5). Z is length.
+    // UVs map 0..1 across faces.
+    // We want a gradient along the length (usually U or V depending on mapping).
+    // For BoxGeometry, it's tricky because it has multiple faces.
+    // However, since it's a thin streak, we can just use positionLocal.z to drive pattern.
+
+    const pos = positionLocal;
+
+    // Create a moving noise pattern along the length (Z axis)
+    const noise = sin(pos.z.mul(5.0).add(uTime.mul(20.0))) // Fast movement
+                 .add(sin(pos.z.mul(2.0).sub(uTime.mul(10.0)))); // Interference
+
+    // Color Gradient: Core (Yellow/White) vs Edge (Red/Orange)
+    const colorCore = color(0xffddaa);
+    const colorEdge = color(0xff2200);
+
+    const mixFactor = noise.mul(0.5).add(0.5); // 0..1
+    const finalColor = mix(colorEdge, colorCore, mixFactor);
+
+    // Opacity pulse
+    const pulse = sin(uTime.mul(5.0)).add(1.0).mul(0.5);
+    const alpha = float(0.8).add(pulse.mul(0.2));
+
+    mat.colorNode = vec4(finalColor, alpha);
+
+    return mat;
+}
 
 export class ReEntrySystem {
     scene: THREE.Scene;
@@ -88,12 +149,8 @@ export class ReEntrySystem {
 
         // 3. Plasma Streaks (Fast moving lines)
         const streakGeo = new THREE.BoxGeometry(0.05, 0.05, 5);
-        const streakMat = new THREE.MeshBasicMaterial({
-            color: 0xffddaa,
-            transparent: true,
-            opacity: 0.8,
-            blending: THREE.AdditiveBlending
-        });
+        // Use TSL Material
+        const streakMat = createPlasmaMaterial();
 
         this.plasmaStreaks = new THREE.InstancedMesh(streakGeo, streakMat, this.streakCount);
         this.streakDummy = new THREE.Object3D();
@@ -118,7 +175,7 @@ export class ReEntrySystem {
         this.active = false;
     }
 
-    update(delta: number, cameraX: number, cameraY: number) {
+    update(delta: number, cameraX: number, cameraY: number, player?: THREE.Object3D) {
         const matDist = this.heatDistortionMesh.material as THREE.MeshPhysicalMaterial;
         const matGlow = this.heatGlowMesh.material as THREE.MeshBasicMaterial;
 
@@ -158,6 +215,10 @@ export class ReEntrySystem {
         // Pulse the Glow
         const pulse = 1.0 + Math.sin(Date.now() * 0.01) * 0.2;
         matGlow.opacity = intensity * 0.3 * pulse;
+
+        if (player) {
+            this.updateShipTint(player, intensity);
+        }
 
         // Update Streaks
         const spawnX = cameraX + 40;
@@ -203,5 +264,39 @@ export class ReEntrySystem {
         }
 
         this.plasmaStreaks.instanceMatrix.needsUpdate = true;
+    }
+
+    updateShipTint(player: THREE.Object3D, intensity: number) {
+        player.traverse((child) => {
+            if (child instanceof THREE.Mesh && child.material) {
+                // Handle both standard materials and potentially node materials if compatible
+                const mat = child.material as any;
+
+                // Only affect materials that support emissive
+                if (mat.emissive && mat.emissive instanceof THREE.Color) {
+
+                    // Store original state if not already stored
+                    if (child.userData.originalEmissive === undefined) {
+                        child.userData.originalEmissive = mat.emissive.clone();
+                        child.userData.originalEmissiveIntensity = mat.emissiveIntensity ?? 1.0;
+                    }
+
+                    if (intensity > 0.01) {
+                        // Lerp from original emissive to heat color
+                        // We use the original as the base to avoid drifting
+                        mat.emissive.lerpColors(child.userData.originalEmissive, HEAT_COLOR, intensity * 0.8);
+
+                        // Boost intensity to simulate glowing hot metal
+                        const baseInt = child.userData.originalEmissiveIntensity;
+                        mat.emissiveIntensity = baseInt + (intensity * 2.0); // Add up to 2.0 intensity
+
+                    } else {
+                        // Restore original state
+                        mat.emissive.copy(child.userData.originalEmissive);
+                        mat.emissiveIntensity = child.userData.originalEmissiveIntensity;
+                    }
+                }
+            }
+        });
     }
 }
