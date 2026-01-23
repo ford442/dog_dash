@@ -2207,7 +2207,7 @@ function animate() {
 
     // Update Re-Entry System
     if (player) {
-        reEntrySystem.update(delta, camera.position.x, camera.position.y);
+        reEntrySystem.update(delta, camera.position.x, camera.position.y, player);
     }
 
     // Update Level Manager (and Clouds)
