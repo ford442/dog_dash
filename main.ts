@@ -27,6 +27,7 @@ import {
     updateGeode,
     createNebulaJellyMoss,
     updateNebulaJellyMoss,
+    destroyNebulaJellyMoss,
     createVoidRootBall,
     updateVoidRootBall,
     createVacuumKelp,
@@ -2228,30 +2229,28 @@ function animate() {
     geodes.forEach(geode => updateGeode(geode, delta, time));
 
     // Update nebula jelly-moss (pulsing and drifting)
-    jellyMosses.forEach(jellyMoss => {
+    // Use reverse loop so we can remove items safely
+    for (let i = jellyMosses.length - 1; i >= 0; i--) {
+        const jellyMoss = jellyMosses[i];
         updateNebulaJellyMoss(jellyMoss, delta, time);
 
-        // --- NEW: Jelly Moss Interaction (Stealth & Shield) ---
+        // --- NEW: Jelly Moss Interaction (Stealth, Shield & Overload) ---
         if (player && jellyMoss.visible && jellyMoss.userData.radius) {
             const dist = player.position.distanceTo(jellyMoss.position);
             const radius = jellyMoss.userData.radius;
 
             // Player inside membrane?
             if (dist < radius) {
-                // Apply Viscosity (slow down player movement)
-                // Use frame-rate independent exponential decay: velocity *= damping^dt
-                // damping 0.05 represents very high viscosity (95% loss per second)
+                // 1. Viscosity
                 playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
 
-                // Apply Stealth Effect
+                // 2. Stealth Effect
                 if (!jellyMoss.userData.isHiding) {
                     jellyMoss.userData.isHiding = true;
-                    // Visual feedback: Make player transparent
                     const rocket = player.children[0];
                     if (rocket) {
                          rocket.traverse((child: any) => {
                              if (child.isMesh && child.material) {
-                                 // Store original opacity/transparent state if not already
                                  if (child.userData.originalOpacity === undefined) {
                                      child.userData.originalOpacity = child.material.opacity;
                                      child.userData.originalTransparent = child.material.transparent;
@@ -2263,36 +2262,73 @@ function animate() {
                     }
                 }
 
-                // Shield Leech simulation
+                // 3. Shield Leech & Overload
                 const normDist = dist / radius;
-                // Leech rate inversely proportional to distance (closer = more damage)
                 const leechIntensity = THREE.MathUtils.lerp(1.0, 0.0, normDist);
 
-                // Apply subtle visual damage effect (red tint pulse)
+                // Build Overload! (Destruction Mechanic)
+                // Rate: 0.5 per second (takes ~2 seconds to explode)
+                jellyMoss.userData.overloadValue = (jellyMoss.userData.overloadValue || 0) + delta * 0.5;
+
+                // Update Shader Uniform
+                const mat = jellyMoss.material as any;
+                if (mat.userData && mat.userData.uOverload) {
+                    mat.userData.uOverload.value = Math.min(1.0, jellyMoss.userData.overloadValue);
+                }
+
+                // Check for Explosion
+                if (jellyMoss.userData.overloadValue >= 1.0) {
+                    // BOOM
+                    destroyNebulaJellyMoss(jellyMoss, scene, particleSystem);
+
+                    // Remove from list
+                    jellyMosses.splice(i, 1);
+
+                    // Restore player state immediately (exit stealth)
+                    const rocket = player.children[0];
+                    if (rocket) {
+                         rocket.traverse((child: any) => {
+                             if (child.isMesh && child.material) {
+                                 if (child.userData.originalOpacity !== undefined) {
+                                     child.material.opacity = child.userData.originalOpacity;
+                                     child.material.transparent = child.userData.originalTransparent;
+                                 } else {
+                                     child.material.opacity = 1.0;
+                                     child.material.transparent = false;
+                                 }
+                             }
+                         });
+                    }
+                    continue; // Skip next logic
+                }
+
+                // Visual damage effect (red tint pulse)
                 if (Math.random() < 0.05 * leechIntensity) {
                     const rocket = player.children[0];
                     if (rocket) {
                         rocket.traverse((child: any) => {
-                            if (child.isMesh && child.material && child.material.emissive) {
-                                const oldEmissive = child.material.emissive.getHex();
-                                child.material.emissive.setHex(0xff0000);
-                                setTimeout(() => {
-                                    if(child.material) child.material.emissive.setHex(oldEmissive);
-                                }, 100);
+                            if (child.isMesh && child.material) {
+                                const childMat = child.material as any;
+                                if (childMat.emissive) {
+                                    const oldEmissive = childMat.emissive.getHex();
+                                    childMat.emissive.setHex(0xff0000);
+                                    setTimeout(() => {
+                                        if(childMat) childMat.emissive.setHex(oldEmissive);
+                                    }, 100);
+                                }
                             }
                         });
                     }
                 }
 
             } else {
-                // Exit Stealth
+                // Exit Stealth / Decay Overload
                 if (jellyMoss.userData.isHiding) {
                     jellyMoss.userData.isHiding = false;
                     const rocket = player.children[0];
                     if (rocket) {
                          rocket.traverse((child: any) => {
                              if (child.isMesh && child.material) {
-                                 // Restore original
                                  if (child.userData.originalOpacity !== undefined) {
                                      child.material.opacity = child.userData.originalOpacity;
                                      child.material.transparent = child.userData.originalTransparent;
@@ -2304,9 +2340,18 @@ function animate() {
                          });
                     }
                 }
+
+                // Decay overload if player leaves
+                if (jellyMoss.userData.overloadValue > 0) {
+                    jellyMoss.userData.overloadValue = Math.max(0, jellyMoss.userData.overloadValue - delta * 0.5);
+                    const mat = jellyMoss.material as any;
+                    if (mat.userData && mat.userData.uOverload) {
+                        mat.userData.uOverload.value = jellyMoss.userData.overloadValue;
+                    }
+                }
             }
         }
-    });
+    }
 
     // Update solar sails (iridescent rippling, unfold near player)
     solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));

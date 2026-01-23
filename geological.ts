@@ -22,8 +22,71 @@ import {
     instanceIndex,
     vec3,
     distance,
-    smoothstep
+    smoothstep,
+    dot,
+    fract,
+    floor,
+    clamp,
+    step,
+    pow
 } from 'three/tsl';
+import { ParticleSystem } from './particles';
+
+// --- TSL Noise Functions (3D) ---
+
+const random3D = (v: any) => {
+    return sin(dot(v, vec3(12.9898, 78.233, 37.719))).mul(43758.5453).fract();
+};
+
+const valueNoise3D = (v: any) => {
+    const i = v.floor();
+    const f = v.fract();
+
+    // 8 corners
+    const a = random3D(i);
+    const b = random3D(i.add(vec3(1.0, 0.0, 0.0)));
+    const c = random3D(i.add(vec3(0.0, 1.0, 0.0)));
+    const d = random3D(i.add(vec3(1.0, 1.0, 0.0)));
+    const e = random3D(i.add(vec3(0.0, 0.0, 1.0)));
+    const f_ = random3D(i.add(vec3(1.0, 0.0, 1.0)));
+    const g = random3D(i.add(vec3(0.0, 1.0, 1.0)));
+    const h = random3D(i.add(vec3(1.0, 1.0, 1.0)));
+
+    // Smooth interpolation curve
+    const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+
+    // Mix X
+    const mixX1 = mix(a, b, u.x);
+    const mixX2 = mix(c, d, u.x);
+    const mixX3 = mix(e, f_, u.x);
+    const mixX4 = mix(g, h, u.x);
+
+    // Mix Y
+    const mixY1 = mix(mixX1, mixX2, u.y);
+    const mixY2 = mix(mixX3, mixX4, u.y);
+
+    // Mix Z
+    return mix(mixY1, mixY2, u.z);
+};
+
+const fbm = (v: any) => {
+    let total = float(0.0);
+    let amplitude = float(0.5);
+    let frequency = float(1.0);
+
+    // 3 Octaves
+    total = total.add(valueNoise3D(v.mul(frequency)).mul(amplitude));
+    frequency = frequency.mul(2.0);
+    amplitude = amplitude.mul(0.5);
+
+    total = total.add(valueNoise3D(v.mul(frequency)).mul(amplitude));
+    frequency = frequency.mul(2.0);
+    amplitude = amplitude.mul(0.5);
+
+    total = total.add(valueNoise3D(v.mul(frequency)).mul(amplitude));
+
+    return total;
+};
 
 // --- GEOLOGICAL OBJECTS ---
 
@@ -128,7 +191,7 @@ export function updateGeode(group: THREE.Group, delta: number, timeVal: number) 
 // 3. NEBULA JELLY-MOSS (Advanced Behavior)
 export function createNebulaJellyMoss(config: { size: number }) {
     // High-res geometry for vertex shader displacement (Optimized from 128)
-    const geo = new THREE.SphereGeometry(config.size, 48, 48);
+    const geo = new THREE.SphereGeometry(config.size, 64, 64);
     
     // TSL Material for Membrane with Vertex Wobble
     const mat = new THREE.MeshPhysicalMaterial({
@@ -141,29 +204,63 @@ export function createNebulaJellyMoss(config: { size: number }) {
         thickness: 2.0,
         side: THREE.DoubleSide
     });
-    
-    // Vertex Wobble Logic (TSL)
+
+    // Uniforms
     const uTime = time;
+    const uOverload = uniform(0.0); // 0.0 to 1.0 (Destruction buildup)
+
     const pos = positionLocal;
     const norm = normalLocal;
 
-    // Organic noise-like movement using combined sine waves
-    const freq = float(1.5);
-    const speed = float(2.0);
-    const amp = float(config.size * 0.15); // 15% surface wobble
+    // --- Advanced Membrane Physics ---
+    // Use 3D Noise for organic displacement
+    const noiseFreq = float(1.0);
+    const noiseAmp = float(config.size * 0.2); // 20% surface wobble
 
-    const wobbleX = sin(pos.y.mul(freq).add(uTime.mul(speed)));
-    const wobbleY = sin(pos.z.mul(freq).add(uTime.mul(speed.mul(1.1))));
-    const wobbleZ = sin(pos.x.mul(freq).add(uTime.mul(speed.mul(0.9))));
-    const wobble = wobbleX.add(wobbleY).add(wobbleZ);
+    // Animate noise domain
+    // Normal wobble speed
+    const baseSpeed = vec3(0.5, 0.8, 0.3).mul(uTime);
+    // Overload wobble speed (much faster/chaotic)
+    const overloadSpeed = vec3(5.0, 8.0, 3.0).mul(uTime);
 
-    // Displace vertices along normal
-    const newPos = pos.add(norm.mul(wobble.mul(amp)));
-    mat.positionNode = newPos;
+    // Mix speed based on overload
+    const currentSpeed = mix(baseSpeed, overloadSpeed, uOverload);
 
-    // Pulsing Emissive Rim
-    const pulse = sin(uTime.mul(3.0)).add(1.0).mul(0.5);
-    mat.emissiveNode = color(0x00ff88).mul(pulse.mul(0.5));
+    const noisePos = pos.mul(noiseFreq).add(currentSpeed);
+    const noiseVal = fbm(noisePos); // -1 to 1 approx
+
+    // Calculate displacement
+    // Base amplitude increases with overload
+    const currentAmp = mix(noiseAmp, noiseAmp.mul(3.0), uOverload.mul(uOverload)); // Quadratic ramp up
+
+    const displacement = norm.mul(noiseVal.mul(currentAmp));
+
+    // Add high-frequency jitter when overloading
+    const jitter = sin(pos.mul(20.0).add(uTime.mul(50.0))).mul(uOverload.mul(0.5));
+    const jitterDisp = norm.mul(jitter);
+
+    mat.positionNode = pos.add(displacement).add(jitterDisp);
+
+    // --- Emissive Pulse ---
+    // Normal pulse
+    const basePulse = sin(uTime.mul(2.0)).add(1.0).mul(0.5); // 0-1
+    // Strobe pulse (fast flashing)
+    const strobePulse = sin(uTime.mul(30.0)).add(1.0).mul(0.5); // 0-1
+
+    // Mix color based on overload (Green -> White/Bright)
+    const baseColor = color(0x00ff88);
+    const overloadColor = color(0xffffff);
+    const finalColor = mix(baseColor, overloadColor, uOverload);
+
+    // Mix pulse intensity
+    const intensity = mix(basePulse.mul(0.5), strobePulse.mul(5.0), uOverload);
+
+    mat.emissiveNode = finalColor.mul(intensity);
+
+    // Store uniform for JS access
+    mat.userData = {
+        uOverload: uOverload
+    };
 
     const mesh = new THREE.Mesh(geo, mat);
     
@@ -202,7 +299,8 @@ export function createNebulaJellyMoss(config: { size: number }) {
         radius: config.size,
         health: 10,
         maxHealth: 10,
-        isHiding: false
+        isHiding: false,
+        overloadValue: 0.0 // JS tracker
     };
 
     return mesh;
@@ -218,6 +316,49 @@ export function updateNebulaJellyMoss(mesh: THREE.Mesh, delta: number, timeVal: 
         mesh.children[0].rotation.y -= delta * 0.2;
         mesh.children[0].rotation.x += delta * 0.1;
     }
+}
+
+export function destroyNebulaJellyMoss(mesh: THREE.Mesh, scene: THREE.Scene, particleSystem: ParticleSystem) {
+    // 1. Particle Burst
+    // Emit green goo particles
+    particleSystem.emit(mesh.position, 0x00ff88, 50, 8.0, 2.0, 3.0);
+    // Emit red core particles
+    particleSystem.emit(mesh.position, 0xff2266, 20, 12.0, 1.0, 2.0);
+
+    // 2. Detach Cores (Collectibles)
+    // The cores are in mesh.children[0] (coreGroup)
+    const coreGroup = mesh.children[0] as THREE.Group;
+    if (coreGroup) {
+        // Clone positions to world space and re-add to scene as physics objects
+        const children = [...coreGroup.children];
+        children.forEach(core => {
+            const worldPos = new THREE.Vector3();
+            core.getWorldPosition(worldPos);
+
+            // Re-parent to scene
+            scene.add(core);
+            core.position.copy(worldPos);
+
+            // Add slight velocity/drift
+            core.userData.velocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 5,
+                (Math.random() - 0.5) * 5,
+                (Math.random() - 0.5) * 5
+            );
+            core.userData.isCollectible = true; // Tag for main.ts loop
+
+            // Animate scale down over time? Or keeping them as collectibles?
+            // Let's keep them as collectibles that maybe fade out if not collected
+            core.userData.life = 10.0;
+        });
+    }
+
+    // 3. Remove Main Mesh
+    scene.remove(mesh);
+
+    // Dispose resources if needed (geometry/material)
+    // Three.js usually handles this if we drop references, but good practice to dispose if dynamic
+    // (mesh.geometry as THREE.BufferGeometry).dispose();
 }
 
 
