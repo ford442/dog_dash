@@ -46,6 +46,7 @@ import { PlanetaryHorizonSystem } from './planetary_horizon';
 import { IndustrialBackgroundSystem } from './industrial_background';
 import { NebulaSystem } from './nebula';
 import { AtmosphereSystem } from './sky';
+import { WeaponSystem } from './weapons';
 
 // --- Configuration ---
 const CONFIG = {
@@ -1572,6 +1573,9 @@ scene.add(galaxy3);
 const particleSystem = new ParticleSystem(scene);
 const debrisSystem = new DebrisSystem(scene);
 
+// WEAPON SYSTEM (Dynamic Lighting Projectiles)
+const weaponSystem = new WeaponSystem(scene);
+
 // RE-ENTRY SYSTEM (Atmospheric Heat Effects)
 const reEntrySystem = new ReEntrySystem(scene, camera);
 
@@ -1941,6 +1945,13 @@ function onKeyDown(event: KeyboardEvent) {
         case 'ShiftRight':
             keys.run = true;
             break;
+        case 'Enter': // Fire Weapon
+        case 'KeyK':
+            if (player) {
+                // Fire forward (X axis)
+                weaponSystem.fire(player.position, new THREE.Vector3(1, 0, 0));
+            }
+            break;
         case 'KeyH': // Toggle Heat Effect manually
             if (reEntrySystem.active) {
                 reEntrySystem.deactivate();
@@ -2205,6 +2216,48 @@ function animate() {
     // --- NEW: Update Particles (engine trails & explosions)
     particleSystem.update(delta);
     debrisSystem.update(delta);
+
+    // Update Weapon System
+    if (player) {
+        weaponSystem.update(delta, camera.position.x);
+
+        // Projectile Collisions
+        const projectiles = weaponSystem.getActiveProjectiles();
+        if (projectiles.length > 0) {
+            // Check against obstacles (asteroids)
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                const obsRadius = obs.userData.radius || 1.0;
+
+                for (const proj of projectiles) {
+                    if (!proj.active) continue;
+
+                    const dist = proj.mesh.position.distanceTo(obs.position);
+                    if (dist < obsRadius + 0.5) { // Projectile radius approx 0.5
+                        // Hit!
+
+                        // 1. Visuals
+                        particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0); // Cyan splash
+
+                        // 2. Destroy Asteroid
+                        splitAsteroid(obs); // This modifies obstacles array!
+
+                        // 3. Destroy Projectile
+                        proj.deactivate();
+
+                        // Break inner loop (projectile done)
+                        // Outer loop continues (next asteroid), but current 'obs' is removed?
+                        // splitAsteroid removes 'obs' from 'obstacles' array.
+                        // Since we iterate backwards, removing current index is safe for outer loop continuation?
+                        // splitAsteroid does: const idx = obstacles.indexOf(asteroid); if (idx > -1) obstacles.splice(idx, 1);
+                        // If we splice, the indices shift. Iterating backwards handles this safely.
+                        // However, 'obs' is now invalid. We must break inner loop.
+                        break;
+                    }
+                }
+            }
+        }
+    }
 
     // Update Re-Entry System
     if (player) {
