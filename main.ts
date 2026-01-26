@@ -2410,7 +2410,16 @@ function animate() {
     solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
 
     // Update new geological objects from plan.md
-    voidRootBalls.forEach(rootBall => updateVoidRootBall(rootBall, delta, time, player.position));
+    voidRootBalls.forEach(rootBall => {
+        const interaction = updateVoidRootBall(rootBall, delta, time, player);
+        if (interaction.isLatched) {
+            playerState.velocity.add(interaction.force);
+            // Visual feedback
+            if (interaction.hitPoint && Math.random() < 0.2) {
+                particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
+            }
+        }
+    });
     vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
     iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
     liquidMetalBlobs.forEach(blob => updateLiquidMetalBlob(blob, delta, time));
