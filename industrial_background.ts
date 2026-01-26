@@ -101,6 +101,77 @@ function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number
 }
 
 /**
+ * Creates a procedural 3D gear geometry.
+ */
+function createGearGeometry(radius: number, teeth: number, thickness: number) {
+    const shape = new THREE.Shape();
+    const toothDepth = radius * 0.2;
+    const holeRadius = radius * 0.3;
+
+    // Generate gear profile
+    const steps = teeth * 2;
+    const angleStep = (Math.PI * 2) / steps;
+
+    for (let i = 0; i < steps; i++) {
+        const angle = i * angleStep;
+        // Use simpler logic: Outer point, then inner point
+        const r = (i % 2 === 0) ? radius : radius - toothDepth;
+        const x = Math.cos(angle) * r;
+        const y = Math.sin(angle) * r;
+        if (i === 0) shape.moveTo(x, y);
+        else shape.lineTo(x, y);
+    }
+    shape.closePath();
+
+    // Central hole
+    const holePath = new THREE.Path();
+    holePath.absarc(0, 0, holeRadius, 0, Math.PI * 2, false);
+    shape.holes.push(holePath);
+
+    const extrudeSettings = {
+        depth: thickness,
+        bevelEnabled: true,
+        bevelThickness: 0.05,
+        bevelSize: 0.05,
+        bevelSegments: 2
+    };
+
+    return new THREE.ExtrudeGeometry(shape, extrudeSettings);
+}
+
+/**
+ * Creates a piston head geometry (Cylinder with a plate).
+ */
+function createPistonGeometry(radius: number, height: number) {
+    return new THREE.CylinderGeometry(radius, radius, height, 16);
+}
+
+/**
+ * Creates a rusty mechanical material using TSL.
+ */
+function createMechanismMaterial(colorHex: number) {
+    const mat = new MeshStandardNodeMaterial({
+        color: colorHex,
+        roughness: 0.8,
+        metalness: 0.6
+    });
+
+    // Add rust/noise pattern using TSL
+    const uTime = time;
+    const pos = uv().mul(10.0);
+    // Simple noise for rust
+    const noise = sin(pos.x.mul(10.0)).mul(cos(pos.y.mul(10.0))).add(1.0).mul(0.5);
+
+    // Mix rust color
+    const baseColor = color(new THREE.Color(colorHex));
+    const rustColor = color(0x8b4513); // SaddleBrown
+
+    mat.colorNode = vec4(mix(baseColor, rustColor, noise.mul(0.3)), 1.0);
+
+    return mat;
+}
+
+/**
  * Creates a material for foreground silhouette structures.
  * Visuals:
  * - Dark, almost black metal
@@ -235,10 +306,154 @@ export class IndustrialLayer {
     }
 }
 
+/**
+ * Manages a layer of animated mechanical elements (Gears, Pistons).
+ */
+export class AnimatedMechanismLayer {
+    mesh: THREE.InstancedMesh;
+    dummy: THREE.Object3D;
+    count: number;
+    width: number;
+    baseZ: number;
+    animationType: 'rotate' | 'piston';
+
+    // Instance data
+    positions: Float32Array;
+    animationSpeeds: Float32Array;
+    phases: Float32Array;
+
+    constructor(
+        scene: THREE.Scene,
+        geometry: THREE.BufferGeometry,
+        material: THREE.Material,
+        config: {
+            count: number,
+            z: number,
+            zRange: number,
+            width: number,
+            yRange: number,
+            scaleMin: number,
+            scaleMax: number,
+            animationType: 'rotate' | 'piston'
+        }
+    ) {
+        this.count = config.count;
+        this.width = config.width;
+        this.baseZ = config.z;
+        this.animationType = config.animationType;
+
+        this.mesh = new THREE.InstancedMesh(geometry, material, this.count);
+        this.mesh.castShadow = true;
+        this.mesh.receiveShadow = true;
+        this.mesh.frustumCulled = false;
+
+        this.dummy = new THREE.Object3D();
+        this.positions = new Float32Array(this.count * 3);
+        this.animationSpeeds = new Float32Array(this.count);
+        this.phases = new Float32Array(this.count);
+
+        for(let i=0; i<this.count; i++) {
+            const x = (Math.random() - 0.5) * this.width;
+            const y = (Math.random() - 0.5) * config.yRange;
+            const z = this.baseZ + (Math.random() - 0.5) * config.zRange;
+
+            this.positions[i*3] = x;
+            this.positions[i*3+1] = y;
+            this.positions[i*3+2] = z;
+
+            // Random Scale
+            const s = config.scaleMin + Math.random() * (config.scaleMax - config.scaleMin);
+            this.dummy.scale.setScalar(s);
+
+            // Initial Rotation (Random)
+            this.dummy.rotation.z = Math.random() * Math.PI * 2;
+
+            // Animation Data
+            this.animationSpeeds[i] = (0.5 + Math.random() * 1.5) * (Math.random() > 0.5 ? 1 : -1);
+            this.phases[i] = Math.random() * Math.PI * 2;
+
+            this.dummy.position.set(x, y, z);
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+        }
+
+        scene.add(this.mesh);
+        this.mesh.visible = false;
+    }
+
+    update(delta: number, cameraX: number, time: number) {
+        const margin = 20;
+        const limitBack = cameraX - (this.width / 2) - margin;
+        const limitFront = cameraX + (this.width / 2) + margin;
+        let needsUpdate = false;
+
+        for(let i=0; i<this.count; i++) {
+            const idx = i*3;
+            let x = this.positions[idx];
+            let y = this.positions[idx+1];
+            let z = this.positions[idx+2];
+
+            // 1. Parallax / Scrolling
+            if (x < limitBack) {
+                x += this.width + margin * 2;
+                this.positions[idx] = x;
+                needsUpdate = true;
+            } else if (x > limitFront) {
+                x -= (this.width + margin * 2);
+                this.positions[idx] = x;
+                needsUpdate = true;
+            }
+
+            // 2. Animation
+            this.mesh.getMatrixAt(i, this.dummy.matrix);
+            const p = new THREE.Vector3();
+            const q = new THREE.Quaternion();
+            const s = new THREE.Vector3();
+            this.dummy.matrix.decompose(p, q, s);
+
+            if (this.animationType === 'rotate') {
+                // Spin
+                const rotSpeed = this.animationSpeeds[i];
+                // We construct rotation from scratch to avoid accumulation error or quaternion drift
+                // Z-axis rotation
+                const currentRot = (time * rotSpeed) + this.phases[i];
+                this.dummy.rotation.set(0, 0, currentRot);
+
+                // Position update
+                this.dummy.position.set(x, y, z);
+
+                needsUpdate = true;
+            } else if (this.animationType === 'piston') {
+                // Move Up/Down
+                const speed = this.animationSpeeds[i];
+                const offset = Math.sin(time * speed + this.phases[i]) * 2.0; // 2.0 amplitude
+
+                this.dummy.position.set(x, y + offset, z);
+                // Keep original rotation (e.g. vertical)?
+                // For piston, we might want fixed rotation.
+                // Constructor didn't set specific orientation other than random Z.
+                // Let's assume vertical pistons.
+                this.dummy.rotation.set(0, 0, 0);
+
+                needsUpdate = true;
+            }
+
+            this.dummy.scale.copy(s); // Preserve scale
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+        }
+
+        if (needsUpdate) {
+            this.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+}
+
 export class IndustrialBackgroundSystem {
     scene: THREE.Scene;
-    layers: IndustrialLayer[] = [];
+    layers: (IndustrialLayer | AnimatedMechanismLayer)[] = [];
     active: boolean = false;
+    elapsedTime: number = 0;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -278,6 +493,22 @@ export class IndustrialBackgroundSystem {
             rotationMode: 'horizontal'
         }));
 
+        // New Layer: Background Pistons (Animated)
+        // Position: Z = -15
+        const pistonGeo = createPistonGeometry(1.5, 8);
+        const pistonMat = createMechanismMaterial(0x555555);
+
+        this.layers.push(new AnimatedMechanismLayer(this.scene, pistonGeo, pistonMat, {
+            count: 12,
+            z: -15,
+            zRange: 5,
+            width: 200,
+            yRange: 20,
+            scaleMin: 0.8,
+            scaleMax: 1.2,
+            animationType: 'piston'
+        }));
+
         // Layer 3: Vertical Support Ribs (Background wall details)
         // Position: Z = -12
         const ribGeo = new THREE.BoxGeometry(2, 40, 2);
@@ -296,6 +527,22 @@ export class IndustrialBackgroundSystem {
             scaleMin: 1.0,
             scaleMax: 1.0,
             rotationMode: 'vertical'
+        }));
+
+        // New Layer: Foreground Gears (Animated, Occlusion)
+        // Position: Z = 10 (Passes in front of player)
+        const gearGeo = createGearGeometry(3, 12, 0.5);
+        const gearMat = createMechanismMaterial(0x885533); // Rusty copper/bronze
+
+        this.layers.push(new AnimatedMechanismLayer(this.scene, gearGeo, gearMat, {
+            count: 6,
+            z: 10,
+            zRange: 4,
+            width: 150,
+            yRange: 15,
+            scaleMin: 1.0,
+            scaleMax: 2.0,
+            animationType: 'rotate'
         }));
 
         // Layer 4: Foreground Pillars (Occlusion)
@@ -347,8 +594,15 @@ export class IndustrialBackgroundSystem {
         this.layers.forEach(l => l.mesh.visible = false);
     }
 
-    update(cameraX: number) {
+    update(cameraX: number, delta: number = 0.016) {
         if (!this.active) return;
-        this.layers.forEach(l => l.update(cameraX));
+        this.elapsedTime += delta;
+        this.layers.forEach(l => {
+            if (l instanceof AnimatedMechanismLayer) {
+                l.update(delta, cameraX, this.elapsedTime);
+            } else {
+                l.update(cameraX);
+            }
+        });
     }
 }
