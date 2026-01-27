@@ -34,10 +34,9 @@ import {
     updateVacuumKelp,
     createIceNeedleCluster,
     updateIceNeedleCluster,
-    createLiquidMetalBlob,
-    updateLiquidMetalBlob,
     createMagmaHeart,
-    updateMagmaHeart
+    updateMagmaHeart,
+    LiquidMetalSystem
 } from './geological';
 import { ReEntrySystem } from './reentry';
 import { WaterfallSystem } from './waterfall';
@@ -47,6 +46,7 @@ import { IndustrialBackgroundSystem } from './industrial_background';
 import { NebulaSystem } from './nebula';
 import { AtmosphereSystem } from './sky';
 import { WeaponSystem } from './weapons';
+import { generateEnvironment } from './environment';
 
 // --- Configuration ---
 const CONFIG = {
@@ -154,6 +154,10 @@ try {
 
     // --- Lighting (Moody, atmospheric) ---
     scene.add(ambientLight);
+
+    // Environment Map (for metallic reflections)
+    const envMap = generateEnvironment();
+    scene.environment = envMap;
 
     // Main directional light (from the side for dramatic shadows)
     mainLight.position.set(-5, 10, 10);
@@ -1594,6 +1598,9 @@ const industrialSystem = new IndustrialBackgroundSystem(scene);
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 const nebulaSystem = new NebulaSystem(scene);
 
+// LIQUID METAL SYSTEM (Advanced Reflection & Physics)
+const liquidMetalSystem = new LiquidMetalSystem(scene);
+
 // =============================================================================
 // GEOLOGICAL OBJECTS & ANOMALIES (from plan.md)
 // =============================================================================
@@ -1688,13 +1695,8 @@ function createIceNeedleClusterAtPosition(x: number, y: number, z: number) {
 }
 
 // Liquid Metal Blobs - splitting and recombination
-const liquidMetalBlobs: THREE.Group[] = [];
-
 function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
-    const blob = createLiquidMetalBlob({ size: 2 + Math.random() * 3 });
-    blob.position.set(x, y, z);
-    scene.add(blob);
-    liquidMetalBlobs.push(blob);
+    const blob = liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
     return blob;
 }
 
@@ -2422,7 +2424,13 @@ function animate() {
     });
     vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
     iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
-    liquidMetalBlobs.forEach(blob => updateLiquidMetalBlob(blob, delta, time));
+
+    // Update Liquid Metal System (Physics & Collisions)
+    liquidMetalSystem.update(delta);
+    if (player && weaponSystem) {
+        liquidMetalSystem.checkCollisions(weaponSystem.getActiveProjectiles());
+    }
+
     magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 
     // Update industrial obstacles (Level 4)
