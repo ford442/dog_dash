@@ -1252,7 +1252,7 @@ const obstacles: THREE.Mesh[] = [];
 let OBSTACLE_SPAWN_INTERVAL = 1.5; // seconds
 let lastObstacleSpawn = 0;
 
-function createAsteroid(x: number, y: number, size: number = 0, velocity: THREE.Vector3 | null = null) {
+function createAsteroid(x: number, y: number, z: number = 0, size: number = 0, velocity: THREE.Vector3 | null = null) {
     const finalSize = (size > 0) ? size : (0.5 + Math.random() * 1.5);
     
     // Use IcosahedronGeometry with higher detail for more interesting shapes
@@ -1280,7 +1280,7 @@ function createAsteroid(x: number, y: number, size: number = 0, velocity: THREE.
         flatShading: true // More faceted look
     });
     const asteroid = new THREE.Mesh(geo, mat);
-    asteroid.position.set(x, y, 0);
+    asteroid.position.set(x, y, z);
     asteroid.rotation.set(
         Math.random() * Math.PI,
         Math.random() * Math.PI,
@@ -1319,7 +1319,7 @@ function updateObstacles(delta: number) {
         lastObstacleSpawn = 0;
         const spawnX = playerX + 40 + Math.random() * 20;
         const spawnY = (Math.random() - 0.5) * 15;
-        createAsteroid(spawnX, spawnY);
+        createAsteroid(spawnX, spawnY, 0); // Z=0 for initial spawn
     }
 
     // 1. UPDATE LOOP: Rotate and cleanup obstacles
@@ -1336,8 +1336,25 @@ function updateObstacles(delta: number) {
             obs.position.addScaledVector(obs.userData.velocity, delta);
         }
 
-        // Remove if behind player
-        if (obs.position.x < playerX - 30) {
+        // DEPTH TINTING: Darken asteroids as they drift into background/foreground
+        const zDepth = Math.abs(obs.position.z);
+        if (zDepth > 1.0) {
+            const mat = obs.material as THREE.MeshStandardMaterial;
+            // Fade out brightness based on depth (max depth approx 30)
+            const depthFactor = Math.min(1.0, zDepth / 25.0);
+            const brightness = 1.0 - depthFactor * 0.9; // Dim down to 10%
+
+            // Assuming base color is greyish, scaling simple brightness
+            const baseVal = 0.4; // Base grey value
+            mat.color.setScalar(baseVal * brightness);
+        } else {
+             // Restore brightness if it comes back (unlikely but safe)
+             const mat = obs.material as THREE.MeshStandardMaterial;
+             if (mat.color.r < 0.3) mat.color.setScalar(0.4);
+        }
+
+        // Remove if behind player OR too far away in Z
+        if (obs.position.x < playerX - 30 || Math.abs(obs.position.z) > 50) {
             scene.remove(obs);
             obstacles.splice(i, 1);
         }
@@ -1346,9 +1363,12 @@ function updateObstacles(delta: number) {
     // C. Update WASM Memory & Call Collision Check
     if (wasmExports) {
         // --- ASTEROIDS ---
-        if (obstacles.length > 0) {
+        // Filter out background asteroids for collision logic
+        const activeObstacles = obstacles.filter(o => Math.abs(o.position.z) < 2.0);
+
+        if (activeObstacles.length > 0) {
             // 1. Allocate space (returns pointer to existing or new buffer)
-            const ptr = wasmExports.allocAsteroids(obstacles.length);
+            const ptr = wasmExports.allocAsteroids(activeObstacles.length);
 
             // 2. Update view if memory grew or changed (simple check)
             if (!wasmMemory || wasmMemory.buffer !== wasmExports.memory.buffer) {
@@ -1357,8 +1377,8 @@ function updateObstacles(delta: number) {
 
             // 3. Write data to WASM memory
             const startIdx = ptr >>> 2;
-            for (let i = 0; i < obstacles.length; i++) {
-                const obs = obstacles[i];
+            for (let i = 0; i < activeObstacles.length; i++) {
+                const obs = activeObstacles[i];
                 const offset = startIdx + (i * 3);
                 wasmMemory[offset] = obs.position.x;
                 wasmMemory[offset + 1] = obs.position.y;
@@ -1366,10 +1386,10 @@ function updateObstacles(delta: number) {
             }
 
             // 4. Check collision
-            const hitIndex = wasmExports.checkCollision(playerX, playerY, 0.5, obstacles.length);
+            const hitIndex = wasmExports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
 
             if (hitIndex !== -1) {
-                handleCollision(hitIndex);
+                handleCollision(activeObstacles[hitIndex]);
             }
         }
 
@@ -1438,10 +1458,14 @@ function splitAsteroid(asteroid: THREE.Mesh) {
             // Divergent velocity
             const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5);
             const speed = 3.0 + Math.random() * 3.0;
-            const vel = new THREE.Vector3(Math.cos(angle)*speed, Math.sin(angle)*speed, 0);
+
+            // Add Z velocity for 3D scattering (Depth)
+            const zSpeed = (Math.random() - 0.5) * 8.0; // +/- 4 m/s drift into background/foreground
+
+            const vel = new THREE.Vector3(Math.cos(angle)*speed, Math.sin(angle)*speed, zSpeed);
 
             // Spawn chunks
-            createAsteroid(asteroid.position.x, asteroid.position.y, newR, vel);
+            createAsteroid(asteroid.position.x, asteroid.position.y, asteroid.position.z, newR, vel);
         }
     }
 
@@ -1451,8 +1475,7 @@ function splitAsteroid(asteroid: THREE.Mesh) {
     if (idx > -1) obstacles.splice(idx, 1);
 }
 
-function handleCollision(hitIndex: number) {
-    const obs = obstacles[hitIndex];
+function handleCollision(obs: THREE.Mesh) {
     if (obs) {
         // Capture player Y for bounce calculation
         const playerY = player ? player.position.y : 0;
