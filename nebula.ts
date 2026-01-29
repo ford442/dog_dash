@@ -32,8 +32,14 @@ import {
  * - Pulsing opacity/brightness.
  * - Soft edges.
  * - Dynamic interaction with player (glows when close).
+ * - Global Harmonic Pulse (uGlobalPulse).
  */
-function createNebulaMaterial(baseColorHex: number, secondaryColorHex: number, opacity: number) {
+function createNebulaMaterial(
+    baseColorHex: number,
+    secondaryColorHex: number,
+    opacity: number,
+    uGlobalPulse: UniformNode<number>
+) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         opacity: opacity,
@@ -92,6 +98,11 @@ function createNebulaMaterial(baseColorHex: number, secondaryColorHex: number, o
     // We add it to make it look like illumination
     finalColor = finalColor.add(uGlowColor.mul(glowIntensity.mul(0.8)));
 
+    // 4. Global Harmonic Pulse (Breathing Effect)
+    // Modulate brightness slightly with the global pulse
+    const harmonicBoost = uGlobalPulse.mul(0.3); // Up to 30% brighter
+    finalColor = finalColor.add(harmonicBoost.mul(col2)); // Add more secondary color
+
     mat.colorNode = vec4(finalColor, density.mul(opacity));
 
     // Store uniforms to update them
@@ -105,7 +116,7 @@ function createNebulaMaterial(baseColorHex: number, secondaryColorHex: number, o
 /**
  * Creates a TSL material for energy particles (sparkles).
  */
-function createEnergyParticleMaterial(colorHex: number) {
+function createEnergyParticleMaterial(colorHex: number, uGlobalPulse: UniformNode<number>) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         side: THREE.FrontSide,
@@ -123,11 +134,65 @@ function createEnergyParticleMaterial(colorHex: number) {
     const sparkle = sin(uTime.mul(5.0).add(phase)).add(1.0).mul(0.5); // 0..1
     const sharpSparkle = pow(sparkle, 4.0); // Sharp flashes
 
+    // Global Pulse sync (particles get more active/bright)
+    const globalSync = uGlobalPulse.mul(0.5).add(0.5); // 0.5 to 1.0
+
     const baseColor = color(new THREE.Color(colorHex));
 
-    mat.colorNode = vec4(baseColor, sharpSparkle);
+    mat.colorNode = vec4(baseColor, sharpSparkle.mul(globalSync));
 
     return mat;
+}
+
+/**
+ * Creates a TSL material for the Pulse Overlay (Screen Breathing).
+ */
+function createPulseOverlayMaterial(uPulse: UniformNode<number>) {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        opacity: 1.0,
+        depthTest: false,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending // Subtle glow addition
+    });
+
+    const vUv = uv();
+
+    // Vignette effect (stronger at edges)
+    const dist = length(vUv.sub(0.5)).mul(1.5); // 0 at center, ~1.06 at edge midpoints
+    const vignette = smoothstep(0.4, 1.2, dist); // Start fading in at 0.4 radius
+
+    // Color: Deep Purple/Pink
+    const pulseColor = color(0x6600cc);
+
+    // Opacity driven by uPulse (0..1)
+    // Max opacity 0.2 at peak pulse at edges
+    const alpha = vignette.mul(uPulse).mul(0.2);
+
+    mat.colorNode = vec4(pulseColor, alpha);
+
+    return mat;
+}
+
+export class PulseOverlay {
+    mesh: THREE.Mesh;
+    camera: THREE.Camera | null = null;
+
+    constructor() {
+        // Will be attached to camera later or created when needed
+        // For now, we create the mesh geometry
+        const geo = new THREE.PlaneGeometry(2, 2);
+        // Material will be assigned by system since it needs the uniform
+        this.mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ visible: false }));
+        this.mesh.position.set(0, 0, -1.01); // Just in front of camera
+    }
+
+    init(uPulse: UniformNode<number>, camera: THREE.Camera) {
+        this.camera = camera;
+        this.mesh.material = createPulseOverlayMaterial(uPulse);
+        camera.add(this.mesh);
+    }
 }
 
 export class NebulaCloudLayer {
@@ -154,7 +219,8 @@ export class NebulaCloudLayer {
             z: number,
             zRange: number,
             width: number,
-            height: number
+            height: number,
+            uGlobalPulse: UniformNode<number>
         }
     ) {
         this.count = config.count;
@@ -164,7 +230,7 @@ export class NebulaCloudLayer {
 
         // Geometry: Low poly sphere is fine for soft clouds
         const geo = new THREE.SphereGeometry(1, 8, 8);
-        const mat = createNebulaMaterial(config.color1, config.color2, config.opacity);
+        const mat = createNebulaMaterial(config.color1, config.color2, config.opacity, config.uGlobalPulse);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false; // Always update
@@ -276,13 +342,13 @@ export class EnergyParticleLayer {
     baseZ: number;
     positions: Float32Array;
 
-    constructor(scene: THREE.Scene, count: number, z: number, width: number) {
+    constructor(scene: THREE.Scene, count: number, z: number, width: number, uGlobalPulse: UniformNode<number>) {
         this.count = count;
         this.width = width;
         this.baseZ = z;
 
         const geo = new THREE.OctahedronGeometry(0.2, 0);
-        const mat = createEnergyParticleMaterial(0x88ffff);
+        const mat = createEnergyParticleMaterial(0x88ffff, uGlobalPulse);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, count);
         this.mesh.renderOrder = -1;
@@ -349,9 +415,29 @@ export class NebulaSystem {
     active: boolean = false;
     layers: (NebulaCloudLayer | EnergyParticleLayer)[] = [];
 
+    // Global Pulse (0..1)
+    uGlobalPulse: UniformNode<number>;
+    pulseOverlay: PulseOverlay;
+    elapsedTime: number = 0;
+
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+        this.uGlobalPulse = uniform(0.0);
+        this.pulseOverlay = new PulseOverlay();
         this.initLayers();
+    }
+
+    // Note: We need the camera to init the overlay, but constructor doesn't have it.
+    // We can init it on first update or add a method.
+    // main.ts calls constructor(scene). It doesn't pass camera.
+    // main.ts passes camera to update()? No: update(delta, cameraX, playerPos)
+    // We might need to update main.ts to pass camera to constructor or init.
+    // Actually, update doesn't pass camera object, just X.
+    // I need to change NebulaSystem signature or find camera in scene?
+    // main.ts has global `camera`. I can export a method `setCamera`.
+
+    setCamera(camera: THREE.Camera) {
+        this.pulseOverlay.init(this.uGlobalPulse, camera);
     }
 
     initLayers() {
@@ -366,7 +452,8 @@ export class NebulaSystem {
             z: -60,
             zRange: 20,
             width: 300,
-            height: 60
+            height: 60,
+            uGlobalPulse: this.uGlobalPulse
         }));
 
         // 2. Mid Background (Cyan/Blue, Transparent)
@@ -380,7 +467,8 @@ export class NebulaSystem {
             z: -40,
             zRange: 15,
             width: 250,
-            height: 50
+            height: 50,
+            uGlobalPulse: this.uGlobalPulse
         }));
 
         // 3. Foreground Mist (Pink, sparse, faster drift)
@@ -394,11 +482,12 @@ export class NebulaSystem {
             z: -20,
             zRange: 10,
             width: 200,
-            height: 40
+            height: 40,
+            uGlobalPulse: this.uGlobalPulse
         }));
 
         // 4. Energy Particles
-        this.layers.push(new EnergyParticleLayer(this.scene, 50, -30, 200));
+        this.layers.push(new EnergyParticleLayer(this.scene, 50, -30, 200, this.uGlobalPulse));
 
         this.deactivate(); // Start hidden
     }
@@ -407,16 +496,26 @@ export class NebulaSystem {
         if (this.active) return;
         this.active = true;
         this.layers.forEach(l => l.mesh.visible = true);
+        if (this.pulseOverlay.mesh) this.pulseOverlay.mesh.visible = true;
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.layers.forEach(l => l.mesh.visible = false);
+        if (this.pulseOverlay.mesh) this.pulseOverlay.mesh.visible = false;
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
+
+        // Update Pulse
+        this.elapsedTime += delta;
+        // Slow rhythmic breathing (period ~ 6 seconds)
+        // sin ranges -1 to 1. Map to 0 to 1.
+        const pulse = Math.sin(this.elapsedTime * 1.0) * 0.5 + 0.5;
+        this.uGlobalPulse.value = pulse;
+
         this.layers.forEach(l => l.update(delta, cameraX, playerPos));
     }
 }
