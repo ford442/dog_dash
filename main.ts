@@ -1620,6 +1620,7 @@ const industrialSystem = new IndustrialBackgroundSystem(scene);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 const nebulaSystem = new NebulaSystem(scene);
+nebulaSystem.setCamera(camera);
 
 // LIQUID METAL SYSTEM (Advanced Reflection & Physics)
 const liquidMetalSystem = new LiquidMetalSystem(scene);

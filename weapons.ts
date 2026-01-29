@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { color, time, sin, float, vec4, mix } from 'three/tsl';
+import { color, time, sin, float, vec4, mix, uniform, UniformNode } from 'three/tsl';
 
 /**
  * Creates a TSL material for the plasma bolt.
  * Visuals: Glowing core, pulsing intensity.
  */
-function createPlasmaBoltMaterial(colorHex: number) {
+function createPlasmaBoltMaterial(uColor: UniformNode<THREE.Color>) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -18,7 +18,7 @@ function createPlasmaBoltMaterial(colorHex: number) {
     // Simple pulse
     const pulse = sin(uTime.mul(20.0)).add(1.0).mul(0.5); // 0..1 fast pulse
 
-    const baseColor = color(new THREE.Color(colorHex));
+    const baseColor = uColor;
     const white = color(0xffffff);
 
     // Mix white core with colored edge based on pulse?
@@ -76,12 +76,19 @@ export class Projectile {
         // Flicker light
         this.light.intensity = 1.5 + Math.random();
     }
+
+    setColor(hex: number) {
+        this.light.color.setHex(hex);
+    }
 }
 
 export class WeaponSystem {
     scene: THREE.Scene;
     projectiles: Projectile[] = [];
     poolSize: number = 20;
+
+    // Uniform for shared material color
+    uProjectileColor: UniformNode<THREE.Color>;
 
     // Cooldown logic
     lastFireTime: number = 0;
@@ -90,11 +97,22 @@ export class WeaponSystem {
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
-        const mat = createPlasmaBoltMaterial(0x00ffff); // Cyan
+        // Shared uniform
+        this.uProjectileColor = uniform(new THREE.Color(0x00ffff)); // Default Cyan
+
+        const mat = createPlasmaBoltMaterial(this.uProjectileColor);
 
         for (let i = 0; i < this.poolSize; i++) {
             this.projectiles.push(new Projectile(scene, mat));
         }
+    }
+
+    setColor(hex: number) {
+        // Update the shared uniform (affects all active projectiles material immediately)
+        this.uProjectileColor.value.setHex(hex);
+
+        // Update the lights of all projectiles
+        this.projectiles.forEach(p => p.setColor(hex));
     }
 
     fire(position: THREE.Vector3, forwardDirection: THREE.Vector3) {
