@@ -1084,6 +1084,9 @@ class LevelManager {
         industrialSystem.update(cameraX, delta);
         // Pass player position to NebulaSystem for interactive lighting
         nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
+        if (levelManager.currentLevel === 5) {
+            nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
+        }
         if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
     }
