@@ -119,8 +119,8 @@ const aspect = window.innerWidth / window.innerHeight;
 const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
 const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
 const rimLight = new THREE.DirectionalLight(0x6699ff, 0.4);
-const accentLight1 = new THREE.PointLight(0xff8844, 0.6, 30);
-const accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 25);
+const accentLight1 = new THREE.PointLight(0xff8844, 0.6, 50);
+const accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 50);
 const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
 
 // Check WebGPU & Initialize
@@ -1083,7 +1083,7 @@ class LevelManager {
         waterfallSystem.update(cameraX, delta);
         industrialSystem.update(cameraX, delta);
         // Pass player position to NebulaSystem for interactive lighting
-        nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
+        nebulaSystem.update(delta, cameraX);
         if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
     }
