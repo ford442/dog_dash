@@ -63,7 +63,7 @@ export class WeaponLightManager {
  * - Procedural noise for gaseous texture.
  * - Pulsing opacity/brightness.
  * - Soft edges.
- * - Dynamic interaction with player (glows when close).
+ * - Dynamic lighting from scene lights (MeshStandardNodeMaterial).
  * - Global Harmonic Pulse (uGlobalPulse).
  */
 function createNebulaMaterial(
@@ -73,12 +73,14 @@ function createNebulaMaterial(
     uGlobalPulse: UniformNode<number>,
     weaponLights: any // storage node
 ) {
-    const mat = new MeshBasicNodeMaterial({
+    const mat = new MeshStandardNodeMaterial({
         transparent: true,
         opacity: opacity,
-        side: THREE.FrontSide, // Sprites face camera usually, or billboards
-        depthWrite: false, // Soft particles
-        blending: THREE.AdditiveBlending // Glow effect
+        side: THREE.FrontSide,
+        depthWrite: false,
+        blending: THREE.NormalBlending, // Normal blending for volumetric lighting
+        roughness: 1.0,
+        metalness: 0.0
     });
 
     const uTime = time;
@@ -160,12 +162,13 @@ function createNebulaMaterial(
     const harmonicBoost = uGlobalPulse.mul(0.3); // Up to 30% brighter
     finalColor = finalColor.add(harmonicBoost.mul(col2)); // Add more secondary color
 
+    // Output
+    // Use colorNode for Diffuse (responsive to lights)
     mat.colorNode = vec4(finalColor, density.mul(opacity));
 
-    // Store uniforms to update them
-    mat.userData = {
-        uPlayerPos: uPlayerPos
-    };
+    // Use emissiveNode for ambient glow (visible in dark)
+    // Low intensity so lights can still overpower/add to it
+    mat.emissiveNode = finalColor.mul(0.2);
 
     return mat;
 }
@@ -330,17 +333,11 @@ export class NebulaCloudLayer {
         scene.add(this.mesh);
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number) {
         const margin = 50;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
         let needsUpdate = false;
-
-        // Update Uniforms
-        const mat = this.mesh.material as any;
-        if (mat.userData && mat.userData.uPlayerPos && playerPos) {
-            mat.userData.uPlayerPos.value.copy(playerPos);
-        }
 
         for (let i = 0; i < this.count; i++) {
             const idx = i * 3;
@@ -432,7 +429,7 @@ export class EnergyParticleLayer {
         scene.add(this.mesh);
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number) {
         const margin = 20;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
@@ -486,15 +483,6 @@ export class NebulaSystem {
         this.weaponLightManager = new WeaponLightManager();
         this.initLayers();
     }
-
-    // Note: We need the camera to init the overlay, but constructor doesn't have it.
-    // We can init it on first update or add a method.
-    // main.ts calls constructor(scene). It doesn't pass camera.
-    // main.ts passes camera to update()? No: update(delta, cameraX, playerPos)
-    // We might need to update main.ts to pass camera to constructor or init.
-    // Actually, update doesn't pass camera object, just X.
-    // I need to change NebulaSystem signature or find camera in scene?
-    // main.ts has global `camera`. I can export a method `setCamera`.
 
     setCamera(camera: THREE.Camera) {
         this.pulseOverlay.init(this.uGlobalPulse, camera);
@@ -571,7 +559,7 @@ export class NebulaSystem {
         if (this.pulseOverlay.mesh) this.pulseOverlay.mesh.visible = false;
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number) {
         if (!this.active) return;
 
         // Update Pulse
@@ -581,7 +569,7 @@ export class NebulaSystem {
         const pulse = Math.sin(this.elapsedTime * 1.0) * 0.5 + 0.5;
         this.uGlobalPulse.value = pulse;
 
-        this.layers.forEach(l => l.update(delta, cameraX, playerPos));
+        this.layers.forEach(l => l.update(delta, cameraX));
     }
 
     updateLights(projectiles: Projectile[]) {

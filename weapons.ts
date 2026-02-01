@@ -47,7 +47,7 @@ export class Projectile {
         this.mesh.visible = false;
 
         // Dynamic Point Light
-        this.light = new THREE.PointLight(0x00ffff, 2.0, 60.0); // Cyan, Intensity 2, Range 60
+        this.light = new THREE.PointLight(0x00ffff, 2.0, 50.0); // Cyan, Intensity 2, Range 50
         this.mesh.add(this.light);
 
         scene.add(this.mesh);
