@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {
     MeshBasicNodeMaterial,
-    MeshStandardNodeMaterial
+    MeshStandardNodeMaterial,
+    StorageBufferAttribute
 } from 'three/webgpu';
 import {
     time,
@@ -22,8 +23,39 @@ import {
     pow,
     length,
     smoothstep,
+    distance,
+    loop,
+    storage,
     UniformNode
 } from 'three/tsl';
+import { Projectile } from './weapons';
+
+export class WeaponLightManager {
+    buffer: StorageBufferAttribute;
+    storageNode: any;
+    count: number = 20; // Matches WeaponSystem pool size
+
+    constructor() {
+        // x, y, z, intensity (w)
+        const data = new Float32Array(this.count * 4);
+        this.buffer = new StorageBufferAttribute(data, 4);
+        this.storageNode = storage(this.buffer, 'vec4', this.count);
+    }
+
+    update(projectiles: Projectile[]) {
+        const count = Math.min(projectiles.length, this.count);
+
+        for (let i = 0; i < this.count; i++) {
+            if (i < count) {
+                const p = projectiles[i];
+                this.buffer.setXYZW(i, p.mesh.position.x, p.mesh.position.y, p.mesh.position.z, 2.0); // Boosted intensity
+            } else {
+                // Inactive - set intensity to 0
+                this.buffer.setW(i, 0.0);
+            }
+        }
+    }
+}
 
 /**
  * Creates a TSL material for a nebula cloud puff.
@@ -38,7 +70,8 @@ function createNebulaMaterial(
     baseColorHex: number,
     secondaryColorHex: number,
     opacity: number,
-    uGlobalPulse: UniformNode<number>
+    uGlobalPulse: UniformNode<number>,
+    weaponLights: any // storage node
 ) {
     const mat = new MeshStandardNodeMaterial({
         transparent: true,
@@ -52,6 +85,10 @@ function createNebulaMaterial(
 
     const uTime = time;
     const uPulseSpeed = uniform(0.5);
+    const uPlayerPos = uniform(new THREE.Vector3(0, 0, 0)); // Player position
+    const uInteractionRadius = uniform(20.0); // Radius of glow effect
+    const uGlowColor = uniform(new THREE.Color(0xffaa00)); // Engine/Exhaust glow color
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon color
 
     // --- Fragment Shader ---
     const vUv = uv();
@@ -86,7 +123,41 @@ function createNebulaMaterial(
     const pulse = sin(uTime.mul(uPulseSpeed)).add(1.0).mul(0.5); // 0..1
     let finalColor = mix(col1, col2, pulse.mul(combinedNoise));
 
-    // 4. Global Harmonic Pulse (Breathing Effect)
+    // 3. Dynamic Player Interaction
+    // Calculate distance from world position of this fragment/vertex to player
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+
+    // Smoothstep for glow falloff: 1.0 at center, 0.0 at radius
+    const glowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+
+    // Mix glow color into final color based on intensity
+    // We add it to make it look like illumination
+    finalColor = finalColor.add(uGlowColor.mul(glowIntensity.mul(0.8)));
+
+    // 4. Weapon Light Interaction
+    const weaponGlow = float(0.0).toVar();
+
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+
+        // distance from world pos
+        const distToLight = distance(positionWorld, lightPos);
+
+        // 15.0 radius
+        const lightRadius = float(15.0);
+
+        // falloff
+        const falloff = smoothstep(lightRadius, 0.0, distToLight);
+
+        // accumulate
+        weaponGlow.addAssign(falloff.mul(lightIntensity));
+    });
+
+    finalColor = finalColor.add(uWeaponColor.mul(weaponGlow.mul(0.5)));
+
+    // 5. Global Harmonic Pulse (Breathing Effect)
     // Modulate brightness slightly with the global pulse
     const harmonicBoost = uGlobalPulse.mul(0.3); // Up to 30% brighter
     finalColor = finalColor.add(harmonicBoost.mul(col2)); // Add more secondary color
@@ -209,7 +280,8 @@ export class NebulaCloudLayer {
             zRange: number,
             width: number,
             height: number,
-            uGlobalPulse: UniformNode<number>
+            uGlobalPulse: UniformNode<number>,
+            weaponLights: any
         }
     ) {
         this.count = config.count;
@@ -219,7 +291,7 @@ export class NebulaCloudLayer {
 
         // Geometry: Low poly sphere is fine for soft clouds
         const geo = new THREE.SphereGeometry(1, 8, 8);
-        const mat = createNebulaMaterial(config.color1, config.color2, config.opacity, config.uGlobalPulse);
+        const mat = createNebulaMaterial(config.color1, config.color2, config.opacity, config.uGlobalPulse, config.weaponLights);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false; // Always update
@@ -402,11 +474,13 @@ export class NebulaSystem {
     uGlobalPulse: UniformNode<number>;
     pulseOverlay: PulseOverlay;
     elapsedTime: number = 0;
+    weaponLightManager: WeaponLightManager;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.uGlobalPulse = uniform(0.0);
         this.pulseOverlay = new PulseOverlay();
+        this.weaponLightManager = new WeaponLightManager();
         this.initLayers();
     }
 
@@ -415,6 +489,8 @@ export class NebulaSystem {
     }
 
     initLayers() {
+        const weaponLights = this.weaponLightManager.storageNode;
+
         // 1. Far Background (Purple/Pink, Large, Slow)
         this.layers.push(new NebulaCloudLayer(this.scene, {
             count: 20,
@@ -427,7 +503,8 @@ export class NebulaSystem {
             zRange: 20,
             width: 300,
             height: 60,
-            uGlobalPulse: this.uGlobalPulse
+            uGlobalPulse: this.uGlobalPulse,
+            weaponLights: weaponLights
         }));
 
         // 2. Mid Background (Cyan/Blue, Transparent)
@@ -442,7 +519,8 @@ export class NebulaSystem {
             zRange: 15,
             width: 250,
             height: 50,
-            uGlobalPulse: this.uGlobalPulse
+            uGlobalPulse: this.uGlobalPulse,
+            weaponLights: weaponLights
         }));
 
         // 3. Foreground Mist (Pink, sparse, faster drift)
@@ -457,7 +535,8 @@ export class NebulaSystem {
             zRange: 10,
             width: 200,
             height: 40,
-            uGlobalPulse: this.uGlobalPulse
+            uGlobalPulse: this.uGlobalPulse,
+            weaponLights: weaponLights
         }));
 
         // 4. Energy Particles
@@ -491,5 +570,9 @@ export class NebulaSystem {
         this.uGlobalPulse.value = pulse;
 
         this.layers.forEach(l => l.update(delta, cameraX));
+    }
+
+    updateLights(projectiles: Projectile[]) {
+        this.weaponLightManager.update(projectiles);
     }
 }
