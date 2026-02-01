@@ -44,6 +44,7 @@ import { AsteroidFieldSystem } from './asteroid_field';
 import { PlanetaryHorizonSystem } from './planetary_horizon';
 import { IndustrialBackgroundSystem } from './industrial_background';
 import { NebulaSystem } from './nebula';
+import { BiologicalBackgroundSystem } from './biological_background';
 import { AtmosphereSystem } from './sky';
 import { WeaponSystem } from './weapons';
 import { generateEnvironment } from './environment';
@@ -1065,10 +1066,13 @@ class LevelManager {
         }
 
         if (levelIndex === 5) {
-            nebulaSystem.activate();
-            // Hide clouds in nebula level
+            // Activate Biological System for Space Whale Interior
+            biologicalSystem.activate();
+            nebulaSystem.deactivate();
+            // Hide clouds in whale level
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
+            biologicalSystem.deactivate();
             nebulaSystem.deactivate();
             // Restore clouds if not in Industrial Tunnel (Level 4)
             if (levelIndex !== 4) {
@@ -1082,10 +1086,11 @@ class LevelManager {
         this.cloudSystem.update(delta, cameraX, speed);
         waterfallSystem.update(cameraX, delta);
         industrialSystem.update(cameraX, delta);
+        biologicalSystem.update(delta, cameraX);
         // Pass player position to NebulaSystem for interactive lighting
         nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
         if (levelManager.currentLevel === 5) {
-            nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
+            // nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
         }
         if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
@@ -1624,6 +1629,9 @@ const industrialSystem = new IndustrialBackgroundSystem(scene);
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 const nebulaSystem = new NebulaSystem(scene);
 nebulaSystem.setCamera(camera);
+
+// BIOLOGICAL BACKGROUND SYSTEM (Space Whale Interior)
+const biologicalSystem = new BiologicalBackgroundSystem(scene);
 
 // LIQUID METAL SYSTEM (Advanced Reflection & Physics)
 const liquidMetalSystem = new LiquidMetalSystem(scene);
