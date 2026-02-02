@@ -40,9 +40,10 @@ function createConveyorMaterial(speed: number) {
 
     // animate UVs: x + time * speed
     // We want diagonal stripes.
-    // stripe pattern = fract((u + v) * density + time * speed)
+    // stripe pattern = fract((u + v) * density - time * speed) -> Inverted direction
     const density = float(10.0);
-    const patternInput = vUv.x.add(vUv.y).mul(density).add(uTime.mul(uSpeed));
+    // Invert speed direction for "opposite momentum"
+    const patternInput = vUv.x.add(vUv.y).mul(density).sub(uTime.mul(uSpeed));
     const stripe = step(0.5, fract(patternInput)); // 0 or 1
 
     // Colors
@@ -449,9 +450,94 @@ export class AnimatedMechanismLayer {
     }
 }
 
+function createTunnelMaterial(speed: number) {
+    const mat = new MeshStandardNodeMaterial({
+        color: 0x332211,
+        roughness: 0.8,
+        metalness: 0.5,
+        side: THREE.BackSide // Render inside of cylinder
+    });
+
+    const uTime = time;
+    const uCameraX = uniform(0.0);
+
+    // UVs are wrapped around cylinder. U is around, V is length?
+    // CylinderGeometry: "radial segments" (U), "height segments" (V).
+    // Standard UV: U goes 0-1 around, V goes 0-1 along height (X axis in our rotation).
+    const vUv = uv();
+
+    // Scroll V based on camera X to simulate infinite tunnel
+    // Factor 0.01 implies texture repeats every 100 units?
+    const scrollV = vUv.y.add(uCameraX.mul(0.02));
+
+    // Grid/Panel Pattern
+    // U is 0-1 (circumference ~ 2*PI*60 ~ 376). V is length (300).
+    // We want square panels.
+    const panelU = vUv.x.mul(12.0); // 12 panels around
+    const panelV = scrollV.mul(10.0); // 10 panels along length
+
+    const grid = step(0.95, fract(panelU)).add(step(0.95, fract(panelV))).clamp(0.0, 1.0);
+
+    // Tech Details (Noise inside panels)
+    const detailNoise = sin(panelU.mul(5.0)).mul(cos(panelV.mul(5.0))).add(1.0).mul(0.5);
+
+    // Color Mix
+    const wallColor = color(0x221105); // Dark Rusty
+    const gridColor = color(0x110800); // Darker Seams
+    const lightColor = color(0xff6600); // Orange accents
+
+    // Random lights based on panel index
+    const panelId = panelU.floor().add(panelV.floor().mul(10.0));
+    const lightProb = sin(panelId).add(1.0).mul(0.5); // 0..1 random-ish
+    const isLight = step(0.9, lightProb); // 10% chance of light
+
+    // Pulse lights
+    const pulse = sin(uTime.mul(2.0).add(panelId)).add(1.0).mul(0.5);
+
+    mat.colorNode = vec4(mix(wallColor, gridColor, grid), 1.0);
+
+    // Emissive lights
+    mat.emissiveNode = mix(color(0x000000), lightColor.mul(pulse), isLight.mul(float(1.0).sub(grid)));
+
+    mat.userData.uCameraX = uCameraX;
+
+    return mat;
+}
+
+export class TunnelLayer {
+    mesh: THREE.Mesh;
+
+    constructor(scene: THREE.Scene) {
+        // Radius 60, Length 300, Open-ended
+        const geo = new THREE.CylinderGeometry(60, 60, 300, 32, 1, true);
+        // Rotate so length is along X axis
+        geo.rotateZ(Math.PI / 2);
+
+        const mat = createTunnelMaterial(0);
+        this.mesh = new THREE.Mesh(geo, mat);
+        // Put it far behind
+        this.mesh.renderOrder = -10;
+        this.mesh.visible = false;
+
+        scene.add(this.mesh);
+    }
+
+    update(cameraX: number) {
+        // Follow camera
+        this.mesh.position.x = cameraX;
+
+        // Update shader for infinite scroll texture
+        const mat = this.mesh.material as any;
+        if (mat.userData && mat.userData.uCameraX) {
+            mat.userData.uCameraX.value = cameraX;
+        }
+    }
+}
+
 export class IndustrialBackgroundSystem {
     scene: THREE.Scene;
     layers: (IndustrialLayer | AnimatedMechanismLayer)[] = [];
+    tunnel!: TunnelLayer;
     active: boolean = false;
     elapsedTime: number = 0;
 
@@ -461,6 +547,9 @@ export class IndustrialBackgroundSystem {
     }
 
     initLayers() {
+        // Tunnel Wall (Vast Background)
+        this.tunnel = new TunnelLayer(this.scene);
+
         // Layer 1: Deep Background Pipes (Dark, massive)
         // Position: Z = -40, moving parallax
         const pipeGeo = new THREE.CylinderGeometry(2, 2, 40, 16); // Long pipes
@@ -585,18 +674,23 @@ export class IndustrialBackgroundSystem {
     activate() {
         if (this.active) return;
         this.active = true;
+        this.tunnel.mesh.visible = true;
         this.layers.forEach(l => l.mesh.visible = true);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
+        this.tunnel.mesh.visible = false;
         this.layers.forEach(l => l.mesh.visible = false);
     }
 
     update(cameraX: number, delta: number = 0.016) {
         if (!this.active) return;
         this.elapsedTime += delta;
+
+        this.tunnel.update(cameraX);
+
         this.layers.forEach(l => {
             if (l instanceof AnimatedMechanismLayer) {
                 l.update(delta, cameraX, this.elapsedTime);
