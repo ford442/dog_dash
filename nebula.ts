@@ -29,42 +29,10 @@ import {
     UniformNode
 } from 'three/tsl';
 import { Projectile } from './weapons';
-
-export class WeaponLightManager {
-    buffer: StorageBufferAttribute;
-    storageNode: any;
-    count: number = 20; // Matches WeaponSystem pool size
-
-    constructor() {
-        // x, y, z, intensity (w)
-        const data = new Float32Array(this.count * 4);
-        this.buffer = new StorageBufferAttribute(data, 4);
-        this.storageNode = storage(this.buffer, 'vec4', this.count);
-    }
-
-    update(projectiles: Projectile[]) {
-        const count = Math.min(projectiles.length, this.count);
-
-        for (let i = 0; i < this.count; i++) {
-            if (i < count) {
-                const p = projectiles[i];
-                this.buffer.setXYZW(i, p.mesh.position.x, p.mesh.position.y, p.mesh.position.z, 2.0); // Boosted intensity
-            } else {
-                // Inactive - set intensity to 0
-                this.buffer.setW(i, 0.0);
-            }
-        }
-    }
-}
+import { WeaponLightManager } from './lighting';
 
 /**
  * Creates a TSL material for a nebula cloud puff.
- * Features:
- * - Procedural noise for gaseous texture.
- * - Pulsing opacity/brightness.
- * - Soft edges.
- * - Dynamic lighting from scene lights (MeshStandardNodeMaterial).
- * - Global Harmonic Pulse (uGlobalPulse).
  */
 function createNebulaMaterial(
     baseColorHex: number,
@@ -78,7 +46,7 @@ function createNebulaMaterial(
         opacity: opacity,
         side: THREE.FrontSide,
         depthWrite: false,
-        blending: THREE.NormalBlending, // Normal blending for volumetric lighting
+        blending: THREE.NormalBlending,
         roughness: 1.0,
         metalness: 0.0
     });
@@ -91,14 +59,6 @@ function createNebulaMaterial(
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon color
 
     // --- Fragment Shader ---
-    const vUv = uv();
-
-    // 1. Soft Circular Shape (Billboard style usually, but here applied to Sphere geometry)
-    // If using SphereGeometry, we don't need manual circle discard, but we want soft edges.
-    // Let's use noise to erode the edges.
-
-    // Position-based noise (3D)
-    // We use local position to keep noise attached to the object, but animate it.
     const pos = positionLocal.mul(0.5); // Scale noise
 
     // Simple 3D noise approximation
@@ -106,32 +66,25 @@ function createNebulaMaterial(
     const noise2 = cos(pos.z.add(uTime.mul(0.1))).mul(sin(pos.x.mul(2.0)));
     const combinedNoise = noise1.add(noise2).mul(0.5).add(0.5); // 0..1
 
-    // Radial gradient from center (assuming Sphere centered at 0)
-    // For a sphere of radius 1, len is 0..1
-    const dist = length(pos.mul(2.0)); // 0 at center, 1 at edge
-    const core = float(1.0).sub(dist); // 1 at center, 0 at edge
-    const softCore = core.pow(2.0); // Soft falloff
+    // Radial gradient from center
+    const dist = length(pos.mul(2.0));
+    const core = float(1.0).sub(dist);
+    const softCore = core.pow(2.0);
 
     // Combine noise and core
-    const density = softCore.mul(combinedNoise.add(0.5)); // Boost density slightly
+    const density = softCore.mul(combinedNoise.add(0.5));
 
     // 2. Color Shift
     const col1 = color(new THREE.Color(baseColorHex));
     const col2 = color(new THREE.Color(secondaryColorHex));
 
     // Pulse between colors
-    const pulse = sin(uTime.mul(uPulseSpeed)).add(1.0).mul(0.5); // 0..1
+    const pulse = sin(uTime.mul(uPulseSpeed)).add(1.0).mul(0.5);
     let finalColor = mix(col1, col2, pulse.mul(combinedNoise));
 
     // 3. Dynamic Player Interaction
-    // Calculate distance from world position of this fragment/vertex to player
     const distToPlayer = length(positionWorld.sub(uPlayerPos));
-
-    // Smoothstep for glow falloff: 1.0 at center, 0.0 at radius
     const glowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
-
-    // Mix glow color into final color based on intensity
-    // We add it to make it look like illumination
     finalColor = finalColor.add(uGlowColor.mul(glowIntensity.mul(0.8)));
 
     // 4. Weapon Light Interaction
@@ -142,33 +95,24 @@ function createNebulaMaterial(
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
 
-        // distance from world pos
         const distToLight = distance(positionWorld, lightPos);
-
-        // 15.0 radius
         const lightRadius = float(15.0);
-
-        // falloff
         const falloff = smoothstep(lightRadius, 0.0, distToLight);
 
-        // accumulate
         weaponGlow.addAssign(falloff.mul(lightIntensity));
     });
 
     finalColor = finalColor.add(uWeaponColor.mul(weaponGlow.mul(0.5)));
 
-    // 5. Global Harmonic Pulse (Breathing Effect)
-    // Modulate brightness slightly with the global pulse
-    const harmonicBoost = uGlobalPulse.mul(0.3); // Up to 30% brighter
-    finalColor = finalColor.add(harmonicBoost.mul(col2)); // Add more secondary color
+    // 5. Global Harmonic Pulse
+    const harmonicBoost = uGlobalPulse.mul(0.3);
+    finalColor = finalColor.add(harmonicBoost.mul(col2));
 
-    // Output
-    // Use colorNode for Diffuse (responsive to lights)
     mat.colorNode = vec4(finalColor, density.mul(opacity));
-
-    // Use emissiveNode for ambient glow (visible in dark)
-    // Low intensity so lights can still overpower/add to it
     mat.emissiveNode = finalColor.mul(0.2);
+
+    // Expose uniform for updates
+    mat.userData.uPlayerPos = uPlayerPos;
 
     return mat;
 }
@@ -185,18 +129,11 @@ function createEnergyParticleMaterial(colorHex: number, uGlobalPulse: UniformNod
     });
 
     const uTime = time;
-
-    // Blink/Sparkle based on time and random phase (simulated by position)
     const pos = positionLocal;
-    // Using position as random seed
     const phase = pos.x.mul(10.0).add(pos.y.mul(20.0)).add(pos.z.mul(30.0));
-
-    const sparkle = sin(uTime.mul(5.0).add(phase)).add(1.0).mul(0.5); // 0..1
-    const sharpSparkle = pow(sparkle, 4.0); // Sharp flashes
-
-    // Global Pulse sync (particles get more active/bright)
-    const globalSync = uGlobalPulse.mul(0.5).add(0.5); // 0.5 to 1.0
-
+    const sparkle = sin(uTime.mul(5.0).add(phase)).add(1.0).mul(0.5);
+    const sharpSparkle = pow(sparkle, 4.0);
+    const globalSync = uGlobalPulse.mul(0.5).add(0.5);
     const baseColor = color(new THREE.Color(colorHex));
 
     mat.colorNode = vec4(baseColor, sharpSparkle.mul(globalSync));
@@ -214,20 +151,13 @@ function createPulseOverlayMaterial(uPulse: UniformNode<number>) {
         depthTest: false,
         depthWrite: false,
         side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending // Subtle glow addition
+        blending: THREE.AdditiveBlending
     });
 
     const vUv = uv();
-
-    // Vignette effect (stronger at edges)
-    const dist = length(vUv.sub(0.5)).mul(1.5); // 0 at center, ~1.06 at edge midpoints
-    const vignette = smoothstep(0.4, 1.2, dist); // Start fading in at 0.4 radius
-
-    // Color: Deep Purple/Pink
+    const dist = length(vUv.sub(0.5)).mul(1.5);
+    const vignette = smoothstep(0.4, 1.2, dist);
     const pulseColor = color(0x6600cc);
-
-    // Opacity driven by uPulse (0..1)
-    // Max opacity 0.2 at peak pulse at edges
     const alpha = vignette.mul(uPulse).mul(0.2);
 
     mat.colorNode = vec4(pulseColor, alpha);
@@ -240,12 +170,9 @@ export class PulseOverlay {
     camera: THREE.Camera | null = null;
 
     constructor() {
-        // Will be attached to camera later or created when needed
-        // For now, we create the mesh geometry
         const geo = new THREE.PlaneGeometry(2, 2);
-        // Material will be assigned by system since it needs the uniform
         this.mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ visible: false }));
-        this.mesh.position.set(0, 0, -1.01); // Just in front of camera
+        this.mesh.position.set(0, 0, -1.01);
     }
 
     init(uPulse: UniformNode<number>, camera: THREE.Camera) {
@@ -262,10 +189,8 @@ export class NebulaCloudLayer {
     width: number;
     depth: number;
     baseZ: number;
-
-    // Instance Data
     positions: Float32Array;
-    velocities: Float32Array; // Drift velocity per cloud
+    velocities: Float32Array;
 
     constructor(
         scene: THREE.Scene,
@@ -289,20 +214,18 @@ export class NebulaCloudLayer {
         this.depth = config.zRange;
         this.baseZ = config.z;
 
-        // Geometry: Low poly sphere is fine for soft clouds
         const geo = new THREE.SphereGeometry(1, 8, 8);
         const mat = createNebulaMaterial(config.color1, config.color2, config.opacity, config.uGlobalPulse, config.weaponLights);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
-        this.mesh.frustumCulled = false; // Always update
-        this.mesh.renderOrder = -1; // Render behind everything (background)
+        this.mesh.frustumCulled = false;
+        this.mesh.renderOrder = -1;
 
         this.dummy = new THREE.Object3D();
         this.positions = new Float32Array(this.count * 3);
         this.velocities = new Float32Array(this.count * 3);
 
         for (let i = 0; i < this.count; i++) {
-            // Random Position
             const x = (Math.random() - 0.5) * this.width;
             const y = (Math.random() - 0.5) * config.height;
             const z = this.baseZ + (Math.random() - 0.5) * this.depth;
@@ -311,19 +234,13 @@ export class NebulaCloudLayer {
             this.positions[i*3+1] = y;
             this.positions[i*3+2] = z;
 
-            // Random Drift Velocity (slow)
-            // Clouds drift in different directions
-            this.velocities[i*3] = (Math.random() - 0.5) * 2.0; // X drift
-            this.velocities[i*3+1] = (Math.random() - 0.5) * 0.5; // Y drift
-            this.velocities[i*3+2] = 0; // Z drift (usually 0 to keep layers intact)
+            this.velocities[i*3] = (Math.random() - 0.5) * 2.0;
+            this.velocities[i*3+1] = (Math.random() - 0.5) * 0.5;
+            this.velocities[i*3+2] = 0;
 
             this.dummy.position.set(x, y, z);
-
-            // Random Scale
             const s = config.sizeMin + Math.random() * (config.sizeMax - config.sizeMin);
-            this.dummy.scale.set(s * 1.5, s, s); // Slightly wider
-
-            // Random Rotation
+            this.dummy.scale.set(s * 1.5, s, s);
             this.dummy.rotation.z = Math.random() * Math.PI;
 
             this.dummy.updateMatrix();
@@ -333,16 +250,22 @@ export class NebulaCloudLayer {
         scene.add(this.mesh);
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         const margin = 50;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
         let needsUpdate = false;
 
+        // Update Player Pos Uniform
+        if (playerPos) {
+            const mat = this.mesh.material as any;
+            if (mat.userData && mat.userData.uPlayerPos) {
+                mat.userData.uPlayerPos.value.copy(playerPos);
+            }
+        }
+
         for (let i = 0; i < this.count; i++) {
             const idx = i * 3;
-
-            // Apply drift
             this.positions[idx] += this.velocities[idx] * delta;
             this.positions[idx+1] += this.velocities[idx+1] * delta;
 
@@ -350,7 +273,6 @@ export class NebulaCloudLayer {
             let y = this.positions[idx+1];
             let z = this.positions[idx+2];
 
-            // Wrap X (Infinite Scroll)
             if (x < limitBack) {
                 x += this.width + margin * 2;
                 this.positions[idx] = x;
@@ -361,11 +283,10 @@ export class NebulaCloudLayer {
                 needsUpdate = true;
             }
 
-            // Wrap Y (Drift return)
             if (y > 40) { y = -40; this.positions[idx+1] = y; needsUpdate = true; }
             if (y < -40) { y = 40; this.positions[idx+1] = y; needsUpdate = true; }
 
-            if (needsUpdate || true) { // Always update for smooth drift
+            if (needsUpdate || true) {
                 this.mesh.getMatrixAt(i, this.dummy.matrix);
                 const p = new THREE.Vector3();
                 const q = new THREE.Quaternion();
@@ -373,9 +294,10 @@ export class NebulaCloudLayer {
                 this.dummy.matrix.decompose(p, q, s);
 
                 this.dummy.position.set(x, y, z);
-                this.dummy.rotation.z += delta * 0.05; // Slow rotate
+                this.dummy.rotation.z += delta * 0.05;
                 this.dummy.scale.copy(s);
-                this.dummy.quaternion.copy(q);
+                // Do not copy quaternion back, as it overwrites rotation.z update
+                // this.dummy.quaternion.copy(q);
 
                 this.dummy.updateMatrix();
                 this.mesh.setMatrixAt(i, this.dummy.matrix);
@@ -438,9 +360,7 @@ export class EnergyParticleLayer {
         for(let i=0; i<this.count; i++) {
             const idx = i*3;
             let x = this.positions[idx];
-
-            // Slow float
-            x += delta * 0.5; // Particles float forward slightly?
+            x += delta * 0.5;
 
             if (x < limitBack) {
                 x += this.width + margin * 2;
@@ -453,7 +373,6 @@ export class EnergyParticleLayer {
             }
 
             this.positions[idx] = x;
-
             this.dummy.position.set(x, this.positions[idx+1], this.positions[idx+2]);
             this.dummy.rotation.y += delta;
             this.dummy.updateMatrix();
@@ -469,18 +388,16 @@ export class NebulaSystem {
     scene: THREE.Scene;
     active: boolean = false;
     layers: (NebulaCloudLayer | EnergyParticleLayer)[] = [];
-
-    // Global Pulse (0..1)
     uGlobalPulse: UniformNode<number>;
     pulseOverlay: PulseOverlay;
     elapsedTime: number = 0;
     weaponLightManager: WeaponLightManager;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager: WeaponLightManager) {
         this.scene = scene;
         this.uGlobalPulse = uniform(0.0);
         this.pulseOverlay = new PulseOverlay();
-        this.weaponLightManager = new WeaponLightManager();
+        this.weaponLightManager = weaponLightManager;
         this.initLayers();
     }
 
@@ -491,11 +408,10 @@ export class NebulaSystem {
     initLayers() {
         const weaponLights = this.weaponLightManager.storageNode;
 
-        // 1. Far Background (Purple/Pink, Large, Slow)
         this.layers.push(new NebulaCloudLayer(this.scene, {
             count: 20,
-            color1: 0x4b0082, // Indigo
-            color2: 0x8a2be2, // BlueViolet
+            color1: 0x4b0082,
+            color2: 0x8a2be2,
             opacity: 0.4,
             sizeMin: 20,
             sizeMax: 40,
@@ -507,11 +423,10 @@ export class NebulaSystem {
             weaponLights: weaponLights
         }));
 
-        // 2. Mid Background (Cyan/Blue, Transparent)
         this.layers.push(new NebulaCloudLayer(this.scene, {
             count: 15,
-            color1: 0x00008b, // DarkBlue
-            color2: 0x00ced1, // DarkTurquoise
+            color1: 0x00008b,
+            color2: 0x00ced1,
             opacity: 0.3,
             sizeMin: 15,
             sizeMax: 25,
@@ -523,11 +438,10 @@ export class NebulaSystem {
             weaponLights: weaponLights
         }));
 
-        // 3. Foreground Mist (Pink, sparse, faster drift)
         this.layers.push(new NebulaCloudLayer(this.scene, {
             count: 10,
-            color1: 0xff1493, // DeepPink
-            color2: 0xff69b4, // HotPink
+            color1: 0xff1493,
+            color2: 0xff69b4,
             opacity: 0.15,
             sizeMin: 10,
             sizeMax: 20,
@@ -539,10 +453,9 @@ export class NebulaSystem {
             weaponLights: weaponLights
         }));
 
-        // 4. Energy Particles
         this.layers.push(new EnergyParticleLayer(this.scene, 50, -30, 200, this.uGlobalPulse));
 
-        this.deactivate(); // Start hidden
+        this.deactivate();
     }
 
     activate() {
@@ -559,20 +472,19 @@ export class NebulaSystem {
         if (this.pulseOverlay.mesh) this.pulseOverlay.mesh.visible = false;
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
 
-        // Update Pulse
         this.elapsedTime += delta;
-        // Slow rhythmic breathing (period ~ 6 seconds)
-        // sin ranges -1 to 1. Map to 0 to 1.
         const pulse = Math.sin(this.elapsedTime * 1.0) * 0.5 + 0.5;
         this.uGlobalPulse.value = pulse;
 
-        this.layers.forEach(l => l.update(delta, cameraX));
-    }
-
-    updateLights(projectiles: Projectile[]) {
-        this.weaponLightManager.update(projectiles);
+        this.layers.forEach(l => {
+            if (l instanceof NebulaCloudLayer) {
+                l.update(delta, cameraX, playerPos);
+            } else {
+                l.update(delta, cameraX);
+            }
+        });
     }
 }

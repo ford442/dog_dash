@@ -47,6 +47,7 @@ import { NebulaSystem } from './nebula';
 import { BiologicalBackgroundSystem } from './biological_background';
 import { AtmosphereSystem } from './sky';
 import { WeaponSystem } from './weapons';
+import { WeaponLightManager } from './lighting';
 import { generateEnvironment } from './environment';
 
 // --- Configuration ---
@@ -1610,6 +1611,7 @@ const debrisSystem = new DebrisSystem(scene);
 
 // WEAPON SYSTEM (Dynamic Lighting Projectiles)
 const weaponSystem = new WeaponSystem(scene);
+const weaponLightManager = new WeaponLightManager();
 
 // RE-ENTRY SYSTEM (Atmospheric Heat Effects)
 const reEntrySystem = new ReEntrySystem(scene, camera);
@@ -1618,7 +1620,7 @@ const reEntrySystem = new ReEntrySystem(scene, camera);
 const waterfallSystem = new WaterfallSystem(scene, camera);
 
 // ASTEROID FIELD SYSTEM (Parallax Asteroids)
-const asteroidFieldSystem = new AsteroidFieldSystem(scene);
+const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
 
 // PLANETARY HORIZON SYSTEM (Massive scrolling planet)
 const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
@@ -1627,7 +1629,7 @@ const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
 const industrialSystem = new IndustrialBackgroundSystem(scene);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
-const nebulaSystem = new NebulaSystem(scene);
+const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 nebulaSystem.setCamera(camera);
 
 // BIOLOGICAL BACKGROUND SYSTEM (Space Whale Interior)
@@ -2257,6 +2259,7 @@ function animate() {
     // Update Weapon System
     if (player) {
         weaponSystem.update(delta, camera.position.x);
+        weaponLightManager.update(weaponSystem.getActiveProjectiles());
 
         // Projectile Collisions
         const projectiles = weaponSystem.getActiveProjectiles();
