@@ -1,4 +1,74 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import {
+    time,
+    positionWorld,
+    color,
+    uniform,
+    mix,
+    sin,
+    cos,
+    float,
+    smoothstep,
+    distance,
+    loop,
+    normalView,
+    vec4
+} from 'three/tsl';
+import { WeaponLightManager } from './lighting';
+
+/**
+ * Creates a TSL material for asteroids with Rim Light and Weapon Light interaction.
+ */
+function createAsteroidMaterial(baseColorHex: number, opacity: number, weaponLights: any) {
+    const mat = new MeshStandardNodeMaterial({
+        color: baseColorHex,
+        roughness: 0.9,
+        metalness: 0.1,
+        flatShading: true,
+        transparent: opacity < 1.0,
+        opacity: opacity
+    });
+
+    const vNormalView = normalView; // View space normal
+
+    // Rim Lighting
+    // Intensity increases as normal faces away from camera (z approaches 0)
+    // normalView.z is 1.0 when facing camera, 0.0 at edge.
+    const rim = float(1.0).sub(vNormalView.z.abs());
+    const rimGlow = rim.pow(3.0).mul(0.5); // Subtle rim
+
+    // Weapon Light Interaction
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan
+
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w; // 2.0 or 0.0
+
+        // distance from world pos of fragment to light
+        const distToLight = distance(positionWorld, lightPos);
+
+        // Range 20.0 (slightly less than full projectile range to keep it tight)
+        const lightRadius = float(20.0);
+
+        const falloff = smoothstep(lightRadius, 0.0, distToLight);
+
+        weaponGlow.addAssign(falloff.mul(lightIntensity));
+    });
+
+    // Emissive Output
+    // Combine Rim Light (White/Base) + Weapon Glow (Cyan)
+    const baseColor = color(new THREE.Color(baseColorHex));
+    // Rim light is just boosted base color
+    // Weapon light adds color
+    const finalEmissive = baseColor.mul(rimGlow).add(uWeaponColor.mul(weaponGlow));
+
+    mat.emissiveNode = finalEmissive;
+
+    return mat;
+}
 
 /**
  * Manages a single layer of parallax asteroids using InstancedMesh.
@@ -26,7 +96,8 @@ export class AsteroidLayer {
             z: number,
             zRange: number,
             width: number,
-            opacity?: number
+            opacity?: number,
+            weaponLights: any
         }
     ) {
         this.count = config.count;
@@ -37,15 +108,8 @@ export class AsteroidLayer {
         // Geometry: Icosahedron for jagged rock look
         const geometry = new THREE.IcosahedronGeometry(1, 0);
 
-        // Material: Standard for lighting + optional transparency
-        const material = new THREE.MeshStandardMaterial({
-            color: config.color,
-            roughness: 0.9,
-            metalness: 0.1,
-            flatShading: true,
-            transparent: (config.opacity !== undefined && config.opacity < 1.0),
-            opacity: config.opacity ?? 1.0
-        });
+        // Material: TSL Node Material
+        const material = createAsteroidMaterial(config.color, config.opacity ?? 1.0, config.weaponLights);
 
         this.mesh = new THREE.InstancedMesh(geometry, material, this.count);
         this.mesh.castShadow = true;
@@ -117,8 +181,6 @@ export class AsteroidLayer {
             if (x < limitBack) {
                 x += this.width + margin * 2;
                 this.positions[idx] = x;
-                // Randomize Y/Z slightly on wrap to break patterns?
-                // keeping it stable for now to avoid popping
                 needsUpdate = true;
             } else if (x > limitFront) {
                 x -= (this.width + margin * 2);
@@ -127,17 +189,7 @@ export class AsteroidLayer {
             }
 
             // Update Instance
-            this.dummy.position.set(x, this.positions[idx+1], this.positions[idx+2]);
-            this.dummy.rotation.set(
-                this.rotations[idx],
-                this.rotations[idx+1],
-                this.rotations[idx+2]
-            );
-
-            // Re-apply scale (we need to extract it or store it, but since we don't change scale,
-            // we can just re-use the current matrix scale? No, setMatrixAt overwrites.
-            // We didn't store scale. Let's assume uniform scale or retrieve it.
-            // Better: get current matrix, decompose, update pos/rot, recompose.
+            // Scale handling: Reconstruct transform
             this.mesh.getMatrixAt(i, this.dummy.matrix);
             const p = new THREE.Vector3();
             const q = new THREE.Quaternion();
@@ -154,7 +206,7 @@ export class AsteroidLayer {
             this.dummy.updateMatrix();
 
             this.mesh.setMatrixAt(i, this.dummy.matrix);
-            needsUpdate = true; // Always update due to rotation
+            needsUpdate = true;
         }
 
         if (needsUpdate) {
@@ -167,49 +219,52 @@ export class AsteroidFieldSystem {
     scene: THREE.Scene;
     layers: AsteroidLayer[] = [];
     active: boolean = false;
+    weaponLightManager: WeaponLightManager;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager: WeaponLightManager) {
         this.scene = scene;
+        this.weaponLightManager = weaponLightManager;
         this.initLayers();
     }
 
     initLayers() {
+        const weaponLights = this.weaponLightManager.storageNode;
+
         // Layer 1: Foreground (Close, Large, Darker/Threatening)
-        // Passes In Front of Player sometimes? Player Z=0.
-        // Z range 5 to 15.
         this.layers.push(new AsteroidLayer(this.scene, {
             count: 15,
             color: 0x333333, // Dark grey
             sizeMin: 1.5,
             sizeMax: 3.0,
-            z: 12, // Increased Z to avoid clipping with player at Z=0. Camera is at Z=15.
+            z: 12,
             zRange: 6,
-            width: 150
+            width: 150,
+            weaponLights: weaponLights
         }));
 
-        // Layer 2: Background Mid (Behind gameplay layer)
-        // Z range -10 to -20
+        // Layer 2: Background Mid
         this.layers.push(new AsteroidLayer(this.scene, {
             count: 40,
-            color: 0x555566, // Slightly bluish grey
+            color: 0x555566,
             sizeMin: 1.0,
             sizeMax: 2.0,
             z: -15,
             zRange: 10,
-            width: 200
+            width: 200,
+            weaponLights: weaponLights
         }));
 
-        // Layer 3: Deep Background (Small, Faint)
-        // Z range -30 to -50
+        // Layer 3: Deep Background
         this.layers.push(new AsteroidLayer(this.scene, {
             count: 80,
-            color: 0x222233, // Very dark, atmospheric
+            color: 0x222233,
             sizeMin: 0.5,
             sizeMax: 1.2,
             z: -40,
             zRange: 10,
             width: 300,
-            opacity: 0.8
+            opacity: 0.8,
+            weaponLights: weaponLights
         }));
 
         // Start hidden
@@ -219,7 +274,6 @@ export class AsteroidFieldSystem {
     setVisible(visible: boolean) {
         this.layers.forEach(l => {
             l.mesh.visible = visible;
-            // Force frustum culling update just in case, though handled in loop
         });
         this.active = visible;
     }
