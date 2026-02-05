@@ -6,6 +6,7 @@ import {
 import {
     time,
     positionLocal,
+    positionWorld,
     uv,
     vec2,
     vec3,
@@ -20,7 +21,8 @@ import {
     smoothstep,
     dot,
     fract,
-    max
+    max,
+    distance
 } from 'three/tsl';
 
 // --- TSL Noise Functions ---
@@ -73,7 +75,7 @@ const fbm = (v: any) => {
  * - Procedural shape (Soft circle + Noise erosion)
  * - Billowing animation (Time-based noise offset)
  * - Internal lighting/shading simulation via noise density
- * - Lightning flash support
+ * - Volumetric Lightning Flash (Distance-based)
  */
 function createCloudSpriteMaterial(baseColorHex: number, opacity: number, detail: number = 1.0) {
     const mat = new MeshBasicNodeMaterial({
@@ -88,6 +90,10 @@ function createCloudSpriteMaterial(baseColorHex: number, opacity: number, detail
     const uBillowSpeed = uniform(0.2);
     const uFlash = uniform(0.0);
     const uDetail = uniform(detail);
+
+    // Volumetric Lightning Uniforms
+    const uLightningPos = uniform(new THREE.Vector3(0, 0, 0));
+    const uLightningRadius = uniform(50.0);
 
     // --- Fragment Shader ---
     const vUv = uv();
@@ -124,15 +130,25 @@ function createCloudSpriteMaterial(baseColorHex: number, opacity: number, detail
     const shadowFactor = noiseVal.mul(0.5).add(0.5);
     const finalColor = baseColor.mul(shadowFactor);
 
-    // 5. Lightning Flash
-    // Flash adds white emissive boost
+    // 5. Volumetric Lightning Flash
+    // Calculate distance from this fragment (in world space) to the lightning strike
+    const distToStrike = distance(positionWorld, uLightningPos);
+
+    // Attenuation: 1.0 at center, 0.0 at radius
+    const attenuation = smoothstep(uLightningRadius, float(0.0), distToStrike);
+
+    // Flash adds white emissive boost based on attenuation and intensity
     const flashColor = color(0xffffff);
-    const flashedColor = mix(finalColor, flashColor, uFlash);
+    const flashFactor = uFlash.mul(attenuation);
+
+    const flashedColor = mix(finalColor, flashColor, flashFactor);
 
     mat.colorNode = vec4(flashedColor, alpha);
 
     // Store uniforms
     mat.userData.uFlash = uFlash;
+    mat.userData.uLightningPos = uLightningPos;
+    mat.userData.uLightningRadius = uLightningRadius;
 
     return mat;
 }
@@ -143,6 +159,7 @@ export class CloudLayer {
     count: number;
     windSpeed: number; // Independent speed
     width: number;
+    baseZ: number;
 
     // Instance data
     positions: Float32Array;
@@ -166,6 +183,7 @@ export class CloudLayer {
         this.count = config.count;
         this.windSpeed = config.windSpeed;
         this.width = config.width;
+        this.baseZ = config.z;
 
         // Use PlaneGeometry for Sprites
         const geo = new THREE.PlaneGeometry(1, 1);
@@ -261,10 +279,12 @@ export class CloudLayer {
         }
     }
 
-    flash(intensity: number) {
+    flash(position: THREE.Vector3, radius: number, intensity: number) {
         const mat = this.mesh.material as any;
-        if (mat.userData && mat.userData.uFlash) {
-            mat.userData.uFlash.value = intensity;
+        if (mat.userData) {
+            if (mat.userData.uFlash) mat.userData.uFlash.value = intensity;
+            if (mat.userData.uLightningPos) mat.userData.uLightningPos.value.copy(position);
+            if (mat.userData.uLightningRadius) mat.userData.uLightningRadius.value = radius;
         }
     }
 }
@@ -273,6 +293,7 @@ export class CloudSystem {
     scene: THREE.Scene;
     layers: CloudLayer[] = [];
     lightningTimer: number = 0;
+    currentCameraX: number = 0;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -356,6 +377,7 @@ export class CloudSystem {
     }
 
     update(delta: number, cameraX: number, playerSpeed: number) {
+        this.currentCameraX = cameraX;
         this.layers.forEach(layer => layer.update(delta, cameraX));
 
         // Lightning Logic
@@ -383,13 +405,31 @@ export class CloudSystem {
         // Flash deep layers more often
         const layerIdx = Math.floor(Math.random() * 3); // 0, 1, or 2
         const layer = this.layers[layerIdx];
-        const intensity = 0.6 + Math.random() * 0.4;
 
-        layer.flash(intensity);
+        // Calculate random volumetric position for the strike
+        // X: Near camera (visible area)
+        const x = this.currentCameraX + (Math.random() - 0.5) * 150;
+        // Y: Random vertical spread
+        const y = (Math.random() - 0.5) * 40;
+        // Z: Near the layer's base Z (so it lights up relevant clouds)
+        // Add some variation so it's not always planar
+        const z = layer.baseZ + (Math.random() - 0.5) * 20;
+
+        const pos = new THREE.Vector3(x, y, z);
+        const radius = 60.0 + Math.random() * 40.0; // Large radius
+        const intensity = 0.8 + Math.random() * 0.4;
+
+        layer.flash(pos, radius, intensity);
 
         // Chain reaction (flash nearby layers)
         if (Math.random() > 0.5 && layerIdx < this.layers.length - 1) {
-            setTimeout(() => this.layers[layerIdx + 1].flash(intensity * 0.5), 100);
+            // Flash next layer with slightly different position/intensity
+            const nextLayer = this.layers[layerIdx + 1];
+            // Slightly offset z for 3D feel
+            const nextPos = pos.clone();
+            nextPos.z = nextLayer.baseZ;
+
+            setTimeout(() => nextLayer.flash(nextPos, radius * 0.8, intensity * 0.5), 100);
         }
     }
 }
