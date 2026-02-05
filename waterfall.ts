@@ -48,10 +48,12 @@ function createWaterMaterial(baseColorHex: number, opacity: number, speed: numbe
     // Wiggle (X axis)
     const wiggle = sin(pos.y.mul(0.5).add(uTime)).mul(0.5);
 
-    // Curve (Z axis recedes at top)
+    // Curve (Z axis recedes at top) - Mode 7 Style
     // Assuming Y ranges from -Height/2 to +Height/2
-    const curveAmount = float(0.01);
-    const zOffset = pos.y.mul(pos.y).mul(curveAmount).negate(); // -y^2 * k
+    // curvature of 0.005 on height 100 (y=50) -> 2500 * 0.005 = 12.5
+    // curvature of 0.02 on height 100 -> 50.0 (Deep curve)
+    const uCurvature = uniform(0.02);
+    const zOffset = pos.y.mul(pos.y).mul(uCurvature).negate(); // -y^2 * k
 
     mat.positionNode = vec3(pos.x.add(wiggle), pos.y, pos.z.add(zOffset));
 
@@ -194,7 +196,8 @@ export class WaterfallLayer {
         this.speed = config.speed;
         this.parallaxFactor = config.parallaxFactor;
 
-        const geo = new THREE.PlaneGeometry(this.width, this.height, 32, 32);
+        // High segmentation for smooth curvature (Mode 7 effect)
+        const geo = new THREE.PlaneGeometry(this.width, this.height, 64, 128);
         const mat = createWaterMaterial(config.color, config.opacity, config.speed);
 
         // Initialize parallax factor uniform
