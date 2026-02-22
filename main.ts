@@ -49,6 +49,11 @@ import { AtmosphereSystem } from './sky';
 import { WeaponSystem } from './weapons';
 import { WeaponLightManager } from './lighting';
 import { generateEnvironment } from './environment';
+import { IndustrialGeometryManager } from './industrial_geometry';
+import { LEVEL_CONFIG, type LevelConfig } from './level_config';
+import { ObstacleSystem } from './obstacle_system';
+import { createUI, gameOver, gameWin, keys, setupKeyboardControls, updateDistanceDisplay, updateHealthDisplay } from './ui_controls';
+import { checkPlatformCollision } from './physics_utils';
 
 // --- Configuration ---
 const CONFIG = {
@@ -363,429 +368,10 @@ const playerState = {
 // =============================================================================
 // LEVEL MANAGER
 // =============================================================================
-type LevelConfig = {
-    name: string;
-    distance: number;
-    asteroidRate: number;
-    foliageDensity: {
-        fern?: number;
-        rose?: number;
-        lotus?: number;
-        glowingFlower?: number;
-        tree?: number;
-        floweringTree?: number;
-        shrub?: number;
-        vine?: number;
-        orb?: number;
-        mushroom?: number;
-        cloud?: number;
-        // Geological objects from plan.md
-        voidRootBall?: number;
-        vacuumKelp?: number;
-        iceNeedle?: number;
-        liquidMetal?: number;
-        magmaHeart?: number;
-    };
-    speed: number;
-    bgColor: number;
-    skyColors: { top: number, bottom: number };
-    // New tunnel-related properties
-    levelType?: 'open' | 'tunnel' | 'organic_tunnel';
-    tunnelHeight?: number;
-    obstacleInterval?: number;
-    fogDensity?: number;
-};
-
-// =============================================================================
-// INDUSTRIAL TUNNEL GEOMETRY (Level 4: The Rusty Gauntlet)
-// =============================================================================
-
-// Obstacle spawn probability constants
-const PISTON_SPAWN_CHANCE = 0.4;
-const BLAST_DOOR_SPAWN_CHANCE = 0.6;
-
-// Fog configuration defaults
 const DEFAULT_FOG_FAR = 80;
 const DEFAULT_FOG_NEAR = 20;
 const FOG_FAR_DENSITY_FACTOR = 5;
 const FOG_NEAR_DENSITY_FACTOR = 3;
-
-// Track industrial sections and pistons for updates
-const industrialSections: THREE.Group[] = [];
-const pistons: THREE.Group[] = [];
-const blastDoors: THREE.Group[] = [];
-const whaleRibSections: THREE.Group[] = [];
-const barnacles: THREE.Mesh[] = [];
-
-/**
- * Creates an industrial tunnel section with floor/ceiling plates
- * Based on plan.md Section V: Industrial Megastructures
- */
-function createIndustrialSection(xPos: number): THREE.Group {
-    const group = new THREE.Group();
-    const sectionLength = 20; // 20m sections
-    const tunnelHeight = 15; // Vertical clearance
-
-    // Rusted metal material (as per plan.md: roughness 0.9, metallic 0.8)
-    const rustedMetalMat = new THREE.MeshStandardMaterial({
-        color: 0x664422,
-        roughness: 0.9,
-        metalness: 0.8
-    });
-
-    // Glowing orange seams material (emission 3.0)
-    const seamMat = new THREE.MeshStandardMaterial({
-        color: 0xff6600,
-        emissive: 0xff4400,
-        emissiveIntensity: 3.0
-    });
-
-    // Floor plate
-    const floorGeo = new THREE.BoxGeometry(sectionLength, 0.5, 10);
-    const floor = new THREE.Mesh(floorGeo, rustedMetalMat);
-    floor.position.set(0, -tunnelHeight / 2, 0);
-    floor.receiveShadow = true;
-    group.add(floor);
-
-    // Ceiling plate
-    const ceiling = new THREE.Mesh(floorGeo, rustedMetalMat);
-    ceiling.position.set(0, tunnelHeight / 2, 0);
-    ceiling.receiveShadow = true;
-    group.add(ceiling);
-
-    // Add glowing seams along floor edges
-    const seamGeo = new THREE.BoxGeometry(sectionLength, 0.1, 0.1);
-    for (let z of [-4.5, 4.5]) {
-        const seam = new THREE.Mesh(seamGeo, seamMat);
-        seam.position.set(0, -tunnelHeight / 2 + 0.3, z);
-        group.add(seam);
-    }
-
-    // Randomly spawn obstacles: Piston or Blast Door
-    const obstacleChance = Math.random();
-    if (obstacleChance < PISTON_SPAWN_CHANCE) {
-        // Spawn a Piston
-        const piston = createPiston(0, tunnelHeight);
-        group.add(piston);
-        pistons.push(piston);
-    } else if (obstacleChance < BLAST_DOOR_SPAWN_CHANCE) {
-        // Spawn a Blast Door
-        const door = createBlastDoor(sectionLength / 2, tunnelHeight);
-        group.add(door);
-        blastDoors.push(door);
-    }
-
-    // Add some wall details
-    const wallPanelGeo = new THREE.BoxGeometry(0.2, tunnelHeight * 0.8, 8);
-    for (let i = 0; i < 3; i++) {
-        const panel = new THREE.Mesh(wallPanelGeo, rustedMetalMat);
-        panel.position.set(-sectionLength / 2 + i * sectionLength / 3, 0, -5);
-        group.add(panel);
-    }
-
-    group.position.x = xPos;
-    group.userData = {
-        type: 'industrialSection',
-        sectionLength: sectionLength
-    };
-
-    scene.add(group);
-    industrialSections.push(group);
-    return group;
-}
-
-/**
- * Creates a Piston obstacle - animated vertical crusher
- * Simple: 2m diameter, 3m stroke, 2s cycle
- */
-function createPiston(xOffset: number, tunnelHeight: number): THREE.Group {
-    const group = new THREE.Group();
-
-    // Piston base (ceiling mount)
-    const baseGeo = new THREE.CylinderGeometry(1.2, 1.2, 0.5, 16);
-    const metalMat = new THREE.MeshStandardMaterial({
-        color: 0x555555,
-        roughness: 0.7,
-        metalness: 0.9
-    });
-    const base = new THREE.Mesh(baseGeo, metalMat);
-    base.position.y = tunnelHeight / 2 - 0.25;
-    group.add(base);
-
-    // Piston shaft
-    const shaftGeo = new THREE.CylinderGeometry(0.5, 0.5, 4, 12);
-    const shaft = new THREE.Mesh(shaftGeo, metalMat);
-    shaft.position.y = tunnelHeight / 2 - 2.5;
-    group.add(shaft);
-
-    // Piston head (crusher plate)
-    const headGeo = new THREE.CylinderGeometry(1, 1, 0.8, 16);
-    const headMat = new THREE.MeshStandardMaterial({
-        color: 0xcc4400,
-        roughness: 0.6,
-        metalness: 0.8,
-        emissive: 0x331100,
-        emissiveIntensity: 0.3
-    });
-    const head = new THREE.Mesh(headGeo, headMat);
-    head.position.y = tunnelHeight / 2 - 5;
-    group.add(head);
-
-    group.position.x = xOffset;
-    group.userData = {
-        type: 'piston',
-        baseY: tunnelHeight / 2 - 5,
-        stroke: 3, // 3m stroke
-        cycleSpeed: Math.PI, // 2s cycle (2*PI / cycleSpeed = 2)
-        phase: Math.random() * Math.PI * 2,
-        head: head,
-        shaft: shaft
-    };
-
-    return group;
-}
-
-/**
- * Creates a Blast Door - requires shooting to open (simplified version)
- */
-function createBlastDoor(xOffset: number, tunnelHeight: number): THREE.Group {
-    const group = new THREE.Group();
-
-    // Door frame
-    const frameMat = new THREE.MeshStandardMaterial({
-        color: 0x444444,
-        roughness: 0.8,
-        metalness: 0.7
-    });
-
-    // Top frame
-    const topFrameGeo = new THREE.BoxGeometry(1, 1, 8);
-    const topFrame = new THREE.Mesh(topFrameGeo, frameMat);
-    topFrame.position.set(0, tunnelHeight / 2 - 0.5, 0);
-    group.add(topFrame);
-
-    // Door panels (close from top and bottom)
-    const doorMat = new THREE.MeshStandardMaterial({
-        color: 0x663333,
-        roughness: 0.9,
-        metalness: 0.6,
-        emissive: 0x220000,
-        emissiveIntensity: 0.2
-    });
-
-    const doorGeo = new THREE.BoxGeometry(0.5, tunnelHeight / 2 - 1, 6);
-    const topDoor = new THREE.Mesh(doorGeo, doorMat);
-    topDoor.position.set(0, tunnelHeight / 4, 0);
-    group.add(topDoor);
-
-    const bottomDoor = new THREE.Mesh(doorGeo, doorMat);
-    bottomDoor.position.set(0, -tunnelHeight / 4, 0);
-    group.add(bottomDoor);
-
-    // Warning light
-    const lightGeo = new THREE.SphereGeometry(0.3, 8, 8);
-    const lightMat = new THREE.MeshStandardMaterial({
-        color: 0xff0000,
-        emissive: 0xff0000,
-        emissiveIntensity: 2.0
-    });
-    const warningLight = new THREE.Mesh(lightGeo, lightMat);
-    warningLight.position.set(0, tunnelHeight / 2 - 1.5, 4);
-    group.add(warningLight);
-
-    group.position.x = xOffset;
-    group.userData = {
-        type: 'blastDoor',
-        isOpen: false,
-        openProgress: 0,
-        topDoor: topDoor,
-        bottomDoor: bottomDoor,
-        warningLight: warningLight,
-        tunnelHeight: tunnelHeight
-    };
-
-    return group;
-}
-
-// =============================================================================
-// SPACE WHALE GEOMETRY (Level 5: The Astral Leviathan)
-// =============================================================================
-
-/**
- * Creates a Whale Rib Section - large curved rib bones forming an organic tunnel
- * Based on plan.md Section III: Fossilized Space Whales
- */
-function createWhaleRibSection(xPos: number): THREE.Group {
-    const group = new THREE.Group();
-    const sectionLength = 25;
-    const ribHeight = 20; // 40m clearance total, but ribs arch upward
-
-    // Bone material - aged, fossilized
-    const boneMat = new THREE.MeshStandardMaterial({
-        color: 0xddc8a8,
-        roughness: 0.85,
-        metalness: 0.05,
-        emissive: 0x221100,
-        emissiveIntensity: 0.1
-    });
-
-    // Create curved rib bones on both sides
-    const ribCount = 3; // 3 ribs per section
-    for (let i = 0; i < ribCount; i++) {
-        const ribOffset = (i - 1) * (sectionLength / 3);
-
-        // Left rib
-        const leftRib = createRibBone(ribHeight, true);
-        leftRib.position.set(ribOffset, 0, -8);
-        leftRib.rotation.y = Math.PI / 2;
-        group.add(leftRib);
-
-        // Right rib
-        const rightRib = createRibBone(ribHeight, false);
-        rightRib.position.set(ribOffset, 0, 8);
-        rightRib.rotation.y = -Math.PI / 2;
-        group.add(rightRib);
-    }
-
-    // Add barnacles to surfaces
-    const barnacleCount = 8 + Math.floor(Math.random() * 8);
-    for (let i = 0; i < barnacleCount; i++) {
-        const barnacle = createBarnacle();
-        barnacle.position.set(
-            (Math.random() - 0.5) * sectionLength,
-            (Math.random() - 0.5) * ribHeight * 0.8,
-            (Math.random() > 0.5 ? -7 : 7) + (Math.random() - 0.5) * 2
-        );
-        group.add(barnacle);
-        barnacles.push(barnacle);
-    }
-
-    // Spine/vertebrae along the bottom
-    const spineGeo = new THREE.CylinderGeometry(1.5, 1.5, sectionLength, 12);
-    const spine = new THREE.Mesh(spineGeo, boneMat);
-    spine.rotation.z = Math.PI / 2;
-    spine.position.y = -ribHeight / 2;
-    group.add(spine);
-
-    group.position.x = xPos;
-    group.userData = {
-        type: 'whaleRibSection',
-        sectionLength: sectionLength
-    };
-
-    scene.add(group);
-    whaleRibSections.push(group);
-    return group;
-}
-
-/**
- * Creates a single curved rib bone
- */
-function createRibBone(height: number, isLeft: boolean): THREE.Group {
-    const group = new THREE.Group();
-
-    const boneMat = new THREE.MeshStandardMaterial({
-        color: 0xddc8a8,
-        roughness: 0.85,
-        metalness: 0.05
-    });
-
-    // Create curved rib using tube geometry
-    const curve = new THREE.QuadraticBezierCurve3(
-        new THREE.Vector3(0, -height / 2, 0),
-        new THREE.Vector3(isLeft ? 3 : -3, 0, 0),
-        new THREE.Vector3(0, height / 2, 0)
-    );
-
-    const ribGeo = new THREE.TubeGeometry(curve, 20, 0.8, 8, false);
-    const rib = new THREE.Mesh(ribGeo, boneMat);
-    rib.castShadow = true;
-    group.add(rib);
-
-    // Add some bony protrusions
-    const protrusionCount = 3;
-    for (let i = 0; i < protrusionCount; i++) {
-        const t = (i + 1) / (protrusionCount + 1);
-        const point = curve.getPoint(t);
-        
-        const protrusionGeo = new THREE.ConeGeometry(0.3, 1.5, 6);
-        const protrusion = new THREE.Mesh(protrusionGeo, boneMat);
-        protrusion.position.copy(point);
-        protrusion.position.z += (isLeft ? -0.5 : 0.5);
-        protrusion.rotation.x = isLeft ? -Math.PI / 4 : Math.PI / 4;
-        group.add(protrusion);
-    }
-
-    return group;
-}
-
-/**
- * Creates a Barnacle - harvestable object containing Memory Fragments
- */
-function createBarnacle(): THREE.Mesh {
-    const size = 0.3 + Math.random() * 0.5;
-    const barnacleGeo = new THREE.DodecahedronGeometry(size, 0);
-    const barnacleMat = new THREE.MeshStandardMaterial({
-        color: 0x556677,
-        roughness: 0.95,
-        metalness: 0.1,
-        emissive: 0x223344,
-        emissiveIntensity: 0.2
-    });
-    
-    const barnacle = new THREE.Mesh(barnacleGeo, barnacleMat);
-    barnacle.castShadow = true;
-    barnacle.userData = {
-        type: 'barnacle',
-        hasMemoryFragment: Math.random() < 0.3, // 30% chance
-        collected: false
-    };
-
-    return barnacle;
-}
-
-/**
- * Updates pistons with sin-wave animation
- */
-function updatePistons(time: number) {
-    pistons.forEach(piston => {
-        if (!piston.userData || piston.userData.type !== 'piston') return;
-
-        const data = piston.userData;
-        const phase = time * data.cycleSpeed + data.phase;
-        const offset = Math.sin(phase) * data.stroke;
-
-        // Update head position
-        if (data.head) {
-            data.head.position.y = data.baseY + offset;
-        }
-
-        // Update shaft to stretch
-        if (data.shaft) {
-            const shaftLength = 4 + offset;
-            data.shaft.scale.y = shaftLength / 4;
-            data.shaft.position.y = data.baseY + offset / 2 + 2.5;
-        }
-    });
-}
-
-/**
- * Updates blast doors (simple pulsing warning light for now)
- */
-function updateBlastDoors(time: number) {
-    blastDoors.forEach(door => {
-        if (!door.userData || door.userData.type !== 'blastDoor') return;
-
-        const data = door.userData;
-        
-        // Pulse warning light
-        if (data.warningLight) {
-            const pulse = Math.sin(time * 4) * 0.5 + 0.5;
-            const mat = data.warningLight.material as THREE.MeshStandardMaterial;
-            mat.emissiveIntensity = 1.0 + pulse * 2.0;
-        }
-    });
-}
 
 class LevelManager {
     currentLevel: number;
@@ -798,182 +384,7 @@ class LevelManager {
         this.cloudSystem = new CloudSystem(scene);
         this.atmosphereSystem = new AtmosphereSystem(scene);
         this.currentLevel = 1;
-        this.config = {
-            1: {
-                name: "The Neon Garden",
-                distance: 500,
-                asteroidRate: 3.0, // Slow spawn
-                foliageDensity: {
-                    fern: 50,
-                    rose: 30,
-                    lotus: 10,
-                    glowingFlower: 40,
-                    tree: 50,
-                    floweringTree: 40,
-                    shrub: 40,
-                    vine: 15,
-                    orb: 25,
-                    mushroom: 30,
-                    cloud: 25,
-                    // Geological objects - sparse in first level
-                    voidRootBall: 3,
-                    vacuumKelp: 5,
-                    iceNeedle: 8,
-                    liquidMetal: 4,
-                    magmaHeart: 2
-                },
-                speed: 6,
-                bgColor: 0x1a1a2e,
-                skyColors: { top: 0x000000, bottom: 0x1a1a2e }, // Dark Purple/Black
-                levelType: 'open'
-            },
-            2: {
-                name: "The Asteroid Belt",
-                distance: 1200, // Start + 700
-                asteroidRate: 0.8, // Fast spawn
-                foliageDensity: {
-                    fern: 10,
-                    rose: 5,
-                    lotus: 5,
-                    glowingFlower: 10,
-                    tree: 10,
-                    floweringTree: 5,
-                    shrub: 10,
-                    vine: 5,
-                    orb: 10,
-                    mushroom: 10,
-                    cloud: 10,
-                    // More geological threats in asteroid belt
-                    voidRootBall: 8,
-                    vacuumKelp: 3,
-                    iceNeedle: 15,
-                    liquidMetal: 10,
-                    magmaHeart: 5
-                },
-                speed: 8,
-                bgColor: 0x2d1a1a, // Reddish
-                skyColors: { top: 0x000000, bottom: 0x2d1a1a }, // Reddish
-                levelType: 'open'
-            },
-            3: {
-                name: "Orbital Descent",
-                distance: 2200, // Start + 1700
-                asteroidRate: 1.8, // Sparse asteroids to admire the view
-                foliageDensity: {
-                    fern: 5,
-                    rose: 0,
-                    lotus: 15,
-                    glowingFlower: 5,
-                    tree: 5,
-                    floweringTree: 0,
-                    shrub: 5,
-                    vine: 15,
-                    orb: 30, // Some orbital debris
-                    mushroom: 5,
-                    cloud: 20, // Less fog, more planet visibility
-                    // Deep void has most dangerous geological objects
-                    voidRootBall: 12,
-                    vacuumKelp: 15,
-                    iceNeedle: 10,
-                    liquidMetal: 8,
-                    magmaHeart: 8
-                },
-                speed: 10,
-                bgColor: 0x000510, // Deep space blue/black
-                skyColors: { top: 0x000011, bottom: 0x001133 }, // Deep Blue/Black -> Blue Atmosphere
-                levelType: 'open'
-            },
-            4: {
-                name: "The Rusty Gauntlet",
-                distance: 3200, // Start after Deep Void
-                asteroidRate: 2.0, // Fewer asteroids in tunnels
-                foliageDensity: {
-                    // Minimal foliage in industrial environment
-                    fern: 0,
-                    rose: 0,
-                    lotus: 0,
-                    glowingFlower: 5,
-                    tree: 0,
-                    floweringTree: 0,
-                    shrub: 0,
-                    vine: 0,
-                    orb: 15,
-                    mushroom: 0,
-                    cloud: 5,
-                    // Industrial hazards
-                    voidRootBall: 0,
-                    vacuumKelp: 0,
-                    iceNeedle: 0,
-                    liquidMetal: 5,
-                    magmaHeart: 3
-                },
-                speed: 12,
-                bgColor: 0x1a1008, // Dark orange-brown industrial
-                skyColors: { top: 0x110800, bottom: 0x221105 }, // Smoky Brown
-                levelType: 'tunnel',
-                tunnelHeight: 15,
-                obstacleInterval: 20 // Spawn structural section every 20m
-            },
-            5: {
-                name: "The Astral Leviathan",
-                distance: 4200, // Final level
-                asteroidRate: 2.5, // Very few asteroids inside whale
-                foliageDensity: {
-                    // Organic growth in whale
-                    fern: 5,
-                    rose: 0,
-                    lotus: 15,
-                    glowingFlower: 20,
-                    tree: 0,
-                    floweringTree: 0,
-                    shrub: 0,
-                    vine: 10,
-                    orb: 30, // Ghostly orbs
-                    mushroom: 8,
-                    cloud: 15, // Memory fog
-                    // Organic hazards
-                    voidRootBall: 5,
-                    vacuumKelp: 8,
-                    iceNeedle: 0,
-                    liquidMetal: 0,
-                    magmaHeart: 0
-                },
-                speed: 10,
-                bgColor: 0x0a0810, // Deep purple-blue organic
-                skyColors: { top: 0x0a001a, bottom: 0x1a0033 }, // Nebula Purple
-                levelType: 'organic_tunnel',
-                tunnelHeight: 20,
-                obstacleInterval: 25, // Spawn rib section every 25m
-                fogDensity: 0.02 // Light mist, rely on NebulaSystem for atmosphere
-            },
-            6: {
-                name: "The Aqua Expanse",
-                distance: 5200, // Final level
-                asteroidRate: 1.5,
-                foliageDensity: {
-                    fern: 20,
-                    rose: 0,
-                    lotus: 40, // Water plants
-                    glowingFlower: 10,
-                    tree: 5,
-                    floweringTree: 10,
-                    shrub: 20,
-                    vine: 30,
-                    orb: 20,
-                    mushroom: 10,
-                    cloud: 20,
-                    voidRootBall: 0,
-                    vacuumKelp: 10, // Kelp in water!
-                    iceNeedle: 5,
-                    liquidMetal: 5, // Mercury drops
-                    magmaHeart: 0
-                },
-                speed: 10,
-                bgColor: 0x001133, // Deep blue
-                skyColors: { top: 0x001133, bottom: 0x002244 }, // Deep Sea Blue
-                levelType: 'open'
-            }
-        };
+        this.config = LEVEL_CONFIG;
 
         // Track planted objects to cleanup
         this.levelObjects = [];
@@ -1109,7 +520,7 @@ class LevelManager {
             
             for (let i = 0; i < sectionCount; i++) {
                 const xPos = startX + i * interval;
-                createIndustrialSection(xPos);
+                industrialGeometryManager.createIndustrialSection(xPos);
             }
             
             // Spawn minimal foliage inside tunnel bounds (constrained Y range)
@@ -1126,7 +537,7 @@ class LevelManager {
             
             for (let i = 0; i < sectionCount; i++) {
                 const xPos = startX + i * interval;
-                createWhaleRibSection(xPos);
+                industrialGeometryManager.createWhaleRibSection(xPos);
             }
             
             // Spawn organic foliage inside whale bounds
@@ -1252,292 +663,10 @@ class LevelManager {
     }
 }
 
+const industrialGeometryManager = new IndustrialGeometryManager(scene);
 const levelManager = new LevelManager();
 
-// =============================================================================
-// OBSTACLE SYSTEM
-// =============================================================================
-const obstacles: THREE.Mesh[] = [];
-let OBSTACLE_SPAWN_INTERVAL = 1.5; // seconds
-let lastObstacleSpawn = 0;
-
-function createAsteroid(x: number, y: number, z: number = 0, size: number = 0, velocity: THREE.Vector3 | null = null) {
-    const finalSize = (size > 0) ? size : (0.5 + Math.random() * 1.5);
-    
-    // Use IcosahedronGeometry with higher detail for more interesting shapes
-    const geo = new THREE.IcosahedronGeometry(finalSize, 1);
-    
-    // Add some random deformation for more organic asteroids
-    const positions = geo.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-        const px = positions.getX(i);
-        const py = positions.getY(i);
-        const pz = positions.getZ(i);
-        const noise = (Math.random() - 0.5) * 0.4;
-        positions.setXYZ(i, px * (1 + noise), py * (1 + noise), pz * (1 + noise));
-    }
-    geo.computeVertexNormals();
-    
-    // Vary asteroid colors slightly
-    const colorVariation = Math.random() * 0.2;
-    const baseColor = 0x666666 + Math.floor(colorVariation * 0x222222);
-    
-    const mat = new THREE.MeshStandardMaterial({
-        color: baseColor,
-        roughness: 0.95,
-        metalness: 0.05,
-        flatShading: true // More faceted look
-    });
-    const asteroid = new THREE.Mesh(geo, mat);
-    asteroid.position.set(x, y, z);
-    asteroid.rotation.set(
-        Math.random() * Math.PI,
-        Math.random() * Math.PI,
-        Math.random() * Math.PI
-    );
-    asteroid.castShadow = true;
-    asteroid.receiveShadow = true;
-    asteroid.userData = {
-        rotationSpeed: (Math.random() - 0.5) * 2,
-        rotationSpeedY: (Math.random() - 0.5) * 1.5,
-        rotationSpeedZ: (Math.random() - 0.5) * 1.8,
-        radius: finalSize,
-        velocity: velocity || new THREE.Vector3(0, 0, 0)
-    };
-    scene.add(asteroid);
-    obstacles.push(asteroid);
-    return asteroid;
-}
-
-function updateObstacles(delta: number) {
-    // Don't update if player hasn't loaded yet
-    if (!player) return;
-    
-    const playerX = player.position.x;
-    const playerY = player.position.y; // Capture Y for WASM
-
-    // Adjust spawn rate based on level
-    const currentCfg = levelManager.config[levelManager.currentLevel];
-    if (currentCfg) {
-        OBSTACLE_SPAWN_INTERVAL = currentCfg.asteroidRate;
-    }
-
-    // Spawn new obstacles ahead of player
-    lastObstacleSpawn += delta;
-    if (lastObstacleSpawn > OBSTACLE_SPAWN_INTERVAL) {
-        lastObstacleSpawn = 0;
-        const spawnX = playerX + 40 + Math.random() * 20;
-        const spawnY = (Math.random() - 0.5) * 15;
-        createAsteroid(spawnX, spawnY, 0); // Z=0 for initial spawn
-    }
-
-    // 1. UPDATE LOOP: Rotate and cleanup obstacles
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        const obs = obstacles[i];
-        
-        // Multi-axis rotation for more dynamic movement
-        obs.rotation.x += obs.userData.rotationSpeed * delta;
-        obs.rotation.y += obs.userData.rotationSpeedY * delta;
-        obs.rotation.z += obs.userData.rotationSpeedZ * delta;
-
-        // Apply velocity (if fragments)
-        if (obs.userData.velocity) {
-            obs.position.addScaledVector(obs.userData.velocity, delta);
-        }
-
-        // DEPTH TINTING: Darken asteroids as they drift into background/foreground
-        const zDepth = Math.abs(obs.position.z);
-        if (zDepth > 1.0) {
-            const mat = obs.material as THREE.MeshStandardMaterial;
-            // Fade out brightness based on depth (max depth approx 30)
-            const depthFactor = Math.min(1.0, zDepth / 25.0);
-            const brightness = 1.0 - depthFactor * 0.9; // Dim down to 10%
-
-            // Assuming base color is greyish, scaling simple brightness
-            const baseVal = 0.4; // Base grey value
-            mat.color.setScalar(baseVal * brightness);
-        } else {
-             // Restore brightness if it comes back (unlikely but safe)
-             const mat = obs.material as THREE.MeshStandardMaterial;
-             if (mat.color.r < 0.3) mat.color.setScalar(0.4);
-        }
-
-        // Remove if behind player OR too far away in Z
-        if (obs.position.x < playerX - 30 || Math.abs(obs.position.z) > 50) {
-            scene.remove(obs);
-            obstacles.splice(i, 1);
-        }
-    }
-
-    // C. Update WASM Memory & Call Collision Check
-    if (wasmExports) {
-        // --- ASTEROIDS ---
-        // Filter out background asteroids for collision logic
-        const activeObstacles = obstacles.filter(o => Math.abs(o.position.z) < 2.0);
-
-        if (activeObstacles.length > 0) {
-            // 1. Allocate space (returns pointer to existing or new buffer)
-            const ptr = wasmExports.allocAsteroids(activeObstacles.length);
-
-            // 2. Update view if memory grew or changed (simple check)
-            if (!wasmMemory || wasmMemory.buffer !== wasmExports.memory.buffer) {
-                wasmMemory = new Float32Array(wasmExports.memory.buffer);
-            }
-
-            // 3. Write data to WASM memory
-            const startIdx = ptr >>> 2;
-            for (let i = 0; i < activeObstacles.length; i++) {
-                const obs = activeObstacles[i];
-                const offset = startIdx + (i * 3);
-                wasmMemory[offset] = obs.position.x;
-                wasmMemory[offset + 1] = obs.position.y;
-                wasmMemory[offset + 2] = obs.userData.radius || 1.0;
-            }
-
-            // 4. Check collision
-            const hitIndex = wasmExports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
-
-            if (hitIndex !== -1) {
-                handleCollision(activeObstacles[hitIndex]);
-            }
-        }
-
-        // --- SPORE CLOUDS (WASM INTEGRATION) ---
-        // Filter cloud candidates (near player to save bandwidth)
-        const nearbyClouds = sporeClouds.filter(c => c.active && Math.abs(c.position.x - playerX) < 20);
-
-        if (nearbyClouds.length > 0) {
-            // 1. Allocate
-            const cloudPtr = wasmExports.allocSporeClouds(nearbyClouds.length);
-
-            // 2. Update view
-            if (!wasmMemory || wasmMemory.buffer !== wasmExports.memory.buffer) {
-                wasmMemory = new Float32Array(wasmExports.memory.buffer);
-            }
-
-            // 3. Write Cloud Data (x, y, z, radius)
-            // Assuming cloud radius ~5 for collection purposes
-            const cloudStartIdx = cloudPtr >>> 2;
-            for(let i=0; i<nearbyClouds.length; i++) {
-                const c = nearbyClouds[i];
-                const offset = cloudStartIdx + (i * 4);
-                wasmMemory[offset] = c.position.x;
-                wasmMemory[offset+1] = c.position.y;
-                wasmMemory[offset+2] = c.position.z;
-                wasmMemory[offset+3] = 5.0; // Hardcoded cloud radius for collection
-            }
-
-            // 4. Check Collision (3D)
-            const playerZ = 0; // Player is fixed at Z=0
-            const cloudHitIndex = wasmExports.checkSporeCollision(playerX, playerY, playerZ, 1.0, nearbyClouds.length);
-
-            if (cloudHitIndex !== -1) {
-                // We hit a cloud!
-                const hitCloud = nearbyClouds[cloudHitIndex];
-
-                // Visual feedback for entering a cloud
-                // (Only trigger once per cloud entry to avoid spam)
-                if (!hitCloud.spores.userData.playerInside) {
-                    hitCloud.spores.userData.playerInside = true;
-                    // console.log("Entered Spore Cloud!");
-
-                    // Emit some particles around player
-                    particleSystem.emit(player.position.clone(), 0x88ff88, 5, 2.0, 0.5, 1.0);
-
-                    // Maybe play sound or screen effect here
-                }
-            } else {
-                 // Reset 'inside' state for all nearby
-                 nearbyClouds.forEach(c => { c.spores.userData.playerInside = false; });
-            }
-        }
-    }
-}
-
-function splitAsteroid(asteroid: THREE.Mesh) {
-    // 1. Spawn Debris
-    debrisSystem.emit(asteroid.position, 8, 5.0, asteroid.userData.radius);
-
-    // 2. Spawn smaller chunks if large enough
-    const r = asteroid.userData.radius;
-    if (r > 0.8) {
-        const count = 2 + Math.floor(Math.random() * 2); // 2 or 3 chunks
-        for(let i=0; i<count; i++) {
-            const newR = r * 0.5;
-            // Divergent velocity
-            const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5);
-            const speed = 3.0 + Math.random() * 3.0;
-
-            // Add Z velocity for 3D scattering (Depth)
-            const zSpeed = (Math.random() - 0.5) * 8.0; // +/- 4 m/s drift into background/foreground
-
-            const vel = new THREE.Vector3(Math.cos(angle)*speed, Math.sin(angle)*speed, zSpeed);
-
-            // Spawn chunks
-            createAsteroid(asteroid.position.x, asteroid.position.y, asteroid.position.z, newR, vel);
-        }
-    }
-
-    // Remove original
-    scene.remove(asteroid);
-    const idx = obstacles.indexOf(asteroid);
-    if (idx > -1) obstacles.splice(idx, 1);
-}
-
-function handleCollision(obs: THREE.Mesh) {
-    if (obs) {
-        // Capture player Y for bounce calculation
-        const playerY = player ? player.position.y : 0;
-
-        // --- NEW: Emit Explosion Particles ---
-        particleSystem.emit(obs.position.clone(), 0xff5555, 15, 10.0, 1.2, 1.0);
-
-        // Special Level 6 (Aqua Expanse) Splash Effect
-        if (levelManager.currentLevel === 6) {
-             // Trigger specialized Splash System (Instanced gravity droplets)
-             waterfallSystem.triggerSplash(obs.position, 30);
-        }
-
-        // Trigger fracture/debris
-        splitAsteroid(obs);
-
-        // Reduce health (Ramming Damage)
-        playerState.health--;
-        playerState.invincible = true;
-
-        // Flash the rocket
-             const rocket = player.children[0];
-             if (rocket) {
-                 rocket.children.forEach((child: any) => {
-                     if (child.material) {
-                         const originalColor = child.material.color.clone();
-                         child.material.color.setHex(0xff0000);
-                         setTimeout(() => {
-                             if (child.material) {
-                                 child.material.color.copy(originalColor);
-                             }
-                         }, 200);
-                     }
-                 });
-             }
-
-             // Invincibility frames (2 seconds)
-             setTimeout(() => {
-                 playerState.invincible = false;
-             }, 2000);
-
-             updateHealthDisplay();
-
-             if (playerState.health <= 0) {
-                 gameOver();
-             }
-
-        // Bounce player away
-        const dy = obs.position.y - playerY;
-        playerState.velocity.y += (dy > 0 ? -5 : 5);
-        playerState.velocity.x -= 3;
-    }
-}
+let obstacleSystem: ObstacleSystem;
 
 // =============================================================================
 // LEVEL GEOMETRY & BACKGROUND
@@ -1835,206 +964,39 @@ const moon = createMoon();
 moon.position.set(500, 5, -50); // Position far ahead
 scene.add(moon);
 
-// =============================================================================
-// INPUT HANDLING
-// =============================================================================
+obstacleSystem = new ObstacleSystem({
+    scene,
+    getPlayer: () => player,
+    getCurrentConfig: () => levelManager.config[levelManager.currentLevel],
+    playerState,
+    getWasm: () => ({ exports: wasmExports, memory: wasmMemory }),
+    setWasmMemory: (memory) => {
+        wasmMemory = memory;
+    },
+    sporeClouds,
+    particleSystem,
+    debrisSystem,
+    waterfallSystem,
+    getCurrentLevel: () => levelManager.currentLevel,
+    updateHealthDisplay: () => updateHealthDisplay(playerState),
+    gameOver
+});
 
-// UI Elements for health and distance
-function createUI() {
-    // Level Display (New)
-    const levelDiv = document.createElement('div');
-    levelDiv.id = 'level-display';
-    levelDiv.style.position = 'absolute';
-    levelDiv.style.top = '20px';
-    levelDiv.style.right = '20px'; // Top right
-    levelDiv.style.color = '#ffcc00';
-    levelDiv.style.fontSize = '30px';
-    levelDiv.style.fontWeight = 'bold';
-    levelDiv.style.textShadow = '0 0 10px rgba(255, 204, 0, 0.5)';
-    levelDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    levelDiv.style.zIndex = '100';
-    document.body.appendChild(levelDiv);
-
-    // Health display
-    const healthDiv = document.createElement('div');
-    healthDiv.id = 'health-display';
-    healthDiv.style.position = 'absolute';
-    healthDiv.style.top = '20px';
-    healthDiv.style.left = '20px';
-    healthDiv.style.color = '#e94560';
-    healthDiv.style.fontSize = '24px';
-    healthDiv.style.fontWeight = 'bold';
-    healthDiv.style.textShadow = '0 0 10px rgba(233, 69, 96, 0.5)';
-    healthDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    healthDiv.style.zIndex = '100';
-    document.body.appendChild(healthDiv);
-    
-    // Distance display
-    const distanceDiv = document.createElement('div');
-    distanceDiv.id = 'distance-display';
-    distanceDiv.style.position = 'absolute';
-    distanceDiv.style.top = '60px';
-    distanceDiv.style.left = '20px';
-    distanceDiv.style.color = '#4488ff';
-    distanceDiv.style.fontSize = '18px';
-    distanceDiv.style.fontWeight = 'bold';
-    distanceDiv.style.textShadow = '0 0 10px rgba(68, 136, 255, 0.5)';
-    distanceDiv.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
-    distanceDiv.style.zIndex = '100';
-    document.body.appendChild(distanceDiv);
-    
-    updateHealthDisplay();
-    updateDistanceDisplay();
-
-    // Start Level 1
-    levelManager.startLevel(1);
-}
-
-function updateHealthDisplay() {
-    const healthDiv = document.getElementById('health-display');
-    if (healthDiv) {
-        const hearts = '❤️'.repeat(playerState.health) + '🖤'.repeat(playerState.maxHealth - playerState.health);
-        healthDiv.innerHTML = `Health: ${hearts}`;
-        
-        // Flash red if damaged
-        if (playerState.health < playerState.maxHealth) {
-            healthDiv.style.animation = 'none';
-            setTimeout(() => {
-                healthDiv.style.animation = 'pulse 2s ease-in-out';
-            }, 10);
-        }
-    }
-}
-
-function updateDistanceDisplay() {
-    const distanceDiv = document.getElementById('distance-display');
-    if (distanceDiv && player) {
-        const distance = Math.max(0, Math.floor(playerState.distanceToMoon - player.position.x));
-        distanceDiv.innerHTML = `Distance to Moon: ${distance}m`;
-    }
-}
-
-function gameOver() {
-    // Create game over overlay
-    const gameOverDiv = document.createElement('div');
-    gameOverDiv.style.position = 'absolute';
-    gameOverDiv.style.top = '0';
-    gameOverDiv.style.left = '0';
-    gameOverDiv.style.width = '100%';
-    gameOverDiv.style.height = '100%';
-    gameOverDiv.style.display = 'flex';
-    gameOverDiv.style.flexDirection = 'column';
-    gameOverDiv.style.justifyContent = 'center';
-    gameOverDiv.style.alignItems = 'center';
-    gameOverDiv.style.background = 'rgba(26, 26, 46, 0.95)';
-    gameOverDiv.style.zIndex = '200';
-    gameOverDiv.innerHTML = `
-        <h1 style="color: #e94560; font-size: 4em; margin: 0; text-shadow: 0 0 30px rgba(233, 69, 96, 0.5); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">GAME OVER</h1>
-        <p style="color: #888; font-size: 1.5em; margin-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">Your ship was destroyed!</p>
-        <button onclick="location.reload()" style="margin-top: 30px; padding: 15px 40px; font-size: 1.2em; background: #e94560; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 4px 0 #b83650;">Retry</button>
-    `;
-    document.body.appendChild(gameOverDiv);
-}
-
-function gameWin() {
-    // Create win overlay
-    const winDiv = document.createElement('div');
-    winDiv.style.position = 'absolute';
-    winDiv.style.top = '0';
-    winDiv.style.left = '0';
-    winDiv.style.width = '100%';
-    winDiv.style.height = '100%';
-    winDiv.style.display = 'flex';
-    winDiv.style.flexDirection = 'column';
-    winDiv.style.justifyContent = 'center';
-    winDiv.style.alignItems = 'center';
-    winDiv.style.background = 'rgba(26, 26, 46, 0.95)';
-    winDiv.style.zIndex = '200';
-    winDiv.innerHTML = `
-        <h1 style="color: #4488ff; font-size: 4em; margin: 0; text-shadow: 0 0 30px rgba(68, 136, 255, 0.8); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">MISSION SUCCESS!</h1>
-        <p style="color: #888; font-size: 1.5em; margin-top: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">You reached the moon!</p>
-        <button onclick="location.reload()" style="margin-top: 30px; padding: 15px 40px; font-size: 1.2em; background: #4488ff; color: white; border: none; border-radius: 8px; cursor: pointer; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; box-shadow: 0 4px 0 #3366cc;">Play Again</button>
-    `;
-    document.body.appendChild(winDiv);
-}
-
-const keys = {
-    left: false,
-    right: false,
-    jump: false,
-    run: false
-};
-
-function onKeyDown(event: KeyboardEvent) {
-    switch (event.code) {
-        case 'KeyA':
-        case 'ArrowLeft':
-            keys.left = true;
-            break;
-        case 'KeyD':
-        case 'ArrowRight':
-            keys.right = true;
-            break;
-        case 'KeyW':
-        case 'ArrowUp':
-        case 'Space':
-            keys.jump = true;
-            break;
-        case 'ShiftLeft':
-        case 'ShiftRight':
-            keys.run = true;
-            break;
-        case 'Enter': // Fire Weapon
-        case 'KeyK':
-            if (player) {
-                // Fire forward (X axis)
-                weaponSystem.fire(player.position, new THREE.Vector3(1, 0, 0));
-            }
-            break;
-        case 'KeyH': // Toggle Heat Effect manually
-            if (reEntrySystem.active) {
-                reEntrySystem.deactivate();
-                console.log("Heat Effect OFF");
-            } else {
-                reEntrySystem.activate();
-                console.log("Heat Effect ON");
-            }
-            break;
-    }
-}
-
-function onKeyUp(event: KeyboardEvent) {
-    switch (event.code) {
-        case 'KeyA':
-        case 'ArrowLeft':
-            keys.left = false;
-            break;
-        case 'KeyD':
-        case 'ArrowRight':
-            keys.right = false;
-            break;
-        case 'KeyW':
-        case 'ArrowUp':
-        case 'Space':
-            keys.jump = false;
-            break;
-        case 'ShiftLeft':
-        case 'ShiftRight':
-            keys.run = false;
-            break;
-    }
-}
-
-document.addEventListener('keydown', onKeyDown);
-document.addEventListener('keyup', onKeyUp);
-
-// Click to start (hide instructions)
 const instructions = document.getElementById('instructions');
+setupKeyboardControls({
+    getPlayer: () => player,
+    weaponSystem,
+    reEntrySystem
+});
 if (instructions) {
     instructions.addEventListener('click', () => {
         instructions.style.display = 'none';
-        createUI(); // Create UI when game starts
-    });
+        createUI({
+            getPlayer: () => player,
+            playerState,
+            startLevel: () => levelManager.startLevel(1)
+        });
+    }, { once: true });
 }
 
 // =============================================================================
@@ -2093,24 +1055,6 @@ if (instructions) {
 // =============================================================================
 // PHYSICS & COLLISION
 // =============================================================================
-function checkPlatformCollision(x: number, y: number, radius = 0.3) {
-    // Check ground
-    if (y - radius <= CONFIG.groundLevel) {
-        return { collided: true, groundY: CONFIG.groundLevel };
-    }
-
-    // Note: platforms are defined inside collision logic normally or as a global
-    // But since they were not defined in the provided main.js, we assume only ground collision
-    // or we'd need to extract platform logic if it existed.
-    // The previous main.js referenced `platforms` but didn't define it in the snippet provided.
-    // I will assume for now we only check ground or if platforms are missing, ignore.
-
-    // Check platforms
-    // for (const platform of platforms) { ... } // platforms undefined in source snippet
-
-    return { collided: false, groundY: null };
-}
-
 function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
@@ -2175,7 +1119,7 @@ function updatePlayer(delta: number) {
     playerState.velocity.y = Math.max(Math.min(playerState.velocity.y, 10), -15);
 
     // Collision detection
-    const collision = checkPlatformCollision(player.position.x, player.position.y);
+    const collision = checkPlatformCollision(player.position.x, player.position.y, CONFIG.groundLevel);
     if (collision.collided && collision.groundY !== null) {
         player.position.y = collision.groundY + 0.5; // Player height offset
         playerState.velocity.y = 0;
@@ -2250,7 +1194,7 @@ function animate() {
     const time = clock.getElapsedTime(); // For foliage animation and time-based motion
 
     updatePlayer(delta);
-    updateObstacles(delta);
+    obstacleSystem.update(delta);
 
     // --- NEW: Update Particles (engine trails & explosions)
     particleSystem.update(delta);
@@ -2264,6 +1208,7 @@ function animate() {
         // Projectile Collisions
         const projectiles = weaponSystem.getActiveProjectiles();
         if (projectiles.length > 0) {
+            const obstacles = obstacleSystem.getObstacles();
             // Check against obstacles (asteroids)
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obs = obstacles[i];
@@ -2280,7 +1225,7 @@ function animate() {
                         particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0); // Cyan splash
 
                         // 2. Destroy Asteroid
-                        splitAsteroid(obs); // This modifies obstacles array!
+                        obstacleSystem.splitAsteroid(obs); // This modifies obstacles array!
 
                         // 3. Destroy Projectile
                         proj.deactivate();
@@ -2472,8 +1417,7 @@ function animate() {
     magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 
     // Update industrial obstacles (Level 4)
-    updatePistons(time);
-    updateBlastDoors(time);
+    industrialGeometryManager.update(time);
 
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
@@ -2525,7 +1469,7 @@ function animate() {
     } catch (e) { /* swallow animation errors gracefully */ }
     
     // Update distance display
-    updateDistanceDisplay();
+    updateDistanceDisplay(playerState, player);
     
     // Check if player reached the moon
     if (player && player.position.x >= playerState.distanceToMoon - 10 && !playerState.hasWon) {
