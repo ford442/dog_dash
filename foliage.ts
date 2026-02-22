@@ -1,54 +1,6 @@
 import * as THREE from 'three';
-
-// --- Materials for Foliage ---
-function createClayMaterial(color: number | string) {
-    return new THREE.MeshStandardMaterial({
-        color: color,
-        metalness: 0.0,
-        roughness: 0.8, // Matte surface
-        flatShading: false,
-    });
-}
-
-const foliageMaterials = {
-    grass: createClayMaterial(0x7CFC00), // Lawn Green
-    flowerStem: createClayMaterial(0x228B22), // Forest Green
-    flowerCenter: createClayMaterial(0xFFFACD), // Lemon Chiffon
-    flowerPetal: [
-        createClayMaterial(0xFF69B4), // Hot Pink
-        createClayMaterial(0xBA55D3), // Medium Orchid
-        createClayMaterial(0x87CEFA), // Light Sky Blue
-    ],
-    // Shared material for generic light washes
-    lightBeam: new THREE.MeshBasicMaterial({
-        color: 0xFFFFFF,
-        transparent: true,
-        opacity: 0.0,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-    }),
-    // New Materials for Special Plants
-    blackPlastic: new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.1, metalness: 0.1 }),
-    lotusRing: createClayMaterial(0x222222), // Dark initially, lights up
-    opticCable: new THREE.MeshStandardMaterial({
-        color: 0xFFFFFF,
-        transparent: true,
-        opacity: 0.3,
-        roughness: 0.1
-    }),
-    opticTip: new THREE.MeshBasicMaterial({ color: 0xFFFFFF }) // Pure light
-};
-
-// Registry for custom materials that should react to music
-export const reactiveMaterials: THREE.Material[] = [];
-
-// Helper to register a material safely
-function registerReactiveMaterial(mat: THREE.Material) {
-    if (reactiveMaterials.length < 3000) {
-        reactiveMaterials.push(mat);
-    }
-}
+import { createClayMaterial, foliageMaterials, reactiveMaterials, registerReactiveMaterial } from './foliage_shared';
+export { reactiveMaterials };
 
 // --- STANDARD PLANTS ---
 
