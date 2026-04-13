@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { LevelConfig } from './level_config';
 import type { SporeCloud } from './geological';
+import { NebulaKraken } from './space_robot_squid';
 
 type ObstacleSystemOptions = {
     scene: THREE.Scene;
@@ -24,6 +25,7 @@ export class ObstacleSystem {
     private readonly scene: THREE.Scene;
     private readonly options: ObstacleSystemOptions;
     private readonly obstacles: THREE.Mesh[] = [];
+    private squids: NebulaKraken[] = [];
     private spawnInterval = 1.5;
     private lastSpawn = 0;
 
@@ -79,6 +81,41 @@ export class ObstacleSystem {
             if (obs.position.x < playerX - 30 || Math.abs(obs.position.z) > 50) {
                 this.scene.remove(obs);
                 this.obstacles.splice(i, 1);
+            }
+        }
+
+        // --- Nebula Kraken (Boss Squid) Spawning & Update ---
+        const squidRate = currentCfg?.squidSpawnRate || 0;
+        if (squidRate > 0 && this.squids.length === 0 && Math.random() < squidRate) {
+            const spawnX = playerX + 55;
+            const spawnY = (Math.random() - 0.5) * 12;
+            const squid = new NebulaKraken({
+                scene: this.scene,
+                particleSystem: this.options.particleSystem,
+                debrisSystem: this.options.debrisSystem,
+            }, spawnX, spawnY);
+            this.squids.push(squid);
+        }
+
+        // Update squids
+        for (let i = this.squids.length - 1; i >= 0; i--) {
+            const squid = this.squids[i];
+            squid.update(delta, playerX, playerY);
+
+            // Player-squid collision (simple distance check)
+            if (!this.options.playerState.invincible) {
+                const dist = squid.getPosition().distanceTo(new THREE.Vector3(playerX, playerY, 0));
+                if (dist < squid.getRadius() + 1.0) {
+                    this.handleSquidCollision(squid);
+                }
+            }
+
+            // Clean up destroyed or far-away squids
+            if (squid.isDestroyed || squid.getPosition().x < playerX - 50) {
+                if (!squid.isDestroyed) {
+                    this.scene.remove(squid.group);
+                }
+                this.squids.splice(i, 1);
             }
         }
 
@@ -194,6 +231,56 @@ export class ObstacleSystem {
         this.scene.add(asteroid);
         this.obstacles.push(asteroid);
         return asteroid;
+    }
+
+    getSquids(): NebulaKraken[] {
+        return this.squids;
+    }
+
+    private handleSquidCollision(squid: NebulaKraken) {
+        const player = this.options.getPlayer();
+        if (!player) return;
+
+        // Squid collision deals damage to player
+        this.options.particleSystem.emit(
+            player.position.clone(), 0x9900ff, 20, 8.0, 1.2, 1.5
+        );
+
+        // The squid also takes some damage from ramming
+        squid.takeDamage(25);
+
+        this.options.playerState.health--;
+        this.options.playerState.invincible = true;
+
+        // Visual flash on player rocket
+        const rocket = player.children[0];
+        if (rocket) {
+            rocket.children.forEach((child: any) => {
+                if (child.material) {
+                    const originalColor = child.material.color.clone();
+                    child.material.color.setHex(0x9900ff); // Purple flash
+                    setTimeout(() => {
+                        if (child.material) {
+                            child.material.color.copy(originalColor);
+                        }
+                    }, 200);
+                }
+            });
+        }
+
+        setTimeout(() => {
+            this.options.playerState.invincible = false;
+        }, 2000);
+
+        this.options.updateHealthDisplay();
+        if (this.options.playerState.health <= 0) {
+            this.options.gameOver();
+        }
+
+        // Knockback from squid
+        const dy = squid.getPosition().y - player.position.y;
+        this.options.playerState.velocity.y += (dy > 0 ? -8 : 8);
+        this.options.playerState.velocity.x -= 5;
     }
 
     private handleCollision(obs: THREE.Mesh) {
