@@ -55,6 +55,7 @@ import { ObstacleSystem } from './obstacle_system';
 import { createUI, gameOver, gameWin, keys, setupKeyboardControls, updateDistanceDisplay, updateHealthDisplay } from './ui_controls';
 import { checkPlatformCollision } from './physics_utils';
 import type { NebulaKraken } from './space_robot_squid';
+import { BOSS_DISPLAY_NAME } from './space_robot_squid';
 
 // --- Configuration ---
 const CONFIG = {
@@ -1228,7 +1229,7 @@ function updateBossHealthBar(squids: NebulaKraken[]): void {
             text-transform: uppercase; letter-spacing: 2px; z-index: 101;
             text-shadow: 0 0 8px #9900ff;
         `;
-        bossHealthLabel.textContent = '⚠ NEBULA KRAKEN ⚠';
+        bossHealthLabel.textContent = `⚠ ${BOSS_DISPLAY_NAME} ⚠`;
         document.body.appendChild(bossHealthLabel);
         document.body.appendChild(bossHealthBar);
     }
@@ -1246,7 +1247,7 @@ function updateBossHealthBar(squids: NebulaKraken[]): void {
         const phase = activeSquid.getPhase();
         const personality = activeSquid.getPersonality();
         const phaseNames = ['', 'VOID SWEEP', 'INK PROTOCOL', 'FRENZY'];
-        bossHealthLabel.textContent = `⚠ NEBULA KRAKEN — ${phaseNames[phase]} [${personality.toUpperCase()}] ⚠`;
+        bossHealthLabel.textContent = `⚠ ${BOSS_DISPLAY_NAME} — ${phaseNames[phase]} [${personality.toUpperCase()}] ⚠`;
     }
 }
 

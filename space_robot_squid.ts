@@ -49,6 +49,7 @@ export interface NebulaKrakenOptions {
 const PHASE_1_THRESHOLD = 0.6; // 100% – 60% HP: Void Sweep
 const PHASE_2_THRESHOLD = 0.2; // 60% – 20% HP: Ink Protocol
 const PHASE_3_THRESHOLD = 0.0; // 20% – 0% HP: Frenzy
+const HEALTH_EPSILON = 0.001; // Floating-point comparison tolerance
 
 const MAX_HEALTH = 300;
 const BODY_RADIUS = 4;
@@ -64,6 +65,9 @@ const COLOR_HOT_PURPLE = 0x9400D3;
 const COLOR_BLACK_HULL = 0x110022;
 const COLOR_INK_CLOUD = 0x440088;
 const COLOR_EYE_GLOW = 0xff00ff;
+
+/** Display name shown in the boss health bar UI */
+export const BOSS_DISPLAY_NAME = 'NEBULA KRAKEN';
 
 /**
  * NebulaKraken: A giant biomechanical space robot squid boss entity.
@@ -279,7 +283,7 @@ export class NebulaKraken {
 
         // Update phase
         const hpRatio = this.health / this.maxHealth;
-        if (hpRatio <= PHASE_3_THRESHOLD + 0.001) {
+        if (hpRatio <= PHASE_3_THRESHOLD + HEALTH_EPSILON) {
             // Dead
         } else if (hpRatio <= PHASE_2_THRESHOLD) {
             this.currentPhase = 3;

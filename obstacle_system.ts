@@ -253,21 +253,19 @@ export class ObstacleSystem {
         this.options.playerState.invincible = true;
 
         // Visual flash on player rocket
-        if (player) {
-            const rocket = player.children[0];
-            if (rocket) {
-                rocket.children.forEach((child: any) => {
-                    if (child.material) {
-                        const originalColor = child.material.color.clone();
-                        child.material.color.setHex(0x9900ff); // Purple flash
-                        setTimeout(() => {
-                            if (child.material) {
-                                child.material.color.copy(originalColor);
-                            }
-                        }, 200);
-                    }
-                });
-            }
+        const rocket = player.children[0];
+        if (rocket) {
+            rocket.children.forEach((child: any) => {
+                if (child.material) {
+                    const originalColor = child.material.color.clone();
+                    child.material.color.setHex(0x9900ff); // Purple flash
+                    setTimeout(() => {
+                        if (child.material) {
+                            child.material.color.copy(originalColor);
+                        }
+                    }, 200);
+                }
+            });
         }
 
         setTimeout(() => {
