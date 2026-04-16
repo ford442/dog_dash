@@ -166,8 +166,25 @@
                 </div>
             </div>
         </div>
-        <div class="click-hint">▼ Click to start ▼</div>
+        <div id="touch-controls-info" class="controls" style="display: none; margin-top: 20px;">
+            <div class="control-group">
+                <div class="label">📱 Touch to Fly</div>
+                <div style="color: #888; font-size: 0.9em;">
+                    Touch & drag to move<br>
+                    Double-tap for boost!
+                </div>
+            </div>
+        </div>
+        <div class="click-hint">▼ Click or tap to start ▼</div>
     </div>
+    
+    <script>
+        // Show touch controls info on touch devices
+        if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+            document.getElementById('touch-controls-info').style.display = 'flex';
+            document.querySelector('.controls').style.display = 'none';
+        }
+    </script>
     <canvas id="glCanvas"></canvas>
     <script type="module" src="main.ts"></script>
 </body>

@@ -1,0 +1,1668 @@
+/**
+ * Audio System for Dog Dash
+ * Uses Web Audio API for synthesis - no external files needed
+ * Enhanced with magical, whimsical sounds for a young girl player
+ * 
+ * ADVANCED FEATURES:
+ * - Layered Music System (base, energy, magic, victory layers)
+ * - Procedural Music Elements (pentatonic melodies, altitude chords)
+ * - Spatial Audio (3D positioned sounds)
+ * - Music State Machine
+ */
+
+import * as THREE from 'three';
+
+export type SoundType = 
+    | 'shoot' 
+    | 'explode' 
+    | 'hit' 
+    | 'powerup' 
+    | 'boss_roar' 
+    | 'engine' 
+    | 'alert' 
+    | 'ui_click'
+    | 'boss_defeat'
+    // New magical sounds
+    | 'twinkle'
+    | 'giggle'
+    | 'sparkle'
+    | 'boing'
+    | 'whoosh'
+    | 'magic_cast'
+    | 'heart_pop'
+    // Advanced magical sounds
+    | 'wind_chime'
+    | 'harp_glissando'
+    | 'choir_ahh'
+    | 'magical_shimmer'
+    | 'sparkle_cascade'
+    | 'hover_hum';
+
+// Magic sound sequences for combos
+export type MagicSequence = 'star_collect' | 'power_up' | 'shield_up' | 'spell_complete';
+
+// Music State Machine
+export type MusicState = 'AMBIENT' | 'ACTIVE' | 'BOOSTED' | 'VICTORY' | 'MENU';
+
+// Pentatonic scale frequencies (C major pentatonic)
+const PENTATONIC_SCALE = [
+    261.63, // C4
+    293.66, // D4
+    329.63, // E4
+    392.00, // G4
+    440.00, // A4
+    523.25, // C5
+    587.33, // D5
+    659.25, // E5
+    783.99, // G5
+    880.00, // A5
+    1046.50 // C6
+];
+
+// Chord progressions for altitude-based harmony
+const ALTITUDE_CHORDS = [
+    { root: 130.81, name: 'C3' }, // C3 - low altitude
+    { root: 164.81, name: 'E3' }, // E3
+    { root: 196.00, name: 'G3' }, // G3
+    { root: 261.63, name: 'C4' }, // C4 - mid altitude
+    { root: 329.63, name: 'E4' }, // E4
+    { root: 392.00, name: 'G4' }, // G4
+    { root: 523.25, name: 'C5' }, // C5 - high altitude
+    { root: 659.25, name: 'E5' }, // E5
+];
+
+interface SoundConfig {
+    type: SoundType;
+    frequency: number;
+    duration: number;
+    waveform: OscillatorType;
+    volume: number;
+    slide?: number;
+    noise?: boolean;
+    harmonics?: number[];
+    decay?: number;
+}
+
+interface MusicLayer {
+    name: string;
+    gain: GainNode | null;
+    oscillators: OscillatorNode[];
+    active: boolean;
+    baseFrequency: number;
+}
+
+interface SpatialSound {
+    position: { x: number; y: number; z: number };
+    panner: PannerNode | null;
+    gain: GainNode | null;
+}
+
+export class AudioSystem {
+    private ctx: AudioContext | null = null;
+    private masterGain: GainNode | null = null;
+    private musicGain: GainNode | null = null;
+    private sfxGain: GainNode | null = null;
+    private engineNode: OscillatorNode | null = null;
+    private engineGain: GainNode | null = null;
+    private engineActive: boolean = false;
+    
+    // Volume settings (0-1)
+    private musicVolume: number = 0.7;
+    private sfxVolume: number = 0.8;
+    private masterVolume: number = 0.7;
+    private isMuted: boolean = false;
+    
+    // ========== LAYERED MUSIC SYSTEM ==========
+    private musicLayers: Map<string, MusicLayer> = new Map();
+    private currentMusicState: MusicState = 'AMBIENT';
+    private bpm: number = 60; // Base BPM
+    private baseBpm: number = 60;
+    private musicStartTime: number = 0;
+    private musicInterval: number | null = null;
+    private magicMusicTimeout: number | null = null;
+    
+    // ========== PROCEDURAL MUSIC ==========
+    private collectChain: number = 0;
+    private lastCollectTime: number = 0;
+    private chainTimeout: number = 1000; // ms between chain collects
+    private melodyQueue: number[] = [];
+    
+    // ========== SPATIAL AUDIO ==========
+    private listenerPosition: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
+    private spatialSounds: Map<string, SpatialSound> = new Map();
+    private pannerNodes: PannerNode[] = [];
+    
+    // ========== HOVER SOUND ==========
+    private hoverNode: OscillatorNode | null = null;
+    private hoverGain: GainNode | null = null;
+    private hoverActive: boolean = false;
+
+    // Sound configurations
+    private soundConfigs: Record<SoundType, SoundConfig> = {
+        shoot: {
+            type: 'shoot',
+            frequency: 800,
+            duration: 0.1,
+            waveform: 'square',
+            volume: 0.3,
+            slide: -400
+        },
+        explode: {
+            type: 'explode',
+            frequency: 100,
+            duration: 0.3,
+            waveform: 'sawtooth',
+            volume: 0.4,
+            noise: true
+        },
+        hit: {
+            type: 'hit',
+            frequency: 200,
+            duration: 0.15,
+            waveform: 'sawtooth',
+            volume: 0.3,
+            slide: -100
+        },
+        powerup: {
+            type: 'powerup',
+            frequency: 440,
+            duration: 0.5,
+            waveform: 'sine',
+            volume: 0.3,
+            slide: 440
+        },
+        boss_roar: {
+            type: 'boss_roar',
+            frequency: 80,
+            duration: 2.0,
+            waveform: 'sawtooth',
+            volume: 0.5,
+            slide: -40
+        },
+        engine: {
+            type: 'engine',
+            frequency: 60,
+            duration: 0.1,
+            waveform: 'sawtooth',
+            volume: 0.1
+        },
+        alert: {
+            type: 'alert',
+            frequency: 880,
+            duration: 0.2,
+            waveform: 'square',
+            volume: 0.3
+        },
+        ui_click: {
+            type: 'ui_click',
+            frequency: 1200,
+            duration: 0.05,
+            waveform: 'sine',
+            volume: 0.2
+        },
+        boss_defeat: {
+            type: 'boss_defeat',
+            frequency: 200,
+            duration: 1.5,
+            waveform: 'sawtooth',
+            volume: 0.4,
+            slide: -150,
+            noise: true
+        },
+        // New magical sounds - gentle and twinkly for a 7-year-old player
+        twinkle: {
+            type: 'twinkle',
+            frequency: 880,
+            duration: 0.4,
+            waveform: 'sine',
+            volume: 0.25,
+            harmonics: [1760, 2640],
+            decay: 0.3
+        },
+        giggle: {
+            type: 'giggle',
+            frequency: 600,
+            duration: 0.35,
+            waveform: 'triangle',
+            volume: 0.3,
+            slide: 150,
+            decay: 0.25
+        },
+        sparkle: {
+            type: 'sparkle',
+            frequency: 1320,
+            duration: 0.5,
+            waveform: 'sine',
+            volume: 0.2,
+            harmonics: [1980, 2640, 3300],
+            decay: 0.4
+        },
+        boing: {
+            type: 'boing',
+            frequency: 200,
+            duration: 0.3,
+            waveform: 'sine',
+            volume: 0.35,
+            slide: 300,
+            decay: 0.25
+        },
+        whoosh: {
+            type: 'whoosh',
+            frequency: 400,
+            duration: 0.6,
+            waveform: 'sine',
+            volume: 0.25,
+            slide: -300,
+            decay: 0.5
+        },
+        magic_cast: {
+            type: 'magic_cast',
+            frequency: 523.25,
+            duration: 0.8,
+            waveform: 'triangle',
+            volume: 0.3,
+            slide: 600,
+            harmonics: [784, 1047],
+            decay: 0.6
+        },
+        heart_pop: {
+            type: 'heart_pop',
+            frequency: 659.25,
+            duration: 0.35,
+            waveform: 'sine',
+            volume: 0.3,
+            slide: 200,
+            harmonics: [988],
+            decay: 0.3
+        },
+        // Advanced magical sounds
+        wind_chime: {
+            type: 'wind_chime',
+            frequency: 1174.66, // D6
+            duration: 0.8,
+            waveform: 'sine',
+            volume: 0.2,
+            harmonics: [2349.32, 3520.00],
+            decay: 0.7
+        },
+        harp_glissando: {
+            type: 'harp_glissando',
+            frequency: 523.25, // C5
+            duration: 1.0,
+            waveform: 'triangle',
+            volume: 0.3,
+            slide: 800,
+            harmonics: [659.25, 783.99],
+            decay: 0.8
+        },
+        choir_ahh: {
+            type: 'choir_ahh',
+            frequency: 392.00, // G4
+            duration: 2.0,
+            waveform: 'sine',
+            volume: 0.25,
+            harmonics: [588.00, 784.00, 980.00],
+            decay: 1.5
+        },
+        magical_shimmer: {
+            type: 'magical_shimmer',
+            frequency: 880.00, // A5
+            duration: 1.2,
+            waveform: 'sine',
+            volume: 0.2,
+            harmonics: [1100, 1320, 1540, 1760],
+            decay: 1.0
+        },
+        sparkle_cascade: {
+            type: 'sparkle_cascade',
+            frequency: 1318.51, // E6
+            duration: 1.5,
+            waveform: 'sine',
+            volume: 0.25,
+            harmonics: [1977.76, 2637.02, 3296.28],
+            decay: 1.2
+        },
+        hover_hum: {
+            type: 'hover_hum',
+            frequency: 150,
+            duration: 0.1,
+            waveform: 'sine',
+            volume: 0.1
+        }
+    };
+
+    constructor() {
+        // Lazy init - create context on first user interaction
+    }
+
+    private init() {
+        if (this.ctx) return;
+        
+        try {
+            this.ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            
+            // Master gain
+            this.masterGain = this.ctx.createGain();
+            this.masterGain.gain.value = this.masterVolume;
+            this.masterGain.connect(this.ctx.destination);
+            
+            // Separate gain nodes for music and SFX
+            this.musicGain = this.ctx.createGain();
+            this.musicGain.gain.value = this.musicVolume;
+            this.musicGain.connect(this.masterGain);
+            
+            this.sfxGain = this.ctx.createGain();
+            this.sfxGain.gain.value = this.sfxVolume;
+            this.sfxGain.connect(this.masterGain);
+            
+            console.log('🔊 Audio System initialized (with magic!) ✨');
+        } catch (e) {
+            console.warn('Audio not supported:', e);
+        }
+    }
+
+    /**
+     * Resume audio context (needed after user interaction)
+     */
+    resume() {
+        this.init();
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    }
+
+    /**
+     * Play a one-shot sound effect
+     */
+    play(type: SoundType, volumeMultiplier: number = 1) {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        const config = this.soundConfigs[type];
+        if (!config) return;
+
+        if (config.noise) {
+            this.playNoise(config, volumeMultiplier);
+        } else {
+            this.playTone(config, volumeMultiplier);
+        }
+    }
+
+    /**
+     * Play synthesized tone
+     */
+    private playTone(config: SoundConfig, volumeMultiplier: number) {
+        if (!this.ctx || !this.sfxGain) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = config.waveform;
+        osc.frequency.setValueAtTime(config.frequency, this.ctx.currentTime);
+
+        // Frequency slide
+        if (config.slide) {
+            osc.frequency.exponentialRampToValueAtTime(
+                Math.max(20, config.frequency + config.slide),
+                this.ctx.currentTime + config.duration
+            );
+        }
+
+        // Envelope with custom decay if specified
+        const decay = config.decay || config.duration;
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(
+            config.volume * volumeMultiplier, 
+            this.ctx.currentTime + 0.01
+        );
+        gain.gain.exponentialRampToValueAtTime(
+            0.001, 
+            this.ctx.currentTime + decay
+        );
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(this.ctx.currentTime);
+        osc.stop(this.ctx.currentTime + config.duration);
+
+        // Play harmonics for magical sounds
+        if (config.harmonics) {
+            config.harmonics.forEach((harmonicFreq, index) => {
+                this.playHarmonic(harmonicFreq, config, volumeMultiplier, index * 0.02);
+            });
+        }
+
+        // Cleanup
+        setTimeout(() => {
+            osc.disconnect();
+            gain.disconnect();
+        }, config.duration * 1000 + 100);
+    }
+
+    /**
+     * Play a harmonic overtone for magical shimmer effect
+     */
+    private playHarmonic(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number) {
+        if (!this.ctx || !this.sfxGain) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, this.ctx.currentTime + delay);
+
+        const harmonicVolume = config.volume * volumeMultiplier * 0.3;
+        const decay = (config.decay || config.duration) * 0.8;
+
+        gain.gain.setValueAtTime(0, this.ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(harmonicVolume, this.ctx.currentTime + delay + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + decay);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(this.ctx.currentTime + delay);
+        osc.stop(this.ctx.currentTime + config.duration + delay);
+
+        setTimeout(() => {
+            osc.disconnect();
+            gain.disconnect();
+        }, (config.duration + delay) * 1000 + 100);
+    }
+
+    /**
+     * Play noise burst (for explosions)
+     */
+    private playNoise(config: SoundConfig, volumeMultiplier: number) {
+        if (!this.ctx || !this.sfxGain) return;
+
+        const bufferSize = this.ctx.sampleRate * config.duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1);
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(config.frequency, this.ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(
+            20, 
+            this.ctx.currentTime + config.duration
+        );
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(config.volume * volumeMultiplier, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+            0.001, 
+            this.ctx.currentTime + config.duration
+        );
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+
+        noise.start(this.ctx.currentTime);
+    }
+
+    // ============================================================
+    // LAYERED MUSIC SYSTEM
+    // ============================================================
+
+    /**
+     * Start the layered background music system
+     */
+    startBackgroundMusic(): void {
+        this.init();
+        if (!this.ctx || !this.musicGain) return;
+
+        this.musicStartTime = this.ctx.currentTime;
+        
+        // Initialize music layers
+        this.initMusicLayer('base', 60, 'sine', 0.15);      // Soft dreamy ambient
+        this.initMusicLayer('energy', 110, 'triangle', 0);   // Adds when moving fast
+        this.initMusicLayer('magic', 880, 'sine', 0);        // Adds when power-up active
+        this.initMusicLayer('victory', 523.25, 'triangle', 0); // Triumph music
+        
+        // Start ambient base layer
+        this.setMusicState('AMBIENT');
+        
+        // Start the music sequencer
+        this.startMusicSequencer();
+        
+        console.log('🎵 Background music started');
+    }
+
+    /**
+     * Initialize a music layer
+     */
+    private initMusicLayer(name: string, baseFreq: number, waveform: OscillatorType, initialVolume: number): void {
+        if (!this.ctx || !this.musicGain) return;
+
+        const gain = this.ctx.createGain();
+        gain.gain.value = initialVolume;
+        gain.connect(this.musicGain);
+
+        const layer: MusicLayer = {
+            name,
+            gain,
+            oscillators: [],
+            active: initialVolume > 0,
+            baseFrequency: baseFreq
+        };
+
+        this.musicLayers.set(name, layer);
+    }
+
+    /**
+     * Create an oscillator for a music layer
+     */
+    private createLayerOscillator(layer: MusicLayer, frequency: number, waveform: OscillatorType): OscillatorNode {
+        if (!this.ctx) throw new Error('Audio context not initialized');
+
+        const osc = this.ctx.createOscillator();
+        osc.type = waveform;
+        osc.frequency.setValueAtTime(frequency, this.ctx.currentTime);
+        osc.connect(layer.gain!);
+        osc.start(this.ctx.currentTime);
+        layer.oscillators.push(osc);
+
+        return osc;
+    }
+
+    /**
+     * Start the music sequencer for procedural generation
+     */
+    private startMusicSequencer(): void {
+        if (this.musicInterval) {
+            clearInterval(this.musicInterval);
+        }
+
+        // Sequencer runs every beat
+        const beatInterval = (60 / this.bpm) * 1000;
+        
+        this.musicInterval = window.setInterval(() => {
+            this.updateMusicSequence();
+        }, beatInterval / 4); // Sixteenth notes
+    }
+
+    /**
+     * Update the music sequence based on current state
+     */
+    private updateMusicSequence(): void {
+        if (!this.ctx) return;
+
+        const time = this.ctx.currentTime;
+        
+        // Base layer - always playing soft ambient
+        if (this.currentMusicState !== 'MENU') {
+            this.playAmbientNotes(time);
+        }
+
+        // Energy layer - responds to movement
+        if (this.currentMusicState === 'ACTIVE' || this.currentMusicState === 'BOOSTED') {
+            this.playEnergyNotes(time);
+        }
+
+        // Magic layer - power-up active
+        if (this.currentMusicState === 'BOOSTED') {
+            this.playMagicNotes(time);
+        }
+
+        // Victory layer
+        if (this.currentMusicState === 'VICTORY') {
+            this.playVictoryNotes(time);
+        }
+    }
+
+    /**
+     * Play ambient layer notes
+     */
+    private playAmbientNotes(time: number): void {
+        if (Math.random() > 0.3) return; // Sparse notes
+
+        const layer = this.musicLayers.get('base');
+        if (!layer || !this.ctx || !layer.gain) return;
+
+        // Pentatonic notes for dreamy feel
+        const note = PENTATONIC_SCALE[Math.floor(Math.random() * 5)];
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(note / 2, time);
+
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.08, time + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 2);
+
+        osc.connect(gain);
+        gain.connect(layer.gain);
+
+        osc.start(time);
+        osc.stop(time + 2);
+    }
+
+    /**
+     * Play energy layer notes
+     */
+    private playEnergyNotes(time: number): void {
+        if (Math.random() > 0.5) return;
+
+        const layer = this.musicLayers.get('energy');
+        if (!layer || !this.ctx || !layer.gain) return;
+
+        // Faster, rhythmic pattern
+        const note = PENTATONIC_SCALE[Math.floor(Math.random() * 7) + 2];
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(note, time);
+
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.1, time + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.5);
+
+        osc.connect(gain);
+        gain.connect(layer.gain);
+
+        osc.start(time);
+        osc.stop(time + 0.5);
+    }
+
+    /**
+     * Play magic layer notes
+     */
+    private playMagicNotes(time: number): void {
+        if (Math.random() > 0.4) return;
+
+        const layer = this.musicLayers.get('magic');
+        if (!layer || !this.ctx || !layer.gain) return;
+
+        // High sparkly notes
+        const note = PENTATONIC_SCALE[Math.floor(Math.random() * 4) + 6];
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(note, time);
+
+        gain.gain.setValueAtTime(0, time);
+        gain.gain.linearRampToValueAtTime(0.15, time + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 0.8);
+
+        // Add harmonics
+        const harmonic = this.ctx.createOscillator();
+        const harmonicGain = this.ctx.createGain();
+        harmonic.type = 'sine';
+        harmonic.frequency.setValueAtTime(note * 1.5, time);
+        harmonicGain.gain.setValueAtTime(0, time);
+        harmonicGain.gain.linearRampToValueAtTime(0.05, time + 0.02);
+        harmonicGain.gain.exponentialRampToValueAtTime(0.001, time + 0.6);
+
+        osc.connect(gain);
+        harmonic.connect(harmonicGain);
+        gain.connect(layer.gain);
+        harmonicGain.connect(layer.gain);
+
+        osc.start(time);
+        harmonic.start(time);
+        osc.stop(time + 0.8);
+        harmonic.stop(time + 0.6);
+    }
+
+    /**
+     * Play victory layer notes
+     */
+    private playVictoryNotes(time: number): void {
+        if (Math.random() > 0.3) return;
+
+        const layer = this.musicLayers.get('victory');
+        if (!layer || !this.ctx || !layer.gain) return;
+
+        // Triumphant chord progression
+        const baseNote = 523.25; // C5
+        const chord = [baseNote, baseNote * 1.25, baseNote * 1.5]; // Major chord
+
+        chord.forEach((freq, i) => {
+            const osc = this.ctx!.createOscillator();
+            const gain = this.ctx!.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, time + i * 0.05);
+
+            gain.gain.setValueAtTime(0, time);
+            gain.gain.linearRampToValueAtTime(0.12, time + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + 1.5);
+
+            osc.connect(gain);
+            gain.connect(layer.gain!);
+
+            osc.start(time);
+            osc.stop(time + 1.5);
+        });
+    }
+
+    /**
+     * Set music energy level (0-1)
+     * Crossfades between ambient and active layers
+     */
+    setMusicEnergy(energy: number): void {
+        if (!this.ctx) return;
+
+        const baseLayer = this.musicLayers.get('base');
+        const energyLayer = this.musicLayers.get('energy');
+
+        if (baseLayer?.gain) {
+            baseLayer.gain.gain.setTargetAtTime(
+                0.15 * (1 - energy * 0.5), 
+                this.ctx.currentTime, 
+                0.3
+            );
+        }
+
+        if (energyLayer?.gain) {
+            energyLayer.gain.gain.setTargetAtTime(
+                0.12 * energy, 
+                this.ctx.currentTime, 
+                0.3
+            );
+        }
+
+        // Adjust BPM with energy
+        this.bpm = this.baseBpm + energy * 40;
+        
+        // Restart sequencer with new tempo
+        this.startMusicSequencer();
+    }
+
+    /**
+     * Activate magic music layer for a duration
+     */
+    activateMagicMusic(duration: number): void {
+        if (!this.ctx) return;
+
+        const magicLayer = this.musicLayers.get('magic');
+        if (!magicLayer?.gain) return;
+
+        // Fade in magic layer
+        magicLayer.gain.gain.setTargetAtTime(0.2, this.ctx.currentTime, 0.3);
+        magicLayer.active = true;
+
+        // Play harp glissando
+        this.play('harp_glissando', 0.8);
+
+        // Clear existing timeout
+        if (this.magicMusicTimeout) {
+            clearTimeout(this.magicMusicTimeout);
+        }
+
+        // Fade out after duration
+        this.magicMusicTimeout = window.setTimeout(() => {
+            if (magicLayer.gain && this.ctx) {
+                magicLayer.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5);
+            }
+            magicLayer.active = false;
+        }, duration * 1000);
+    }
+
+    /**
+     * Play victory music
+     */
+    playVictoryMusic(): void {
+        if (!this.ctx) return;
+
+        this.setMusicState('VICTORY');
+
+        const victoryLayer = this.musicLayers.get('victory');
+        if (victoryLayer?.gain) {
+            victoryLayer.gain.gain.setTargetAtTime(0.25, this.ctx.currentTime, 0.5);
+        }
+
+        // Play choir sound
+        this.play('choir_ahh', 1.0);
+
+        // Play sparkle cascade
+        setTimeout(() => this.play('sparkle_cascade', 0.9), 200);
+    }
+
+    /**
+     * Stop victory music and return to previous state
+     */
+    stopVictoryMusic(): void {
+        if (!this.ctx) return;
+
+        const victoryLayer = this.musicLayers.get('victory');
+        if (victoryLayer?.gain) {
+            victoryLayer.gain.gain.setTargetAtTime(0, this.ctx.currentTime, 1.0);
+        }
+
+        this.setMusicState('AMBIENT');
+    }
+
+    /**
+     * Set the music state
+     */
+    private setMusicState(state: MusicState): void {
+        this.currentMusicState = state;
+        
+        // Adjust layers based on state
+        switch (state) {
+            case 'AMBIENT':
+                this.setMusicEnergy(0);
+                break;
+            case 'ACTIVE':
+                this.setMusicEnergy(0.6);
+                break;
+            case 'BOOSTED':
+                this.setMusicEnergy(0.8);
+                this.activateMagicMusic(10);
+                break;
+            case 'MENU':
+                this.setMusicEnergy(0.2);
+                break;
+        }
+    }
+
+    /**
+     * Get current music state
+     */
+    getMusicState(): MusicState {
+        return this.currentMusicState;
+    }
+
+    // ============================================================
+    // PROCEDURAL MUSIC ELEMENTS
+    // ============================================================
+
+    /**
+     * Play a note when collecting an item
+     * Pentatonic scale - always sounds good!
+     * Chain collects create melodies
+     */
+    playNoteForCollect(pitch?: number): void {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        const now = Date.now();
+        
+        // Check if this is part of a chain
+        if (now - this.lastCollectTime < this.chainTimeout) {
+            this.collectChain++;
+        } else {
+            this.collectChain = 0;
+            this.melodyQueue = [];
+        }
+        this.lastCollectTime = now;
+
+        // Determine pitch
+        let noteFreq: number;
+        if (pitch !== undefined && pitch >= 0 && pitch < PENTATONIC_SCALE.length) {
+            noteFreq = PENTATONIC_SCALE[pitch];
+        } else {
+            // Cycle through pentatonic scale for melody
+            noteFreq = PENTATONIC_SCALE[this.collectChain % PENTATONIC_SCALE.length];
+        }
+
+        this.melodyQueue.push(noteFreq);
+
+        // Play the note
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(noteFreq, this.ctx.currentTime);
+
+        // Louder and longer for chain collects
+        const volume = 0.2 + Math.min(this.collectChain * 0.03, 0.15);
+        const duration = 0.3 + Math.min(this.collectChain * 0.05, 0.3);
+
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(volume, this.ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(this.ctx.currentTime);
+        osc.stop(this.ctx.currentTime + duration);
+
+        // Add sparkle effect for chains
+        if (this.collectChain > 0) {
+            this.playHarmonic(noteFreq * 2, { 
+                volume: volume * 0.4, 
+                duration, 
+                decay: duration 
+            } as SoundConfig, 1, 0.05);
+        }
+
+        // 5 stars in a row = little jingle!
+        if (this.collectChain >= 4) {
+            setTimeout(() => this.playStarJingle(), 100);
+            this.collectChain = 0;
+            this.melodyQueue = [];
+        }
+    }
+
+    /**
+     * Play a celebratory jingle for 5-star chain
+     */
+    private playStarJingle(): void {
+        if (!this.ctx || !this.sfxGain) return;
+
+        // Play ascending pentatonic arpeggio
+        const arpeggio = [0, 2, 4, 7, 9]; // C, E, G, C, D
+        
+        arpeggio.forEach((scaleIndex, i) => {
+            setTimeout(() => {
+                const freq = PENTATONIC_SCALE[scaleIndex];
+                const osc = this.ctx!.createOscillator();
+                const gain = this.ctx!.createGain();
+
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, this.ctx!.currentTime);
+
+                gain.gain.setValueAtTime(0, this.ctx!.currentTime);
+                gain.gain.linearRampToValueAtTime(0.3, this.ctx!.currentTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx!.currentTime + 0.4);
+
+                osc.connect(gain);
+                gain.connect(this.sfxGain!);
+
+                osc.start(this.ctx!.currentTime);
+                osc.stop(this.ctx!.currentTime + 0.4);
+            }, i * 80);
+        });
+
+        // Play magical shimmer
+        setTimeout(() => this.play('magical_shimmer', 0.7), 500);
+    }
+
+    /**
+     * Play chord based on altitude - "flight music"
+     * Higher altitude = higher pitch chords
+     */
+    playChordForAltitude(altitude: number): void {
+        this.init();
+        if (!this.ctx || !this.musicGain) return;
+
+        // Map altitude to chord index (0-7)
+        const normalizedAlt = Math.max(0, Math.min(1, altitude / 1000));
+        const chordIndex = Math.floor(normalizedAlt * (ALTITUDE_CHORDS.length - 1));
+        const chord = ALTITUDE_CHORDS[chordIndex];
+
+        // Play major triad
+        const frequencies = [
+            chord.root,
+            chord.root * 1.25, // Major third
+            chord.root * 1.5   // Perfect fifth
+        ];
+
+        frequencies.forEach((freq, i) => {
+            const osc = this.ctx!.createOscillator();
+            const gain = this.ctx!.createGain();
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, this.ctx!.currentTime);
+
+            gain.gain.setValueAtTime(0, this.ctx!.currentTime);
+            gain.gain.linearRampToValueAtTime(0.08, this.ctx!.currentTime + 0.1 + i * 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx!.currentTime + 2);
+
+            osc.connect(gain);
+            gain.connect(this.musicGain!);
+
+            osc.start(this.ctx!.currentTime);
+            osc.stop(this.ctx!.currentTime + 2);
+        });
+    }
+
+    // ============================================================
+    // SPATIAL AUDIO
+    // ============================================================
+
+    /**
+     * Update listener position for spatial audio
+     */
+    updateListenerPosition(position: THREE.Vector3): void {
+        this.init();
+        if (!this.ctx) return;
+
+        this.listenerPosition = { x: position.x, y: position.y, z: position.z };
+
+        // Update Web Audio listener position
+        const listener = this.ctx.listener;
+        if (listener.positionX) {
+            listener.positionX.setValueAtTime(position.x, this.ctx.currentTime);
+            listener.positionY.setValueAtTime(position.y, this.ctx.currentTime);
+            listener.positionZ.setValueAtTime(position.z, this.ctx.currentTime);
+        }
+    }
+
+    /**
+     * Create a panner node for 3D spatial audio
+     */
+    private createPanner(): PannerNode | null {
+        if (!this.ctx) return null;
+
+        const panner = this.ctx.createPanner();
+        panner.panningModel = 'HRTF';
+        panner.distanceModel = 'inverse';
+        panner.refDistance = 100;
+        panner.maxDistance = 10000;
+        panner.rolloffFactor = 1;
+        panner.coneInnerAngle = 360;
+        panner.coneOuterAngle = 360;
+        panner.coneOuterGain = 0;
+
+        this.pannerNodes.push(panner);
+        return panner;
+    }
+
+    /**
+     * Play a sound at a specific 3D position
+     */
+    playSoundAtPosition(
+        sound: SoundType, 
+        position: THREE.Vector3,
+        volumeMultiplier: number = 1
+    ): void {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        const config = this.soundConfigs[sound];
+        if (!config) return;
+
+        // Create panner for spatial positioning
+        const panner = this.createPanner();
+        if (!panner) return;
+
+        // Set panner position
+        if (panner.positionX) {
+            panner.positionX.setValueAtTime(position.x, this.ctx.currentTime);
+            panner.positionY.setValueAtTime(position.y, this.ctx.currentTime);
+            panner.positionZ.setValueAtTime(position.z, this.ctx.currentTime);
+        }
+        
+        // Store position for potential updates
+        const soundId = `${sound}_${Date.now()}_${Math.random()}`;
+        this.spatialSounds.set(soundId, {
+            position: { x: position.x, y: position.y, z: position.z },
+            panner,
+            gain: null
+        });
+
+        panner.connect(this.sfxGain);
+
+        // Create sound source
+        if (config.noise) {
+            this.playNoiseWithPanner(config, volumeMultiplier, panner);
+        } else {
+            this.playToneWithPanner(config, volumeMultiplier, panner);
+        }
+
+        // Cleanup after sound finishes
+        const duration = (config.decay || config.duration) * 1000 + 100;
+        setTimeout(() => {
+            this.spatialSounds.delete(soundId);
+            panner.disconnect();
+        }, duration);
+    }
+
+    /**
+     * Play tone with spatial panner
+     */
+    private playToneWithPanner(config: SoundConfig, volumeMultiplier: number, panner: PannerNode): void {
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = config.waveform;
+        osc.frequency.setValueAtTime(config.frequency, this.ctx.currentTime);
+
+        if (config.slide) {
+            osc.frequency.exponentialRampToValueAtTime(
+                Math.max(20, config.frequency + config.slide),
+                this.ctx.currentTime + config.duration
+            );
+        }
+
+        const decay = config.decay || config.duration;
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(
+            config.volume * volumeMultiplier, 
+            this.ctx.currentTime + 0.01
+        );
+        gain.gain.exponentialRampToValueAtTime(
+            0.001, 
+            this.ctx.currentTime + decay
+        );
+
+        osc.connect(gain);
+        gain.connect(panner);
+
+        osc.start(this.ctx.currentTime);
+        osc.stop(this.ctx.currentTime + config.duration);
+
+        // Add harmonics
+        if (config.harmonics) {
+            config.harmonics.forEach((harmonicFreq, index) => {
+                this.playHarmonicWithPanner(harmonicFreq, config, volumeMultiplier, index * 0.02, panner);
+            });
+        }
+    }
+
+    /**
+     * Play harmonic with spatial panner
+     */
+    private playHarmonicWithPanner(
+        frequency: number, 
+        config: SoundConfig, 
+        volumeMultiplier: number, 
+        delay: number,
+        panner: PannerNode
+    ): void {
+        if (!this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, this.ctx.currentTime + delay);
+
+        const harmonicVolume = config.volume * volumeMultiplier * 0.3;
+        const decay = (config.decay || config.duration) * 0.8;
+
+        gain.gain.setValueAtTime(0, this.ctx.currentTime + delay);
+        gain.gain.linearRampToValueAtTime(harmonicVolume, this.ctx.currentTime + delay + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + delay + decay);
+
+        osc.connect(gain);
+        gain.connect(panner);
+
+        osc.start(this.ctx.currentTime + delay);
+        osc.stop(this.ctx.currentTime + config.duration + delay);
+    }
+
+    /**
+     * Play noise with spatial panner (for explosions)
+     */
+    private playNoiseWithPanner(config: SoundConfig, volumeMultiplier: number, panner: PannerNode): void {
+        if (!this.ctx) return;
+
+        const bufferSize = this.ctx.sampleRate * config.duration;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1);
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(config.frequency, this.ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(
+            20, 
+            this.ctx.currentTime + config.duration
+        );
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(config.volume * volumeMultiplier, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+            0.001, 
+            this.ctx.currentTime + config.duration
+        );
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(panner);
+
+        noise.start(this.ctx.currentTime);
+    }
+
+    /**
+     * Play twinkling sound as you approach a collectible
+     * Volume increases as you get closer
+     */
+    playApproachTwinkle(distance: number, maxDistance: number = 500): void {
+        if (distance > maxDistance) return;
+
+        const normalizedDist = 1 - (distance / maxDistance);
+        const volume = normalizedDist * 0.3;
+
+        // Only play occasionally
+        if (Math.random() < normalizedDist * 0.3) {
+            this.play('wind_chime', volume);
+        }
+    }
+
+    // ============================================================
+    // MIXING CONTROLS
+    // ============================================================
+
+    /**
+     * Set master volume (0-1)
+     */
+    setMasterVolume(volume: number): void {
+        this.masterVolume = Math.max(0, Math.min(1, volume));
+        if (!this.masterGain || !this.ctx) return;
+        this.masterGain.gain.setTargetAtTime(
+            this.isMuted ? 0 : this.masterVolume, 
+            this.ctx.currentTime, 
+            0.1
+        );
+    }
+
+    /**
+     * Set music volume (0-1)
+     */
+    setMusicVolume(volume: number): void {
+        this.musicVolume = Math.max(0, Math.min(1, volume));
+        if (!this.musicGain || !this.ctx) return;
+        this.musicGain.gain.setTargetAtTime(this.musicVolume, this.ctx.currentTime, 0.1);
+    }
+
+    /**
+     * Set SFX volume (0-1)
+     */
+    setSFXVolume(volume: number): void {
+        this.sfxVolume = Math.max(0, Math.min(1, volume));
+        if (!this.sfxGain || !this.ctx) return;
+        this.sfxGain.gain.setTargetAtTime(this.sfxVolume, this.ctx.currentTime, 0.1);
+    }
+
+    /**
+     * Mute all audio
+     */
+    mute(): void {
+        this.isMuted = true;
+        if (!this.masterGain || !this.ctx) return;
+        this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+    }
+
+    /**
+     * Unmute all audio
+     */
+    unmute(): void {
+        this.isMuted = false;
+        if (!this.masterGain || !this.ctx) return;
+        this.masterGain.gain.setTargetAtTime(this.masterVolume, this.ctx.currentTime, 0.1);
+    }
+
+    /**
+     * Check if audio is muted
+     */
+    isAudioMuted(): boolean {
+        return this.isMuted;
+    }
+
+    /**
+     * Get current volume settings
+     */
+    getVolumeSettings() {
+        return {
+            master: this.masterVolume,
+            music: this.musicVolume,
+            sfx: this.sfxVolume,
+            muted: this.isMuted
+        };
+    }
+
+    // ============================================================
+    // EXISTING ENGINE & SOUND METHODS (maintaining compatibility)
+    // ============================================================
+
+    /**
+     * Start engine hum
+     */
+    startEngine() {
+        this.init();
+        if (!this.ctx || !this.sfxGain || this.engineActive) return;
+
+        this.engineActive = true;
+
+        this.engineNode = this.ctx.createOscillator();
+        this.engineGain = this.ctx.createGain();
+
+        this.engineNode.type = 'sawtooth';
+        this.engineNode.frequency.setValueAtTime(60, this.ctx.currentTime);
+
+        this.engineGain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+
+        this.engineNode.connect(this.engineGain);
+        this.engineGain.connect(this.sfxGain);
+
+        this.engineNode.start(this.ctx.currentTime);
+    }
+
+    /**
+     * Update engine pitch based on movement speed
+     */
+    updateEngine(speedY: number) {
+        if (!this.ctx || !this.engineNode || !this.engineActive) return;
+
+        // Pitch shifts with vertical movement
+        const baseFreq = 60;
+        const pitchShift = Math.abs(speedY) * 2;
+        const targetFreq = baseFreq + pitchShift;
+
+        this.engineNode.frequency.setTargetAtTime(
+            targetFreq, 
+            this.ctx.currentTime, 
+            0.1
+        );
+    }
+
+    /**
+     * Stop engine
+     */
+    stopEngine() {
+        if (!this.engineNode) return;
+        
+        this.engineActive = false;
+        this.engineNode.stop();
+        this.engineNode.disconnect();
+        if (this.engineGain) {
+            this.engineGain.disconnect();
+        }
+        this.engineNode = null;
+        this.engineGain = null;
+    }
+
+    /**
+     * Start hover hum
+     */
+    startHover(): void {
+        this.init();
+        if (!this.ctx || !this.sfxGain || this.hoverActive) return;
+
+        this.hoverActive = true;
+
+        this.hoverNode = this.ctx.createOscillator();
+        this.hoverGain = this.ctx.createGain();
+
+        this.hoverNode.type = 'sine';
+        this.hoverNode.frequency.setValueAtTime(150, this.ctx.currentTime);
+
+        this.hoverGain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+
+        this.hoverNode.connect(this.hoverGain);
+        this.hoverGain.connect(this.sfxGain);
+
+        this.hoverNode.start(this.ctx.currentTime);
+    }
+
+    /**
+     * Stop hover hum
+     */
+    stopHover(): void {
+        if (!this.hoverNode) return;
+
+        this.hoverActive = false;
+        this.hoverNode.stop();
+        this.hoverNode.disconnect();
+        if (this.hoverGain) {
+            this.hoverGain.disconnect();
+        }
+        this.hoverNode = null;
+        this.hoverGain = null;
+    }
+
+    /**
+     * Play whoosh sound for fast direction changes
+     */
+    playWhoosh(speed: number): void {
+        const volume = Math.min(speed / 10, 1) * 0.5;
+        this.play('whoosh', volume);
+    }
+
+    /**
+     * Play shoot sound with variation
+     */
+    playShoot(variant: number = 0) {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        const baseFreq = 800 + variant * 100;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(baseFreq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(
+            baseFreq - 400, 
+            this.ctx.currentTime + 0.1
+        );
+
+        gain.gain.setValueAtTime(0, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.2, this.ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+
+        osc.start(this.ctx.currentTime);
+        osc.stop(this.ctx.currentTime + 0.1);
+    }
+
+    /**
+     * Play background drone (ambient) - maintained for compatibility
+     */
+    private droneNode: OscillatorNode | null = null;
+    private droneGain: GainNode | null = null;
+
+    startDrone(intensity: number = 0.5) {
+        this.init();
+        if (!this.ctx || !this.musicGain || this.droneNode) return;
+
+        this.droneNode = this.ctx.createOscillator();
+        this.droneGain = this.ctx.createGain();
+
+        this.droneNode.type = 'sine';
+        this.droneNode.frequency.setValueAtTime(40, this.ctx.currentTime);
+
+        this.droneGain.gain.setValueAtTime(0.05 * intensity, this.ctx.currentTime);
+
+        this.droneNode.connect(this.droneGain);
+        this.droneGain.connect(this.musicGain);
+
+        this.droneNode.start(this.ctx.currentTime);
+    }
+
+    updateDroneIntensity(intensity: number) {
+        if (!this.ctx || !this.droneGain) return;
+        this.droneGain.gain.setTargetAtTime(
+            0.05 * intensity, 
+            this.ctx.currentTime, 
+            0.5
+        );
+    }
+
+    stopDrone() {
+        if (!this.droneNode) return;
+        this.droneNode.stop();
+        this.droneNode.disconnect();
+        if (this.droneGain) this.droneGain.disconnect();
+        this.droneNode = null;
+        this.droneGain = null;
+    }
+
+    /**
+     * Set master volume - maintained for compatibility
+     */
+    setVolume(volume: number) {
+        this.setMasterVolume(volume);
+    }
+
+    /**
+     * Play a magic sound by type - helper method for magical effects
+     */
+    playMagicSound(type: 'collect' | 'power' | 'shield' | 'spell' | 'happy') {
+        switch (type) {
+            case 'collect':
+                this.play('twinkle', 0.8);
+                setTimeout(() => this.play('sparkle', 0.6), 100);
+                break;
+            case 'power':
+                this.play('heart_pop', 0.9);
+                setTimeout(() => this.play('magic_cast', 0.7), 150);
+                break;
+            case 'shield':
+                this.play('boing', 0.8);
+                setTimeout(() => this.play('whoosh', 0.6), 100);
+                break;
+            case 'spell':
+                this.play('magic_cast', 0.8);
+                setTimeout(() => this.play('sparkle', 0.7), 200);
+                setTimeout(() => this.play('twinkle', 0.5), 400);
+                break;
+            case 'happy':
+                this.play('giggle', 0.8);
+                setTimeout(() => this.play('twinkle', 0.6), 100);
+                break;
+        }
+    }
+
+    /**
+     * Play a sequence of sounds with specified delays
+     */
+    playSequence(sequence: Array<{ sound: SoundType; delay: number; volume?: number }>) {
+        this.init();
+        if (!this.ctx) return;
+
+        sequence.forEach(({ sound, delay, volume = 1 }) => {
+            setTimeout(() => {
+                this.play(sound, volume);
+            }, delay * 1000);
+        });
+    }
+
+    /**
+     * Play a predefined magical sequence
+     */
+    playMagicSequence(sequence: MagicSequence) {
+        switch (sequence) {
+            case 'star_collect':
+                this.playSequence([
+                    { sound: 'twinkle', delay: 0, volume: 0.8 },
+                    { sound: 'sparkle', delay: 0.1, volume: 0.6 },
+                    { sound: 'twinkle', delay: 0.25, volume: 0.5 }
+                ]);
+                break;
+            case 'power_up':
+                this.playSequence([
+                    { sound: 'magic_cast', delay: 0, volume: 0.7 },
+                    { sound: 'heart_pop', delay: 0.2, volume: 0.9 },
+                    { sound: 'sparkle', delay: 0.35, volume: 0.6 }
+                ]);
+                break;
+            case 'shield_up':
+                this.playSequence([
+                    { sound: 'boing', delay: 0, volume: 0.8 },
+                    { sound: 'whoosh', delay: 0.1, volume: 0.6 },
+                    { sound: 'twinkle', delay: 0.3, volume: 0.5 }
+                ]);
+                break;
+            case 'spell_complete':
+                this.playSequence([
+                    { sound: 'magic_cast', delay: 0, volume: 0.8 },
+                    { sound: 'sparkle', delay: 0.15, volume: 0.7 },
+                    { sound: 'sparkle', delay: 0.3, volume: 0.6 },
+                    { sound: 'twinkle', delay: 0.45, volume: 0.5 },
+                    { sound: 'giggle', delay: 0.5, volume: 0.4 }
+                ]);
+                break;
+        }
+    }
+
+    /**
+     * Play milestone sound (high scores, achievements)
+     */
+    playMilestone(): void {
+        this.playSequence([
+            { sound: 'magical_shimmer', delay: 0, volume: 0.8 },
+            { sound: 'sparkle_cascade', delay: 0.3, volume: 0.7 },
+            { sound: 'choir_ahh', delay: 0.5, volume: 0.6 }
+        ]);
+    }
+
+    /**
+     * Cleanup
+     */
+    destroy() {
+        this.stopEngine();
+        this.stopHover();
+        this.stopDrone();
+        
+        // Stop all music layers
+        this.musicLayers.forEach(layer => {
+            layer.oscillators.forEach(osc => {
+                try {
+                    osc.stop();
+                    osc.disconnect();
+                } catch (e) {}
+            });
+            if (layer.gain) {
+                layer.gain.disconnect();
+            }
+        });
+        this.musicLayers.clear();
+
+        // Clear intervals
+        if (this.musicInterval) {
+            clearInterval(this.musicInterval);
+        }
+        if (this.magicMusicTimeout) {
+            clearTimeout(this.magicMusicTimeout);
+        }
+
+        // Cleanup spatial sounds
+        this.spatialSounds.forEach(sound => {
+            if (sound.panner) sound.panner.disconnect();
+        });
+        this.spatialSounds.clear();
+
+        // Close context
+        if (this.ctx) {
+            this.ctx.close();
+            this.ctx = null;
+        }
+    }
+}
+
+// Singleton instance
+let audioSystem: AudioSystem | null = null;
+
+export function getAudioSystem(): AudioSystem {
+    if (!audioSystem) {
+        audioSystem = new AudioSystem();
+    }
+    return audioSystem;
+}
+
+export function initAudioOnInteraction() {
+    const handler = () => {
+        const audio = getAudioSystem();
+        audio.resume();
+        audio.startEngine();
+        audio.startDrone(0.3);
+        audio.startBackgroundMusic(); // Start new layered music system
+        
+        // Remove listeners after first interaction
+        document.removeEventListener('click', handler);
+        document.removeEventListener('keydown', handler);
+    };
+    
+    document.addEventListener('click', handler);
+    document.addEventListener('keydown', handler);
+}

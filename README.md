@@ -51,25 +51,38 @@ npm run preview
 
 ## Controls
 
-- **Space** - Thrust up (jump/fly)
-- **A** - Dive down
-- **Mouse Click** - Trigger spore cloud chain reactions
-- **Mouse** - Look around
+- **Space / W / Up Arrow** - Move up
+- **A / S / Down Arrow** - Move down  
+- **Mouse Click** - Shoot plasma bolts
+- **K / Enter** - Fire weapon
+- **H** - Toggle heat effects (debug)
 
 ## Gameplay
 
-Navigate your rocket through space, avoiding asteroids while exploring the alien environment:
+Navigate your rocket through 6 massive levels, blasting asteroids and dodging crazy enemy formations:
 
-- **Survival** - Your ship can survive 3 asteroid collisions before destruction
-- **Journey** - Reach the distant moon to win
-- **Exploration** - Discover alien flora and geological objects:
-  - Click on **Spore Clouds** to trigger beautiful chain reactions
-  - Navigate around **Nebula Jelly-Moss** - gelatinous organisms that pulse and drift
-  - Observe **Chroma-Shift Rocks** that change color as you approach
-  - Find **Fractured Geodes** with their pulsing electromagnetic fields
+- **Smooth Controls** - No more thrust physics! Direct up/down movement with responsive feel
+- **Screen Shake** - Dynamic camera reacts to speed and impacts
+- **Enemy Formations** - Face 10 different pattern types:
+  - Sine Wave, Spiral, Figure Eight, Lissajous curves
+  - Helix, Ring, Cross, V-Formation, Diamond, Chaos
+- **Survival** - Your ship can survive 3 asteroid collisions
+- **Journey** - Travel 3500+ meters through Level 1 alone
+- **Exploration** - Discover alien flora and geological objects
+
+## Level Overview
+
+1. **The Neon Garden** (3500m) - Dense alien flora, moderate speed
+2. **The Asteroid Belt** (1200m) - Heavy asteroid density
+3. **Orbital Descent** (2200m) - Atmospheric re-entry effects
+4. **The Rusty Gauntlet** (3200m) - Industrial tunnel with moving obstacles
+5. **The Astral Leviathan** (4200m) - Organic tunnel inside a space whale
+6. **The Aqua Expanse** (5200m) - Waterfall and underwater sections
 
 ## Technical Details
 
 - Built with Three.js and WebGPU renderer
+- **WASM Physics** - AssemblyScript for collision detection
+- **Mathematical Patterns** - Procedural enemy formations using parametric equations
 - Modern WebGPU API for next-generation graphics
-- Vite build system for fast development and optimized production builds
+- Vite build system for fast development

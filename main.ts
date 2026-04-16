@@ -54,6 +54,35 @@ import { LEVEL_CONFIG, type LevelConfig } from './level_config';
 import { ObstacleSystem } from './obstacle_system';
 import { createUI, gameOver, gameWin, keys, setupKeyboardControls, updateDistanceDisplay, updateHealthDisplay } from './ui_controls';
 import { checkPlatformCollision } from './physics_utils';
+import { BossManager, StarEaterBoss } from './boss_system';
+import { getAudioSystem, initAudioOnInteraction } from './audio_system';
+import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
+import { getSaveManager, createShopUI } from './save_manager';
+import { StarfieldSystem } from './stars';
+import { OrbManager, OrbType } from './collectibles';
+import { PowerUpManager, PowerUpType } from './powerup_manager';
+import { FriendsManager } from './space_friends';
+import { DogCockpitController, DogAnimationState, DogAccessory } from './dog_cockpit';
+import { HUDManager } from './hud_system';
+import { JuiceManager, ShakeType, BurstType } from './juice_effects';
+import { ConstellationManager, FlowerType } from './flower_constellations';
+import { CandyBeltManager, CandyType } from './candy_obstacles';
+import { CastleBackgroundManager } from './cloud_castles';
+import { EffectManager, MagicalEffectType } from './magical_effects';
+import { 
+    TouchControlsManager, 
+    ControlMode, 
+    TouchInput,
+    detectTouchDevice,
+    getRecommendedControlMode
+} from './touch_controls';
+import { 
+    createTouchSettingsButton,
+    showTouchSettings,
+    loadTouchSettings
+} from './touch_settings';
+import { VictorySystem, VictoryState } from './victory_system';
+import { TutorialSystem, TutorialStep, shouldShowTutorial } from './tutorial_system';
 
 // --- Configuration ---
 const CONFIG = {
@@ -68,14 +97,12 @@ const CONFIG = {
     // Camera
     cameraDistance: 15,
     cameraHeight: 3,
-    // Player physics
+    // Player physics - Smooth direct control (no thrust/gravity bobbing)
     player: {
-        speed: 8,
-        runSpeed: 14,
-        thrustForce: 25, // Upward force
-        gravity: 8,      // Low gravity for space
-        groundFriction: 0.85,
-        airFriction: 0.98 // Less drag in space
+        maxSpeedY: 18,        // Maximum vertical speed
+        acceleration: 40,     // How quickly we reach target speed
+        deceleration: 25,     // How quickly we stop when no input
+        responsiveness: 12,   // Smoothing factor for movement
     },
     // World
     groundLevel: -50 // effectively no ground collision near 0
@@ -130,6 +157,10 @@ const accentLight1 = new THREE.PointLight(0xff8844, 0.6, 50);
 const accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 50);
 const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
 
+// --- Touch Controls ---
+let touchControls: TouchControlsManager | null = null;
+let touchSettingsBtn: HTMLElement | null = null;
+
 // Check WebGPU & Initialize
 try {
     if (!WebGPU.isAvailable()) {
@@ -158,6 +189,20 @@ try {
     renderer.toneMappingExposure = 1.3; // Slightly higher for more vibrant colors
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // --- Touch Controls Initialization ---
+    touchControls = new TouchControlsManager();
+    touchControls.initialize(canvas);
+    
+    // Load saved settings and apply
+    const savedSettings = loadTouchSettings();
+    touchControls.setMode(savedSettings.mode);
+    
+    // Add settings button (only on touch devices)
+    if (detectTouchDevice()) {
+        touchSettingsBtn = createTouchSettingsButton(touchControls);
+        document.body.appendChild(touchSettingsBtn);
+    }
 
     // --- Lighting (Moody, atmospheric) ---
     scene.add(ambientLight);
@@ -309,6 +354,12 @@ gltfLoader.load(
         player = tiltGroup;
         scene.add(player);
         
+        // Connect player to effect manager (for magical effects)
+        effectManager.setTarget(player);
+        
+        // Initialize dog cockpit animation system
+        dogController.initialize(rocketModel);
+        
         console.log('🚀 Rocket GLB model loaded successfully!');
     },
     (xhr) => {
@@ -346,23 +397,33 @@ gltfLoader.load(
         player = tiltGroup;
         scene.add(player);
         
+        // Connect player to effect manager (for magical effects)
+        effectManager.setTarget(player);
+        
+        // Initialize dog cockpit animation system
+        dogController.initialize(group);
+        
         console.warn('Using placeholder rocket due to loading error');
     }
 );
 
-// Player state
+// Player state - Smooth direct control system
 const playerState = {
     velocity: new THREE.Vector3(0, 0, 0),
+    targetY: 5,          // Target Y position for smooth following
+    currentSpeedY: 0,    // Current vertical speed for momentum feel
     isGrounded: false,
     facingRight: true,
     isRunning: false,
-    autoScrollSpeed: 6, // Constant forward movement
+    autoScrollSpeed: 8, // Constant forward movement
     health: 3, // Ship can survive 3 collisions
     maxHealth: 3,
     invincible: false, // Invincibility frames after hit
     distanceToMoon: 500, // Distance to reach the moon
     hasWon: false, // Track if player has won
-    level: 1 // Current level
+    level: 1, // Current level
+    bossActive: false, // Boss fight in progress
+    cores: 0 // Cores collected this run
 };
 
 // =============================================================================
@@ -490,6 +551,21 @@ class LevelManager {
             if (levelIndex !== 4) {
                 this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
             }
+        }
+
+        // SWARM #3: Generate Magical Dreamy Environments (for levels 1-3 and 6-7)
+        const currentX = player ? player.position.x : 0;
+        if (levelIndex <= 3 || levelIndex >= 6) {
+            // Flower Constellations - giant glowing space flowers
+            flowerManager.generateConstellation(15, currentX + 100, currentX + cfg.distance - 100, -40, 40);
+            
+            // Cloud Castles - dreamy floating castles in background
+            castleManager.generateCastleField(8, currentX + 200, currentX + cfg.distance - 200);
+        }
+        
+        // Candy Belt - sweet treat obstacles (all levels except serious ones)
+        if (levelIndex !== 4 && levelIndex !== 5) {
+            candyManager.generateCandyBelt(cfg.distance * 0.8, 0.25);
         }
     }
 
@@ -742,6 +818,31 @@ const debrisSystem = new DebrisSystem(scene);
 const weaponSystem = new WeaponSystem(scene);
 const weaponLightManager = new WeaponLightManager();
 
+// Enhanced fire function with heat and audio
+const originalFire = weaponSystem.fire.bind(weaponSystem);
+weaponSystem.fire = function(position: THREE.Vector3, direction: THREE.Vector3) {
+    // Check heat
+    if (!heatSystem.canFire()) return;
+    
+    // Apply heat
+    const heatGen = upgradeSystem.getModifiedHeatGeneration(8);
+    if (!heatSystem.addHeat(heatGen)) return;
+    
+    // Play sound with variation
+    audioSystem.playShoot(Math.random());
+    
+    // Set projectile color based on upgrade
+    const upgradeColor = upgradeSystem.getProjectileColor();
+    if (upgradeColor) {
+        this.setColor(upgradeColor);
+    } else {
+        this.setColor(0x00ffff); // Default cyan
+    }
+    
+    // Call original
+    originalFire(position, direction);
+};
+
 // RE-ENTRY SYSTEM (Atmospheric Heat Effects)
 const reEntrySystem = new ReEntrySystem(scene, camera);
 
@@ -766,6 +867,146 @@ const biologicalSystem = new BiologicalBackgroundSystem(scene);
 
 // LIQUID METAL SYSTEM (Advanced Reflection & Physics)
 const liquidMetalSystem = new LiquidMetalSystem(scene);
+
+// BOSS SYSTEM
+const bossManager = new BossManager(scene);
+
+// AUDIO SYSTEM
+const audioSystem = getAudioSystem();
+initAudioOnInteraction();
+
+// UPGRADE SYSTEMS
+const upgradeSystem = new UpgradeSystem(scene, {
+    onUpgradeStart: (type) => {
+        console.log(`⚡ Upgrade started: ${UPGRADE_CONFIGS[type].name}`);
+        audioSystem.play('powerup');
+    },
+    onUpgradeEnd: (type) => {
+        console.log(`⚡ Upgrade ended: ${UPGRADE_CONFIGS[type].name}`);
+    }
+});
+
+const pickupManager = new PickupManager(scene);
+const heatSystem = new HeatSystem();
+
+// MAGICAL SYSTEMS (from swarm)
+const starfield = new StarfieldSystem(scene);
+const orbManager = new OrbManager(scene, particleSystem, 4);
+const powerUpManager = new PowerUpManager({
+    scene: scene,
+    particleSystem: particleSystem,
+    audioSystem: audioSystem,
+    rocket: undefined, // Set later when player loads
+    onPowerUpStart: (type, config) => {
+        console.log(`Power-up started: ${config.name}`);
+        // Activate corresponding magical effect
+        switch(type) {
+            case PowerUpType.RAINBOW_COMET_TAIL:
+                effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, config.duration);
+                break;
+            case PowerUpType.FLOWER_CROWN_BOOST:
+            case PowerUpType.TWINKLE_STAR_MAGNET:
+                effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
+                break;
+            case PowerUpType.BUBBLEGUM_SHIELD:
+                effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, config.duration);
+                break;
+            case PowerUpType.BUTTERFLY_ESCORT:
+                effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, config.duration);
+                break;
+            case PowerUpType.UNICORN_HORN_BLAST:
+                effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, config.duration);
+                break;
+        }
+    },
+    onPowerUpEnd: (type, config) => {
+        console.log(`Power-up ended: ${config.name}`);
+    }
+});
+
+// SPACE FRIENDS (cute companions for a 7-year-old girl)
+const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
+
+// Connect orb collection to power-ups
+orbManager.onPowerUpReady = () => {
+    const triggered = powerUpManager.collectOrb();
+    if (triggered && player) {
+        dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
+        juiceManager.flashRainbow(0.5);
+        juiceManager.burstMagic(player.position.clone());
+        
+        // SWARM #3: Activate corresponding magical effect
+        const activeEffects = powerUpManager.getActiveEffects();
+        activeEffects.forEach(effect => {
+            switch(effect.type) {
+                case PowerUpType.RAINBOW_COMET_TAIL:
+                    effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, effect.duration);
+                    break;
+                case PowerUpType.FLOWER_CROWN_BOOST:
+                    effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
+                    break;
+                case PowerUpType.BUBBLEGUM_SHIELD:
+                    effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, effect.duration);
+                    break;
+                case PowerUpType.TWINKLE_STAR_MAGNET:
+                    effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
+                    break;
+                case PowerUpType.BUTTERFLY_ESCORT:
+                    effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, effect.duration);
+                    break;
+                case PowerUpType.UNICORN_HORN_BLAST:
+                    effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, effect.duration);
+                    break;
+            }
+        });
+    }
+};
+
+orbManager.onScore = (points) => {
+    hudManager.addScore(points);
+};
+
+orbManager.onHealthRestore = (amount) => {
+    playerState.health = Math.min(playerState.health + amount, playerState.maxHealth);
+    hudManager.updateHealth(playerState.health, playerState.maxHealth);
+    updateHealthDisplay(playerState);
+};
+
+// SAVE SYSTEM
+const saveManager = getSaveManager();
+
+// Apply save data to player state
+playerState.maxHealth = saveManager.applyToHealth(3);
+playerState.health = playerState.maxHealth + saveManager.getStartingHealthBonus();
+playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
+
+// NEW MANAGERS (Swarm #2)
+const dogController = new DogCockpitController();
+const hudManager = new HUDManager(saveManager);
+const juiceManager = new JuiceManager(camera, scene, particleSystem);
+
+// SWARM #3 - DREAMY ENVIRONMENTS
+const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
+const candyManager = new CandyBeltManager(scene, audioSystem, particleSystem);
+const castleManager = new CastleBackgroundManager(scene);
+
+// Effect manager - will set target when player loads
+const tempTarget = new THREE.Group();
+const effectManager = new EffectManager(scene, audioSystem, tempTarget);
+
+// SWARM #4: Victory and Tutorial Systems
+const victorySystem = new VictorySystem(scene, camera, audioSystem, hudManager, juiceManager);
+const tutorialSystem = new TutorialSystem(scene, hudManager, audioSystem, dogController);
+
+// Check if we should show tutorial (first time players)
+if (shouldShowTutorial(saveManager)) {
+    tutorialSystem.onComplete(() => {
+        console.log('Tutorial complete! Starting game...');
+        // Tutorial completion callback - game starts automatically
+    });
+}
+
+let isGamePaused = false;
 
 // =============================================================================
 // GEOLOGICAL OBJECTS & ANOMALIES (from plan.md)
@@ -964,6 +1205,20 @@ const moon = createMoon();
 moon.position.set(500, 5, -50); // Position far ahead
 scene.add(moon);
 
+function handleGameOver() {
+    if (player) {
+        dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
+        juiceManager.burstDamage(player.position.clone());
+    }
+    hudManager.updateHealth(0, playerState.maxHealth);
+    hudManager.showGameOverScreen({
+        score: hudManager.getScore(),
+        distance: player ? Math.floor(player.position.x) : 0,
+        orbsCollected: playerState.cores,
+        powerUpsUsed: 0
+    }, () => location.reload());
+}
+
 obstacleSystem = new ObstacleSystem({
     scene,
     getPlayer: () => player,
@@ -979,7 +1234,15 @@ obstacleSystem = new ObstacleSystem({
     waterfallSystem,
     getCurrentLevel: () => levelManager.currentLevel,
     updateHealthDisplay: () => updateHealthDisplay(playerState),
-    gameOver
+    gameOver: handleGameOver,
+    onPlayerHit: () => {
+        if (player) {
+            dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
+            juiceManager.shakeScreen(ShakeType.HEAVY);
+            juiceManager.burstDamage(player.position.clone());
+        }
+        hudManager.updateHealth(playerState.health, playerState.maxHealth);
+    }
 });
 
 const instructions = document.getElementById('instructions');
@@ -996,7 +1259,121 @@ if (instructions) {
             playerState,
             startLevel: () => levelManager.startLevel(1)
         });
+        createHeatBar();
+        createCoresDisplay();
     }, { once: true });
+}
+
+// Pause key listener
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Escape') {
+        e.preventDefault();
+        if (isGamePaused) {
+            hudManager.hidePauseMenu();
+            isGamePaused = false;
+        } else {
+            isGamePaused = true;
+            hudManager.showPauseMenu(
+                () => { isGamePaused = false; },
+                () => { location.reload(); }
+            );
+        }
+    }
+});
+
+// Heat Bar UI
+function createHeatBar() {
+    const heatDiv = document.createElement('div');
+    heatDiv.id = 'heat-display';
+    heatDiv.style.cssText = `
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 200px;
+        height: 20px;
+        background: rgba(0,0,0,0.5);
+        border: 2px solid #666;
+        border-radius: 10px;
+        overflow: hidden;
+        z-index: 100;
+    `;
+    
+    const heatFill = document.createElement('div');
+    heatFill.id = 'heat-fill';
+    heatFill.style.cssText = `
+        width: 0%;
+        height: 100%;
+        background: linear-gradient(90deg, #ff8800, #ff0000);
+        transition: width 0.1s, background 0.3s;
+    `;
+    
+    heatDiv.appendChild(heatFill);
+    document.body.appendChild(heatDiv);
+    
+    const heatText = document.createElement('div');
+    heatText.id = 'heat-text';
+    heatText.style.cssText = `
+        position: absolute;
+        bottom: 42px;
+        left: 20px;
+        color: #ff8800;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        text-shadow: 0 0 5px rgba(255,136,0,0.5);
+        z-index: 100;
+    `;
+    heatText.textContent = 'HEAT';
+    document.body.appendChild(heatText);
+}
+
+function updateHeatBar() {
+    const fill = document.getElementById('heat-fill');
+    const text = document.getElementById('heat-text');
+    if (!fill || !text) return;
+    
+    const percent = heatSystem.getHeatPercent() * 100;
+    fill.style.width = `${percent}%`;
+    
+    if (heatSystem.overheated) {
+        fill.style.background = '#ff0000';
+        text.textContent = 'OVERHEATED!';
+        text.style.color = '#ff0000';
+        text.style.animation = 'pulse 0.5s infinite';
+    } else if (percent > 80) {
+        fill.style.background = 'linear-gradient(90deg, #ff4400, #ff0000)';
+        text.textContent = 'HEAT (CRITICAL)';
+        text.style.color = '#ff4400';
+    } else {
+        fill.style.background = 'linear-gradient(90deg, #ff8800, #ff0000)';
+        text.textContent = 'HEAT';
+        text.style.color = '#ff8800';
+        text.style.animation = 'none';
+    }
+}
+
+// Cores Display UI
+function createCoresDisplay() {
+    const coresDiv = document.createElement('div');
+    coresDiv.id = 'cores-display';
+    coresDiv.style.cssText = `
+        position: absolute;
+        top: 100px;
+        left: 20px;
+        color: #00ffff;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 18px;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(0,255,255,0.5);
+        z-index: 100;
+    `;
+    coresDiv.innerHTML = `🔷 Cores: <span id="cores-count">0</span> | Total: <span id="cores-total">${saveManager.getCores()}</span>`;
+    document.body.appendChild(coresDiv);
+}
+
+function updateCoresDisplay() {
+    const count = document.getElementById('cores-count');
+    if (count) count.textContent = playerState.cores.toString();
 }
 
 // =============================================================================
@@ -1043,6 +1420,18 @@ canvas.addEventListener('click', (event) => {
             }
         }
     });
+    
+    // Check intersection with wish lanterns (click to pop)
+    friendsManager.lanterns.forEach(lantern => {
+        if (lantern.isPopped) return;
+        
+        const intersects = raycaster.intersectObject(lantern.group, true);
+        if (intersects.length > 0) {
+            friendsManager.popLantern(lantern);
+            // Bonus for manual pop
+            playerState.cores += 5;
+        }
+    });
 });
 
 // Track when game starts
@@ -1053,7 +1442,7 @@ if (instructions) {
 }
 
 // =============================================================================
-// PHYSICS & COLLISION
+// PHYSICS & COLLISION - Smooth Direct Control (No Thrust/Gravity Bobbing)
 // =============================================================================
 function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
@@ -1062,87 +1451,89 @@ function updatePlayer(delta: number) {
     // Auto-scroll (constant forward movement)
     player.position.x += playerState.autoScrollSpeed * delta;
 
-    // Vertical movement (thrust)
-    if (keys.jump) {
-        playerState.velocity.y += CONFIG.player.thrustForce * delta;
-
-        // Boost flame when thrusting
-        const rocket = player.children[0];
-        if (rocket && rocket.userData.flame) {
-            rocket.userData.flame.scale.set(1.5, 3.0, 1.5);
+    // --- NEW: Smooth Direct Vertical Control ---
+    // Calculate target speed based on input (Keyboard + Touch)
+    let targetSpeed = 0;
+    let isMovingUp = keys.jump || keys.right;  // Space or Up arrow or D
+    let isMovingDown = keys.left;              // A or Left arrow
+    
+    // Get touch input and update touch controls
+    if (touchControls) {
+        const touchInput = touchControls.getInput();
+        touchControls.update();
+        
+        // Combine keyboard and touch input
+        if (touchInput.vertical > 0.1) isMovingUp = true;
+        if (touchInput.vertical < -0.1) isMovingDown = true;
+        
+        // Handle boost from touch (double-tap or boost button)
+        if (touchInput.boost) {
+            playerState.autoScrollSpeed = Math.min(
+                playerState.autoScrollSpeed * 1.02,
+                25  // Max boost speed
+            );
+        }
+        
+        // Handle fire from touch
+        if (touchInput.fire && player && weaponSystem) {
+            const fireDirection = new THREE.Vector3(1, 0, 0);
+            weaponSystem.fire(player.position, fireDirection);
         }
     }
-
-    // Optional: Down thrust
-    if (keys.left) {
-        playerState.velocity.y -= CONFIG.player.thrustForce * 0.5 * delta;
+    
+    if (isMovingUp) {
+        targetSpeed = CONFIG.player.maxSpeedY;
+    } else if (isMovingDown) {
+        targetSpeed = -CONFIG.player.maxSpeedY;
     }
-
-    // Gravity (light)
-    playerState.velocity.y -= CONFIG.player.gravity * delta;
-
-    // Cap vertical speed
-    playerState.velocity.y = Math.max(Math.min(playerState.velocity.y, 12), -12);
-
-    // Apply velocity
-    player.position.y += playerState.velocity.y * delta;
-
-    // Air friction
-    playerState.velocity.y *= CONFIG.player.airFriction;
-
-    // Thrust (Flight)
-    if (keys.jump) {
-        playerState.velocity.y += CONFIG.player.thrustForce * delta;
-        playerState.isGrounded = false;
-
-        // Boost flame when thrusting
-        const rocket = player.children[0];
-        if (rocket && rocket.userData.flame) {
-            rocket.userData.flame.scale.set(1.5, 3.0, 1.5); // Big flame
-        }
-
-        // --- NEW: Emit Engine Trail ---
-        const exhaustPos = player.position.clone();
-        exhaustPos.x -= 0.5; // slightly behind the rocket
-        exhaustPos.y -= 0.5; // at the nozzle
-        particleSystem.emit(exhaustPos, 0xffaa00, 2, 5.0, 0.8, 0.2);
+    
+    // Smoothly interpolate current speed toward target (responsive but not jittery)
+    const accel = (targetSpeed !== 0) ? CONFIG.player.acceleration : CONFIG.player.deceleration;
+    playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * delta;
+    
+    // Apply the movement
+    player.position.y += playerState.currentSpeedY * delta;
+    
+    // Soft boundaries - keep player on screen (Y: -10 to +15)
+    if (player.position.y > 15) {
+        player.position.y = 15;
+        playerState.currentSpeedY = Math.min(0, playerState.currentSpeedY);
+    } else if (player.position.y < -10) {
+        player.position.y = -10;
+        playerState.currentSpeedY = Math.max(0, playerState.currentSpeedY);
     }
+    
+    // Store for animation
+    playerState.velocity.y = playerState.currentSpeedY;
 
-    // Gravity
-    playerState.velocity.y -= CONFIG.player.gravity * delta;
-
-    // Apply velocity
-    player.position.x += playerState.velocity.x * delta;
-    player.position.y += playerState.velocity.y * delta;
-
-    // Cap vertical speed (terminal velocity)
-    playerState.velocity.y = Math.max(Math.min(playerState.velocity.y, 10), -15);
-
-    // Collision detection
-    const collision = checkPlatformCollision(player.position.x, player.position.y, CONFIG.groundLevel);
-    if (collision.collided && collision.groundY !== null) {
-        player.position.y = collision.groundY + 0.5; // Player height offset
-        playerState.velocity.y = 0;
-        playerState.isGrounded = true;
-    } else {
-        playerState.isGrounded = false;
-    }
-
-    // Animation: Pitch based on vertical velocity
+    // --- Visual Effects ---
     const rocket = player.children[0];
     if (rocket) {
-        // Pitch up/down based on Y velocity
-        const targetPitch = playerState.velocity.y * 0.03;
-        player.rotation.z += (targetPitch - player.rotation.z) * 0.1;
+        // Pitch up/down based on movement direction (subtle, responsive)
+        const targetPitch = -playerState.currentSpeedY * 0.025;
+        player.rotation.z += (targetPitch - player.rotation.z) * 0.15;
 
-        // Bobbing
-        const hoverY = Math.sin(Date.now() * 0.003) * 0.05;
+        // Gentle hover bob (always present, subtle)
+        const hoverY = Math.sin(Date.now() * 0.004) * 0.03;
         rocket.position.y = hoverY;
 
-        // Flame Flicker
-        if (rocket.userData.flame && !keys.jump) {
-            const flicker = 0.6 + Math.random() * 0.3;
-            rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
+        // Flame effect based on movement
+        if (rocket.userData.flame) {
+            if (isMovingUp || isMovingDown) {
+                // Boost flame when actively moving
+                const flicker = 0.9 + Math.random() * 0.2;
+                rocket.userData.flame.scale.set(flicker * 1.2, flicker * 2.5, flicker * 1.2);
+                
+                // Emit engine trail
+                const exhaustPos = player.position.clone();
+                exhaustPos.x -= 0.5;
+                exhaustPos.y -= 0.5;
+                particleSystem.emit(exhaustPos, 0xffaa00, 1, 4.0, 0.6, 0.15);
+            } else {
+                // Idle flame
+                const flicker = 0.5 + Math.random() * 0.2;
+                rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
+            }
         }
     }
 
@@ -1151,37 +1542,50 @@ function updatePlayer(delta: number) {
 }
 
 // =============================================================================
-// CAMERA FOLLOW
+// CAMERA FOLLOW - Dynamic with screen shake and movement response
 // =============================================================================
-function updateCamera() {
+let cameraShake = 0;
+let cameraOffset = new THREE.Vector3();
+
+export function triggerScreenShake(intensity: number, duration: number) {
+    cameraShake = intensity;
+    setTimeout(() => { cameraShake = 0; }, duration * 1000);
+}
+
+function updateCamera(delta?: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
     
-    // Smooth follow player on X axis
-    const targetX = player.position.x;
-    const targetY = Math.max(player.position.y + 1, CONFIG.cameraHeight);
+    const d = delta || 0.016;
+    
+    // Dynamic camera positioning based on player movement
+    const speedFactor = Math.abs(playerState.currentSpeedY) / CONFIG.player.maxSpeedY;
+    const lookAheadX = 15 + speedFactor * 5; // Look further ahead when moving fast
+    const lookAheadY = playerState.currentSpeedY * 0.3; // Lead vertical movement
+    
+    const targetX = player.position.x + lookAheadX;
+    const targetY = Math.max(player.position.y + 2 + lookAheadY, CONFIG.cameraHeight);
 
-    camera.position.x += (targetX - camera.position.x) * 0.08;
-    camera.position.y += (targetY - camera.position.y) * 0.05;
+    // Smooth follow with different speeds for X and Y
+    camera.position.x += (targetX - camera.position.x) * 0.06;
+    camera.position.y += (targetY - camera.position.y) * 0.04;
 
-    // Look slightly ahead of player
-    const lookAhead = playerState.facingRight ? 2 : -2;
+    // Screen shake effect
+    if (cameraShake > 0) {
+        cameraOffset.x = (Math.random() - 0.5) * cameraShake;
+        cameraOffset.y = (Math.random() - 0.5) * cameraShake;
+        cameraOffset.z = (Math.random() - 0.5) * cameraShake * 0.5;
+        camera.position.add(cameraOffset);
+        cameraShake *= 0.9; // Decay
+    }
+
+    // Look ahead with slight tilt based on vertical speed
+    const tiltAmount = -playerState.currentSpeedY * 0.02;
     camera.lookAt(
-        camera.position.x + lookAhead,
-        camera.position.y - 1,
+        player.position.x + 20,
+        player.position.y + tiltAmount,
         0
     );
-
-    // Update main light to follow player
-    mainLight.position.x = camera.position.x - 5;
-    mainLight.target.position.x = camera.position.x;
-    
-    // Update accent lights to follow player with offset
-    accentLight1.position.x = player.position.x + 10;
-    accentLight1.position.y = player.position.y + 5;
-    
-    accentLight2.position.x = player.position.x - 8;
-    accentLight2.position.y = player.position.y + 3;
 }
 
 // =============================================================================
@@ -1190,11 +1594,199 @@ function updateCamera() {
 const clock = new THREE.Clock();
 
 function animate() {
-    const delta = Math.min(clock.getDelta(), 0.1); // Cap delta
+    const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap delta
+    const delta = juiceManager.update(rawDelta);
     const time = clock.getElapsedTime(); // For foliage animation and time-based motion
+    
+    if (isGamePaused) {
+        renderer.render(scene, camera);
+        return;
+    }
+
+    // Update rocket position for touch controls (follow finger mode)
+    if (touchControls && player) {
+        // Convert player position to screen space for follow finger mode
+        const vector = player.position.clone();
+        vector.project(camera);
+        const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
+        const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
+        
+        touchControls.setRocketPosition(
+            player.position,
+            new THREE.Vector2(screenX, screenY)
+        );
+    }
 
     updatePlayer(delta);
     obstacleSystem.update(delta);
+    
+    // --- BOSS SYSTEM ---
+    if (player) {
+        // Check for boss spawn
+        if (!playerState.bossActive) {
+            const bossSpawned = bossManager.checkBossSpawn(
+                player.position.x,
+                playerState.level,
+                {
+                    onDefeated: () => {
+                        // Boss defeated - give rewards and continue
+                        playerState.cores += 50;
+                        saveManager.addCores(50);
+                        saveManager.recordBossDefeated();
+                        audioSystem.play('boss_defeat');
+                        playerState.bossActive = false;
+                        
+                        // Resume auto-scroll
+                        playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
+                        
+                        // Show victory message briefly
+                        console.log('🎉 BOSS DEFEATED! +50 Cores');
+                    },
+                    onPlayerHit: () => {
+                        // Boss hit player
+                        if (!playerState.invincible) {
+                            playerState.health--;
+                            audioSystem.play('hit');
+                            updateHealthDisplay(playerState);
+                            dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
+                            juiceManager.shakeScreen(ShakeType.HEAVY);
+                            if (player) juiceManager.burstDamage(player.position.clone());
+                            hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                            if (playerState.health <= 0) {
+                                handleGameOver();
+                            }
+                        }
+                    },
+                    getPlayerPosition: () => player ? player.position : null,
+                    spawnDebris: (pos) => {
+                        // Spawn debris from boss mouth
+                        obstacleSystem.createAsteroid(pos.x, pos.y, pos.z, 1.0, 
+                            new THREE.Vector3(-5 - Math.random() * 5, (Math.random() - 0.5) * 5, 0));
+                    },
+                    onBossStart: () => {
+                        playerState.bossActive = true;
+                        // Slow down during boss fight
+                        playerState.autoScrollSpeed = 2;
+                        audioSystem.play('boss_roar');
+                        audioSystem.updateDroneIntensity(2.0);
+                    }
+                }
+            );
+            
+            if (bossSpawned) {
+                console.log('👹 Boss fight started!');
+            }
+        }
+        
+        // Update boss
+        const bossResult = bossManager.update(delta);
+        if (bossResult.bossActive && player) {
+            // Apply pull force from boss
+            const playerPos = player.position;
+            const boss = bossResult.boss;
+            const bossPos = boss?.group.position;
+            
+            if (boss && bossPos) {
+                // Pull toward boss Y position
+                const pullDir = bossPos.y - playerPos.y;
+                playerState.currentSpeedY += pullDir * bossResult.pullForce * delta * 0.1;
+                
+                // Check mouth snap death
+                if (bossResult.isSnapping) {
+                    const distToMouth = Math.abs(playerPos.x - (bossPos.x + 8));
+                    if (distToMouth < 3 && Math.abs(playerPos.y - bossPos.y) < 3) {
+                        // Inside mouth when it snaps - instant death
+                        playerState.health = 0;
+                        updateHealthDisplay(playerState);
+                        dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
+                        juiceManager.shakeScreen(ShakeType.EARTHQUAKE);
+                        juiceManager.burstDamage(player.position.clone());
+                        hudManager.updateHealth(0, playerState.maxHealth);
+                        handleGameOver();
+                        return;
+                    }
+                }
+                
+                // Check projectile hits on boss
+                const projectiles = weaponSystem.getActiveProjectiles();
+                for (const proj of projectiles) {
+                    if (!proj.active) continue;
+                    const hitbox = boss.getHitbox();
+                    const dist = proj.mesh.position.distanceTo(hitbox.center);
+                    if (dist < hitbox.radius) {
+                        if (boss.takeDamage(10)) {
+                            // Hit registered
+                            audioSystem.play('hit');
+                            proj.deactivate();
+                        }
+                    }
+                }
+            }
+        }
+        
+        // --- PICKUP SYSTEM ---
+        const collected = pickupManager.update(delta, time, player.position);
+        if (collected) {
+            upgradeSystem.setPlayerGroup(player);
+            upgradeSystem.activateUpgrade(collected);
+        }
+        
+        // --- UPGRADE SYSTEM ---
+        upgradeSystem.update(delta, time);
+        
+        // --- AUDIO SYSTEM ---
+        audioSystem.updateEngine(playerState.currentSpeedY);
+        
+        // --- HEAT SYSTEM ---
+        heatSystem.update(delta);
+        
+        // --- MAGICAL SYSTEMS (from swarm) ---
+        // Update starfield with speed multiplier
+        const speedMultiplier = 1 + Math.abs(playerState.currentSpeedY) / 20;
+        starfield.update(delta, speedMultiplier);
+        
+        // Update orb manager and check collection
+        orbManager.update(delta, time);
+        const collectionResult = orbManager.checkCollection(player.position);
+        if (collectionResult.collected && player) {
+            dogController.triggerAnimation(DogAnimationState.COLLECT, 0.5);
+            juiceManager.burstCollect(player.position.clone());
+            juiceManager.showScoreText(collectionResult.points || 10, player.position.clone());
+            if (collectionResult.healthRestore) {
+                playerState.health = Math.min(playerState.health + collectionResult.healthRestore, playerState.maxHealth);
+                hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                updateHealthDisplay(playerState);
+            }
+        }
+        
+        // Update power-up manager
+        powerUpManager.update(delta);
+        
+        // SWARM #3: Update magical effects (rainbow trails, butterflies, etc.)
+        effectManager.update(delta);
+        
+        // SWARM #4: Update victory and tutorial systems
+        victorySystem.update(delta);
+        tutorialSystem.update(delta);
+        
+        // Randomly spawn orbs as player progresses
+        if (Math.random() < 0.02) {
+            const spawnX = player.position.x + 40 + Math.random() * 20;
+            const spawnY = (Math.random() - 0.5) * 12;
+            orbManager.spawnRandomOrb(spawnX, spawnY);
+        }
+        
+        // Update space friends and spawn new ones
+        friendsManager.update(delta, player.position);
+        friendsManager.maybeSpawnFriends(player.position.x);
+        friendsManager.cleanupFarFriends(player.position.x);
+        
+        // Update dog cockpit animation
+        dogController.update(delta, playerState);
+    }
+    
+    // Update HUD system
+    hudManager.update(delta);
 
     // --- NEW: Update Particles (engine trails & explosions)
     particleSystem.update(delta);
@@ -1225,6 +1817,11 @@ function animate() {
                         particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0); // Cyan splash
 
                         // 2. Destroy Asteroid
+                        audioSystem.play('explode');
+                        
+                        // Try spawn pickup
+                        pickupManager.trySpawn(obs.position.clone());
+                        
                         obstacleSystem.splitAsteroid(obs); // This modifies obstacles array!
 
                         // 3. Destroy Projectile
@@ -1254,7 +1851,10 @@ function animate() {
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
     }
 
-    updateCamera();
+    updateCamera(delta);
+    
+    // Update juice camera base position
+    juiceManager.updateCameraBasePosition(camera.position);
     
     // --- NEW: Update Geological Objects ---
     // Update spore clouds (brownian motion)
@@ -1419,6 +2019,34 @@ function animate() {
     // Update industrial obstacles (Level 4)
     industrialGeometryManager.update(time);
 
+    // SWARM #3: Update Dreamy Environments
+    if (player) {
+        // Update flower constellations (bloom, pollen, sparkles)
+        flowerManager.update(delta, player.position);
+        flowerManager.checkPlayerProximity(player.position);
+        
+        // Update candy belt (wobble, dissolve, shatter)
+        candyManager.update(delta);
+        
+        // Check candy collisions (bouncy gummies!)
+        const candyCollisions = candyManager.checkCollisions(player.position, 2.0);
+        candyCollisions.forEach(collision => {
+            if (collision.type === 'bouncy') {
+                // Bouncy gummies make the dog giggle!
+                dogController.triggerAnimation(DogAnimationState.POWER_UP, 0.5);
+                juiceManager.showFloatingText("Boing!", collision.candy.position, '#ff69b4');
+                audioSystem.playMagicSound('happy');
+            } else if (collision.type === 'collectible') {
+                // Cotton candy dissolves into sugar sparkles
+                juiceManager.spawnSparkles(player.position, new THREE.Color(0xffb6c1), 10);
+                audioSystem.playMagicSound('collect');
+            }
+        });
+        
+        // Update cloud castles (parallax scrolling)
+        castleManager.update(delta, player.position.x);
+    }
+
     // Rotate galaxies slowly
     if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
     if (galaxy2) galaxy2.rotation.z += galaxy2.userData.rotationSpeed;
@@ -1471,10 +2099,30 @@ function animate() {
     // Update distance display
     updateDistanceDisplay(playerState, player);
     
-    // Check if player reached the moon
-    if (player && player.position.x >= playerState.distanceToMoon - 10 && !playerState.hasWon) {
-        playerState.hasWon = true;
-        gameWin();
+    // Update UI elements
+    updateHeatBar();
+    updateCoresDisplay();
+    
+    // Check if player reached the moon (or defeated boss in level 1)
+    if (player && player.position.x >= playerState.distanceToMoon - 10 && !playerState.hasWon && !playerState.bossActive) {
+        // If we got here without beating the boss, spawn it now
+        if (playerState.level === 1 && bossManager.getBoss() === null) {
+            // Trigger boss
+        } else {
+            playerState.hasWon = true;
+            saveManager.updateHighScore(Math.floor(player.position.x));
+            saveManager.addCores(playerState.cores);
+            
+            // SWARM #4: Trigger victory celebration sequence
+            if (victorySystem.getState() === VictoryState.NONE) {
+                victorySystem.startApproach(moon.position);
+            }
+            
+            // Legacy victory handling (combined with new system)
+            audioSystem.play('boss_defeat');
+            dogController.triggerAnimation(DogAnimationState.VICTORY, 5.0);
+            hudManager.checkAndSaveHighScore();
+        }
     }
 
     renderer.render(scene, camera);

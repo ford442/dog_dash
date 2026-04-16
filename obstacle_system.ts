@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 import type { LevelConfig } from './level_config';
 import type { SporeCloud } from './geological';
+import { 
+    type PatternConfig, 
+    type EnemyInstance,
+    generatePatternPositions, 
+    updatePatternPosition,
+    getRandomPattern,
+    getPatternName
+} from './enemy_patterns';
 
 type ObstacleSystemOptions = {
     scene: THREE.Scene;
@@ -18,14 +26,21 @@ type ObstacleSystemOptions = {
     getCurrentLevel: () => number;
     updateHealthDisplay: () => void;
     gameOver: () => void;
+    onPlayerHit?: () => void;
 };
 
 export class ObstacleSystem {
     private readonly scene: THREE.Scene;
     private readonly options: ObstacleSystemOptions;
     private readonly obstacles: THREE.Mesh[] = [];
+    private readonly patternEnemies: EnemyInstance[] = [];
     private spawnInterval = 1.5;
     private lastSpawn = 0;
+    private patternSpawnTimer = 0;
+    private nextPatternDistance = 100;
+    private currentPattern: PatternConfig | null = null;
+    private patternProgress = 0;
+    private time = 0;
 
     constructor(options: ObstacleSystemOptions) {
         this.options = options;
@@ -40,6 +55,7 @@ export class ObstacleSystem {
         const player = this.options.getPlayer();
         if (!player) return;
 
+        this.time += delta;
         const playerX = player.position.x;
         const playerY = player.position.y;
         const currentCfg = this.options.getCurrentConfig();
@@ -47,12 +63,33 @@ export class ObstacleSystem {
             this.spawnInterval = currentCfg.asteroidRate;
         }
 
+        // --- PATTERN SPAWN SYSTEM ---
+        // Spawn crazy formations every so often
+        this.patternSpawnTimer += delta;
+        if (playerX > this.nextPatternDistance) {
+            this.spawnPatternFormation(playerX + 50, playerY);
+            this.nextPatternDistance = playerX + 80 + Math.random() * 100;
+        }
+
+        // Regular asteroid spawning (reduced frequency to make room for patterns)
         this.lastSpawn += delta;
-        if (this.lastSpawn > this.spawnInterval) {
+        if (this.lastSpawn > this.spawnInterval * 1.5) {
             this.lastSpawn = 0;
-            const spawnX = playerX + 40 + Math.random() * 20;
-            const spawnY = (Math.random() - 0.5) * 15;
+            const spawnX = playerX + 50 + Math.random() * 30;
+            // Use sine wave for Y position to create flowing patterns
+            const waveY = Math.sin(playerX * 0.1) * 5 + Math.cos(playerX * 0.05) * 3;
+            const spawnY = waveY + (Math.random() - 0.5) * 8;
             this.createAsteroid(spawnX, spawnY, 0);
+        }
+        
+        // --- UPDATE PATTERN ENEMIES ---
+        for (const enemy of this.patternEnemies) {
+            const newPos = updatePatternPosition(enemy, this.time, delta);
+            enemy.mesh.position.copy(newPos);
+            
+            // Rotate enemies for visual interest
+            enemy.mesh.rotation.x += delta * enemy.speed;
+            enemy.mesh.rotation.y += delta * enemy.speed * 0.7;
         }
 
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
@@ -79,6 +116,15 @@ export class ObstacleSystem {
             if (obs.position.x < playerX - 30 || Math.abs(obs.position.z) > 50) {
                 this.scene.remove(obs);
                 this.obstacles.splice(i, 1);
+            }
+        }
+        
+        // Cleanup pattern enemies that are far behind
+        for (let i = this.patternEnemies.length - 1; i >= 0; i--) {
+            const enemy = this.patternEnemies[i];
+            if (enemy.mesh.position.x < playerX - 50) {
+                this.scene.remove(enemy.mesh);
+                this.patternEnemies.splice(i, 1);
             }
         }
 
@@ -158,6 +204,95 @@ export class ObstacleSystem {
         if (idx > -1) this.obstacles.splice(idx, 1);
     }
 
+    private spawnPatternFormation(playerX: number, playerY: number) {
+        const difficulty = Math.min(3, 1 + playerX / 1000);
+        const pattern = getRandomPattern(playerX, playerY, difficulty);
+        
+        console.log(`Spawning ${getPatternName(pattern.type)} formation with ${pattern.count} enemies`);
+        
+        const positions = generatePatternPositions(pattern);
+        
+        for (let i = 0; i < positions.length; i++) {
+            const pos = positions[i];
+            const size = 0.4 + Math.random() * 0.8;
+            
+            // Create different colored enemies for visual variety
+            const hue = Math.random();
+            const color = new THREE.Color().setHSL(hue, 0.7, 0.5);
+            
+            const enemy = this.createPatternEnemy(
+                pos.x, pos.y, pos.z || 0, 
+                size, 
+                color.getHex(),
+                pattern,
+                i
+            );
+            
+            this.patternEnemies.push(enemy);
+        }
+    }
+
+    private createPatternEnemy(
+        x: number, 
+        y: number, 
+        z: number, 
+        size: number, 
+        color: number,
+        pattern: PatternConfig,
+        index: number
+    ): EnemyInstance {
+        const geo = new THREE.IcosahedronGeometry(size, 1);
+        
+        // Deform for organic look
+        const positions = geo.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+            const noise = (Math.random() - 0.5) * 0.3;
+            positions.setXYZ(
+                i, 
+                positions.getX(i) * (1 + noise),
+                positions.getY(i) * (1 + noise),
+                positions.getZ(i) * (1 + noise)
+            );
+        }
+        geo.computeVertexNormals();
+
+        const mat = new THREE.MeshStandardMaterial({
+            color: color,
+            roughness: 0.4,
+            metalness: 0.6,
+            emissive: color,
+            emissiveIntensity: 0.3,
+            flatShading: true
+        });
+        
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(x, y, z);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        
+        mesh.userData = {
+            radius: size,
+            isPatternEnemy: true,
+            health: 1
+        };
+        
+        this.scene.add(mesh);
+        this.obstacles.push(mesh);
+        
+        return {
+            mesh,
+            basePosition: new THREE.Vector3(x, y, z),
+            patternOffset: index * 0.5,
+            timeOffset: Math.random() * 100,
+            speed: pattern.speed,
+            pattern: pattern.type,
+            amplitude: pattern.amplitude || 3,
+            frequency: pattern.frequency || 1,
+            phase: pattern.phase || 0,
+            radius: pattern.radius || 3
+        };
+    }
+
     private createAsteroid(x: number, y: number, z = 0, size = 0, velocity: THREE.Vector3 | null = null) {
         const finalSize = (size > 0) ? size : (0.5 + Math.random() * 1.5);
         const geo = new THREE.IcosahedronGeometry(finalSize, 1);
@@ -230,6 +365,9 @@ export class ObstacleSystem {
             this.options.playerState.invincible = false;
         }, 2000);
 
+        if (this.options.onPlayerHit) {
+            this.options.onPlayerHit();
+        }
         this.options.updateHealthDisplay();
         if (this.options.playerState.health <= 0) {
             this.options.gameOver();
