@@ -2,18 +2,20 @@
  (type $0 (func (param i32) (result i32)))
  (type $1 (func (param i32 i32) (result i32)))
  (type $2 (func (param i32 i32)))
- (type $3 (func (param i32 i32 i32 i32)))
- (type $4 (func (param i32 i32 i64)))
- (type $5 (func))
- (type $6 (func (param i32 i32 i32)))
- (type $7 (func (param i32 i32 i32) (result i32)))
- (type $8 (func (param f32 f32 f32 i32) (result i32)))
+ (type $3 (func (param f32 f32 f32 i32) (result i32)))
+ (type $4 (func (param i32 i32 i32 i32)))
+ (type $5 (func (param i32 i32 i64)))
+ (type $6 (func))
+ (type $7 (func (param i32 i32 i32)))
+ (type $8 (func (param i32 i32 i32) (result i32)))
  (type $9 (func (param f32 f32 f32 f32 i32) (result i32)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
  (global $assembly/index/asteroidsPtr (mut i32) (i32.const 0))
  (global $assembly/index/asteroidsCapacity (mut i32) (i32.const 0))
  (global $assembly/index/sporeCloudsPtr (mut i32) (i32.const 0))
  (global $assembly/index/sporeCloudsCapacity (mut i32) (i32.const 0))
+ (global $assembly/index/bossHitboxPtr (mut i32) (i32.const 0))
+ (global $assembly/index/bossHitboxCapacity (mut i32) (i32.const 0))
  (global $~lib/rt/tlsf/ROOT (mut i32) (i32.const 0))
  (memory $0 2)
  (data $0 (i32.const 1036) "<")
@@ -24,6 +26,8 @@
  (export "allocSporeClouds" (func $assembly/index/allocSporeClouds))
  (export "checkCollision" (func $assembly/index/checkCollision))
  (export "checkSporeCollision" (func $assembly/index/checkSporeCollision))
+ (export "allocBossHitboxes" (func $assembly/index/allocBossHitboxes))
+ (export "checkBossCollision" (func $assembly/index/checkBossCollision))
  (export "memory" (memory $0))
  (func $~lib/rt/tlsf/removeBlock (param $0 i32) (param $1 i32)
   (local $2 i32)
@@ -1304,6 +1308,99 @@
     i32.const 1
     i32.add
     local.set $6
+    br $for-loop|0
+   end
+  end
+  i32.const -1
+ )
+ (func $assembly/index/allocBossHitboxes (param $0 i32) (result i32)
+  (local $1 i32)
+  local.get $0
+  global.get $assembly/index/bossHitboxCapacity
+  i32.gt_s
+  if
+   local.get $0
+   i32.const 12
+   i32.mul
+   local.set $1
+   global.get $assembly/index/bossHitboxCapacity
+   if (result i32)
+    global.get $assembly/index/bossHitboxPtr
+    local.get $1
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $1
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/index/bossHitboxPtr
+   local.get $0
+   global.set $assembly/index/bossHitboxCapacity
+  end
+  global.get $assembly/index/bossHitboxPtr
+ )
+ (func $assembly/index/checkBossCollision (param $0 f32) (param $1 f32) (param $2 f32) (param $3 i32) (result i32)
+  (local $4 i32)
+  (local $5 i32)
+  (local $6 f32)
+  global.get $assembly/index/bossHitboxPtr
+  i32.eqz
+  local.get $3
+  i32.eqz
+  i32.or
+  if
+   i32.const -1
+   return
+  end
+  global.get $assembly/index/bossHitboxPtr
+  local.set $4
+  loop $for-loop|0
+   local.get $3
+   local.get $5
+   i32.gt_s
+   if
+    local.get $0
+    local.get $4
+    f32.load
+    f32.sub
+    local.tee $6
+    local.get $6
+    f32.mul
+    local.get $1
+    local.get $4
+    f32.load offset=4
+    f32.sub
+    local.tee $6
+    local.get $6
+    f32.mul
+    f32.add
+    local.get $2
+    local.get $4
+    f32.load offset=8
+    f32.add
+    local.tee $6
+    local.get $6
+    f32.mul
+    f32.lt
+    if
+     local.get $5
+     return
+    end
+    local.get $4
+    i32.const 12
+    i32.add
+    local.set $4
+    local.get $5
+    i32.const 1
+    i32.add
+    local.set $5
     br $for-loop|0
    end
   end

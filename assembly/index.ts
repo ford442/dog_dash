@@ -111,3 +111,57 @@ export function checkSporeCollision(playerX: f32, playerY: f32, playerZ: f32, pl
   }
   return -1;
 }
+
+// ============================================================================
+// BOSS (Nebula Kraken) COLLISION DETECTION
+// ============================================================================
+// Checks projectile hits against boss hitboxes.
+// Boss data: [x, y, radius] per hitbox (same format as asteroids).
+// Used for checking weapon projectiles against squid body/tentacle segments.
+
+let bossHitboxPtr: usize = 0;
+let bossHitboxCapacity: i32 = 0;
+
+// Allocates space for boss hitbox data.
+// Returns the pointer/offset to the beginning of the buffer.
+export function allocBossHitboxes(count: i32): usize {
+  const requiredBytes = count * 12; // 3 floats * 4 bytes
+
+  if (count > bossHitboxCapacity) {
+    if (bossHitboxCapacity == 0) {
+      bossHitboxPtr = heap.alloc(requiredBytes);
+    } else {
+      bossHitboxPtr = heap.realloc(bossHitboxPtr, requiredBytes);
+    }
+    bossHitboxCapacity = count;
+  }
+  return bossHitboxPtr;
+}
+
+// Checks for collision between a projectile circle and boss hitbox circles.
+// Returns the index of the hit hitbox, or -1 if no collision.
+export function checkBossCollision(projX: f32, projY: f32, projRadius: f32, hitboxCount: i32): i32 {
+  if (hitboxCount == 0 || bossHitboxPtr == 0) {
+    return -1;
+  }
+
+  let ptr = bossHitboxPtr;
+
+  for (let i = 0; i < hitboxCount; i++) {
+    let hbX = load<f32>(ptr);
+    let hbY = load<f32>(ptr + 4);
+    let hbR = load<f32>(ptr + 8);
+
+    let dx = projX - hbX;
+    let dy = projY - hbY;
+    let distSq = dx * dx + dy * dy;
+
+    let radii = projRadius + hbR;
+    if (distSq < radii * radii) {
+      return i;
+    }
+
+    ptr += 12;
+  }
+  return -1;
+}

@@ -27,6 +27,7 @@ export type LevelConfig = {
     tunnelHeight?: number;
     obstacleInterval?: number;
     fogDensity?: number;
+    squidSpawnRate?: number;
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
@@ -109,7 +110,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         speed: 10,
         bgColor: 0x000510,
         skyColors: { top: 0x000011, bottom: 0x001133 },
-        levelType: 'open'
+        levelType: 'open',
+        squidSpawnRate: 0.0005
     },
     4: {
         name: "The Rusty Gauntlet",
@@ -138,7 +140,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x110800, bottom: 0x221105 },
         levelType: 'tunnel',
         tunnelHeight: 15,
-        obstacleInterval: 20
+        obstacleInterval: 20,
+        squidSpawnRate: 0.0003
     },
     5: {
         name: "The Astral Leviathan",
@@ -168,7 +171,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'organic_tunnel',
         tunnelHeight: 20,
         obstacleInterval: 25,
-        fogDensity: 0.02
+        fogDensity: 0.02,
+        squidSpawnRate: 0.0008
     },
     6: {
         name: "The Aqua Expanse",
@@ -195,6 +199,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         speed: 10,
         bgColor: 0x001133,
         skyColors: { top: 0x001133, bottom: 0x002244 },
-        levelType: 'open'
+        levelType: 'open',
+        squidSpawnRate: 0.0006
     }
 };
