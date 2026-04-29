@@ -24,6 +24,8 @@ export interface TouchInput {
     horizontal: number;
     /** Boost activated */
     boost: boolean;
+    /** Barrel roll activated */
+    roll: boolean;
     /** Fire weapon */
     fire: boolean;
     /** Pause requested */
@@ -66,6 +68,7 @@ const DEFAULT_INPUT: TouchInput = {
     vertical: 0,
     horizontal: 0,
     boost: false,
+    roll: false,
     fire: false,
     pause: false,
     active: false
@@ -509,13 +512,14 @@ export class TouchControlsManager {
         const dy = touch.y - touch.startY;
         const duration = Date.now() - touch.startTime;
         
-        // Detect swipe up/down for dodge
+        // Detect swipe up/down for dodge/roll
         if (Math.abs(dy) > this.swipeThreshold && Math.abs(dy) > Math.abs(dx)) {
             if (duration < 300) { // Quick swipe
                 if (dy < 0) {
                     this.triggerDodge('up');
                 } else {
-                    this.triggerDodge('down');
+                    // Downward swipe triggers barrel roll
+                    this.triggerRoll();
                 }
             }
         }
@@ -950,6 +954,16 @@ export class TouchControlsManager {
         setTimeout(() => {
             this.currentInput.boost = false;
         }, 200);
+    }
+
+    private triggerRoll(): void {
+        this.currentInput.roll = true;
+        this.triggerHaptic(60);
+
+        // Reset roll after short delay (edge detection in main.ts)
+        setTimeout(() => {
+            this.currentInput.roll = false;
+        }, 150);
     }
 
     private triggerHaptic(duration: number): void {

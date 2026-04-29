@@ -85,6 +85,8 @@ import { VictorySystem, VictoryState } from './victory_system';
 import { TutorialSystem, TutorialStep, shouldShowTutorial } from './tutorial_system';
 import type { NebulaKraken } from './space_robot_squid';
 import { BOSS_DISPLAY_NAME } from './space_robot_squid';
+import { BoostSystem } from './boost_system';
+import { RollSystem } from './roll_system';
 
 // --- Configuration ---
 const CONFIG = {
@@ -99,11 +101,13 @@ const CONFIG = {
     // Camera
     cameraDistance: 15,
     cameraHeight: 3,
-    // Player physics - Smooth direct control (no thrust/gravity bobbing)
+    // Player physics - Gravity + Momentum flight model
     player: {
-        maxSpeedY: 18,        // Maximum vertical speed
-        acceleration: 40,     // How quickly we reach target speed
-        deceleration: 25,     // How quickly we stop when no input
+        maxSpeedY: 18,        // Maximum climbing speed
+        maxDescentSpeed: 22,  // Allow faster falling than climbing
+        acceleration: 40,     // Thrust power
+        deceleration: 15,     // Air resistance when gliding
+        gravity: 8,           // Natural downward pull
         responsiveness: 12,   // Smoothing factor for movement
     },
     // World
@@ -216,8 +220,9 @@ try {
     // Main directional light (from the side for dramatic shadows)
     mainLight.position.set(-5, 10, 10);
     mainLight.castShadow = true;
-    mainLight.shadow.mapSize.width = 2048;
-    mainLight.shadow.mapSize.height = 2048;
+    // Phase 1 FPS Fixes - Quick Wins: default shadow map to 1024, scaled up during boss fights
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
     mainLight.shadow.camera.near = 0.5;
     mainLight.shadow.camera.far = 50;
     mainLight.shadow.camera.left = -30;
@@ -226,6 +231,7 @@ try {
     mainLight.shadow.camera.bottom = -10;
     mainLight.shadow.bias = -0.0001;
     scene.add(mainLight);
+    scene.add(mainLight.target);
 
     // Rim light from behind (cinematic depth) - enhanced
     rimLight.position.set(5, 5, -10);
@@ -451,7 +457,10 @@ class LevelManager {
 
         // Track planted objects to cleanup
         this.levelObjects = [];
+        this.lastPopulatedEndX = -Infinity;
     }
+
+    lastPopulatedEndX: number;
 
     startLevel(levelIndex: number) {
         this.currentLevel = levelIndex;
@@ -543,7 +552,7 @@ class LevelManager {
         if (levelIndex === 5) {
             // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
-            nebulaSystem.deactivate();
+            nebulaSystem.activate();
             // Hide clouds in whale level
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
@@ -571,7 +580,23 @@ class LevelManager {
         }
     }
 
+    // Phase 1 FPS Fixes - Quick Wins: object cleanup with geometry disposal
+    cleanupBehind(cameraX: number) {
+        const cutoff = cameraX - 100;
+        for (let i = this.levelObjects.length - 1; i >= 0; i--) {
+            const obj = this.levelObjects[i];
+            if (obj.position.x < cutoff) {
+                scene.remove(obj);
+                const mpIdx = moonPlants.indexOf(obj);
+                if (mpIdx !== -1) moonPlants.splice(mpIdx, 1);
+                disposeObject(obj);
+                this.levelObjects.splice(i, 1);
+            }
+        }
+    }
+
     update(delta: number, cameraX: number, speed: number) {
+        this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
         this.cloudSystem.update(delta, cameraX, speed);
         waterfallSystem.update(cameraX, delta);
@@ -587,6 +612,10 @@ class LevelManager {
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
+        // Guard against re-populating the same zone
+        if (endX <= this.lastPopulatedEndX) return;
+        this.lastPopulatedEndX = endX;
+
         const width = endX - startX;
         const density = config.foliageDensity;
         const levelType = config.levelType || 'open';
@@ -905,24 +934,39 @@ const powerUpManager = new PowerUpManager({
         switch(type) {
             case PowerUpType.RAINBOW_COMET_TAIL:
                 effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, config.duration);
+                audioSystem.playCometActivate();
+                dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
+                juiceManager.flashRainbow(0.8);
                 break;
             case PowerUpType.FLOWER_CROWN_BOOST:
+                effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
+                audioSystem.playBoost();
+                break;
             case PowerUpType.TWINKLE_STAR_MAGNET:
                 effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
+                audioSystem.playCollect();
                 break;
             case PowerUpType.BUBBLEGUM_SHIELD:
                 effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, config.duration);
+                audioSystem.playShieldActivate();
                 break;
             case PowerUpType.BUTTERFLY_ESCORT:
                 effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, config.duration);
+                audioSystem.playCollect();
                 break;
             case PowerUpType.UNICORN_HORN_BLAST:
                 effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, config.duration);
+                audioSystem.playBoost();
                 break;
         }
     },
     onPowerUpEnd: (type, config) => {
         console.log(`Power-up ended: ${config.name}`);
+        if (type === PowerUpType.BUBBLEGUM_SHIELD && player) {
+            audioSystem.playShieldBreak();
+            juiceManager.showFloatingText("Pop!", player.position, '#ff69b4', 24);
+            juiceManager.burstMagic(player.position.clone());
+        }
     }
 });
 
@@ -972,6 +1016,7 @@ orbManager.onHealthRestore = (amount) => {
     playerState.health = Math.min(playerState.health + amount, playerState.maxHealth);
     hudManager.updateHealth(playerState.health, playerState.maxHealth);
     updateHealthDisplay(playerState);
+    audioSystem.playCollect();
 };
 
 // SAVE SYSTEM
@@ -986,6 +1031,44 @@ playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
 const dogController = new DogCockpitController();
 const hudManager = new HUDManager(saveManager);
 const juiceManager = new JuiceManager(camera, scene, particleSystem);
+
+// BOOST SYSTEM
+const boostSystem = new BoostSystem({
+    maxCharges: 3,
+    rechargeTime: 8,
+    duration: 1.8,
+    cooldown: 4,
+    onActivate: () => {
+        audioSystem.playBoost();
+        dogController.triggerAnimation(DogAnimationState.POWER_UP, 1.8);
+        juiceManager.shakeScreen(ShakeType.MEDIUM, 0.4);
+        updateBoostDisplay();
+    },
+    onDeactivate: () => {
+        updateBoostDisplay();
+    },
+    onRecharge: (charges) => {
+        updateBoostDisplay();
+    }
+});
+
+// ROLL SYSTEM
+const rollSystem = new RollSystem({
+    duration: 0.5,
+    cooldown: 2.6,
+    onActivate: () => {
+        audioSystem.playRoll();
+        dogController.triggerAnimation(DogAnimationState.THRUST, 0.45);
+        juiceManager.shakeScreen(ShakeType.HEAVY, 0.25);
+        playerState.invincible = true;
+        showRollPopup();
+        updateRollDisplay();
+    },
+    onDeactivate: () => {
+        playerState.invincible = false;
+        updateRollDisplay();
+    }
+});
 
 // SWARM #3 - DREAMY ENVIRONMENTS
 const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
@@ -1123,6 +1206,93 @@ function createMagmaHeartAtPosition(x: number, y: number, z: number) {
 // Store plants that live on the moon to animate them later
 const moonPlants: THREE.Object3D[] = [];
 
+// Phase 1 FPS Fixes - Quick Wins: safely dispose geometry when removing objects
+// Materials are intentionally skipped because foliage uses shared material pools
+function disposeObject(obj: THREE.Object3D) {
+    obj.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            if (mesh.geometry) {
+                mesh.geometry.dispose();
+            }
+        }
+    });
+}
+
+// Cleanup geological objects that have fallen behind the camera
+function cleanupGeologicalObjects(cameraX: number) {
+    const cutoff = cameraX - 100;
+
+    // Spore clouds
+    for (let i = sporeClouds.length - 1; i >= 0; i--) {
+        const cloud = sporeClouds[i];
+        if (cloud.position.x < cutoff) {
+            scene.remove(cloud.spores);
+            sporeClouds.splice(i, 1);
+        }
+    }
+
+    // Chroma rocks
+    for (let i = chromaRocks.length - 1; i >= 0; i--) {
+        const rock = chromaRocks[i];
+        if (rock.position.x < cutoff) {
+            scene.remove(rock);
+            disposeObject(rock);
+            chromaRocks.splice(i, 1);
+        }
+    }
+
+    // Geodes
+    for (let i = geodes.length - 1; i >= 0; i--) {
+        const geode = geodes[i];
+        if (geode.position.x < cutoff) {
+            scene.remove(geode);
+            disposeObject(geode);
+            geodes.splice(i, 1);
+        }
+    }
+
+    // Void root balls
+    for (let i = voidRootBalls.length - 1; i >= 0; i--) {
+        const rootBall = voidRootBalls[i];
+        if (rootBall.position.x < cutoff) {
+            scene.remove(rootBall);
+            disposeObject(rootBall);
+            voidRootBalls.splice(i, 1);
+        }
+    }
+
+    // Vacuum kelp
+    for (let i = vacuumKelps.length - 1; i >= 0; i--) {
+        const kelp = vacuumKelps[i];
+        if (kelp.position.x < cutoff) {
+            scene.remove(kelp);
+            disposeObject(kelp);
+            vacuumKelps.splice(i, 1);
+        }
+    }
+
+    // Ice needle clusters
+    for (let i = iceNeedleClusters.length - 1; i >= 0; i--) {
+        const cluster = iceNeedleClusters[i];
+        if (cluster.position.x < cutoff) {
+            scene.remove(cluster);
+            disposeObject(cluster);
+            iceNeedleClusters.splice(i, 1);
+        }
+    }
+
+    // Magma hearts
+    for (let i = magmaHearts.length - 1; i >= 0; i--) {
+        const heart = magmaHearts[i];
+        if (heart.position.x < cutoff) {
+            scene.remove(heart);
+            disposeObject(heart);
+            magmaHearts.splice(i, 1);
+        }
+    }
+}
+
 // Create the distant moon (goal)
 function createMoon() {
     const group = new THREE.Group();
@@ -1244,6 +1414,23 @@ obstacleSystem = new ObstacleSystem({
             juiceManager.burstDamage(player.position.clone());
         }
         hudManager.updateHealth(playerState.health, playerState.maxHealth);
+        audioSystem.playImpact(playerState.currentSpeedY);
+    },
+    getPowerUpModifiers: () => powerUpManager.getCombinedModifiers(),
+    onAsteroidBounce: (asteroid) => {
+        audioSystem.playBoing();
+        powerUpManager.triggerShieldBounce();
+        juiceManager.showFloatingText("Boing!", asteroid.position, '#ff69b4', 28);
+        juiceManager.shakeScreen(ShakeType.LIGHT, 0.15);
+    },
+    onGraze: (asteroid, score, combo) => {
+        audioSystem.playGraze(combo);
+        hudManager.addScore(score);
+        juiceManager.showScoreText(score, asteroid.position.clone());
+        hudManager.showGrazeCombo(combo);
+        if (combo === 1 && player) {
+            juiceManager.showFloatingText("Near Miss!", player.position, '#00ffff', 20);
+        }
     }
 });
 
@@ -1263,6 +1450,19 @@ if (instructions) {
         });
         createHeatBar();
         createCoresDisplay();
+        createBoostDisplay();
+        createRollDisplay();
+
+        // Add roll popup keyframes
+        const rollStyle = document.createElement('style');
+        rollStyle.textContent = `
+            @keyframes rollPopup {
+                0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+                30% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+                100% { transform: translate(-50%, -50%) scale(1.0); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(rollStyle);
     }, { once: true });
 }
 
@@ -1280,6 +1480,39 @@ window.addEventListener('keydown', (e) => {
                 () => { location.reload(); }
             );
         }
+    }
+    // Mute toggle
+    if (e.code === 'KeyM') {
+        const muted = audioSystem.toggleMute();
+        console.log(muted ? '🔇 Audio muted' : '🔊 Audio unmuted');
+    }
+});
+
+// Double-tap Space for boost
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') {
+        const now = performance.now();
+        if (now - lastSpaceTapTime < DOUBLE_TAP_THRESHOLD) {
+            wantsBoost = true;
+        }
+        lastSpaceTapTime = now;
+    }
+});
+
+// Double-tap A / Left Arrow or D / Right Arrow for barrel roll
+window.addEventListener('keydown', (e) => {
+    const now = performance.now();
+    if (e.code === 'KeyA' || e.code === 'ArrowLeft') {
+        if (now - lastLeftTapTime < DOUBLE_TAP_THRESHOLD) {
+            wantsRoll = true;
+        }
+        lastLeftTapTime = now;
+    }
+    if (e.code === 'KeyD' || e.code === 'ArrowRight') {
+        if (now - lastRightTapTime < DOUBLE_TAP_THRESHOLD) {
+            wantsRoll = true;
+        }
+        lastRightTapTime = now;
     }
 });
 
@@ -1354,6 +1587,171 @@ function updateHeatBar() {
     }
 }
 
+// Boost Charges Display UI
+function createBoostDisplay() {
+    const boostDiv = document.createElement('div');
+    boostDiv.id = 'boost-display';
+    boostDiv.style.cssText = `
+        position: absolute;
+        bottom: 70px;
+        right: 20px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        z-index: 100;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        color: #ffaa44;
+        text-shadow: 0 0 8px rgba(255,170,68,0.6);
+    `;
+    
+    const label = document.createElement('span');
+    label.textContent = 'BOOST';
+    label.style.marginRight = '4px';
+    boostDiv.appendChild(label);
+    
+    for (let i = 0; i < 3; i++) {
+        const icon = document.createElement('span');
+        icon.id = `boost-charge-${i}`;
+        icon.textContent = '🔥';
+        icon.style.cssText = `
+            font-size: 18px;
+            opacity: 0.3;
+            transition: opacity 0.3s, transform 0.3s;
+            filter: grayscale(0.8);
+        `;
+        boostDiv.appendChild(icon);
+    }
+    
+    document.body.appendChild(boostDiv);
+}
+
+function updateBoostDisplay() {
+    const maxCharges = boostSystem.getMaxCharges();
+    const charges = boostSystem.getCharges();
+    const isCooldown = boostSystem.getCooldownRatio() > 0;
+    
+    for (let i = 0; i < maxCharges; i++) {
+        const icon = document.getElementById(`boost-charge-${i}`);
+        if (!icon) continue;
+        
+        if (i < charges) {
+            icon.style.opacity = '1';
+            icon.style.transform = 'scale(1.2)';
+            icon.style.filter = 'grayscale(0) drop-shadow(0 0 6px #ff6600)';
+        } else if (i === charges && isCooldown) {
+            // Recharging: pulse
+            icon.style.opacity = String(0.3 + boostSystem.getCooldownRatio() * 0.5);
+            icon.style.transform = 'scale(1.0)';
+            icon.style.filter = 'grayscale(0.5)';
+        } else {
+            icon.style.opacity = '0.3';
+            icon.style.transform = 'scale(1.0)';
+            icon.style.filter = 'grayscale(0.8)';
+        }
+    }
+}
+
+// Roll Display UI
+function createRollDisplay() {
+    const rollDiv = document.createElement('div');
+    rollDiv.id = 'roll-display';
+    rollDiv.style.cssText = `
+        position: absolute;
+        bottom: 70px;
+        right: 120px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 100;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        color: #00ccff;
+        text-shadow: 0 0 8px rgba(0,204,255,0.6);
+    `;
+
+    const label = document.createElement('span');
+    label.textContent = 'ROLL';
+    rollDiv.appendChild(label);
+
+    // Circular cooldown indicator
+    const circle = document.createElement('div');
+    circle.id = 'roll-cooldown';
+    circle.style.cssText = `
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 3px solid rgba(0,204,255,0.4);
+        background: conic-gradient(#00ccff 0%, #00ccff 0%, transparent 0%);
+        transition: transform 0.1s;
+    `;
+    rollDiv.appendChild(circle);
+
+    // Ready indicator dot
+    const dot = document.createElement('div');
+    dot.id = 'roll-ready';
+    dot.style.cssText = `
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #00ccff;
+        box-shadow: 0 0 6px #00ccff;
+        opacity: 1;
+        transition: opacity 0.3s;
+    `;
+    rollDiv.appendChild(dot);
+
+    document.body.appendChild(rollDiv);
+}
+
+function updateRollDisplay() {
+    const circle = document.getElementById('roll-cooldown');
+    const dot = document.getElementById('roll-ready');
+    if (!circle || !dot) return;
+
+    const cooldownRatio = rollSystem.getCooldownRatio();
+    const canRoll = rollSystem.canRoll();
+    const isRolling = rollSystem.isRolling();
+
+    if (isRolling) {
+        circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
+        circle.style.transform = 'scale(1.3)';
+        dot.style.opacity = '0';
+    } else if (canRoll) {
+        circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
+        circle.style.transform = 'scale(1.0)';
+        dot.style.opacity = '1';
+    } else {
+        const percent = Math.floor(cooldownRatio * 100);
+        circle.style.background = `conic-gradient(#00ccff ${percent}%, transparent ${percent}%)`;
+        circle.style.transform = 'scale(1.0)';
+        dot.style.opacity = '0.3';
+    }
+}
+
+function showRollPopup() {
+    const popup = document.createElement('div');
+    popup.textContent = 'ROLL!';
+    popup.style.cssText = `
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 48px;
+        font-weight: bold;
+        color: #00ccff;
+        text-shadow: 0 0 20px rgba(0,204,255,0.8);
+        z-index: 200;
+        pointer-events: none;
+        animation: rollPopup 0.6s ease-out forwards;
+    `;
+    document.body.appendChild(popup);
+    setTimeout(() => popup.remove(), 600);
+}
+
 // Cores Display UI
 function createCoresDisplay() {
     const coresDiv = document.createElement('div');
@@ -1382,6 +1780,18 @@ function updateCoresDisplay() {
 // INTERACTION SYSTEM - Click to trigger spore cloud chain reactions
 // =============================================================================
 let gameStarted = false;
+
+// --- Boost System ---
+let lastSpaceTapTime = 0;
+const DOUBLE_TAP_THRESHOLD = 300; // ms
+let wantsBoost = false;
+let wasTouchBoosting = false;
+
+// --- Roll System ---
+let lastLeftTapTime = 0;
+let lastRightTapTime = 0;
+let wantsRoll = false;
+let wasTouchRolling = false;
 
 canvas.addEventListener('click', (event) => {
     if (!gameStarted) return;
@@ -1453,8 +1863,7 @@ function updatePlayer(delta: number) {
     // Auto-scroll (constant forward movement)
     player.position.x += playerState.autoScrollSpeed * delta;
 
-    // --- NEW: Smooth Direct Vertical Control ---
-    // Calculate target speed based on input (Keyboard + Touch)
+    // --- UPGRADED: Gravity and Momentum Flight ---
     let targetSpeed = 0;
     let isMovingUp = keys.jump || keys.right;  // Space or Up arrow or D
     let isMovingDown = keys.left;              // A or Left arrow
@@ -1474,6 +1883,10 @@ function updatePlayer(delta: number) {
                 playerState.autoScrollSpeed * 1.02,
                 25  // Max boost speed
             );
+            // Play boost sound occasionally to avoid spam
+            if (Math.random() < 0.05) {
+                audioSystem.playBoost();
+            }
         }
         
         // Handle fire from touch
@@ -1486,14 +1899,16 @@ function updatePlayer(delta: number) {
     if (isMovingUp) {
         targetSpeed = CONFIG.player.maxSpeedY;
     } else if (isMovingDown) {
-        targetSpeed = -CONFIG.player.maxSpeedY;
+        targetSpeed = -CONFIG.player.maxDescentSpeed;
+    } else {
+        targetSpeed = -CONFIG.player.gravity;
     }
     
-    // Smoothly interpolate current speed toward target (responsive but not jittery)
-    const accel = (targetSpeed !== 0) ? CONFIG.player.acceleration : CONFIG.player.deceleration;
-    playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * delta;
+    const accel = (targetSpeed !== -CONFIG.player.gravity && targetSpeed !== 0)
+        ? CONFIG.player.acceleration
+        : CONFIG.player.deceleration;
     
-    // Apply the movement
+    playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * delta;
     player.position.y += playerState.currentSpeedY * delta;
     
     // Soft boundaries - keep player on screen (Y: -10 to +15)
@@ -1508,36 +1923,201 @@ function updatePlayer(delta: number) {
     // Store for animation
     playerState.velocity.y = playerState.currentSpeedY;
 
-    // --- Visual Effects ---
+    // --- UPGRADED: Visual Flight Angles (Pitch & Roll) ---
     const rocket = player.children[0];
     if (rocket) {
-        // Pitch up/down based on movement direction (subtle, responsive)
-        const targetPitch = -playerState.currentSpeedY * 0.025;
-        player.rotation.z += (targetPitch - player.rotation.z) * 0.15;
+        const speedRatio = playerState.currentSpeedY / CONFIG.player.maxDescentSpeed;
+        const targetPitch = -Math.sign(speedRatio) * Math.pow(Math.abs(speedRatio), 1.2) * 0.6;
+        const targetRoll = playerState.currentSpeedY * 0.015;
+
+        player.rotation.z += (targetPitch - player.rotation.z) * 0.12; // Pitch
+        player.rotation.x += (targetRoll - player.rotation.x) * 0.08;  // Roll
 
         // Gentle hover bob (always present, subtle)
         const hoverY = Math.sin(Date.now() * 0.004) * 0.03;
         rocket.position.y = hoverY;
 
-        // Flame effect based on movement
+        // Engine VFX based on thrust vs glide vs dive
         if (rocket.userData.flame) {
-            if (isMovingUp || isMovingDown) {
-                // Boost flame when actively moving
-                const flicker = 0.9 + Math.random() * 0.2;
-                rocket.userData.flame.scale.set(flicker * 1.2, flicker * 2.5, flicker * 1.2);
+            if (isMovingUp) {
+                // Thrusting up → bright, large, flickering flame
+                const flicker = 0.9 + Math.random() * 0.3;
+                rocket.userData.flame.scale.set(flicker * 1.5, flicker * 3.0, flicker * 1.5);
                 
                 // Emit engine trail
                 const exhaustPos = player.position.clone();
                 exhaustPos.x -= 0.5;
                 exhaustPos.y -= 0.5;
-                particleSystem.emit(exhaustPos, 0xffaa00, 1, 4.0, 0.6, 0.15);
+                particleSystem.emit(exhaustPos, 0xffaa00, 2, 5.0, 0.8, 0.2);
+            } else if (isMovingDown) {
+                // Diving → very small, dim flame + extra downward particle streaks
+                const flicker = 0.4 + Math.random() * 0.2;
+                rocket.userData.flame.scale.set(flicker, flicker, flicker);
+                
+                // Extra downward streaks
+                const streakPos = player.position.clone();
+                streakPos.x -= 0.5;
+                streakPos.y -= 0.3;
+                particleSystem.emit(streakPos, 0xff4400, 1, 3.0, 0.5, 0.3);
             } else {
-                // Idle flame
+                // Gliding / idle → smaller, softer flame
                 const flicker = 0.5 + Math.random() * 0.2;
                 rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
             }
         }
     }
+
+    // --- BOOST SYSTEM ---
+    boostSystem.update(delta);
+
+    // Check for boost activation
+    const canActivateBoost = boostSystem.canBoost();
+    const isBoosting = boostSystem.isBoosting();
+
+    // Keyboard: Shift hold or double-tap Space
+    if (canActivateBoost) {
+        if (keys.run) {
+            boostSystem.activate();
+        } else if (wantsBoost) {
+            wantsBoost = false;
+            boostSystem.activate();
+        }
+    }
+
+    // Touch boost activation (dedicated button or double-tap)
+    if (touchControls && canActivateBoost) {
+        const touchInput = touchControls.getInput();
+        if (touchInput.boost && !wasTouchBoosting) {
+            boostSystem.activate();
+        }
+        wasTouchBoosting = touchInput.boost;
+    }
+
+    // Apply boost physics and effects
+    if (isBoosting) {
+        // Strong upward velocity
+        playerState.currentSpeedY = Math.max(playerState.currentSpeedY, 25);
+        
+        // Temporarily increase horizontal scroll speed
+        const baseSpeed = saveManager.applyToSpeed(8);
+        const boostedSpeed = Math.min(baseSpeed * 1.6, 30);
+        playerState.autoScrollSpeed += (boostedSpeed - playerState.autoScrollSpeed) * 0.1;
+
+        // Enhanced flame: much larger, brighter
+        if (rocket && rocket.userData.flame) {
+            const flicker = 0.9 + Math.random() * 0.4;
+            rocket.userData.flame.scale.set(flicker * 2.2, flicker * 5.0, flicker * 2.2);
+            (rocket.userData.flame.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.5 + Math.random() * 1.0;
+        }
+
+        // Rainbow afterburner trail particles
+        const exhaustPos = player.position.clone();
+        exhaustPos.x -= 0.8;
+        const colors = [0xff8800, 0xffaa00, 0xffdd44, 0xffffff];
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        particleSystem.emit(exhaustPos, color, 2, 6.0 + Math.random() * 2, 0.8, 0.25);
+
+        // Additional downward streak for contrast
+        const streakPos = player.position.clone();
+        streakPos.x -= 0.6;
+        streakPos.y -= 0.2;
+        particleSystem.emit(streakPos, 0xff4400, 1, 4.0, 0.5, 0.3);
+    } else {
+        // Restore normal scroll speed when not boosting
+        const baseSpeed = saveManager.applyToSpeed(8);
+        playerState.autoScrollSpeed += (baseSpeed - playerState.autoScrollSpeed) * 0.02;
+    }
+
+    // --- ROLL SYSTEM ---
+    rollSystem.update(delta);
+
+    // Check for roll activation
+    const canRoll = rollSystem.canRoll();
+    const isRolling = rollSystem.isRolling();
+
+    if (canRoll) {
+        if (wantsRoll) {
+            wantsRoll = false;
+            rollSystem.activate();
+        }
+    }
+
+    // Touch roll activation (downward swipe)
+    if (touchControls) {
+        const touchInput = touchControls.getInput();
+        if (touchInput.roll && !wasTouchRolling) {
+            if (canRoll) {
+                rollSystem.activate();
+            }
+        }
+        wasTouchRolling = touchInput.roll;
+    }
+
+    // Apply roll physics and effects
+    if (isRolling) {
+        // 360° barrel roll on Z axis
+        const rollAngle = rollSystem.getRollAngle();
+        if (rocket) {
+            rocket.rotation.z = -Math.PI / 2 + rollAngle;
+        }
+
+        // Slight transparency during roll
+        if (rocket) {
+            rocket.traverse((child: any) => {
+                if (child.isMesh && child.material) {
+                    if (child.userData.originalOpacity === undefined) {
+                        child.userData.originalOpacity = child.material.opacity;
+                        child.userData.originalTransparent = child.material.transparent;
+                    }
+                    child.material.transparent = true;
+                    child.material.opacity = 0.55;
+                }
+            });
+        }
+
+        // Afterimage trail particles
+        const ghostPos = player.position.clone();
+        ghostPos.x -= 0.3;
+        particleSystem.emit(ghostPos, 0x00ffff, 1, 3.0, 0.4, 0.2);
+        particleSystem.emit(ghostPos, 0xffffff, 1, 2.5, 0.3, 0.15);
+
+        // Bright white + cyan burst ring effect
+        if (Math.random() < 0.3) {
+            const ringPos = player.position.clone();
+            ringPos.x -= 0.2;
+            particleSystem.emit(ringPos, 0x88ffff, 2, 5.0, 0.6, 0.2);
+        }
+
+        // Destroy small asteroids on contact
+        const obstacles = obstacleSystem.getObstacles();
+        for (let i = obstacles.length - 1; i >= 0; i--) {
+            const obs = obstacles[i];
+            const radius = obs.userData.radius || 1.0;
+            if (radius < 1.2 && player.position.distanceTo(obs.position) < radius + 1.5) {
+                obstacleSystem.splitAsteroid(obs);
+                particleSystem.emit(obs.position.clone(), 0xffaa44, 8, 6.0, 0.8, 1.0);
+                audioSystem.play('explode', 0.5, 4);
+            }
+        }
+    } else {
+        // Restore opacity after roll
+        if (rocket) {
+            rocket.traverse((child: any) => {
+                if (child.isMesh && child.material) {
+                    if (child.userData.originalOpacity !== undefined) {
+                        child.material.opacity = child.userData.originalOpacity;
+                        child.material.transparent = child.userData.originalTransparent;
+                    } else {
+                        child.material.opacity = 1.0;
+                        child.material.transparent = false;
+                    }
+                }
+            });
+        }
+    }
+
+    // --- AUDIO SYSTEM ---
+    audioSystem.updateEngineState(playerState.currentSpeedY, isMovingUp, isMovingDown, isBoosting);
 
     // Level Checking
     levelManager.checkProgress(player.position.x);
@@ -1567,10 +2147,26 @@ function updateCamera(delta?: number) {
     
     const targetX = player.position.x + lookAheadX;
     const targetY = Math.max(player.position.y + 2 + lookAheadY, CONFIG.cameraHeight);
+    
+    const isFallingFast = playerState.currentSpeedY < -5;
+    const isBoosting = boostSystem.isBoosting();
+    let targetDistance = CONFIG.cameraDistance;
+    if (isFallingFast) targetDistance += 3;
+    if (isBoosting) targetDistance += 4;
 
-    // Smooth follow with different speeds for X and Y
+    // Smooth follow with different speeds for X, Y, and Z
     camera.position.x += (targetX - camera.position.x) * 0.06;
     camera.position.y += (targetY - camera.position.y) * 0.04;
+    camera.position.z += (targetDistance - camera.position.z) * 0.03;
+
+    // Subtle camera roll during barrel roll for extra immersion
+    const isRolling = rollSystem.isRolling();
+    if (isRolling) {
+        const rollAngle = rollSystem.getRollAngle();
+        camera.rotation.z += ((-rollAngle * 0.15) - camera.rotation.z) * 0.2;
+    } else {
+        camera.rotation.z += (0 - camera.rotation.z) * 0.05;
+    }
 
     // Screen shake effect
     if (cameraShake > 0) {
@@ -1660,10 +2256,87 @@ function updateBossHealthBar(squids: NebulaKraken[]): void {
 // =============================================================================
 const clock = new THREE.Clock();
 
+// Phase 1 FPS Fixes - Quick Wins: dynamic pixel ratio & shadow quality
+let fpsFrameCount = 0;
+let fpsElapsedTime = 0;
+let fpsLowDuration = 0;
+let fpsHighDuration = 0;
+let currentPixelRatio = Math.min(window.devicePixelRatio, 1.5);
+renderer.setPixelRatio(currentPixelRatio);
+
+let shadowCullingFrame = 0;
+
+function updateShadowQuality() {
+    const targetSize = playerState.bossActive ? 2048 : 1024;
+    if (mainLight.shadow.mapSize.width !== targetSize) {
+        mainLight.shadow.mapSize.width = targetSize;
+        mainLight.shadow.mapSize.height = targetSize;
+        if (mainLight.shadow.map) {
+            mainLight.shadow.map.setSize(targetSize, targetSize);
+        }
+        console.log(`Shadow map resized to ${targetSize}x${targetSize} (${playerState.bossActive ? 'boss' : 'normal'})`);
+    }
+}
+
+function updateShadowCulling() {
+    if (!player) return;
+    shadowCullingFrame++;
+    if (shadowCullingFrame % 15 !== 0) return;
+
+    const playerX = player.position.x;
+    const updateObj = (obj: THREE.Object3D) => {
+        const inRange = Math.abs(obj.position.x - playerX) < 40;
+        obj.traverse((child) => {
+            if ((child as THREE.Mesh).isMesh) {
+                (child as THREE.Mesh).castShadow = inRange;
+                (child as THREE.Mesh).receiveShadow = inRange;
+            }
+        });
+    };
+
+    levelManager.levelObjects.forEach(updateObj);
+    chromaRocks.forEach(updateObj);
+    geodes.forEach(updateObj);
+    voidRootBalls.forEach(updateObj);
+    vacuumKelps.forEach(updateObj);
+    iceNeedleClusters.forEach(updateObj);
+    magmaHearts.forEach(updateObj);
+}
+
 function animate() {
     const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap delta
     const delta = juiceManager.update(rawDelta);
     const time = clock.getElapsedTime(); // For foliage animation and time-based motion
+
+    // --- FPS Tracking & Dynamic Pixel Ratio ---
+    fpsFrameCount++;
+    fpsElapsedTime += rawDelta;
+    if (fpsElapsedTime >= 1.0) {
+        const fps = fpsFrameCount / fpsElapsedTime;
+        fpsFrameCount = 0;
+        fpsElapsedTime = 0;
+
+        if (fps < 45) {
+            fpsLowDuration += 1.0;
+            fpsHighDuration = 0;
+            if (fpsLowDuration >= 3.0 && currentPixelRatio > 1.0) {
+                currentPixelRatio = 1.0;
+                renderer.setPixelRatio(currentPixelRatio);
+                console.log('Performance low — dropping pixel ratio to 1.0');
+            }
+        } else if (fps > 55) {
+            fpsHighDuration += 1.0;
+            fpsLowDuration = 0;
+            if (fpsHighDuration >= 5.0 && currentPixelRatio < 1.5) {
+                currentPixelRatio = Math.min(window.devicePixelRatio, 1.5);
+                renderer.setPixelRatio(currentPixelRatio);
+                console.log('Performance recovered — restoring pixel ratio to', currentPixelRatio);
+            }
+        } else {
+            fpsLowDuration = 0;
+            fpsHighDuration = 0;
+        }
+    }
     
     if (isGamePaused) {
         renderer.render(scene, camera);
@@ -1686,6 +2359,11 @@ function animate() {
 
     updatePlayer(delta);
     obstacleSystem.update(delta);
+
+    // Update graze combo HUD visibility
+    if (obstacleSystem.getGrazeCombo() === 0) {
+        hudManager.hideGrazeCombo();
+    }
     
     // --- BOSS SYSTEM ---
     if (player) {
@@ -1802,7 +2480,7 @@ function animate() {
         upgradeSystem.update(delta, time);
         
         // --- AUDIO SYSTEM ---
-        audioSystem.updateEngine(playerState.currentSpeedY);
+        // Engine state is now updated inside updatePlayer with thrust/glide/dive info
         
         // --- HEAT SYSTEM ---
         heatSystem.update(delta);
@@ -1824,11 +2502,87 @@ function animate() {
                 hudManager.updateHealth(playerState.health, playerState.maxHealth);
                 updateHealthDisplay(playerState);
             }
+            // Collecting any orb gives +1 boost charge
+            boostSystem.addCharge(1);
         }
         
         // Update power-up manager
         powerUpManager.update(delta);
-        
+
+        // --- RAINBOW COMET TAIL GAMEPLAY EFFECTS ---
+        const hasRainbowComet = powerUpManager.hasPowerUp(PowerUpType.RAINBOW_COMET_TAIL);
+        const rainbowEffect = powerUpManager.activeEffects.get(PowerUpType.RAINBOW_COMET_TAIL);
+        const rainbowTimeRemaining = rainbowEffect ? rainbowEffect.timeRemaining : 0;
+
+        if (hasRainbowComet && player) {
+            // Auto-collect nearby orbs within ~45 units
+            const orbCollectibles = orbManager.getActiveOrbs();
+            for (const orb of orbCollectibles) {
+                if (orb.collected) continue;
+                const dist = player.position.distanceTo(orb.position);
+                if (dist < 45) {
+                    // Gently pull orb toward player
+                    const pullDir = player.position.clone().sub(orb.position).normalize();
+                    orb.position.addScaledVector(pullDir, dist * 0.05);
+                    orb.mesh.position.copy(orb.position);
+                    if (dist < 2) {
+                        // Collect it!
+                        orb.collected = true;
+                        orb.mesh.visible = false;
+                        boostSystem.addCharge(1);
+                        audioSystem.playCollect();
+                        juiceManager.burstCollect(orb.position.clone());
+                        hudManager.addScore(Math.floor(orb.points * 1.15));
+                    }
+                }
+            }
+
+            // Transform small asteroids within ~25 units into floating candy
+            const obstacles = obstacleSystem.getObstacles();
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                const radius = obs.userData.radius || 1.0;
+                if (radius < 1.2 && player.position.distanceTo(obs.position) < 25) {
+                    // Transform to candy: pastel color + heart particles
+                    const pastelColors = [0xffb6c1, 0xffc0cb, 0xe6e6fa, 0xb0e0e6, 0x98fb98];
+                    const candyColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+                    (obs.material as THREE.MeshStandardMaterial).color.setHex(candyColor);
+                    (obs.material as THREE.MeshStandardMaterial).emissive.setHex(candyColor);
+                    (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.3;
+                    obs.userData.isCandy = true;
+
+                    // Heart particle burst
+                    particleSystem.emit(obs.position.clone(), candyColor, 5, 3.0, 0.4, 0.6);
+                    particleSystem.emit(obs.position.clone(), 0xffffff, 3, 2.0, 0.3, 0.4);
+
+                    // Small chance to destroy tiny asteroids entirely
+                    if (radius < 0.6 && Math.random() < 0.05) {
+                        particleSystem.emit(obs.position.clone(), candyColor, 10, 4.0, 0.6, 1.0);
+                        obstacleSystem.splitAsteroid(obs);
+                        audioSystem.playMagicSound('happy');
+                    }
+                }
+            }
+
+            // Score multiplier (+15%)
+            // Applied via hudManager if it supports score multipliers, otherwise accumulate
+        }
+
+        // Fade-out handling: when rainbow comet is ending (< 1s left), reduce trail intensity
+        if (hasRainbowComet && rainbowTimeRemaining < 1.0 && rainbowTimeRemaining > 0) {
+            const fadeRatio = rainbowTimeRemaining; // 1.0 → 0
+            if (player) {
+                const rocket = player.children[0];
+                if (rocket) {
+                    rocket.traverse((child: any) => {
+                        if (child.isMesh && child.material && child.material.emissiveIntensity !== undefined) {
+                            child.material.emissiveIntensity *= fadeRatio;
+                        }
+                    });
+                }
+            }
+        }
+
         // SWARM #3: Update magical effects (rainbow trails, butterflies, etc.)
         effectManager.update(delta);
         
@@ -1936,6 +2690,18 @@ function animate() {
     // Update Level Manager (and Clouds)
     if (player) {
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
+    }
+
+    // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
+    updateShadowQuality();
+    updateShadowCulling();
+    cleanupGeologicalObjects(camera.position.x);
+
+    // Keep directional light following player so shadows work throughout the level
+    if (player) {
+        mainLight.position.x = player.position.x - 5;
+        mainLight.target.position.set(player.position.x, 0, 0);
+        mainLight.target.updateMatrixWorld();
     }
 
     updateCamera(delta);
@@ -2156,9 +2922,7 @@ function animate() {
     try {
         const rocketRoot = player.children[0];
         if (rocketRoot) {
-            // Tilt rocket slightly based on vertical velocity
-            const targetTilt = THREE.MathUtils.clamp(-playerState.velocity.y * 0.025, -0.35, 0.35);
-            rocketRoot.rotation.x += (targetTilt - rocketRoot.rotation.x) * 0.06;
+            // Pitch and roll are now driven by updatePlayer's upgraded flight model.
 
             // Animate pilot bob and ears
             const pilot = rocketRoot.getObjectByName('pilotGroup');
@@ -2189,6 +2953,8 @@ function animate() {
     // Update UI elements
     updateHeatBar();
     updateCoresDisplay();
+    updateBoostDisplay();
+    updateRollDisplay();
     
     // Check if player reached the moon (or defeated boss in level 1)
     if (player && player.position.x >= playerState.distanceToMoon - 10 && !playerState.hasWon && !playerState.bossActive) {

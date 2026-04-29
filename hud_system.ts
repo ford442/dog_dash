@@ -205,6 +205,7 @@ export class HUDManager {
     private pauseMenu: HTMLDivElement | null = null;
     private victoryScreen: HTMLDivElement | null = null;
     private gameOverScreen: HTMLDivElement | null = null;
+    private grazeComboDisplay: HTMLDivElement | null = null;
     
     // Active power-up tracking
     private activePowerUps: Map<PowerUpType, { element: HTMLDivElement; timeout: number }> = new Map();
@@ -239,6 +240,7 @@ export class HUDManager {
         this.createHealthDisplay();
         this.createPowerUpDisplay();
         this.createOrbProgressDisplay();
+        this.createGrazeComboDisplay();
     }
     
     /**
@@ -403,6 +405,53 @@ export class HUDManager {
         document.body.appendChild(this.healthContainer);
         
         this.updateHealthDisplay();
+    }
+
+    /**
+     * Create graze combo display (small badge near score)
+     */
+    private createGrazeComboDisplay(): void {
+        this.grazeComboDisplay = document.createElement('div');
+        this.grazeComboDisplay.style.cssText = `
+            position: fixed;
+            top: 100px;
+            left: 20px;
+            z-index: 100;
+            background: linear-gradient(135deg, #00ffff, #0088ff);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,200,255,0.4), inset 0 1px 0 rgba(255,255,255,0.4);
+            border: 2px solid white;
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.15s, transform 0.15s;
+            pointer-events: none;
+        `;
+        this.grazeComboDisplay.textContent = '';
+        document.body.appendChild(this.grazeComboDisplay);
+    }
+    
+    /**
+     * Show graze combo multiplier badge
+     */
+    showGrazeCombo(combo: number): void {
+        if (!this.grazeComboDisplay) return;
+        this.grazeComboDisplay.textContent = `×${combo}`;
+        this.grazeComboDisplay.style.opacity = '1';
+        this.grazeComboDisplay.style.transform = 'scale(1)';
+    }
+    
+    /**
+     * Hide graze combo badge
+     */
+    hideGrazeCombo(): void {
+        if (!this.grazeComboDisplay) return;
+        this.grazeComboDisplay.style.opacity = '0';
+        this.grazeComboDisplay.style.transform = 'scale(0.8)';
     }
     
     /**

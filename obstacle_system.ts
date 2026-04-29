@@ -11,6 +11,11 @@ import {
 } from './enemy_patterns';
 import { NebulaKraken } from './space_robot_squid';
 
+type GameplayModifiers = {
+    shieldActive: boolean;
+    shieldBouncesAsteroids: boolean;
+};
+
 type ObstacleSystemOptions = {
     scene: THREE.Scene;
     getPlayer: () => THREE.Group | null;
@@ -28,6 +33,9 @@ type ObstacleSystemOptions = {
     updateHealthDisplay: () => void;
     gameOver: () => void;
     onPlayerHit?: () => void;
+    getPowerUpModifiers?: () => GameplayModifiers;
+    onAsteroidBounce?: (asteroid: THREE.Mesh) => void;
+    onGraze?: (asteroid: THREE.Mesh, score: number, combo: number) => void;
 };
 
 export class ObstacleSystem {
@@ -43,6 +51,17 @@ export class ObstacleSystem {
     private currentPattern: PatternConfig | null = null;
     private patternProgress = 0;
     private time = 0;
+    private bounceCooldown = 0;
+
+    // Graze / near-miss system
+    private grazeCombo = 0;
+    private lastGrazeTime = 0;
+    private grazeCount = 0;
+    private grazeCooldowns = new Map<THREE.Mesh, number>();
+    private readonly GRAZE_MIN_DIST = 1.0;
+    private readonly GRAZE_MAX_DIST = 1.8;
+    private readonly GRAZE_COMBO_TIMEOUT = 2.5;
+    private readonly GRAZE_COOLDOWN = 0.4;
 
     constructor(options: ObstacleSystemOptions) {
         this.options = options;
@@ -51,6 +70,13 @@ export class ObstacleSystem {
 
     getObstacles() {
         return this.obstacles;
+    }
+
+    getGrazeCombo(): number {
+        if (this.time - this.lastGrazeTime > this.GRAZE_COMBO_TIMEOUT) {
+            return 0;
+        }
+        return this.grazeCombo;
     }
 
     update(delta: number) {
@@ -187,7 +213,71 @@ export class ObstacleSystem {
 
             const hitIndex = wasm.exports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
             if (hitIndex !== -1) {
-                this.handleCollision(activeObstacles[hitIndex]);
+                const modifiers = this.options.getPowerUpModifiers ? this.options.getPowerUpModifiers() : { shieldActive: false, shieldBouncesAsteroids: false };
+                if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
+                    this.handleBounce(activeObstacles[hitIndex]);
+                } else if (!this.options.playerState.invincible) {
+                    this.handleCollision(activeObstacles[hitIndex]);
+                }
+            }
+        }
+
+        this.bounceCooldown = Math.max(0, this.bounceCooldown - delta);
+
+        // --- GRAZE / NEAR-MISS DETECTION ---
+        for (const obs of activeObstacles) {
+            const dx = obs.position.x - playerX;
+            const dy = obs.position.y - playerY;
+            const centerDist = Math.sqrt(dx * dx + dy * dy);
+            const asteroidRadius = obs.userData.radius || 1.0;
+            const playerRadius = 0.5;
+            const edgeDist = centerDist - playerRadius - asteroidRadius;
+
+            // Skip if colliding (handled by collision system)
+            if (edgeDist <= 0) continue;
+            // Skip if too far or too close
+            if (edgeDist < this.GRAZE_MIN_DIST || edgeDist > this.GRAZE_MAX_DIST) continue;
+
+            // Per-asteroid cooldown
+            const cd = this.grazeCooldowns.get(obs) || 0;
+            if (cd > 0) continue;
+            this.grazeCooldowns.set(obs, this.GRAZE_COOLDOWN);
+
+            // Update combo
+            if (this.time - this.lastGrazeTime > this.GRAZE_COMBO_TIMEOUT) {
+                this.grazeCombo = 0;
+            }
+            this.grazeCombo++;
+            this.lastGrazeTime = this.time;
+            this.grazeCount++;
+
+            // Score: base 25, +50 during power-ups, combo multiplier
+            const modifiers = this.options.getPowerUpModifiers ? this.options.getPowerUpModifiers() : { shieldActive: false, shieldBouncesAsteroids: false };
+            let score = modifiers.shieldActive || modifiers.shieldBouncesAsteroids ? 50 : 25;
+            score = Math.floor(score * (1 + (this.grazeCombo - 1) * 0.2));
+
+            // Visual streak between player and asteroid
+            const midPoint = new THREE.Vector3(
+                (playerX + obs.position.x) * 0.5,
+                (playerY + obs.position.y) * 0.5,
+                (player.position.z + obs.position.z) * 0.5
+            );
+            this.options.particleSystem.emit(midPoint, 0x00ffff, 3, 4.0, 0.5, 0.3);
+            this.options.particleSystem.emit(midPoint, 0xffffff, 2, 3.0, 0.4, 0.2);
+
+            // Callback for audio, floating text, HUD
+            if (this.options.onGraze) {
+                this.options.onGraze(obs, score, this.grazeCombo);
+            }
+        }
+
+        // Decrement graze cooldowns and clean up removed asteroids
+        for (const [obs, cd] of this.grazeCooldowns) {
+            const newCd = cd - delta;
+            if (newCd <= 0 || !this.obstacles.includes(obs)) {
+                this.grazeCooldowns.delete(obs);
+            } else {
+                this.grazeCooldowns.set(obs, newCd);
             }
         }
 
@@ -463,5 +553,54 @@ export class ObstacleSystem {
         const dy = obs.position.y - playerY;
         this.options.playerState.velocity.y += (dy > 0 ? -5 : 5);
         this.options.playerState.velocity.x -= 3;
+    }
+
+    private handleBounce(asteroid: THREE.Mesh) {
+        if (!asteroid) return;
+        const player = this.options.getPlayer();
+        if (!player) return;
+
+        this.bounceCooldown = 0.25;
+
+        // Bounce asteroid away from player
+        const dx = asteroid.position.x - player.position.x;
+        const dy = asteroid.position.y - player.position.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const bounceSpeed = 12 + Math.random() * 8;
+
+        asteroid.userData.velocity = new THREE.Vector3(
+            (dx / dist) * bounceSpeed + 3,
+            (dy / dist) * bounceSpeed,
+            (Math.random() - 0.5) * 6
+        );
+
+        // Spin it wildly
+        asteroid.userData.rotationSpeed = (Math.random() - 0.5) * 15;
+        asteroid.userData.rotationSpeedY = (Math.random() - 0.5) * 10;
+        asteroid.userData.rotationSpeedZ = (Math.random() - 0.5) * 10;
+
+        // Pink sparkle burst at bounce point
+        this.options.particleSystem.emit(
+            asteroid.position.clone(),
+            0xff69b4,
+            12,
+            6.0,
+            0.8,
+            0.8
+        );
+        // Secondary white sparkle
+        this.options.particleSystem.emit(
+            asteroid.position.clone(),
+            0xffffff,
+            6,
+            4.0,
+            0.5,
+            0.5
+        );
+
+        // Callback for audio + floating text
+        if (this.options.onAsteroidBounce) {
+            this.options.onAsteroidBounce(asteroid);
+        }
     }
 }

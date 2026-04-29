@@ -61,9 +61,9 @@ export const POWER_UP_CONFIGS: Record<PowerUpType, PowerUpConfig> = {
         type: PowerUpType.RAINBOW_COMET_TAIL,
         name: 'Rainbow Comet Tail',
         description: 'Long rainbow trail that auto-collects nearby stars and turns asteroids into candy!',
-        duration: 10,
-        color: 0xff69b4,      // Hot pink
-        secondaryColor: 0x00ffff, // Cyan
+        duration: 12,
+        color: 0xff6b6b,      // Pastel red
+        secondaryColor: 0x48dbfb, // Pastel cyan
         soundEffect: 'powerup_rainbow',
         tier: 1,
         icon: '🌈'
@@ -317,11 +317,11 @@ export interface TrailConfig {
 
 export const TRAIL_CONFIGS: Record<PowerUpType, TrailConfig> = {
     [PowerUpType.RAINBOW_COMET_TAIL]: {
-        color: 0xff69b4,
-        secondaryColor: 0x00ffff,
-        particleCount: 20,
-        particleSize: 0.3,
-        lifetime: 1.5,
+        color: 0xff6b6b,
+        secondaryColor: 0x48dbfb,
+        particleCount: 45,
+        particleSize: 0.45,
+        lifetime: 2.5,
         rainbow: true,
         sparkle: true
     },
@@ -514,9 +514,10 @@ export class PowerUpEffect {
         switch (this.type) {
             case PowerUpType.RAINBOW_COMET_TAIL:
                 return {
-                    autoCollectRadius: 8,
+                    autoCollectRadius: 45,
                     asteroidsToCandy: true,
-                    speedMultiplier: 1.2
+                    speedMultiplier: 1.2,
+                    sparkle: true
                 };
             case PowerUpType.FLOWER_CROWN_BOOST:
                 return {
@@ -733,6 +734,9 @@ export class PowerUpManager {
     private flowerCrownMesh?: THREE.Group;
     private starLines: THREE.Line[] = [];
     private butterflies: THREE.Group[] = [];
+    private cometGlowMesh?: THREE.Mesh;
+    private cometTrailParticles: THREE.Mesh[] = [];
+    private shieldBounceTime = 0;
     
     // Orb collection for triggering power-ups
     orbCount: number;
@@ -754,7 +758,7 @@ export class PowerUpManager {
         this.effectLights = new Map();
         
         this.orbCount = 0;
-        this.orbsNeededForPowerUp = 4;  // Collect 4 orbs for random power-up
+        this.orbsNeededForPowerUp = 3;  // Collect 3 orbs for random power-up
         
         this.onPowerUpStart = options.onPowerUpStart;
         this.onPowerUpEnd = options.onPowerUpEnd;
@@ -1069,6 +1073,9 @@ export class PowerUpManager {
             case PowerUpType.BUTTERFLY_ESCORT:
                 this.createButterflyEscort(config);
                 break;
+            case PowerUpType.RAINBOW_COMET_TAIL:
+                this.createRainbowCometGlow(config);
+                break;
             case PowerUpType.STARLIGHT_TIARA:
                 this.createStarlightTiara(config);
                 break;
@@ -1234,6 +1241,28 @@ export class PowerUpManager {
         this.effectMeshes.set(PowerUpType.STARLIGHT_TIARA, tiaraGroup);
     }
 
+    private createRainbowCometGlow(config: PowerUpConfig): void {
+        if (!this.rocket) return;
+
+        // Soft pastel glow sphere around the rocket
+        const geometry = new THREE.SphereGeometry(1.5, 16, 16);
+        const material = new THREE.MeshBasicMaterial({
+            color: config.color,
+            transparent: true,
+            opacity: 0.25,
+            blending: THREE.AdditiveBlending,
+            side: THREE.BackSide
+        });
+
+        this.cometGlowMesh = new THREE.Mesh(geometry, material);
+        this.rocket.add(this.cometGlowMesh);
+
+        // Store reference
+        const glowGroup = new THREE.Group();
+        glowGroup.add(this.cometGlowMesh);
+        this.effectMeshes.set(PowerUpType.RAINBOW_COMET_TAIL, glowGroup);
+    }
+
     private createEffectLight(type: PowerUpType, color: number): void {
         if (!this.rocket) return;
         
@@ -1254,8 +1283,19 @@ export class PowerUpManager {
         switch (type) {
             case PowerUpType.BUBBLEGUM_SHIELD:
                 if (this.shieldMesh) {
-                    // Pulse animation
-                    const scale = 1 + Math.sin(Date.now() * 0.003) * 0.05;
+                    const now = Date.now() * 0.001;
+                    // Gentle idle pulse
+                    let scale = 1 + Math.sin(now * 3) * 0.06;
+                    // Wobble rotation
+                    this.shieldMesh.rotation.z = Math.sin(now * 2.5) * 0.08;
+                    this.shieldMesh.rotation.x = Math.cos(now * 1.8) * 0.05;
+                    // Bounce reaction: strong elastic pulse
+                    if (this.shieldBounceTime > 0) {
+                        const bounce = Math.sin(this.shieldBounceTime * Math.PI * 8) * 0.25 * this.shieldBounceTime;
+                        scale += bounce;
+                        this.shieldBounceTime -= 0.016;
+                        if (this.shieldBounceTime < 0) this.shieldBounceTime = 0;
+                    }
                     this.shieldMesh.scale.set(scale, scale, scale * 0.7);
                 }
                 break;
@@ -1263,6 +1303,15 @@ export class PowerUpManager {
                 if (this.flowerCrownMesh) {
                     // Rotate crown
                     this.flowerCrownMesh.rotation.z += 0.02;
+                }
+                break;
+            case PowerUpType.RAINBOW_COMET_TAIL:
+                if (this.cometGlowMesh) {
+                    const pulse = 1 + Math.sin(Date.now() * 0.005) * 0.15;
+                    this.cometGlowMesh.scale.set(pulse, pulse, pulse);
+                    const pastelColors = [0xff6b6b, 0xfeca57, 0x48dbfb, 0xff9ff3, 0x54a0ff];
+                    const colorIndex = Math.floor((Date.now() * 0.002) % pastelColors.length);
+                    (this.cometGlowMesh.material as THREE.MeshBasicMaterial).color.setHex(pastelColors[colorIndex]);
                 }
                 break;
             case PowerUpType.BUTTERFLY_ESCORT:
@@ -1295,9 +1344,16 @@ export class PowerUpManager {
             // Determine color (rainbow cycling if needed)
             let color = trailConfig.color;
             if (trailConfig.rainbow) {
-                const hue = (Date.now() * 0.001) % 1;
-                const rainbowColor = new THREE.Color().setHSL(hue, 1, 0.5);
-                color = rainbowColor.getHex();
+                if (type === PowerUpType.RAINBOW_COMET_TAIL) {
+                    // Specific pastel rainbow colors: red → yellow → cyan → pink → blue
+                    const rainbowColors = [0xff6b6b, 0xfeca57, 0x48dbfb, 0xff9ff3, 0x54a0ff];
+                    const colorIndex = Math.floor((Date.now() * 0.003) % rainbowColors.length);
+                    color = rainbowColors[colorIndex];
+                } else {
+                    const hue = (Date.now() * 0.001) % 1;
+                    const rainbowColor = new THREE.Color().setHSL(hue, 1, 0.5);
+                    color = rainbowColor.getHex();
+                }
             }
             
             // Emit particles
@@ -1309,6 +1365,16 @@ export class PowerUpManager {
                 trailConfig.particleSize,
                 0.5
             );
+            
+            // Extra dramatic trail for Rainbow Comet Tail
+            if (type === PowerUpType.RAINBOW_COMET_TAIL) {
+                const secondaryPos = rocketPosition.clone();
+                secondaryPos.x -= 1.5;
+                secondaryPos.y += (Math.random() - 0.5) * 0.5;
+                const pastelColors = [0xff6b6b, 0xfeca57, 0x48dbfb, 0xff9ff3, 0x54a0ff];
+                const secColor = pastelColors[Math.floor((Date.now() * 0.003 + 2) % pastelColors.length)];
+                this.particleSystem.emit(secondaryPos, secColor, 2, 0.8, 0.35, 0.4);
+            }
         });
     }
 
@@ -1397,6 +1463,13 @@ export class PowerUpManager {
             case PowerUpType.FLOWER_CROWN_BOOST:
                 this.flowerCrownMesh = undefined;
                 break;
+            case PowerUpType.RAINBOW_COMET_TAIL:
+                this.cometGlowMesh = undefined;
+                this.cometTrailParticles.forEach(p => {
+                    if (p.parent) p.parent.remove(p);
+                });
+                this.cometTrailParticles = [];
+                break;
             case PowerUpType.BUTTERFLY_ESCORT:
                 this.butterflies.forEach(b => {
                     if (b.parent) b.parent.remove(b);
@@ -1430,6 +1503,20 @@ export class PowerUpManager {
      */
     setAudioSystem(audioSystem: AudioSystem): void {
         this.audioSystem = audioSystem;
+    }
+
+    /**
+     * Trigger a visual bounce reaction on the shield
+     */
+    triggerShieldBounce(): void {
+        this.shieldBounceTime = 0.35;
+        if (this.shieldMesh) {
+            // Emit extra pink sparkles from shield surface
+            const worldPos = new THREE.Vector3();
+            this.shieldMesh.getWorldPosition(worldPos);
+            this.particleSystem.emit(worldPos, 0xff69b4, 8, 3.5, 0.5, 0.6);
+            this.particleSystem.emit(worldPos, 0xffffff, 4, 2.5, 0.4, 0.4);
+        }
     }
 
     /**

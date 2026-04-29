@@ -569,6 +569,11 @@ export class OrbManager {
     getActiveOrbCount(): number {
         return this.orbs.filter(orb => !orb.collected).length;
     }
+
+    /** Get all active (uncollected) orbs */
+    getActiveOrbs(): CollectibleOrb[] {
+        return this.orbs.filter(orb => !orb.collected);
+    }
 }
 
 /** 
