@@ -164,7 +164,7 @@ export class CandyAsteroid {
         }
         
         this.mesh.position.copy(this.position);
-        this.mesh.rotation.copy(this.rotation as any);
+        this.mesh.rotation.set(this.rotation.x, this.rotation.y, this.rotation.z);
         this.originalScale = this.mesh.scale.clone();
     }
 
