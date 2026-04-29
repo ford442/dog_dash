@@ -543,7 +543,7 @@ class LevelManager {
         if (levelIndex === 5) {
             // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
-            nebulaSystem.deactivate();
+            nebulaSystem.activate();
             // Hide clouds in whale level
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
