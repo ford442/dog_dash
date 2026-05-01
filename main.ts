@@ -87,6 +87,7 @@ import type { NebulaKraken } from './space_robot_squid';
 import { BOSS_DISPLAY_NAME } from './space_robot_squid';
 import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
+import { ButterflySwarmSystem } from './butterfly_swarm';
 
 // --- Configuration ---
 const CONFIG = {
@@ -151,6 +152,7 @@ function showError(title: string, message: string) {
 // --- Scene Setup ---
 const canvas = document.querySelector('#glCanvas') as HTMLCanvasElement;
 const scene = new THREE.Scene();
+const butterflySwarmSystem = new ButterflySwarmSystem(scene);
 scene.background = new THREE.Color(CONFIG.colors.background);
 scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
 
@@ -515,6 +517,12 @@ class LevelManager {
         this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
 
         // Special Effects per Level
+        if (levelIndex === 1) {
+            butterflySwarmSystem.activate();
+        } else {
+            butterflySwarmSystem.deactivate();
+        }
+
         if (levelIndex === 3) {
             // Activate Planetary Horizon in Level 3
             planetaryHorizonSystem.activate();
@@ -2690,6 +2698,7 @@ function animate() {
     // Update Level Manager (and Clouds)
     if (player) {
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
+        butterflySwarmSystem.update(delta, camera.position.x, player.position);
     }
 
     // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
