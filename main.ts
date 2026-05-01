@@ -550,9 +550,12 @@ class LevelManager {
             waterfallSystem.deactivate();
         }
 
-        // Activate Asteroid Fields in Level 2 only (Level 3 has Planet)
-        if (levelIndex === 2) {
+        // Activate Asteroid Fields dynamically based on density
+        if (cfg.asteroidRate && cfg.asteroidRate > 0) {
             asteroidFieldSystem.activate();
+            // Scale density relative to default levels
+            asteroidFieldSystem.setDensity(cfg.asteroidRate * 0.5);
+            asteroidFieldSystem.resetPositions(camera.position.x);
         } else {
             asteroidFieldSystem.deactivate();
         }
