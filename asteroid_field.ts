@@ -76,7 +76,7 @@ function createAsteroidMaterial(baseColorHex: number, opacity: number, weaponLig
 export class AsteroidLayer {
     mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
-    count: number;
+    maxCount: number;
     width: number;
     depth: number;
     baseZ: number;
@@ -100,7 +100,7 @@ export class AsteroidLayer {
             weaponLights: any
         }
     ) {
-        this.count = config.count;
+        this.maxCount = config.count;
         this.width = config.width;
         this.baseZ = config.z;
         this.depth = config.zRange;
@@ -111,7 +111,7 @@ export class AsteroidLayer {
         // Material: TSL Node Material
         const material = createAsteroidMaterial(config.color, config.opacity ?? 1.0, config.weaponLights);
 
-        this.mesh = new THREE.InstancedMesh(geometry, material, this.count);
+        this.mesh = new THREE.InstancedMesh(geometry, material, this.maxCount);
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
@@ -119,11 +119,11 @@ export class AsteroidLayer {
         this.mesh.frustumCulled = false;
 
         this.dummy = new THREE.Object3D();
-        this.positions = new Float32Array(this.count * 3);
-        this.rotations = new Float32Array(this.count * 3); // Euler angles
-        this.rotationSpeeds = new Float32Array(this.count * 3); // Speed per axis
+        this.positions = new Float32Array(this.maxCount * 3);
+        this.rotations = new Float32Array(this.maxCount * 3); // Euler angles
+        this.rotationSpeeds = new Float32Array(this.maxCount * 3); // Speed per axis
 
-        for (let i = 0; i < this.count; i++) {
+        for (let i = 0; i < this.maxCount; i++) {
             // Random Position
             const x = (Math.random() - 0.5) * this.width;
             const y = (Math.random() - 0.5) * 40; // Vertical spread
@@ -161,13 +161,50 @@ export class AsteroidLayer {
         scene.add(this.mesh);
     }
 
+    setDensity(multiplier: number) {
+        const newCount = Math.floor(this.maxCount * multiplier);
+        this.mesh.count = Math.min(Math.max(newCount, 0), this.maxCount);
+    }
+
+    resetPositions(cameraX: number) {
+        for (let i = 0; i < this.maxCount; i++) {
+            const idx = i * 3;
+
+            const x = cameraX + (Math.random() - 0.5) * this.width;
+            const y = (Math.random() - 0.5) * 40;
+            const z = this.baseZ + (Math.random() - 0.5) * this.depth;
+
+            this.positions[idx] = x;
+            this.positions[idx + 1] = y;
+            this.positions[idx + 2] = z;
+
+            this.mesh.getMatrixAt(i, this.dummy.matrix);
+            const p = new THREE.Vector3();
+            const q = new THREE.Quaternion();
+            const s = new THREE.Vector3();
+            this.dummy.matrix.decompose(p, q, s);
+
+            this.dummy.position.set(x, y, z);
+            this.dummy.rotation.set(
+                this.rotations[idx],
+                this.rotations[idx+1],
+                this.rotations[idx+2]
+            );
+            this.dummy.scale.copy(s);
+            this.dummy.updateMatrix();
+
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+        }
+        this.mesh.instanceMatrix.needsUpdate = true;
+    }
+
     update(delta: number, cameraX: number) {
         const margin = 20;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
         let needsUpdate = false;
 
-        for (let i = 0; i < this.count; i++) {
+        for (let i = 0; i < this.mesh.count; i++) {
             const idx = i * 3;
 
             // 1. Rotation Animation
@@ -286,6 +323,14 @@ export class AsteroidFieldSystem {
     deactivate() {
         if (!this.active) return;
         this.setVisible(false);
+    }
+
+    setDensity(multiplier: number) {
+        this.layers.forEach(l => l.setDensity(multiplier));
+    }
+
+    resetPositions(cameraX: number) {
+        this.layers.forEach(l => l.resetPositions(cameraX));
     }
 
     update(delta: number, cameraX: number) {
