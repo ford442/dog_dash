@@ -44,6 +44,7 @@ import { AsteroidFieldSystem } from './asteroid_field';
 import { PlanetaryHorizonSystem } from './planetary_horizon';
 import { IndustrialBackgroundSystem } from './industrial_background';
 import { NebulaSystem } from './nebula';
+import { CosmicDustSystem } from './cosmic_dust';
 import { BiologicalBackgroundSystem } from './biological_background';
 import { AtmosphereSystem } from './sky';
 import { WeaponSystem } from './weapons';
@@ -564,11 +565,13 @@ class LevelManager {
             // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
             nebulaSystem.activate();
+            cosmicDustSystem.activate();
             // Hide clouds in whale level
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
             biologicalSystem.deactivate();
             nebulaSystem.deactivate();
+            cosmicDustSystem.deactivate();
             // Restore clouds if not in Industrial Tunnel (Level 4)
             if (levelIndex !== 4) {
                 this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
@@ -615,6 +618,7 @@ class LevelManager {
         biologicalSystem.update(delta, cameraX);
         // Pass player position to NebulaSystem for interactive lighting
         nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
+        cosmicDustSystem.update(delta, cameraX, player ? player.position : undefined);
         if (levelManager.currentLevel === 5) {
             // nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
         }
@@ -902,6 +906,7 @@ const industrialSystem = new IndustrialBackgroundSystem(scene);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
+const cosmicDustSystem = new CosmicDustSystem(scene);
 nebulaSystem.setCamera(camera);
 
 // BIOLOGICAL BACKGROUND SYSTEM (Space Whale Interior)
