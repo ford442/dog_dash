@@ -89,6 +89,9 @@ import { BOSS_DISPLAY_NAME } from './space_robot_squid';
 import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
 import { ButterflySwarmSystem } from './butterfly_swarm';
+import { LevelManager } from './level_manager';
+import { createGalaxy, createMoon, moonPlants } from './visuals';
+import { disposeObject } from './utils';
 
 // --- Configuration ---
 const CONFIG = {
@@ -440,353 +443,8 @@ const playerState = {
 // =============================================================================
 // LEVEL MANAGER
 // =============================================================================
-const DEFAULT_FOG_FAR = 80;
-const DEFAULT_FOG_NEAR = 20;
-const FOG_FAR_DENSITY_FACTOR = 5;
-const FOG_NEAR_DENSITY_FACTOR = 3;
+/* LevelManager moved to ./level_manager */
 
-class LevelManager {
-    currentLevel: number;
-    config: { [key: number]: LevelConfig };
-    levelObjects: THREE.Object3D[];
-    cloudSystem: CloudSystem;
-    atmosphereSystem: AtmosphereSystem;
-
-    constructor() {
-        this.cloudSystem = new CloudSystem(scene);
-        this.atmosphereSystem = new AtmosphereSystem(scene);
-        this.currentLevel = 1;
-        this.config = LEVEL_CONFIG;
-
-        // Track planted objects to cleanup
-        this.levelObjects = [];
-        this.lastPopulatedEndX = -Infinity;
-    }
-
-    lastPopulatedEndX: number;
-
-    startLevel(levelIndex: number) {
-        this.currentLevel = levelIndex;
-        const cfg = this.config[levelIndex];
-        if (!cfg) return;
-
-        console.log(`Starting Level ${levelIndex}: ${cfg.name}`);
-
-        // Update Game State
-        playerState.autoScrollSpeed = cfg.speed;
-        playerState.distanceToMoon = cfg.distance;
-
-        // --- ATMOSPHERE UPDATE ---
-        let transitionDuration = 2.0;
-        if (levelIndex === 3) {
-            // Level 3 "Orbital Descent" should take ~100s to fully transition to blue
-            // 1000m / 10m/s = 100s
-            transitionDuration = 100.0;
-        }
-
-        this.atmosphereSystem.transitionTo(cfg.skyColors.top, cfg.skyColors.bottom, transitionDuration);
-        // Note: AtmosphereSystem handles fog color now.
-
-        if (scene.fog) {
-            // scene.fog.color is updated by AtmosphereSystem
-            // Apply custom fog density for Memory Fog effect (Level 5)
-            if (scene.fog instanceof THREE.Fog) {
-                if (cfg.fogDensity) {
-                    // Adjust fog near/far based on density (higher density = closer fog)
-                    scene.fog.far = DEFAULT_FOG_FAR * (1 - cfg.fogDensity * FOG_FAR_DENSITY_FACTOR);
-                    scene.fog.near = DEFAULT_FOG_NEAR * (1 - cfg.fogDensity * FOG_NEAR_DENSITY_FACTOR);
-                } else {
-                    // Reset to default fog
-                    scene.fog.far = DEFAULT_FOG_FAR;
-                    scene.fog.near = DEFAULT_FOG_NEAR;
-                }
-            }
-        }
-
-        // Update UI
-        const levelDiv = document.getElementById('level-display');
-        if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
-
-        // Clear previous level objects that are behind (optional, but good for perf)
-        // actually we just keep scrolling, but we need to spawn new density ahead
-
-        // Populate new zone ahead of player
-        this.populateZone(player.position.x + 50, player.position.x + 600, cfg);
-
-        // Configure clouds based on level type/name
-        // For now, always visible but could be customized
-        this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
-
-        // Special Effects per Level
-        if (levelIndex === 1) {
-            butterflySwarmSystem.activate();
-        } else {
-            butterflySwarmSystem.deactivate();
-        }
-
-        if (levelIndex === 3) {
-            // Activate Planetary Horizon in Level 3
-            planetaryHorizonSystem.activate();
-            // Activate Re-Entry Heat in Level 3 "Orbital Descent"
-            reEntrySystem.activate();
-        } else {
-            planetaryHorizonSystem.deactivate();
-            // Only deactivate reentry if not in level 3 (handled below generally, but explicit here for clarity)
-            if (levelIndex !== 3) reEntrySystem.deactivate();
-        }
-
-        if (levelIndex === 4) {
-            // Industrial Tunnel
-            industrialSystem.activate();
-
-            // Industrial background is heavy, maybe hide clouds?
-            this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
-        } else {
-            industrialSystem.deactivate();
-        }
-
-        if (levelIndex === 6) {
-            waterfallSystem.activate();
-        } else {
-            waterfallSystem.deactivate();
-        }
-
-        // Activate Asteroid Fields dynamically based on density
-        if (cfg.asteroidRate && cfg.asteroidRate > 0) {
-            asteroidFieldSystem.activate();
-            // Scale density relative to default levels
-            asteroidFieldSystem.setDensity(cfg.asteroidRate * 0.5);
-            asteroidFieldSystem.resetPositions(camera.position.x);
-        } else {
-            asteroidFieldSystem.deactivate();
-        }
-
-        if (levelIndex === 5) {
-            // Activate Biological System for Space Whale Interior
-            biologicalSystem.activate();
-            nebulaSystem.activate();
-            cosmicDustSystem.activate();
-            // Hide clouds in whale level
-            this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
-        } else {
-            biologicalSystem.deactivate();
-            nebulaSystem.deactivate();
-            cosmicDustSystem.deactivate();
-            // Restore clouds if not in Industrial Tunnel (Level 4)
-            if (levelIndex !== 4) {
-                this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
-            }
-        }
-
-        // SWARM #3: Generate Magical Dreamy Environments (for levels 1-3 and 6-7)
-        const currentX = player ? player.position.x : 0;
-        if (levelIndex <= 3 || levelIndex >= 6) {
-            // Flower Constellations - giant glowing space flowers
-            flowerManager.generateConstellation(15, currentX + 100, currentX + cfg.distance - 100, -40, 40);
-            
-            // Cloud Castles - dreamy floating castles in background
-            castleManager.generateCastleField(8, currentX + 200, currentX + cfg.distance - 200);
-        }
-        
-        // Candy Belt - sweet treat obstacles (all levels except serious ones)
-        if (levelIndex !== 4 && levelIndex !== 5) {
-            candyManager.generateCandyBelt(cfg.distance * 0.8, 0.25);
-        }
-    }
-
-    // Phase 1 FPS Fixes - Quick Wins: object cleanup with geometry disposal
-    cleanupBehind(cameraX: number) {
-        const cutoff = cameraX - 100;
-        for (let i = this.levelObjects.length - 1; i >= 0; i--) {
-            const obj = this.levelObjects[i];
-            if (obj.position.x < cutoff) {
-                scene.remove(obj);
-                const mpIdx = moonPlants.indexOf(obj);
-                if (mpIdx !== -1) moonPlants.splice(mpIdx, 1);
-                disposeObject(obj);
-                this.levelObjects.splice(i, 1);
-            }
-        }
-    }
-
-    update(delta: number, cameraX: number, speed: number) {
-        this.cleanupBehind(cameraX);
-        this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
-        this.cloudSystem.update(delta, cameraX, speed);
-        waterfallSystem.update(cameraX, delta);
-        industrialSystem.update(cameraX, delta);
-        biologicalSystem.update(delta, cameraX);
-        // Pass player position to NebulaSystem for interactive lighting
-        nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
-        cosmicDustSystem.update(delta, cameraX, player ? player.position : undefined);
-        if (levelManager.currentLevel === 5) {
-            // nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
-        }
-        if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
-        if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
-    }
-
-    populateZone(startX: number, endX: number, config: LevelConfig) {
-        // Guard against re-populating the same zone
-        if (endX <= this.lastPopulatedEndX) return;
-        this.lastPopulatedEndX = endX;
-
-        const width = endX - startX;
-        const density = config.foliageDensity;
-        const levelType = config.levelType || 'open';
-
-        // For tunnel levels, spawn structural sections at fixed intervals
-        if (levelType === 'tunnel') {
-            const interval = config.obstacleInterval || 20;
-            const sectionCount = Math.floor(width / interval);
-            
-            for (let i = 0; i < sectionCount; i++) {
-                const xPos = startX + i * interval;
-                industrialGeometryManager.createIndustrialSection(xPos);
-            }
-            
-            // Spawn minimal foliage inside tunnel bounds (constrained Y range)
-            const tunnelHeight = config.tunnelHeight || 15;
-            const yRange: [number, number] = [-tunnelHeight / 2 + 2, tunnelHeight / 2 - 2];
-            
-            this.spawnOpenFoliage(startX, width, density, yRange);
-            return;
-        }
-        
-        if (levelType === 'organic_tunnel') {
-            const interval = config.obstacleInterval || 25;
-            const sectionCount = Math.floor(width / interval);
-            
-            for (let i = 0; i < sectionCount; i++) {
-                const xPos = startX + i * interval;
-                industrialGeometryManager.createWhaleRibSection(xPos);
-            }
-            
-            // Spawn organic foliage inside whale bounds
-            const tunnelHeight = config.tunnelHeight || 20;
-            const yRange: [number, number] = [-tunnelHeight / 2 + 3, tunnelHeight / 2 - 3];
-            
-            this.spawnOpenFoliage(startX, width, density, yRange);
-            return;
-        }
-
-        // Default 'open' level type - use existing random scatter logic
-        this.spawnOpenFoliage(startX, width, density);
-    }
-
-    // Helper method to spawn foliage with open scatter logic
-    spawnOpenFoliage(startX: number, width: number, density: LevelConfig['foliageDensity'], yRange: [number, number] = [-20, 20]) {
-        // Helper to spawn
-        const spawn = (count: number, creatorFn: () => THREE.Object3D, customYRange = yRange, zRange: [number, number] = [-30, 0]) => {
-            for (let i = 0; i < count; i++) {
-                const x = startX + Math.random() * width;
-                const y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
-                const z = zRange[0] + Math.random() * (zRange[1] - zRange[0]);
-
-                const obj = creatorFn();
-                obj.position.set(x, y, z);
-
-                // Random scale
-                const s = 0.8 + Math.random() * 0.5;
-                obj.scale.set(s, s, s);
-
-                scene.add(obj);
-                this.levelObjects.push(obj);
-
-                // Add to moonPlants for animation update loop
-                moonPlants.push(obj);
-            }
-        };
-
-        // Spawn all types
-        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }));
-        if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }));
-        if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }));
-        if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }));
-
-        // Standard foliage (trees at lower positions)
-        const treeYRange: [number, number] = [Math.max(yRange[0], -20), Math.min(yRange[1], -5)];
-        if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange);
-        if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange);
-
-        // Floating items
-        if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange);
-
-        // Add clouds manually because they need the specific class wrapper
-        if (density.cloud) {
-            for(let i=0; i<density.cloud; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -40 + Math.random() * 30;
-                createSporeCloudAtPosition(x, y, z);
-            }
-        }
-
-        // Geological objects from plan.md
-        if (density.voidRootBall) {
-            for(let i=0; i<density.voidRootBall; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createVoidRootBallAtPosition(x, y, z);
-            }
-        }
-
-        if (density.vacuumKelp) {
-            for(let i=0; i<density.vacuumKelp; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * 15;
-                const z = -35 + Math.random() * 25;
-                createVacuumKelpAtPosition(x, y, z);
-            }
-        }
-
-        if (density.iceNeedle) {
-            for(let i=0; i<density.iceNeedle; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createIceNeedleClusterAtPosition(x, y, z);
-            }
-        }
-
-        if (density.liquidMetal) {
-            for(let i=0; i<density.liquidMetal; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createLiquidMetalBlobAtPosition(x, y, z);
-            }
-        }
-
-        if (density.magmaHeart) {
-            for(let i=0; i<density.magmaHeart; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createMagmaHeartAtPosition(x, y, z);
-            }
-        }
-    }
-
-    checkProgress(playerX: number) {
-        // Transition logic
-        if (this.currentLevel === 1 && playerX > 500) {
-            this.startLevel(2);
-        } else if (this.currentLevel === 2 && playerX > 1200) {
-            this.startLevel(3);
-        } else if (this.currentLevel === 3 && playerX > 2200) {
-            this.startLevel(4);
-        } else if (this.currentLevel === 4 && playerX > 3200) {
-            this.startLevel(5);
-        } else if (this.currentLevel === 5 && playerX > 4200) {
-            this.startLevel(6);
-        }
-    }
-}
-
-const industrialGeometryManager = new IndustrialGeometryManager(scene);
-const levelManager = new LevelManager();
 
 let obstacleSystem: ObstacleSystem;
 
@@ -804,47 +462,7 @@ scene.add(stars);
 uStarOpacity.value = 0.8; // Make stars visible
 
 // Create distant galaxies/nebulae
-function createGalaxy(x: number, y: number, z: number, color: number) {
-    const group = new THREE.Group();
-    
-    // Main nebula cloud
-    const cloudGeo = new THREE.SphereGeometry(15, 16, 16);
-    const cloudMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.15,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide
-    });
-    const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-    group.add(cloud);
-    
-    // Inner glow
-    const glowGeo = new THREE.SphereGeometry(8, 16, 16);
-    const glowMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.25,
-        blending: THREE.AdditiveBlending
-    });
-    const glow = new THREE.Mesh(glowGeo, glowMat);
-    group.add(glow);
-    
-    // Bright core
-    const coreGeo = new THREE.SphereGeometry(3, 12, 12);
-    const coreMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.4,
-        blending: THREE.AdditiveBlending
-    });
-    const core = new THREE.Mesh(coreGeo, coreMat);
-    group.add(core);
-    
-    group.position.set(x, y, z);
-    group.userData.rotationSpeed = (Math.random() - 0.5) * 0.02;
-    return group;
-}
+// createGalaxy moved to ./visuals
 
 // Create a few distant galaxies
 const galaxy1 = createGalaxy(200, 30, -100, 0x8844ff);
@@ -1220,20 +838,9 @@ function createMagmaHeartAtPosition(x: number, y: number, z: number) {
 }
 
 // Store plants that live on the moon to animate them later
-const moonPlants: THREE.Object3D[] = [];
+/* moonPlants moved to ./visuals */
 
-// Phase 1 FPS Fixes - Quick Wins: safely dispose geometry when removing objects
-// Materials are intentionally skipped because foliage uses shared material pools
-function disposeObject(obj: THREE.Object3D) {
-    obj.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            if (mesh.geometry) {
-                mesh.geometry.dispose();
-            }
-        }
-    });
-}
+// disposeObject moved to ./utils
 
 // Cleanup geological objects that have fallen behind the camera
 function cleanupGeologicalObjects(cameraX: number) {
@@ -1309,89 +916,55 @@ function cleanupGeologicalObjects(cameraX: number) {
     }
 }
 
-// Create the distant moon (goal)
-function createMoon() {
-    const group = new THREE.Group();
-    
-    // 1. Moon Surface (alien palette)
-    const moonGeo = new THREE.SphereGeometry(8, 32, 32);
-    const moonMat = new THREE.MeshStandardMaterial({
-        color: 0x222244, // Darker, alien purple-grey
-        roughness: 0.8,
-        metalness: 0.2,
-        emissive: 0x111122,
-        emissiveIntensity: 0.2
-    });
-    const moon = new THREE.Mesh(moonGeo, moonMat);
-    moon.castShadow = true;
-    group.add(moon);
-    
-    // Add some craters
-    for (let i = 0; i < 8; i++) {
-        const craterGeo = new THREE.SphereGeometry(0.5 + Math.random() * 1.5, 8, 8);
-        const craterMat = new THREE.MeshStandardMaterial({
-            color: 0x888888,
-            roughness: 0.95
-        });
-        const crater = new THREE.Mesh(craterGeo, craterMat);
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI;
-        crater.position.set(
-            Math.sin(phi) * Math.cos(theta) * 7,
-            Math.sin(phi) * Math.sin(theta) * 7,
-            Math.cos(phi) * 7
-        );
-        group.add(crater);
-    }
-    
-    // Moon glow/atmosphere
-    // 2. Atmosphere
-    const atmosphereGeo = new THREE.SphereGeometry(9.5, 32, 32);
-    const atmosphereMat = new THREE.MeshBasicMaterial({
-        color: 0x8844ff,
-        transparent: true,
-        opacity: 0.15,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
-    group.add(atmosphere);
-    
-    group.userData.atmosphere = atmosphere;
-
-    // 3. Populate with Alien Plants
-    const plantCount = 15;
-    for (let i = 0; i < plantCount; i++) {
-        let plant;
-        const type = Math.random();
-        if (type < 0.3) {
-            plant = createSubwooferLotus({ color: 0x00ff88 });
-        } else if (type < 0.6) {
-            plant = createFiberOpticWillow({ color: 0xff00ff });
-        } else {
-            plant = createGlowingFlower({ color: 0x00ffff, intensity: 2.0 });
-        }
-
-        // Random position on the top hemisphere so plants are visible
-        const phi = Math.random() * Math.PI * 0.4; // 0..PI/2 mostly
-        const theta = Math.random() * Math.PI * 2;
-        const r = 7.8; // Slightly embedded in surface
-        plant.position.set(
-            r * Math.sin(phi) * Math.cos(theta),
-            r * Math.cos(phi),
-            r * Math.sin(phi) * Math.sin(theta)
-        );
-        plant.lookAt(0, 0, 0);
-        plant.rotateX(-Math.PI / 2);
-        group.add(plant);
-        moonPlants.push(plant);
-    }
-    return group;
-}
+// createMoon moved to ./visuals
 
 const moon = createMoon();
 moon.position.set(500, 5, -50); // Position far ahead
 scene.add(moon);
+
+const industrialGeometryManager = new IndustrialGeometryManager(scene);
+const levelManager = new LevelManager({
+    scene,
+    camera: camera,
+    getPlayer: () => player,
+    industrialGeometryManager,
+    planetaryHorizonSystem,
+    reEntrySystem,
+    industrialSystem,
+    waterfallSystem,
+    asteroidFieldSystem,
+    biologicalSystem,
+    nebulaSystem,
+    cosmicDustSystem,
+    butterflySwarmSystem,
+    flowerManager,
+    castleManager,
+    candyManager,
+    creators: {
+        createStarDustFern,
+        createNebulaRose,
+        createSubwooferLotus,
+        createGlowingFlower,
+        createFloweringTree,
+        createFloatingOrb
+    },
+    spawners: {
+        createSporeCloudAtPosition,
+        createVoidRootBallAtPosition,
+        createVacuumKelpAtPosition,
+        createIceNeedleClusterAtPosition,
+        createLiquidMetalBlobAtPosition,
+        createMagmaHeartAtPosition
+    },
+    onLevelStart: (cfg) => {
+        playerState.autoScrollSpeed = cfg.speed;
+        playerState.distanceToMoon = cfg.distance;
+    },
+    onUpdateLevelDisplay: (levelIndex, name) => {
+        const levelDiv = document.getElementById('level-display');
+        if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
+    }
+});
 
 function handleGameOver() {
     if (player) {
