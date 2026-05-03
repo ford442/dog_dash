@@ -20,10 +20,10 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 |-------|------------|-------|
 | **Renderer** | Three.js + WebGPU | Uses `three/webgpu` renderer and `three/tsl` (Three.js Shading Language) for node-based materials |
 | **Language** | TypeScript | ES2022, ES modules, strict mode enabled |
-| **Build Tool** | Vite v7 | Handles bundling, dev server, and production builds |
+| **Build Tool** | Vite v7 | Zero-config; handles bundling, dev server, and production builds |
 | **WASM** | AssemblyScript (`asc`) | Collision-detection physics compiled to `.wasm` |
 | **Audio** | Web Audio API | 100% procedural synthesis — no external audio files |
-| **Testing** | Playwright (installed) | No active test suite or config file exists yet |
+| **Testing** | Playwright (installed) | No active test suite, test files, or `playwright.config.*` exists |
 | **Deployment** | Python + Paramiko | SFTP upload script (`deploy.py`) |
 
 ---
@@ -34,7 +34,7 @@ The project uses a **flat module structure** — all TypeScript source files liv
 
 ```
 /
-├── *.ts                          # 44 TypeScript modules (see Key Module Divisions below)
+├── *.ts                          # 49 TypeScript modules in repo root (see Key Module Divisions)
 ├── index.html                    # Main HTML entry point
 ├── package.json                  # npm scripts and dependencies
 ├── tsconfig.json                 # TypeScript config (strict, ESNext, bundler mode)
@@ -61,11 +61,25 @@ The project uses a **flat module structure** — all TypeScript source files liv
 
 ### Notable files by size and importance
 
-- `main.ts` (~2,100 lines) — Scene setup, game loop, level progression, renderer config
+- `main.ts` (~3,000 lines) — Scene setup, game loop, level progression, renderer config
+- `audio_system.ts` (~2,500 lines) — Procedural music and sound synthesis
 - `magical_effects.ts` (~2,300 lines) — Visual effect systems
-- `audio_system.ts` (~1,700 lines) — Procedural music and sound synthesis
-- `powerup_manager.ts` (~1,600 lines) — Power-up logic and UI
+- `powerup_manager.ts` (~1,700 lines) — Power-up logic and UI
 - `victory_system.ts` (~1,500 lines) — End-of-level and win sequences
+- `foliage.ts` (~1,500 lines) — Alien plant generation and animation
+- `candy_obstacles.ts` (~1,400 lines) — Candy-themed obstacle system
+- `dog_cockpit.ts` (~1,400 lines) — Dog astronaut animations and accessories
+- `space_friends.ts` (~1,300 lines) — Companion character system
+- `hud_system.ts` (~1,300 lines) — In-game heads-up display
+- `tutorial_system.ts` (~1,200 lines) — Interactive tutorial flow
+- `cloud_castles.ts` (~1,100 lines) — Cloud castle background environments
+- `geological.ts` (~1,100 lines) — Rock and geological object generation
+- `touch_controls.ts` (~1,000 lines) — Touch input handling and control modes
+- `juice_effects.ts` (~1,000 lines) — Screen shake, bursts, and game-feel effects
+- `flower_constellations.ts` (~900 lines) — Constellation pattern system
+- `industrial_background.ts` (~700 lines) — Industrial tunnel backgrounds
+- `space_robot_squid.ts` (~700 lines) — Nebula Kraken boss implementation
+- `touch_settings.ts` (~700 lines) — Touch control settings UI
 
 ---
 
@@ -122,7 +136,7 @@ Follow the patterns already established in the codebase:
   import { color, time, sin, vec3 } from 'three/tsl';
   import { MeshStandardNodeMaterial } from 'three/webgpu';
   ```
-- **Exports**: Prefer **named exports**. Only a handful of modules use `export default` (e.g., `dog_cockpit.ts`, `magical_effects.ts`, `powerup_manager.ts`, `space_friends.ts`, `cloud_castles.ts`, `vite-env.d.ts`).
+- **Exports**: Prefer **named exports**. Only a handful of modules use `export default` (`dog_cockpit.ts`, `magical_effects.ts`, `powerup_manager.ts`, `space_friends.ts`, `cloud_castles.ts`, `vite-env.d.ts`).
 - **Types**: TypeScript `strict` mode is on. Define shared types in the same file as the primary consumer, or in dedicated config modules such as `level_config.ts`.
 - **Comments**: Use JSDoc block comments for major classes/systems and inline comments for tricky logic.
 - **Constants**: Global configuration objects typically use `ALL_CAPS` (e.g., `LEVEL_CONFIG`, `CONFIG`, `UPGRADE_CONFIGS`).
@@ -137,27 +151,30 @@ When you need to find or add functionality, start in the module that matches the
 | Domain | Files |
 |--------|-------|
 | **Core Game Loop** | `main.ts` |
-| **Environment & Backgrounds** | `foliage.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts` |
-| **Gameplay & Obstacles** | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts` |
-| **Visual Effects** | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts` |
-| **UI / UX** | `ui_controls.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `tutorial_system.ts`, `victory_system.ts` |
+| **Environment & Backgrounds** | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts` |
+| **Gameplay & Obstacles** | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts` |
+| **Visual Effects** | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts` |
+| **UI / UX** | `ui_controls.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts` |
 | **Progression & Economy** | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `level_config.ts` |
 | **Characters** | `dog_cockpit.ts`, `space_friends.ts` |
+| **Movement & Abilities** | `boost_system.ts`, `roll_system.ts` |
 | **Shaders (TSL)** | `shaders/jelly-moss.ts` |
 | **Physics & WASM** | `physics_utils.ts`, `assembly/index.ts` |
 | **Audio** | `audio_system.ts` |
 
 ### Level configuration
-Level data is centralized in `level_config.ts`. There are 6 levels defined in `LEVEL_CONFIG` (keys `1`–`6`), each specifying distance, speed, background color, sky colors, foliage density, asteroid rate, and tunnel parameters.
+Level data is centralized in `level_config.ts`. There are 6 levels defined in `LEVEL_CONFIG` (keys `1`–`6`), each specifying distance, speed, background color, sky colors, foliage density, asteroid rate, tunnel parameters, and squid spawn rate.
 
 ### WASM physics
-`assembly/index.ts` exports three functions used by `main.ts`:
+`assembly/index.ts` exports the following functions used by the TypeScript side:
 - `allocAsteroids(count)` — allocates a float buffer for 2D circular objects
 - `allocSporeClouds(count)` — allocates a float buffer for 3D spherical objects
+- `allocBossHitboxes(count)` — allocates a float buffer for boss hitbox circles
 - `checkCollision(...)` — 2D circle collision against the asteroid buffer
 - `checkSporeCollision(...)` — 3D sphere collision against the spore-cloud buffer
+- `checkBossCollision(...)` — 2D circle collision against boss hitboxes
 
-The JavaScript side writes object positions into a `Float32Array` backed by WASM memory, then calls the exported check functions.
+The JavaScript side writes object positions into `Float32Array` views backed by WASM memory, then calls the exported check functions.
 
 ---
 
