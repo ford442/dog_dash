@@ -528,3 +528,38 @@ export function updateGeologicalObjects(delta: number, time: number, cameraPos: 
 
     magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 }
+
+// =============================================================================
+// ENVIRONMENT MAP GENERATION
+// =============================================================================
+export function generateEnvironment() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 512;
+    const context = canvas.getContext('2d');
+
+    if (context) {
+        // Deep space gradient
+        const gradient = context.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(0.5, '#05051a');
+        gradient.addColorStop(1, '#110522');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw stars
+        for (let i = 0; i < 500; i++) {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const radius = Math.random() * 1.5;
+            context.beginPath();
+            context.arc(x, y, radius, 0, Math.PI * 2);
+            context.fillStyle = `rgba(255, 255, 255, ${Math.random()})`;
+            context.fill();
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.mapping = THREE.EquirectangularReflectionMapping;
+    return texture;
+}
