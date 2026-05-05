@@ -22,7 +22,8 @@ import {
     dot,
     fract,
     max,
-    distance
+    distance,
+    UniformNode
 } from 'three/tsl';
 
 // --- TSL Noise Functions ---
@@ -77,10 +78,9 @@ const fbm = (v: any) => {
  * - Internal lighting/shading simulation via noise density
  * - Volumetric Lightning Flash (Distance-based)
  */
-function createCloudSpriteMaterial(baseColorHex: number, opacity: number, detail: number = 1.0) {
+function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacity: UniformNode<number>, detail: number = 1.0) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
-        opacity: opacity,
         side: THREE.FrontSide, // Sprites face camera
         depthWrite: false, // Soft blending
         blending: THREE.NormalBlending // Standard alpha blending
@@ -121,10 +121,10 @@ function createCloudSpriteMaterial(baseColorHex: number, opacity: number, detail
     const density = softShape.mul(noiseVal.add(0.2));
 
     // Sharpen alpha slightly to define puff
-    const alpha = smoothstep(0.1, 0.6, density).mul(opacity);
+    const alpha = smoothstep(0.1, 0.6, density).mul(uOpacity);
 
     // 4. Color & Lighting
-    const baseColor = color(new THREE.Color(baseColorHex));
+    const baseColor = color(uBaseColor);
 
     // internal shadows: darker where noise is low (crevices)
     const shadowFactor = noiseVal.mul(0.5).add(0.5);
@@ -165,14 +165,17 @@ export class CloudLayer {
     positions: Float32Array;
     scales: Float32Array;
 
+    uColor: UniformNode<THREE.Color>;
+    uOpacity: UniformNode<number>;
+
     constructor(
         scene: THREE.Scene,
         config: {
             count: number,
             z: number,
             zRange: number,
-            color: number,
-            opacity: number,
+            uColor: UniformNode<THREE.Color>,
+            uOpacity: UniformNode<number>,
             scaleMin: number,
             scaleMax: number,
             windSpeed: number, // Speed relative to world (crawling)
@@ -184,10 +187,12 @@ export class CloudLayer {
         this.windSpeed = config.windSpeed;
         this.width = config.width;
         this.baseZ = config.z;
+        this.uColor = config.uColor;
+        this.uOpacity = config.uOpacity;
 
         // Use PlaneGeometry for Sprites
         const geo = new THREE.PlaneGeometry(1, 1);
-        const mat = createCloudSpriteMaterial(config.color, config.opacity, config.detail || 1.0);
+        const mat = createCloudSpriteMaterial(config.uColor, config.uOpacity, config.detail || 1.0);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false; // Infinite scroll
@@ -289,6 +294,8 @@ export class CloudLayer {
     }
 }
 
+import { LevelConfig } from './level_config';
+
 export class CloudSystem {
     scene: THREE.Scene;
     layers: CloudLayer[] = [];
@@ -300,6 +307,40 @@ export class CloudSystem {
         this.initLayers();
     }
 
+    setLevel(config: LevelConfig) {
+        const baseColor = new THREE.Color(config.skyColors.bottom);
+        const cloudDensity = config.foliageDensity?.cloud ?? 20;
+
+        // Base opacity multiplier based on density config (20 is baseline)
+        const densityFactor = Math.min(1.0, cloudDensity / 20.0);
+
+        if (this.layers.length >= 5) {
+            // Layer 1: Deep Background (Slowest, Faint, Huge)
+            this.layers[0].uColor.value.copy(baseColor).lerp(new THREE.Color(0x000000), 0.5); // Very dark
+            this.layers[0].uOpacity.value = 0.9 * densityFactor;
+
+            // Layer 2: Background (Dark, slightly faster)
+            this.layers[1].uColor.value.copy(baseColor).lerp(new THREE.Color(0x000000), 0.3); // Dark
+            this.layers[1].uOpacity.value = 0.8 * densityFactor;
+
+            // Layer 3: Mid-Ground (Main cloud layer, semi-transparent)
+            this.layers[2].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.1); // Slightly lighter
+            this.layers[2].uOpacity.value = 0.6 * densityFactor;
+
+            // Layer 4: Near-Mid (Lighter, faster)
+            this.layers[3].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.3); // Lighter
+            this.layers[3].uOpacity.value = 0.4 * densityFactor;
+
+            // Layer 5: Foreground (Passes in front/very close, fast, transparent, detailed)
+            this.layers[4].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.5); // Lightest
+            this.layers[4].uOpacity.value = 0.2 * densityFactor;
+        }
+
+        // Handle fully hiding if density is 0
+        const visible = cloudDensity > 0;
+        this.layers.forEach(layer => layer.mesh.visible = visible);
+    }
+
     initLayers() {
         // "Thunder Force IV" Style - 5 Layers
 
@@ -309,8 +350,8 @@ export class CloudSystem {
             count: 25,
             z: -80,
             zRange: 20,
-            color: 0x0a0a20, // Very dark blue
-            opacity: 0.9,
+            uColor: uniform(new THREE.Color(0x0a0a20)), // Very dark blue
+            uOpacity: uniform(0.9),
             scaleMin: 40,
             scaleMax: 60,
             windSpeed: -2.0, // Crawl
@@ -323,8 +364,8 @@ export class CloudSystem {
             count: 30,
             z: -50,
             zRange: 15,
-            color: 0x151530,
-            opacity: 0.8,
+            uColor: uniform(new THREE.Color(0x151530)),
+            uOpacity: uniform(0.8),
             scaleMin: 30,
             scaleMax: 45,
             windSpeed: -3.0,
@@ -337,8 +378,8 @@ export class CloudSystem {
             count: 40,
             z: -25,
             zRange: 10,
-            color: 0x2a2a50,
-            opacity: 0.6,
+            uColor: uniform(new THREE.Color(0x2a2a50)),
+            uOpacity: uniform(0.6),
             scaleMin: 20,
             scaleMax: 30,
             windSpeed: -5.0,
@@ -351,8 +392,8 @@ export class CloudSystem {
             count: 20,
             z: -10,
             zRange: 5,
-            color: 0x444477,
-            opacity: 0.4,
+            uColor: uniform(new THREE.Color(0x444477)),
+            uOpacity: uniform(0.4),
             scaleMin: 15,
             scaleMax: 20,
             windSpeed: -8.0,
@@ -366,8 +407,8 @@ export class CloudSystem {
             count: 10,
             z: 8,
             zRange: 4,
-            color: 0x666699,
-            opacity: 0.2,
+            uColor: uniform(new THREE.Color(0x666699)),
+            uOpacity: uniform(0.2),
             scaleMin: 8,
             scaleMax: 12,
             windSpeed: -15.0, // Whoosh
