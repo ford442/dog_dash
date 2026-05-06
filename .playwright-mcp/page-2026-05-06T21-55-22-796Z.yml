@@ -1,0 +1,20 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2] [cursor=pointer]:
+    - heading "SPACE DASH" [level=1] [ref=e3]
+    - generic [ref=e4]: Journey to the Moon
+    - paragraph [ref=e5]: Navigate your rocket through the asteroid field to reach the distant moon!
+    - paragraph [ref=e6]: ⚠️ Your ship can only survive 3 collisions!
+    - generic [ref=e7]:
+      - generic [ref=e8]:
+        - generic [ref=e9]: Thrust Up
+        - generic [ref=e11]: SPACE
+      - generic [ref=e12]:
+        - generic [ref=e13]: Dive Down
+        - generic [ref=e15]: A
+    - generic [ref=e16]: ▼ Click or tap to start ▼
+  - generic [ref=e18]:
+    - heading "WebGPU Not Supported" [level=1] [ref=e19]
+    - paragraph [ref=e20]: Your browser does not support WebGPU yet
+  - generic [ref=e21]:
+    - heading "Initialization Error" [level=1] [ref=e22]
+    - paragraph [ref=e23]: WebGPU not supported

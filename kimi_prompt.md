@@ -53,7 +53,51 @@ You work iteratively in a code-server environment. After every change you propos
 6. **Document** — Update this prompt or add notes in code comments.
 
 ## Priority Task List (Start Here)
+Open src/main.ts and replace your entire renderer creation block with this:
+TypeScript// ==============================================
+// PERFORMANCE: Starting low-res (60%) for smooth playability
+// Press R in-game to cycle resolutions and test higher ones later
+// We'll raise the default as we optimize more systems
+// ==============================================
 
+const basePixelRatio = 0.60; // ← this is the "start low" value you asked for
+
+const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    alpha: true,
+    powerPreference: "high-performance"
+});
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio * basePixelRatio));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace; // keep this line if you already had it
+Then add this hotkey inside your main game loop (find where you handle keys like the FPS 'F' toggle and paste it there):
+TypeScript// Resolution cycle hotkey — press R any time in-game
+if (keys['r'] || keys['R']) {
+    const ratios = [0.50, 0.60, 0.75, 1.0, 1.5, 2.0];
+    let current = renderer.getPixelRatio() / window.devicePixelRatio;
+    let idx = ratios.indexOf(current);
+    if (idx === -1) idx = 1; // fallback to 60%
+    const next = ratios[(idx + 1) % ratios.length];
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio * next));
+    console.log(`🔧 Resolution set to ${Math.round(next * 100)}%`);
+}
+Save → npm run dev → play.
+Quick test
+
+The game should now feel playable at 60% resolution.
+Press R to try 75% or 100% and see when spikes come back.
+Press F to watch the FPS graph.
+
+Let me know exactly what you feel after you paste and test:
+
+“Playable at 60%, still spikes at 75%”
+“Still laggy even at 60% — worst in [which level]”
+“Looks too blurry, try 70% default instead”
+
+Once it’s stable at 60%, we’ll immediately optimize the next heavy systems (butterfly swarms, foliage, particles) so we can safely raise the default resolution — exactly the plan you described.
+Paste it and tell me how it plays! 🚀🐶
 ### Tier 1 – Quick Wins (Do These First)
 1. **Butterfly Swarm** (`src/butterfly_swarm.ts`)
    - Currently 100 instances with full per-frame CPU matrix + rotation updates.

@@ -195,9 +195,12 @@ try {
     camera.lookAt(0, CONFIG.cameraHeight, 0);
 
     // --- Renderer ---
+    // PERFORMANCE: Start at 60% resolution for smooth playability on mid-range hardware.
+    // Press R in-game to cycle through higher resolutions and test performance.
+    const basePixelRatio = 0.60;
     renderer = new WebGPURenderer({ canvas, antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio * basePixelRatio));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.3; // Slightly higher for more vibrant colors
     renderer.shadowMap.enabled = true;
@@ -1080,6 +1083,14 @@ window.addEventListener('keydown', (e) => {
         const muted = audioSystem.toggleMute();
         console.log(muted ? '🔇 Audio muted' : '🔊 Audio unmuted');
     }
+    // Resolution cycle hotkey — press R any time in-game
+    if (e.code === 'KeyR') {
+        currentRatioIndex = (currentRatioIndex + 1) % RESOLUTION_RATIOS.length;
+        const next = RESOLUTION_RATIOS[currentRatioIndex];
+        currentPixelRatio = Math.min(2, window.devicePixelRatio * next);
+        renderer.setPixelRatio(currentPixelRatio);
+        console.log(`🔧 Resolution set to ${Math.round(next * 100)}% (pixel ratio ${currentPixelRatio.toFixed(2)})`);
+    }
 });
 
 // Double-tap Space for boost
@@ -1855,7 +1866,9 @@ let fpsFrameCount = 0;
 let fpsElapsedTime = 0;
 let fpsLowDuration = 0;
 let fpsHighDuration = 0;
-let currentPixelRatio = Math.min(window.devicePixelRatio, 1.5);
+const RESOLUTION_RATIOS = [0.50, 0.60, 0.75, 1.0, 1.5, 2.0];
+let currentRatioIndex = 1; // start at 0.60
+let currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[currentRatioIndex]);
 renderer.setPixelRatio(currentPixelRatio);
 
 let shadowCullingFrame = 0;
@@ -1913,18 +1926,20 @@ function animate() {
         if (fps < 45) {
             fpsLowDuration += 1.0;
             fpsHighDuration = 0;
-            if (fpsLowDuration >= 3.0 && currentPixelRatio > 1.0) {
-                currentPixelRatio = 1.0;
+            if (fpsLowDuration >= 3.0 && currentRatioIndex > 0) {
+                currentRatioIndex--;
+                currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[currentRatioIndex]);
                 renderer.setPixelRatio(currentPixelRatio);
-                console.log('Performance low — dropping pixel ratio to 1.0');
+                console.log(`Performance low — dropping resolution to ${Math.round(RESOLUTION_RATIOS[currentRatioIndex] * 100)}%`);
             }
         } else if (fps > 55) {
             fpsHighDuration += 1.0;
             fpsLowDuration = 0;
-            if (fpsHighDuration >= 5.0 && currentPixelRatio < 1.5) {
-                currentPixelRatio = Math.min(window.devicePixelRatio, 1.5);
+            if (fpsHighDuration >= 5.0 && currentRatioIndex < RESOLUTION_RATIOS.length - 1) {
+                currentRatioIndex++;
+                currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[currentRatioIndex]);
                 renderer.setPixelRatio(currentPixelRatio);
-                console.log('Performance recovered — restoring pixel ratio to', currentPixelRatio);
+                console.log(`Performance recovered — restoring resolution to ${Math.round(RESOLUTION_RATIOS[currentRatioIndex] * 100)}%`);
             }
         } else {
             fpsLowDuration = 0;
