@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 
 // ============================================================================
-// Video Tumbling Star Asset (OPTIMIZED for performance)
-// - Throttled video texture updates (~30fps)
-// - Distance-based culling
-// - Lighter materials
+// Video Tumbling Star Asset (OPTIMIZED)
+// - Throttled video texture updates (~30 fps instead of 60+)
+// - Distance culling (stops heavy work when far away)
+// - Lighter glow material
 // ============================================================================
 
 export class VideoTumblingStar {
@@ -13,7 +13,7 @@ export class VideoTumblingStar {
     private texture: THREE.VideoTexture;
     private isPlaying: boolean = false;
     private lastTextureUpdate: number = 0;
-    private readonly TEXTURE_THROTTLE_MS = 33; // ~30 fps
+    private readonly TEXTURE_THROTTLE_MS = 33; // ~30 fps video refresh (biggest stall fixer)
 
     constructor(scene: THREE.Scene, x: number = 25, y: number = 18, z: number = -35) {
         // Create video element
@@ -46,7 +46,7 @@ export class VideoTumblingStar {
         this.texture.magFilter = THREE.LinearFilter;
         this.texture.generateMipmaps = false;
 
-        // 5-pointed star geometry
+        // 5-pointed star (same nice geometry)
         const starShape = new THREE.Shape();
         const outerRadius = 7;
         const innerRadius = 3.5;
@@ -78,7 +78,7 @@ export class VideoTumblingStar {
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
-        // Lighter glow layer
+        // Lighter glow (cheaper material)
         const glowGeo = geometry.clone();
         const glowMat = new THREE.MeshBasicMaterial({
             color: 0xffeeaa,
@@ -103,14 +103,14 @@ export class VideoTumblingStar {
         this.mesh.rotation.z += deltaTime * 0.6;
         this.mesh.position.y += Math.sin(performance.now() / 1200) * 0.015;
 
-        // Distance culling for heavy texture work
+        // === DISTANCE CULLING (huge perf win) ===
         let shouldUpdateTexture = this.isPlaying;
         if (camera) {
             const dist = this.mesh.position.distanceTo(camera.position);
-            if (dist > 120) shouldUpdateTexture = false;
+            if (dist > 120) shouldUpdateTexture = false; // too far away
         }
 
-        // Throttled texture update (biggest perf win)
+        // === THROTTLED TEXTURE UPDATE ===
         if (shouldUpdateTexture) {
             const now = performance.now();
             if (now - this.lastTextureUpdate > this.TEXTURE_THROTTLE_MS) {
