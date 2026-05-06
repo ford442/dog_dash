@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
+import { GhostDebrisSystem } from './ghost_debris';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
 import { 
@@ -527,6 +528,9 @@ const industrialSystem = new IndustrialBackgroundSystem(scene);
 const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 const cosmicDustSystem = new CosmicDustSystem(scene);
 nebulaSystem.setCamera(camera);
+
+// === GHOST DEBRIS (new Cosmic Architect feature) ===
+const ghostDebrisSystem = new GhostDebrisSystem(scene);
 
 // BIOLOGICAL BACKGROUND SYSTEM (Space Whale Interior)
 const biologicalSystem = new BiologicalBackgroundSystem(scene);
@@ -2282,6 +2286,8 @@ function animate() {
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
         butterflySwarmSystem.update(delta, camera.position.x, player.position);
     }
+
+    ghostDebrisSystem.update(delta);
 
     // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
     updateShadowQuality();
