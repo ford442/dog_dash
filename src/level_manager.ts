@@ -111,8 +111,8 @@ export class LevelManager {
         this.populateZone(player!.position.x + 50, player!.position.x + 600, cfg);
 
         // Configure clouds based on level type/name
-        // For now, always visible but could be customized
-        this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
+        // Update cloud layers based on density and color
+        this.cloudSystem.setLevel(cfg);
 
         // Special Effects per Level
         if (levelIndex === 1) {
@@ -135,9 +135,6 @@ export class LevelManager {
         if (levelIndex === 4) {
             // Industrial Tunnel
             industrialSystem.activate();
-
-            // Industrial background is heavy, maybe hide clouds?
-            this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
             industrialSystem.deactivate();
         }
@@ -163,16 +160,10 @@ export class LevelManager {
             biologicalSystem.activate();
             nebulaSystem.activate();
             cosmicDustSystem.activate();
-            // Hide clouds in whale level
-            this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
             biologicalSystem.deactivate();
             nebulaSystem.deactivate();
             cosmicDustSystem.deactivate();
-            // Restore clouds if not in Industrial Tunnel (Level 4)
-            if (levelIndex !== 4) {
-                this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
-            }
         }
 
         // SWARM #3: Generate Magical Dreamy Environments (for levels 1-3 and 6-7)
