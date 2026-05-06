@@ -2,9 +2,9 @@ import * as THREE from 'three';
 
 // ============================================================================
 // Video Tumbling Star Asset (OPTIMIZED for performance)
-// - Throttled video texture updates (~30 fps)
+// - Throttled video texture updates (~30fps)
 // - Distance-based culling
-// - Lighter glow material
+// - Lighter materials
 // ============================================================================
 
 export class VideoTumblingStar {
@@ -13,10 +13,10 @@ export class VideoTumblingStar {
     private texture: THREE.VideoTexture;
     private isPlaying: boolean = false;
     private lastTextureUpdate: number = 0;
-    private readonly TEXTURE_THROTTLE_MS = 33; // ~30fps update - major stall fix
+    private readonly TEXTURE_THROTTLE_MS = 33; // ~30 fps
 
     constructor(scene: THREE.Scene, x: number = 25, y: number = 18, z: number = -35) {
-        // Video element
+        // Create video element
         this.video = document.createElement('video');
         this.video.src = 'https://test.1ink.us/dog-dash/dog_star.mp4';
         this.video.crossOrigin = 'anonymous';
@@ -28,16 +28,16 @@ export class VideoTumblingStar {
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 this.isPlaying = true;
-                console.log('✅ VideoTumblingStar: video playing');
+                console.log('✅ VideoTumblingStar: video active!');
             }).catch(() => {
-                console.log('📹 Video autoplay blocked - tap/click to start');
-                const enableVideo = () => {
+                console.log('Video autoplay blocked — click/tap anywhere to start');
+                const enable = () => {
                     this.video.play().then(() => { this.isPlaying = true; });
-                    document.removeEventListener('click', enableVideo);
-                    document.removeEventListener('touchstart', enableVideo);
+                    document.removeEventListener('click', enable);
+                    document.removeEventListener('touchstart', enable);
                 };
-                document.addEventListener('click', enableVideo, { once: true });
-                document.addEventListener('touchstart', enableVideo, { once: true });
+                document.addEventListener('click', enable, { once: true });
+                document.addEventListener('touchstart', enable, { once: true });
             });
         }
 
@@ -46,7 +46,7 @@ export class VideoTumblingStar {
         this.texture.magFilter = THREE.LinearFilter;
         this.texture.generateMipmaps = false;
 
-        // Create star geometry
+        // 5-pointed star geometry
         const starShape = new THREE.Shape();
         const outerRadius = 7;
         const innerRadius = 3.5;
@@ -61,13 +61,7 @@ export class VideoTumblingStar {
         }
         starShape.closePath();
 
-        const extrudeSettings = { 
-            depth: 2.5, 
-            bevelEnabled: true, 
-            bevelThickness: 0.4, 
-            bevelSize: 0.4, 
-            bevelSegments: 3 
-        };
+        const extrudeSettings = { depth: 2.5, bevelEnabled: true, bevelThickness: 0.4, bevelSize: 0.4, bevelSegments: 3 };
         const geometry = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
         geometry.center();
 
@@ -84,7 +78,7 @@ export class VideoTumblingStar {
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
-        // Light glow layer
+        // Lighter glow layer
         const glowGeo = geometry.clone();
         const glowMat = new THREE.MeshBasicMaterial({
             color: 0xffeeaa,
@@ -92,9 +86,9 @@ export class VideoTumblingStar {
             opacity: 0.12,
             blending: THREE.AdditiveBlending
         });
-        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
-        glowMesh.scale.set(1.15, 1.15, 1.15);
-        this.mesh.add(glowMesh);
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.scale.set(1.15, 1.15, 1.15);
+        this.mesh.add(glow);
 
         scene.add(this.mesh);
         this.lastTextureUpdate = performance.now();
@@ -103,20 +97,21 @@ export class VideoTumblingStar {
     public update(deltaTime: number, camera?: THREE.Camera) {
         if (!this.mesh) return;
 
-        // Tumble + gentle bob
+        // Organic tumble + bob
         this.mesh.rotation.x += deltaTime * 1.1;
         this.mesh.rotation.y += deltaTime * 0.9;
         this.mesh.rotation.z += deltaTime * 0.6;
         this.mesh.position.y += Math.sin(performance.now() / 1200) * 0.015;
 
-        // Distance culling + throttled texture update
-        let shouldUpdate = this.isPlaying;
+        // Distance culling for heavy texture work
+        let shouldUpdateTexture = this.isPlaying;
         if (camera) {
-            const distance = this.mesh.position.distanceTo(camera.position);
-            if (distance > 120) shouldUpdate = false;
+            const dist = this.mesh.position.distanceTo(camera.position);
+            if (dist > 120) shouldUpdateTexture = false;
         }
 
-        if (shouldUpdate) {
+        // Throttled texture update (biggest perf win)
+        if (shouldUpdateTexture) {
             const now = performance.now();
             if (now - this.lastTextureUpdate > this.TEXTURE_THROTTLE_MS) {
                 this.texture.needsUpdate = true;
@@ -128,13 +123,14 @@ export class VideoTumblingStar {
     public dispose(scene: THREE.Scene) {
         if (this.mesh && scene) {
             scene.remove(this.mesh);
-            if (this.mesh.geometry) this.mesh.geometry.dispose();
-            if (this.mesh.material) (this.mesh.material as THREE.Material).dispose();
+            this.mesh.geometry.dispose();
+            (this.mesh.material as THREE.Material).dispose();
             this.mesh = null as any;
         }
         if (this.video) {
             this.video.pause();
             this.video.src = '';
+            this.video.load();
             this.video = null as any;
         }
         if (this.texture) {
