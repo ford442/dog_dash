@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 
 // ============================================================================
-// Video Tumbling Star Asset
-// A 5-pointed star mesh with video texture playing on its surface, tumbling in space
-// Video source: test.1ink.us/dog-dash/dog_star.mp4
+// Video Tumbling Star Asset (OPTIMIZED for performance)
+// - Throttled video texture updates (~30 fps)
+// - Distance-based culling
+// - Lighter glow material
 // ============================================================================
 
 export class VideoTumblingStar {
@@ -11,9 +12,11 @@ export class VideoTumblingStar {
     private video: HTMLVideoElement;
     private texture: THREE.VideoTexture;
     private isPlaying: boolean = false;
+    private lastTextureUpdate: number = 0;
+    private readonly TEXTURE_THROTTLE_MS = 33; // ~30fps update - major stall fix
 
     constructor(scene: THREE.Scene, x: number = 25, y: number = 18, z: number = -35) {
-        // Create video element
+        // Video element
         this.video = document.createElement('video');
         this.video.src = 'https://test.1ink.us/dog-dash/dog_star.mp4';
         this.video.crossOrigin = 'anonymous';
@@ -21,20 +24,15 @@ export class VideoTumblingStar {
         this.video.muted = true;
         this.video.playsInline = true;
 
-        // Attempt autoplay (muted helps)
         const playPromise = this.video.play();
         if (playPromise !== undefined) {
             playPromise.then(() => {
                 this.isPlaying = true;
-                console.log('🎬 Dog Star video texture active and tumbling!');
-            }).catch((error) => {
-                console.log('Video autoplay prevented by browser policy. Click anywhere to enable.');
-                // Fallback: enable on first user interaction
+                console.log('✅ VideoTumblingStar: video playing');
+            }).catch(() => {
+                console.log('📹 Video autoplay blocked - tap/click to start');
                 const enableVideo = () => {
-                    this.video.play().then(() => {
-                        this.isPlaying = true;
-                        console.log('🎥 Video started after user interaction!');
-                    });
+                    this.video.play().then(() => { this.isPlaying = true; });
                     document.removeEventListener('click', enableVideo);
                     document.removeEventListener('touchstart', enableVideo);
                 };
@@ -48,7 +46,7 @@ export class VideoTumblingStar {
         this.texture.magFilter = THREE.LinearFilter;
         this.texture.generateMipmaps = false;
 
-        // Create 5-pointed star shape
+        // Create star geometry
         const starShape = new THREE.Shape();
         const outerRadius = 7;
         const innerRadius = 3.5;
@@ -63,12 +61,12 @@ export class VideoTumblingStar {
         }
         starShape.closePath();
 
-        const extrudeSettings = {
-            depth: 2.5,
-            bevelEnabled: true,
-            bevelThickness: 0.4,
-            bevelSize: 0.4,
-            bevelSegments: 4
+        const extrudeSettings = { 
+            depth: 2.5, 
+            bevelEnabled: true, 
+            bevelThickness: 0.4, 
+            bevelSize: 0.4, 
+            bevelSegments: 3 
         };
         const geometry = new THREE.ExtrudeGeometry(starShape, extrudeSettings);
         geometry.center();
@@ -86,50 +84,57 @@ export class VideoTumblingStar {
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
 
-        // Subtle glow layer for video pop
+        // Light glow layer
         const glowGeo = geometry.clone();
         const glowMat = new THREE.MeshBasicMaterial({
             color: 0xffeeaa,
             transparent: true,
-            opacity: 0.15,
+            opacity: 0.12,
             blending: THREE.AdditiveBlending
         });
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.scale.set(1.15, 1.15, 1.15);
-        this.mesh.add(glow);
+        const glowMesh = new THREE.Mesh(glowGeo, glowMat);
+        glowMesh.scale.set(1.15, 1.15, 1.15);
+        this.mesh.add(glowMesh);
 
         scene.add(this.mesh);
+        this.lastTextureUpdate = performance.now();
     }
 
-    public update(deltaTime: number) {
+    public update(deltaTime: number, camera?: THREE.Camera) {
         if (!this.mesh) return;
 
-        // Tumbling rotation - different speeds per axis for organic tumble
+        // Tumble + gentle bob
         this.mesh.rotation.x += deltaTime * 1.1;
         this.mesh.rotation.y += deltaTime * 0.9;
         this.mesh.rotation.z += deltaTime * 0.6;
-
-        // Gentle floating bob
         this.mesh.position.y += Math.sin(performance.now() / 1200) * 0.015;
 
-        // Refresh video texture
-        if (this.texture && this.isPlaying) {
-            this.texture.needsUpdate = true;
+        // Distance culling + throttled texture update
+        let shouldUpdate = this.isPlaying;
+        if (camera) {
+            const distance = this.mesh.position.distanceTo(camera.position);
+            if (distance > 120) shouldUpdate = false;
+        }
+
+        if (shouldUpdate) {
+            const now = performance.now();
+            if (now - this.lastTextureUpdate > this.TEXTURE_THROTTLE_MS) {
+                this.texture.needsUpdate = true;
+                this.lastTextureUpdate = now;
+            }
         }
     }
 
     public dispose(scene: THREE.Scene) {
         if (this.mesh && scene) {
             scene.remove(this.mesh);
-            this.mesh.geometry.dispose();
-            const mat = this.mesh.material as THREE.Material;
-            if (mat) mat.dispose();
+            if (this.mesh.geometry) this.mesh.geometry.dispose();
+            if (this.mesh.material) (this.mesh.material as THREE.Material).dispose();
             this.mesh = null as any;
         }
         if (this.video) {
             this.video.pause();
             this.video.src = '';
-            this.video.load();
             this.video = null as any;
         }
         if (this.texture) {
