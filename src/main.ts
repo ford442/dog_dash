@@ -937,6 +937,7 @@ const levelManager = new LevelManager({
     getPlayer: () => player,
     industrialGeometryManager,
     planetaryHorizonSystem,
+    ghostDebrisSystem,
     reEntrySystem,
     industrialSystem,
     waterfallSystem,
@@ -2301,8 +2302,6 @@ function animate() {
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
         butterflySwarmSystem.update(delta, camera.position.x, player.position);
     }
-
-    ghostDebrisSystem.update(delta);
 
     // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
     updateShadowQuality();
