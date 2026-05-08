@@ -37,6 +37,7 @@ import {
     castleManager,
     candyManager
 } from './game_systems';
+import { GhostDebrisSystem } from './ghost_debris';
 
 // =============================================================================
 // LEVEL MANAGER
@@ -53,10 +54,12 @@ export class LevelManager {
     cloudSystem: CloudSystem;
     atmosphereSystem: AtmosphereSystem;
     lastPopulatedEndX: number;
+    ghostDebrisSystem: GhostDebrisSystem;
 
-    constructor() {
+    constructor(options: any) {
         this.cloudSystem = new CloudSystem(scene);
         this.atmosphereSystem = new AtmosphereSystem(scene);
+        this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.currentLevel = 1;
         this.config = LEVEL_CONFIG;
 
@@ -155,6 +158,12 @@ export class LevelManager {
             asteroidFieldSystem.deactivate();
         }
 
+        if (cfg.ghostDebrisDensity && cfg.ghostDebrisDensity > 0) {
+            this.ghostDebrisSystem.activate();
+        } else {
+            this.ghostDebrisSystem.deactivate();
+        }
+
         if (levelIndex === 5) {
             // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
@@ -212,6 +221,7 @@ export class LevelManager {
         }
         if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
+        if (this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
@@ -374,4 +384,4 @@ export class LevelManager {
 }
 
 export const industrialGeometryManager = new IndustrialGeometryManager(scene);
-export const levelManager = new LevelManager();
+// levelManager is now instantiated in main.ts

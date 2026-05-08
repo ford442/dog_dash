@@ -20,6 +20,7 @@ export type LevelConfig = {
         liquidMetal?: number;
         magmaHeart?: number;
     };
+    ghostDebrisDensity?: number;
     speed: number;
     bgColor: number;
     skyColors: { top: number, bottom: number };
@@ -62,6 +63,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         name: "The Asteroid Belt",
         distance: 1200,
         asteroidRate: 0.8,
+        ghostDebrisDensity: 100,
         foliageDensity: {
             fern: 10,
             rose: 5,
