@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { WeaponLightManager } from './lighting';
 import {
     MeshStandardNodeMaterial
 } from 'three/webgpu';
@@ -16,6 +17,11 @@ import {
     float,
     step,
     fract
+,
+    loop,
+    positionWorld,
+    length,
+    smoothstep
 } from 'three/tsl';
 
 /**
@@ -24,13 +30,36 @@ import {
  * - Scrolling diagonal stripes (black and yellow)
  * - Metallic roughness
  */
-function createConveyorMaterial(speed: number) {
+function createConveyorMaterial(speed: number, uPlayerPos: any, weaponLights: any) {
     const mat = new MeshStandardNodeMaterial({
         color: 0x888888,
         roughness: 0.7,
         metalness: 0.6,
         side: THREE.FrontSide
     });
+
+    // --- Dynamic Lighting (Player Glow & Weapon Lights) ---
+    const uInteractionRadius = uniform(30.0);
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const playerGlowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844)); // Orange engine glow
+
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+        const distToLight = length(positionWorld.sub(lightPos));
+        const wGlow = smoothstep(50.0, 0.0, distToLight).mul(lightIntensity);
+        weaponGlow.addAssign(wGlow);
+    });
+
+    const dynamicLighting = uPlayerGlowColor.mul(playerGlowIntensity.mul(0.5)).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+
+    // Pass uniforms to userData so they can be updated
+    mat.userData.uPlayerPos = uPlayerPos;
+
 
     const uTime = time;
     const uSpeed = uniform(speed);
@@ -55,7 +84,7 @@ function createConveyorMaterial(speed: number) {
     const emissiveStripe = color(0x332200);
 
     mat.colorNode = vec4(mix(colorBase, colorStripe, stripe), 1.0);
-    mat.emissiveNode = mix(emissiveBase, emissiveStripe, stripe);
+    mat.emissiveNode = mix(emissiveBase, emissiveStripe, stripe).add(dynamicLighting);
 
     return mat;
 }
@@ -66,12 +95,35 @@ function createConveyorMaterial(speed: number) {
  * - Base dark metal pipe
  * - Glowing core that pulses with sine wave
  */
-function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number, pulseSpeed: number) {
+function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number, pulseSpeed: number, uPlayerPos: any, weaponLights: any) {
     const mat = new MeshStandardNodeMaterial({
         color: baseColorHex,
         roughness: 0.4,
         metalness: 0.9,
     });
+
+    // --- Dynamic Lighting (Player Glow & Weapon Lights) ---
+    const uInteractionRadius = uniform(30.0);
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const playerGlowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844)); // Orange engine glow
+
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+        const distToLight = length(positionWorld.sub(lightPos));
+        const wGlow = smoothstep(50.0, 0.0, distToLight).mul(lightIntensity);
+        weaponGlow.addAssign(wGlow);
+    });
+
+    const dynamicLighting = uPlayerGlowColor.mul(playerGlowIntensity.mul(0.5)).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+
+    // Pass uniforms to userData so they can be updated
+    mat.userData.uPlayerPos = uPlayerPos;
+
 
     const uTime = time;
     const vUv = uv();
@@ -96,7 +148,7 @@ function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number
     // stripe = step(0.8, fract(vUv.x * 4.0)) ...
 
     // Let's just make the whole pipe pulse for now as "energy conduit"
-    mat.emissiveNode = glowColor.mul(flow).mul(pulse).mul(2.0); // Intense glow
+    mat.emissiveNode = glowColor.mul(flow).mul(pulse).mul(2.0).add(dynamicLighting);
 
     return mat;
 }
@@ -150,12 +202,35 @@ function createPistonGeometry(radius: number, height: number) {
 /**
  * Creates a rusty mechanical material using TSL.
  */
-function createMechanismMaterial(colorHex: number) {
+function createMechanismMaterial(colorHex: number, uPlayerPos: any, weaponLights: any) {
     const mat = new MeshStandardNodeMaterial({
         color: colorHex,
         roughness: 0.8,
         metalness: 0.6
     });
+
+    // --- Dynamic Lighting (Player Glow & Weapon Lights) ---
+    const uInteractionRadius = uniform(30.0);
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const playerGlowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844)); // Orange engine glow
+
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+        const distToLight = length(positionWorld.sub(lightPos));
+        const wGlow = smoothstep(50.0, 0.0, distToLight).mul(lightIntensity);
+        weaponGlow.addAssign(wGlow);
+    });
+
+    const dynamicLighting = uPlayerGlowColor.mul(playerGlowIntensity.mul(0.5)).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+
+    // Pass uniforms to userData so they can be updated
+    mat.userData.uPlayerPos = uPlayerPos;
+
 
     // Add rust/noise pattern using TSL
     const uTime = time;
@@ -168,7 +243,7 @@ function createMechanismMaterial(colorHex: number) {
     const rustColor = color(0x8b4513); // SaddleBrown
 
     mat.colorNode = vec4(mix(baseColor, rustColor, noise.mul(0.3)), 1.0);
-
+    mat.emissiveNode = dynamicLighting;
     return mat;
 }
 
@@ -179,17 +254,75 @@ function createMechanismMaterial(colorHex: number) {
  * - High roughness (rusty/dusty)
  * - Slight rim light via metalness? Or just dark.
  */
-function createForegroundMaterial() {
-    return new THREE.MeshStandardMaterial({
+function createForegroundMaterial(uPlayerPos: any, weaponLights: any) {
+    const mat = new MeshStandardNodeMaterial({
         color: 0x1a1a1a,
         roughness: 0.9,
         metalness: 0.2,
     });
+
+    // --- Dynamic Lighting (Player Glow & Weapon Lights) ---
+    const uInteractionRadius = uniform(30.0);
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const playerGlowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844)); // Orange engine glow
+
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+        const distToLight = length(positionWorld.sub(lightPos));
+        const wGlow = smoothstep(50.0, 0.0, distToLight).mul(lightIntensity);
+        weaponGlow.addAssign(wGlow);
+    });
+
+    const dynamicLighting = uPlayerGlowColor.mul(playerGlowIntensity.mul(0.5)).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+
+    // Pass uniforms to userData so they can be updated
+    mat.userData.uPlayerPos = uPlayerPos;
+
+    mat.emissiveNode = dynamicLighting;
+    return mat;
 }
 
 /**
  * Manages a layer of industrial background elements using InstancedMesh.
  */
+function createSimpleIndustrialMaterial(colorHex: number, r: number, m: number, uPlayerPos: any, weaponLights: any) {
+    const mat = new MeshStandardNodeMaterial({
+        color: colorHex,
+        roughness: r,
+        metalness: m
+    });
+
+    // --- Dynamic Lighting (Player Glow & Weapon Lights) ---
+    const uInteractionRadius = uniform(30.0);
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const playerGlowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844)); // Orange engine glow
+
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+        const distToLight = length(positionWorld.sub(lightPos));
+        const wGlow = smoothstep(50.0, 0.0, distToLight).mul(lightIntensity);
+        weaponGlow.addAssign(wGlow);
+    });
+
+    const dynamicLighting = uPlayerGlowColor.mul(playerGlowIntensity.mul(0.5)).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+
+    // Pass uniforms to userData so they can be updated
+    mat.userData.uPlayerPos = uPlayerPos;
+
+    mat.emissiveNode = dynamicLighting;
+    return mat;
+}
+
 export class IndustrialLayer {
     mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
@@ -450,13 +583,36 @@ export class AnimatedMechanismLayer {
     }
 }
 
-function createTunnelMaterial(speed: number) {
+function createTunnelMaterial(speed: number, uPlayerPos: any, weaponLights: any) {
     const mat = new MeshStandardNodeMaterial({
         color: 0x332211,
         roughness: 0.8,
         metalness: 0.5,
         side: THREE.BackSide // Render inside of cylinder
     });
+
+    // --- Dynamic Lighting (Player Glow & Weapon Lights) ---
+    const uInteractionRadius = uniform(30.0);
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const playerGlowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844)); // Orange engine glow
+
+    const weaponGlow = float(0.0).toVar();
+    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
+    loop({ start: 0, end: 20 }, ({ i }) => {
+        const lightData = weaponLights.element(i);
+        const lightPos = lightData.xyz;
+        const lightIntensity = lightData.w;
+        const distToLight = length(positionWorld.sub(lightPos));
+        const wGlow = smoothstep(50.0, 0.0, distToLight).mul(lightIntensity);
+        weaponGlow.addAssign(wGlow);
+    });
+
+    const dynamicLighting = uPlayerGlowColor.mul(playerGlowIntensity.mul(0.5)).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+
+    // Pass uniforms to userData so they can be updated
+    mat.userData.uPlayerPos = uPlayerPos;
+
 
     const uTime = time;
     const uCameraX = uniform(0.0);
@@ -497,7 +653,7 @@ function createTunnelMaterial(speed: number) {
     mat.colorNode = vec4(mix(wallColor, gridColor, grid), 1.0);
 
     // Emissive lights
-    mat.emissiveNode = mix(color(0x000000), lightColor.mul(pulse), isLight.mul(float(1.0).sub(grid)));
+    mat.emissiveNode = mix(color(0x000000), lightColor.mul(pulse), isLight.mul(float(1.0).sub(grid))).add(dynamicLighting);
 
     mat.userData.uCameraX = uCameraX;
 
@@ -507,13 +663,13 @@ function createTunnelMaterial(speed: number) {
 export class TunnelLayer {
     mesh: THREE.Mesh;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, uPlayerPos: any, weaponLights: any) {
         // Radius 60, Length 300, Open-ended
         const geo = new THREE.CylinderGeometry(60, 60, 300, 32, 1, true);
         // Rotate so length is along X axis
         geo.rotateZ(Math.PI / 2);
 
-        const mat = createTunnelMaterial(0);
+        const mat = createTunnelMaterial(0, uPlayerPos, weaponLights);
         this.mesh = new THREE.Mesh(geo, mat);
         // Put it far behind
         this.mesh.renderOrder = -10;
@@ -540,20 +696,24 @@ export class IndustrialBackgroundSystem {
     tunnel!: TunnelLayer;
     active: boolean = false;
     elapsedTime: number = 0;
+    uPlayerPos: any;
 
-    constructor(scene: THREE.Scene) {
+    weaponLightManager: WeaponLightManager;
+    constructor(scene: THREE.Scene, weaponLightManager: WeaponLightManager) {
         this.scene = scene;
+        this.weaponLightManager = weaponLightManager;
+        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
         this.initLayers();
     }
 
     initLayers() {
         // Tunnel Wall (Vast Background)
-        this.tunnel = new TunnelLayer(this.scene);
+        this.tunnel = new TunnelLayer(this.scene, this.uPlayerPos, this.weaponLightManager.storageNode);
 
         // Layer 1: Deep Background Pipes (Dark, massive)
         // Position: Z = -40, moving parallax
         const pipeGeo = new THREE.CylinderGeometry(2, 2, 40, 16); // Long pipes
-        const pipeMat = createPulsingConduitMaterial(0x111122, 0x0044ff, 2.0); // Blue pulse
+        const pipeMat = createPulsingConduitMaterial(0x111122, 0x0044ff, 2.0, this.uPlayerPos, this.weaponLightManager.storageNode); // Blue pulse
 
         this.layers.push(new IndustrialLayer(this.scene, pipeGeo, pipeMat, {
             count: 20,
@@ -569,7 +729,7 @@ export class IndustrialBackgroundSystem {
         // Layer 2: Mid-ground Conveyor Belts / Structs
         // Position: Z = -20
         const beltGeo = new THREE.BoxGeometry(10, 1, 2); // Flat belt segments
-        const beltMat = createConveyorMaterial(5.0); // Fast moving stripes
+        const beltMat = createConveyorMaterial(5.0, this.uPlayerPos, this.weaponLightManager.storageNode); // Fast moving stripes
 
         this.layers.push(new IndustrialLayer(this.scene, beltGeo, beltMat, {
             count: 30,
@@ -585,7 +745,7 @@ export class IndustrialBackgroundSystem {
         // New Layer: Background Pistons (Animated)
         // Position: Z = -15
         const pistonGeo = createPistonGeometry(1.5, 8);
-        const pistonMat = createMechanismMaterial(0x555555);
+        const pistonMat = createMechanismMaterial(0x555555, this.uPlayerPos, this.weaponLightManager.storageNode);
 
         this.layers.push(new AnimatedMechanismLayer(this.scene, pistonGeo, pistonMat, {
             count: 12,
@@ -601,11 +761,7 @@ export class IndustrialBackgroundSystem {
         // Layer 3: Vertical Support Ribs (Background wall details)
         // Position: Z = -12
         const ribGeo = new THREE.BoxGeometry(2, 40, 2);
-        const ribMat = new THREE.MeshStandardMaterial({
-            color: 0x443322,
-            roughness: 0.9,
-            metalness: 0.5
-        });
+        const ribMat = createSimpleIndustrialMaterial(0x443322, 0.9, 0.5, this.uPlayerPos, this.weaponLightManager.storageNode);
 
         this.layers.push(new IndustrialLayer(this.scene, ribGeo, ribMat, {
             count: 15,
@@ -621,7 +777,7 @@ export class IndustrialBackgroundSystem {
         // New Layer: Foreground Gears (Animated, Occlusion)
         // Position: Z = 10 (Passes in front of player)
         const gearGeo = createGearGeometry(3, 12, 0.5);
-        const gearMat = createMechanismMaterial(0x885533); // Rusty copper/bronze
+        const gearMat = createMechanismMaterial(0x885533, this.uPlayerPos, this.weaponLightManager.storageNode); // Rusty copper/bronze
 
         this.layers.push(new AnimatedMechanismLayer(this.scene, gearGeo, gearMat, {
             count: 6,
@@ -638,7 +794,7 @@ export class IndustrialBackgroundSystem {
         // Position: Z = 8 (In front of player at Z=0)
         // Large, dark, imposing vertical structures
         const fgPillarGeo = new THREE.BoxGeometry(3, 50, 3);
-        const fgMat = createForegroundMaterial();
+        const fgMat = createForegroundMaterial(this.uPlayerPos, this.weaponLightManager.storageNode);
 
         this.layers.push(new IndustrialLayer(this.scene, fgPillarGeo, fgMat, {
             count: 5, // Sparse
@@ -654,10 +810,7 @@ export class IndustrialBackgroundSystem {
         // Layer 5: Foreground Cables (Hanging)
         // Position: Z = 6
         const cableGeo = new THREE.CylinderGeometry(0.2, 0.2, 30, 8);
-        const cableMat = new THREE.MeshStandardMaterial({
-            color: 0x000000,
-            roughness: 0.8
-        });
+        const cableMat = createSimpleIndustrialMaterial(0x000000, 0.8, 0.0, this.uPlayerPos, this.weaponLightManager.storageNode);
 
         this.layers.push(new IndustrialLayer(this.scene, cableGeo, cableMat, {
             count: 8,
@@ -685,7 +838,8 @@ export class IndustrialBackgroundSystem {
         this.layers.forEach(l => l.mesh.visible = false);
     }
 
-    update(cameraX: number, delta: number = 0.016) {
+    update(cameraX: number, delta: number = 0.016, playerPos?: THREE.Vector3) {
+        if (playerPos) this.uPlayerPos.value.copy(playerPos);
         if (!this.active) return;
         this.elapsedTime += delta;
 

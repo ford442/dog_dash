@@ -525,7 +525,7 @@ const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
 const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
 
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
-const industrialSystem = new IndustrialBackgroundSystem(scene);
+const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 const nebulaSystem = new NebulaSystem(scene, weaponLightManager);

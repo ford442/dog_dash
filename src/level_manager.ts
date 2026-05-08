@@ -202,7 +202,7 @@ export class LevelManager {
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
         this.cloudSystem.update(delta, cameraX, speed);
         waterfallSystem.update(cameraX, delta);
-        industrialSystem.update(cameraX, delta);
+        industrialSystem.update(cameraX, delta, player ? player.position : undefined);
         biologicalSystem.update(delta, cameraX);
         // Pass player position to NebulaSystem for interactive lighting
         nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
