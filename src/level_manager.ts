@@ -169,10 +169,14 @@ export class LevelManager {
             biologicalSystem.activate();
             nebulaSystem.activate();
             cosmicDustSystem.activate();
+            this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
             biologicalSystem.deactivate();
             nebulaSystem.deactivate();
             cosmicDustSystem.deactivate();
+            if (levelIndex !== 4) {
+                this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
+            }
         }
 
         // SWARM #3: Generate Magical Dreamy Environments (for levels 1-3 and 6-7)
