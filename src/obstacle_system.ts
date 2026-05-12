@@ -314,7 +314,23 @@ export class ObstacleSystem {
 
     splitAsteroid(asteroid: THREE.Mesh) {
         this.options.debrisSystem.emit(asteroid.position, 8, 5.0, asteroid.userData.radius);
+
         const r = asteroid.userData.radius;
+
+        // Waterfall splash interaction
+        if (this.options.getCurrentLevel() === 6) {
+            // Trigger actual water splash system
+            this.options.waterfallSystem.triggerSplash(asteroid.position, 10 + r * 15);
+
+            // Add extra cyan/white particle burst for big splashes
+            if (r > 1.2) {
+                this.options.particleSystem.emit(asteroid.position.clone(), 0x00ffff, 15, 8.0, 1.0, 1.5);
+                this.options.particleSystem.emit(asteroid.position.clone(), 0xffffff, 10, 6.0, 0.8, 1.0);
+            } else {
+                this.options.particleSystem.emit(asteroid.position.clone(), 0x88ccff, 8, 5.0, 0.8, 1.0);
+            }
+        }
+
         if (r > 0.8) {
             const count = 2 + Math.floor(Math.random() * 2);
             for (let i = 0; i < count; i++) {
