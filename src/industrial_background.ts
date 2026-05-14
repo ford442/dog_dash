@@ -774,6 +774,23 @@ export class IndustrialBackgroundSystem {
             rotationMode: 'vertical'
         }));
 
+
+        // New Layer: Foreground Pistons (Animated, Occlusion)
+        // Position: Z = 12 (Passes in front of player)
+        const fgPistonGeo = createPistonGeometry(2.0, 15);
+        const fgPistonMat = createMechanismMaterial(0x666666, this.uPlayerPos, this.weaponLightManager.storageNode);
+
+        this.layers.push(new AnimatedMechanismLayer(this.scene, fgPistonGeo, fgPistonMat, {
+            count: 6,
+            z: 12,
+            zRange: 2,
+            width: 150,
+            yRange: 25,
+            scaleMin: 1.0,
+            scaleMax: 1.5,
+            animationType: 'piston'
+        }));
+
         // New Layer: Foreground Gears (Animated, Occlusion)
         // Position: Z = 10 (Passes in front of player)
         const gearGeo = createGearGeometry(3, 12, 0.5);
