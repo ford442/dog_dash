@@ -2196,6 +2196,11 @@ function animate() {
         // SWARM #3: Update magical effects (rainbow trails, butterflies, etc.)
         effectManager.update(delta);
         
+        // Pass magic state to Nebula
+        const isMagicActive = effectManager.hasEffect(MagicalEffectType.RAINBOW_TRAIL) ||
+                              effectManager.hasEffect(MagicalEffectType.HEART_BUBBLE);
+        nebulaSystem.setMagicActive(isMagicActive);
+
         // SWARM #4: Update victory and tutorial systems
         victorySystem.update(delta);
         tutorialSystem.update(delta);
