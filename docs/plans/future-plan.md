@@ -84,3 +84,12 @@ The water isn't just a background; it's an animated environment that reacts to y
 - The player's exhaust and weapons cast a subtle glow on nearby nebula clouds, creating a dynamic interplay of light
 
 These scenarios demonstrate how technical limitations were overcome with artistic creativity, turning simple sprite manipulation into unforgettable visual experiences.
+
+8. Dynamic Volumetric God Rays
+
+**The Technique:** Volumetric light shafts are implemented using an InstancedMesh with layered soft quads. TSL materials provide procedural drifting animation (swaying and pulsing), while intensity smoothly reacts to the player's dashing speed and current level density.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with Custom `MeshBasicNodeMaterial`
+- Additive blending (`THREE.AdditiveBlending`) with depthWrite disabled.
+- Active primarily in cloudy levels (Levels 1 and 2) and nebulous environments (Level 5) with varying color and density parameters.

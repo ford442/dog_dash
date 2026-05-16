@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
 import { GhostDebrisSystem } from './ghost_debris';
+import { godRaySystem } from './game_systems';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
 import { 
@@ -938,6 +939,7 @@ const levelManager = new LevelManager({
     industrialGeometryManager,
     planetaryHorizonSystem,
     ghostDebrisSystem,
+    godRaySystem,
     reEntrySystem,
     industrialSystem,
     waterfallSystem,
