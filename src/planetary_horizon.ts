@@ -293,6 +293,9 @@ export class PlanetaryHorizonSystem {
     atmosphere: THREE.Mesh;
     bgStars: THREE.Points;
 
+    // Level Config
+    levelDistance: number = 2200;
+
     // Parallax Config
     // Planet moves with camera X (Horizon)
     // BgStars move at 95% camera speed (creating "Deep Space" depth where they drift slowly)
@@ -410,5 +413,21 @@ export class PlanetaryHorizonSystem {
         // Rotating the mesh slightly adds 3D curvature feel at the poles
         this.planet.rotation.z += 0.005 * delta;
         this.clouds.rotation.z += 0.008 * delta; // Differential rotation
+
+        // 4. Approach Scaling
+        // Scale the planet as we move along X to simulate approaching it.
+        // We use a dynamic distance value based on the level configuration if available, otherwise fallback.
+        const levelDistance = this.levelDistance || 2200;
+        const distanceToPlanet = Math.max(0, levelDistance - cameraX);
+        // Map distance levelDistance -> 0 to scale 1.0 -> 1.5
+        let approachScale = 1.0 + Math.max(0, (levelDistance - distanceToPlanet) / levelDistance) * 0.5;
+        this.planet.scale.setScalar(approachScale);
+        this.clouds.scale.setScalar(approachScale);
+        this.atmosphere.scale.setScalar(approachScale);
+        // Move the planet up slightly as it gets closer
+        const baseY = -405;
+        this.planet.position.y = baseY + (approachScale - 1.0) * 50;
+        this.clouds.position.y = this.planet.position.y;
+        this.atmosphere.position.y = this.planet.position.y;
     }
 }

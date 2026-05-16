@@ -138,6 +138,7 @@ export class LevelManager {
 
         if (levelIndex === 3) {
             // Activate Planetary Horizon in Level 3
+            planetaryHorizonSystem.levelDistance = cfg.distance;
             planetaryHorizonSystem.activate();
             // Activate Re-Entry Heat in Level 3 "Orbital Descent"
             reEntrySystem.activate();
