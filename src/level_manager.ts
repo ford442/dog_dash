@@ -39,6 +39,7 @@ import {
 } from './game_systems';
 import { GodRaySystem } from './godrays';
 import { GhostDebrisSystem } from './ghost_debris';
+import { DebugSystem } from './debug_system';
 
 // =============================================================================
 // LEVEL MANAGER
@@ -57,12 +58,14 @@ export class LevelManager {
     lastPopulatedEndX: number;
     godRaySystem: GodRaySystem;
     ghostDebrisSystem: GhostDebrisSystem;
+    debugSystem?: DebugSystem;
 
     constructor(options: any) {
         this.cloudSystem = new CloudSystem(scene);
         this.atmosphereSystem = new AtmosphereSystem(scene);
         this.godRaySystem = options.godRaySystem;
         this.ghostDebrisSystem = options.ghostDebrisSystem;
+        this.debugSystem = options.debugSystem;
         this.currentLevel = 1;
         this.config = LEVEL_CONFIG;
 
@@ -223,19 +226,23 @@ export class LevelManager {
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
         this.cloudSystem.update(delta, cameraX, speed);
-        waterfallSystem.update(cameraX, delta);
-        industrialSystem.update(cameraX, delta, player ? player.position : undefined);
-        biologicalSystem.update(delta, cameraX);
+
+        const dbg = this.debugSystem;
+        const enabled = (name: string) => !dbg || dbg.isEnabled(name);
+
+        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta);
+        if (enabled('industrialBg')) industrialSystem.update(cameraX, delta, player ? player.position : undefined);
+        if (enabled('biological')) biologicalSystem.update(delta, cameraX);
         // Pass player position to NebulaSystem for interactive lighting
-        nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
-        cosmicDustSystem.update(delta, cameraX, player ? player.position : undefined);
+        if (enabled('nebula')) nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
+        if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, player ? player.position : undefined);
         if (this.currentLevel === 5) {
             // nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
         }
-        if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
-        if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
-        if (this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
-        if (this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed);
+        if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
+        if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
+        if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
+        if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed);
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {

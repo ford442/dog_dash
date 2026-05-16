@@ -92,6 +92,7 @@ import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
 import { ButterflySwarmSystem } from './butterfly_swarm';
 import { LevelManager } from './level_manager';
+import { DebugSystem } from './debug_system';
 import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
 
@@ -734,6 +735,34 @@ if (shouldShowTutorial(saveManager)) {
     });
 }
 
+// DEBUG SYSTEM
+const debugSystem = new DebugSystem();
+debugSystem.register('particles', 'Particles', true);
+debugSystem.register('debris', 'Debris', true);
+debugSystem.register('weaponLights', 'Weapon Lights', true);
+debugSystem.register('reEntry', 'Re-Entry Effects', true);
+debugSystem.register('butterflySwarm', 'Butterfly Swarm', true);
+debugSystem.register('starfield', 'Starfield', true);
+debugSystem.register('magicalEffects', 'Magical Effects', true);
+debugSystem.register('spaceFriends', 'Space Friends', true);
+debugSystem.register('geologicalObjects', 'Geological Objects', true);
+debugSystem.register('industrialGeo', 'Industrial Geometry', true);
+debugSystem.register('moonEffects', 'Moon / Galaxy Effects', true);
+debugSystem.register('pilotAnim', 'Pilot Animation', true);
+debugSystem.register('flowerConstellations', 'Flower Constellations', true);
+debugSystem.register('candyBelt', 'Candy Belt', true);
+debugSystem.register('cloudCastles', 'Cloud Castles', true);
+debugSystem.register('shadows', 'Shadows', true);
+debugSystem.register('nebula', 'Nebula', true);
+debugSystem.register('cosmicDust', 'Cosmic Dust', true);
+debugSystem.register('biological', 'Biological Background', true);
+debugSystem.register('industrialBg', 'Industrial Background', true);
+debugSystem.register('waterfall', 'Waterfall', true);
+debugSystem.register('asteroidField', 'Asteroid Field', true);
+debugSystem.register('planetaryHorizon', 'Planetary Horizon', true);
+debugSystem.register('ghostDebris', 'Ghost Debris', true);
+debugSystem.register('godRays', 'God Rays', true);
+
 let isGamePaused = false;
 
 // =============================================================================
@@ -951,6 +980,7 @@ const levelManager = new LevelManager({
     flowerManager,
     castleManager,
     candyManager,
+    debugSystem,
     creators: {
         createStarDustFern,
         createNebulaRose,
@@ -1918,6 +1948,9 @@ function animate() {
     const delta = juiceManager.update(rawDelta);
     const time = clock.getElapsedTime(); // For foliage animation and time-based motion
 
+    // --- Debug System ---
+    debugSystem.update(rawDelta);
+
     // --- FPS Tracking & Dynamic Pixel Ratio ---
     fpsFrameCount++;
     fpsElapsedTime += rawDelta;
@@ -1948,6 +1981,13 @@ function animate() {
             fpsLowDuration = 0;
             fpsHighDuration = 0;
         }
+    }
+
+    // --- Debug Shadow Toggle ---
+    const shadowsOn = debugSystem.isEnabled('shadows');
+    if (mainLight.castShadow !== shadowsOn) {
+        mainLight.castShadow = shadowsOn;
+        renderer.shadowMap.enabled = shadowsOn;
     }
     
     if (isGamePaused) {
@@ -2100,7 +2140,9 @@ function animate() {
         // --- MAGICAL SYSTEMS (from swarm) ---
         // Update starfield with speed multiplier
         const speedMultiplier = 1 + Math.abs(playerState.currentSpeedY) / 20;
-        starfield.update(delta, speedMultiplier);
+        if (debugSystem.isEnabled('starfield')) {
+            starfield.update(delta, speedMultiplier);
+        }
         
         // Update orb manager and check collection
         orbManager.update(delta, time);
@@ -2196,7 +2238,9 @@ function animate() {
         }
 
         // SWARM #3: Update magical effects (rainbow trails, butterflies, etc.)
-        effectManager.update(delta);
+        if (debugSystem.isEnabled('magicalEffects')) {
+            effectManager.update(delta);
+        }
         
         // Pass magic state to Nebula
         const isMagicActive = effectManager.hasEffect(MagicalEffectType.RAINBOW_TRAIL) ||
@@ -2215,9 +2259,11 @@ function animate() {
         }
         
         // Update space friends and spawn new ones
-        friendsManager.update(delta, player.position);
-        friendsManager.maybeSpawnFriends(player.position.x);
-        friendsManager.cleanupFarFriends(player.position.x);
+        if (debugSystem.isEnabled('spaceFriends')) {
+            friendsManager.update(delta, player.position);
+            friendsManager.maybeSpawnFriends(player.position.x);
+            friendsManager.cleanupFarFriends(player.position.x);
+        }
         
         // Update dog cockpit animation
         dogController.update(delta, playerState);
@@ -2227,13 +2273,19 @@ function animate() {
     hudManager.update(delta);
 
     // --- NEW: Update Particles (engine trails & explosions)
-    particleSystem.update(delta);
-    debrisSystem.update(delta);
+    if (debugSystem.isEnabled('particles')) {
+        particleSystem.update(delta);
+    }
+    if (debugSystem.isEnabled('debris')) {
+        debrisSystem.update(delta);
+    }
 
     // Update Weapon System
     if (player) {
         weaponSystem.update(delta, camera.position.x);
-        weaponLightManager.update(weaponSystem.getActiveProjectiles());
+        if (debugSystem.isEnabled('weaponLights')) {
+            weaponLightManager.update(weaponSystem.getActiveProjectiles());
+        }
 
         // Projectile Collisions
         const projectiles = weaponSystem.getActiveProjectiles();
@@ -2300,14 +2352,16 @@ function animate() {
     }
 
     // Update Re-Entry System
-    if (player) {
+    if (player && debugSystem.isEnabled('reEntry')) {
         reEntrySystem.update(delta, camera.position.x, camera.position.y, player);
     }
 
     // Update Level Manager (and Clouds)
     if (player) {
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
-        butterflySwarmSystem.update(delta, camera.position.x, player.position);
+        if (debugSystem.isEnabled('butterflySwarm')) {
+            butterflySwarmSystem.update(delta, camera.position.x, player.position);
+        }
     }
 
     // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
@@ -2328,242 +2382,256 @@ function animate() {
     juiceManager.updateCameraBasePosition(camera.position);
     
     // --- NEW: Update Geological Objects ---
-    // Update spore clouds (brownian motion)
-    sporeClouds.forEach(cloud => cloud.update(delta));
+    if (debugSystem.isEnabled('geologicalObjects')) {
+        // Update spore clouds (brownian motion)
+        sporeClouds.forEach(cloud => cloud.update(delta));
 
-    // Update chroma-shift rocks (color animation)
-    chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta, time));
+        // Update chroma-shift rocks (color animation)
+        chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta, time));
 
-    // Update geodes (EM field pulse)
-    geodes.forEach(geode => updateGeode(geode, delta, time));
+        // Update geodes (EM field pulse)
+        geodes.forEach(geode => updateGeode(geode, delta, time));
 
-    // Update nebula jelly-moss (pulsing and drifting)
-    // Use reverse loop so we can remove items safely
-    for (let i = jellyMosses.length - 1; i >= 0; i--) {
-        const jellyMoss = jellyMosses[i];
-        updateNebulaJellyMoss(jellyMoss, delta, time);
+        // Update nebula jelly-moss (pulsing and drifting)
+        // Use reverse loop so we can remove items safely
+        for (let i = jellyMosses.length - 1; i >= 0; i--) {
+            const jellyMoss = jellyMosses[i];
+            updateNebulaJellyMoss(jellyMoss, delta, time);
 
-        // --- NEW: Jelly Moss Interaction (Stealth, Shield & Overload) ---
-        if (player && jellyMoss.visible && jellyMoss.userData.radius) {
-            const dist = player.position.distanceTo(jellyMoss.position);
-            const radius = jellyMoss.userData.radius;
+            // --- NEW: Jelly Moss Interaction (Stealth, Shield & Overload) ---
+            if (player && jellyMoss.visible && jellyMoss.userData.radius) {
+                const dist = player.position.distanceTo(jellyMoss.position);
+                const radius = jellyMoss.userData.radius;
 
-            // Player inside membrane?
-            if (dist < radius) {
-                // 1. Viscosity
-                playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
+                // Player inside membrane?
+                if (dist < radius) {
+                    // 1. Viscosity
+                    playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
 
-                // 2. Stealth Effect
-                if (!jellyMoss.userData.isHiding) {
-                    jellyMoss.userData.isHiding = true;
-                    const rocket = player.children[0];
-                    if (rocket) {
-                         rocket.traverse((child: any) => {
-                             if (child.isMesh && child.material) {
-                                 if (child.userData.originalOpacity === undefined) {
-                                     child.userData.originalOpacity = child.material.opacity;
-                                     child.userData.originalTransparent = child.material.transparent;
+                    // 2. Stealth Effect
+                    if (!jellyMoss.userData.isHiding) {
+                        jellyMoss.userData.isHiding = true;
+                        const rocket = player.children[0];
+                        if (rocket) {
+                             rocket.traverse((child: any) => {
+                                 if (child.isMesh && child.material) {
+                                     if (child.userData.originalOpacity === undefined) {
+                                         child.userData.originalOpacity = child.material.opacity;
+                                         child.userData.originalTransparent = child.material.transparent;
+                                     }
+                                     child.material.transparent = true;
+                                     child.material.opacity = 0.4;
                                  }
-                                 child.material.transparent = true;
-                                 child.material.opacity = 0.4;
-                             }
-                         });
+                             });
+                        }
                     }
-                }
 
-                // 3. Shield Leech & Overload
-                const normDist = dist / radius;
-                const leechIntensity = THREE.MathUtils.lerp(1.0, 0.0, normDist);
+                    // 3. Shield Leech & Overload
+                    const normDist = dist / radius;
+                    const leechIntensity = THREE.MathUtils.lerp(1.0, 0.0, normDist);
 
-                // Build Overload! (Destruction Mechanic)
-                // Rate: 0.5 per second (takes ~2 seconds to explode)
-                jellyMoss.userData.overloadValue = (jellyMoss.userData.overloadValue || 0) + delta * 0.5;
+                    // Build Overload! (Destruction Mechanic)
+                    // Rate: 0.5 per second (takes ~2 seconds to explode)
+                    jellyMoss.userData.overloadValue = (jellyMoss.userData.overloadValue || 0) + delta * 0.5;
 
-                // Update Shader Uniform
-                const mat = jellyMoss.material as any;
-                if (mat.userData && mat.userData.uOverload) {
-                    mat.userData.uOverload.value = Math.min(1.0, jellyMoss.userData.overloadValue);
-                }
-
-                // Check for Explosion
-                if (jellyMoss.userData.overloadValue >= 1.0) {
-                    // BOOM
-                    destroyNebulaJellyMoss(jellyMoss, scene, particleSystem);
-
-                    // Remove from list
-                    jellyMosses.splice(i, 1);
-
-                    // Restore player state immediately (exit stealth)
-                    const rocket = player.children[0];
-                    if (rocket) {
-                         rocket.traverse((child: any) => {
-                             if (child.isMesh && child.material) {
-                                 if (child.userData.originalOpacity !== undefined) {
-                                     child.material.opacity = child.userData.originalOpacity;
-                                     child.material.transparent = child.userData.originalTransparent;
-                                 } else {
-                                     child.material.opacity = 1.0;
-                                     child.material.transparent = false;
-                                 }
-                             }
-                         });
-                    }
-                    continue; // Skip next logic
-                }
-
-                // Visual damage effect (red tint pulse)
-                if (Math.random() < 0.05 * leechIntensity) {
-                    const rocket = player.children[0];
-                    if (rocket) {
-                        rocket.traverse((child: any) => {
-                            if (child.isMesh && child.material) {
-                                const childMat = child.material as any;
-                                if (childMat.emissive) {
-                                    const oldEmissive = childMat.emissive.getHex();
-                                    childMat.emissive.setHex(0xff0000);
-                                    setTimeout(() => {
-                                        if(childMat) childMat.emissive.setHex(oldEmissive);
-                                    }, 100);
-                                }
-                            }
-                        });
-                    }
-                }
-
-            } else {
-                // Exit Stealth / Decay Overload
-                if (jellyMoss.userData.isHiding) {
-                    jellyMoss.userData.isHiding = false;
-                    const rocket = player.children[0];
-                    if (rocket) {
-                         rocket.traverse((child: any) => {
-                             if (child.isMesh && child.material) {
-                                 if (child.userData.originalOpacity !== undefined) {
-                                     child.material.opacity = child.userData.originalOpacity;
-                                     child.material.transparent = child.userData.originalTransparent;
-                                 } else {
-                                     child.material.opacity = 1.0;
-                                     child.material.transparent = false;
-                                 }
-                             }
-                         });
-                    }
-                }
-
-                // Decay overload if player leaves
-                if (jellyMoss.userData.overloadValue > 0) {
-                    jellyMoss.userData.overloadValue = Math.max(0, jellyMoss.userData.overloadValue - delta * 0.5);
+                    // Update Shader Uniform
                     const mat = jellyMoss.material as any;
                     if (mat.userData && mat.userData.uOverload) {
-                        mat.userData.uOverload.value = jellyMoss.userData.overloadValue;
+                        mat.userData.uOverload.value = Math.min(1.0, jellyMoss.userData.overloadValue);
+                    }
+
+                    // Check for Explosion
+                    if (jellyMoss.userData.overloadValue >= 1.0) {
+                        // BOOM
+                        destroyNebulaJellyMoss(jellyMoss, scene, particleSystem);
+
+                        // Remove from list
+                        jellyMosses.splice(i, 1);
+
+                        // Restore player state immediately (exit stealth)
+                        const rocket = player.children[0];
+                        if (rocket) {
+                             rocket.traverse((child: any) => {
+                                 if (child.isMesh && child.material) {
+                                     if (child.userData.originalOpacity !== undefined) {
+                                         child.material.opacity = child.userData.originalOpacity;
+                                         child.material.transparent = child.userData.originalTransparent;
+                                     } else {
+                                         child.material.opacity = 1.0;
+                                         child.material.transparent = false;
+                                     }
+                                 }
+                             });
+                        }
+                        continue; // Skip next logic
+                    }
+
+                    // Visual damage effect (red tint pulse)
+                    if (Math.random() < 0.05 * leechIntensity) {
+                        const rocket = player.children[0];
+                        if (rocket) {
+                            rocket.traverse((child: any) => {
+                                if (child.isMesh && child.material) {
+                                    const childMat = child.material as any;
+                                    if (childMat.emissive) {
+                                        const oldEmissive = childMat.emissive.getHex();
+                                        childMat.emissive.setHex(0xff0000);
+                                        setTimeout(() => {
+                                            if(childMat) childMat.emissive.setHex(oldEmissive);
+                                        }, 100);
+                                    }
+                                }
+                            });
+                        }
+                    }
+
+                } else {
+                    // Exit Stealth / Decay Overload
+                    if (jellyMoss.userData.isHiding) {
+                        jellyMoss.userData.isHiding = false;
+                        const rocket = player.children[0];
+                        if (rocket) {
+                             rocket.traverse((child: any) => {
+                                 if (child.isMesh && child.material) {
+                                     if (child.userData.originalOpacity !== undefined) {
+                                         child.material.opacity = child.userData.originalOpacity;
+                                         child.material.transparent = child.userData.originalTransparent;
+                                     } else {
+                                         child.material.opacity = 1.0;
+                                         child.material.transparent = false;
+                                     }
+                                 }
+                             });
+                        }
+                    }
+
+                    // Decay overload if player leaves
+                    if (jellyMoss.userData.overloadValue > 0) {
+                        jellyMoss.userData.overloadValue = Math.max(0, jellyMoss.userData.overloadValue - delta * 0.5);
+                        const mat = jellyMoss.material as any;
+                        if (mat.userData && mat.userData.uOverload) {
+                            mat.userData.uOverload.value = jellyMoss.userData.overloadValue;
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Update solar sails (iridescent rippling, unfold near player)
-    solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
+        // Update solar sails (iridescent rippling, unfold near player)
+        solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
 
-    // Update new geological objects from plan.md
-    voidRootBalls.forEach(rootBall => {
-        const interaction = updateVoidRootBall(rootBall, delta, time, player);
-        if (interaction.isLatched) {
-            playerState.velocity.add(interaction.force);
-            // Visual feedback
-            if (interaction.hitPoint && Math.random() < 0.2) {
-                particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
+        // Update new geological objects from plan.md
+        voidRootBalls.forEach(rootBall => {
+            const interaction = updateVoidRootBall(rootBall, delta, time, player);
+            if (interaction.isLatched) {
+                playerState.velocity.add(interaction.force);
+                // Visual feedback
+                if (interaction.hitPoint && Math.random() < 0.2) {
+                    particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
+                }
             }
+        });
+        vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
+        iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
+
+        // Update Liquid Metal System (Physics & Collisions)
+        liquidMetalSystem.update(delta);
+        if (player && weaponSystem) {
+            liquidMetalSystem.checkCollisions(weaponSystem.getActiveProjectiles());
         }
-    });
-    vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
-    iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
 
-    // Update Liquid Metal System (Physics & Collisions)
-    liquidMetalSystem.update(delta);
-    if (player && weaponSystem) {
-        liquidMetalSystem.checkCollisions(weaponSystem.getActiveProjectiles());
+        magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
     }
-
-    magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 
     // Update industrial obstacles (Level 4)
-    industrialGeometryManager.update(time);
+    if (debugSystem.isEnabled('industrialGeo')) {
+        industrialGeometryManager.update(time);
+    }
 
     // SWARM #3: Update Dreamy Environments
     if (player) {
         // Update flower constellations (bloom, pollen, sparkles)
-        flowerManager.update(delta, player.position);
-        flowerManager.checkPlayerProximity(player.position);
+        if (debugSystem.isEnabled('flowerConstellations')) {
+            flowerManager.update(delta, player.position);
+            flowerManager.checkPlayerProximity(player.position);
+        }
         
         // Update candy belt (wobble, dissolve, shatter)
-        candyManager.update(delta);
-        
-        // Check candy collisions (bouncy gummies!)
-        const candyCollisions = candyManager.checkCollisions(player.position, 2.0);
-        candyCollisions.forEach(collision => {
-            if (collision.type === 'bouncy') {
-                // Bouncy gummies make the dog giggle!
-                dogController.triggerAnimation(DogAnimationState.POWER_UP, 0.5);
-                juiceManager.showFloatingText("Boing!", collision.candy.position, '#ff69b4');
-                audioSystem.playMagicSound('happy');
-            } else if (collision.type === 'collectible') {
-                // Cotton candy dissolves into sugar sparkles
-                juiceManager.spawnSparkles(player.position, new THREE.Color(0xffb6c1), 10);
-                audioSystem.playMagicSound('collect');
-            }
-        });
+        if (debugSystem.isEnabled('candyBelt')) {
+            candyManager.update(delta);
+            
+            // Check candy collisions (bouncy gummies!)
+            const candyCollisions = candyManager.checkCollisions(player.position, 2.0);
+            candyCollisions.forEach(collision => {
+                if (collision.type === 'bouncy') {
+                    // Bouncy gummies make the dog giggle!
+                    dogController.triggerAnimation(DogAnimationState.POWER_UP, 0.5);
+                    juiceManager.showFloatingText("Boing!", collision.candy.position, '#ff69b4');
+                    audioSystem.playMagicSound('happy');
+                } else if (collision.type === 'collectible') {
+                    // Cotton candy dissolves into sugar sparkles
+                    juiceManager.spawnSparkles(player.position, new THREE.Color(0xffb6c1), 10);
+                    audioSystem.playMagicSound('collect');
+                }
+            });
+        }
         
         // Update cloud castles (parallax scrolling)
-        castleManager.update(delta, player.position.x);
+        if (debugSystem.isEnabled('cloudCastles')) {
+            castleManager.update(delta, player.position.x);
+        }
     }
 
     // Rotate galaxies slowly
-    if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
-    if (galaxy2) galaxy2.rotation.z += galaxy2.userData.rotationSpeed;
-    if (galaxy3) galaxy3.rotation.z += galaxy3.userData.rotationSpeed;
-    
-    // Rotate and pulse moon atmosphere
-    if (moon && moon.userData.atmosphere) {
-        moon.rotation.y += 0.002;
-        const pulse = Math.sin(Date.now() * 0.001) * 0.5 + 0.5;
-        (moon.userData.atmosphere.material as THREE.MeshBasicMaterial).opacity = 0.1 + pulse * 0.1;
+    if (debugSystem.isEnabled('moonEffects')) {
+        if (galaxy1) galaxy1.rotation.z += galaxy1.userData.rotationSpeed;
+        if (galaxy2) galaxy2.rotation.z += galaxy2.userData.rotationSpeed;
+        if (galaxy3) galaxy3.rotation.z += galaxy3.userData.rotationSpeed;
+        
+        // Rotate and pulse moon atmosphere
+        if (moon && moon.userData.atmosphere) {
+            moon.rotation.y += 0.002;
+            const pulse = Math.sin(Date.now() * 0.001) * 0.5 + 0.5;
+            (moon.userData.atmosphere.material as THREE.MeshBasicMaterial).opacity = 0.1 + pulse * 0.1;
+        }
+
+        // --- NEW: Animate Alien Moon Plants ---
+        // We pass 'false' for isDay because it's space (always night!) and null for audio
+        moonPlants.forEach(plant => {
+            animateFoliage(plant, time, null, false);
+        });
     }
 
-    // --- NEW: Animate Alien Moon Plants ---
-    // We pass 'false' for isDay because it's space (always night!) and null for audio
-    moonPlants.forEach(plant => {
-        animateFoliage(plant, time, null, false);
-    });
-
     // --- NEW: Pilot/Player Animations ---
-    try {
-        const rocketRoot = player.children[0];
-        if (rocketRoot) {
-            // Pitch and roll are now driven by updatePlayer's upgraded flight model.
+    if (debugSystem.isEnabled('pilotAnim')) {
+        try {
+            const rocketRoot = player.children[0];
+            if (rocketRoot) {
+                // Pitch and roll are now driven by updatePlayer's upgraded flight model.
 
-            // Animate pilot bob and ears
-            const pilot = rocketRoot.getObjectByName('pilotGroup');
-            if (pilot) {
-                const offset = pilot.userData.animationOffset || 0;
-                const baseY = pilot.userData.baseY ?? pilot.position.y;
-                const bobAmp = keys.jump ? 0.05 : 0.02;
-                const bob = Math.sin(time * 2 + offset) * bobAmp;
-                pilot.position.y = baseY + bob;
+                // Animate pilot bob and ears
+                const pilot = rocketRoot.getObjectByName('pilotGroup');
+                if (pilot) {
+                    const offset = pilot.userData.animationOffset || 0;
+                    const baseY = pilot.userData.baseY ?? pilot.position.y;
+                    const bobAmp = keys.jump ? 0.05 : 0.02;
+                    const bob = Math.sin(time * 2 + offset) * bobAmp;
+                    pilot.position.y = baseY + bob;
 
-                const head = pilot.getObjectByName('pilotHead');
-                const leftEar = pilot.getObjectByName('leftEar');
-                const rightEar = pilot.getObjectByName('rightEar');
-                if (head) {
-                    head.rotation.y = head.userData.baseRotationY + Math.sin(time * 1.5 + offset) * 0.08;
-                }
-                if (leftEar && rightEar) {
-                    leftEar.rotation.z = leftEar.userData.baseRotationZ + Math.sin(time * 6 + offset) * 0.3 * (keys.jump ? 1.5 : 1.0);
-                    rightEar.rotation.z = rightEar.userData.baseRotationZ + Math.sin(time * 6 + offset + Math.PI) * 0.3 * (keys.jump ? 1.5 : 1.0);
+                    const head = pilot.getObjectByName('pilotHead');
+                    const leftEar = pilot.getObjectByName('leftEar');
+                    const rightEar = pilot.getObjectByName('rightEar');
+                    if (head) {
+                        head.rotation.y = head.userData.baseRotationY + Math.sin(time * 1.5 + offset) * 0.08;
+                    }
+                    if (leftEar && rightEar) {
+                        leftEar.rotation.z = leftEar.userData.baseRotationZ + Math.sin(time * 6 + offset) * 0.3 * (keys.jump ? 1.5 : 1.0);
+                        rightEar.rotation.z = rightEar.userData.baseRotationZ + Math.sin(time * 6 + offset + Math.PI) * 0.3 * (keys.jump ? 1.5 : 1.0);
+                    }
                 }
             }
-        }
-    } catch (e) { /* swallow animation errors gracefully */ }
+        } catch (e) { /* swallow animation errors gracefully */ }
+    }
     
     // Update distance display
     updateDistanceDisplay(playerState, player);
