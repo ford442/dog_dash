@@ -29,6 +29,13 @@ export type LevelConfig = {
     obstacleInterval?: number;
     fogDensity?: number;
     squidSpawnRate?: number;
+    godRays?: {
+        enabled: boolean;
+        density: number;
+        baseIntensity: number;
+        color: number;
+        speedMultiplier: number;
+    };
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
@@ -57,7 +64,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         speed: 8,
         bgColor: 0x1a1a2e,
         skyColors: { top: 0x000000, bottom: 0x1a1a2e },
-        levelType: 'open'
+        levelType: 'open',
+        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 }
     },
     2: {
         name: "The Asteroid Belt",
@@ -85,7 +93,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         speed: 8,
         bgColor: 0x2d1a1a,
         skyColors: { top: 0x000000, bottom: 0x2d1a1a },
-        levelType: 'open'
+        levelType: 'open',
+        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 }
     },
     3: {
         name: "Orbital Descent",
@@ -174,7 +183,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         tunnelHeight: 20,
         obstacleInterval: 25,
         fogDensity: 0.02,
-        squidSpawnRate: 0.0008
+        squidSpawnRate: 0.0008,
+        godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 }
     },
     6: {
         name: "The Aqua Expanse",

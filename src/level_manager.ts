@@ -37,6 +37,7 @@ import {
     castleManager,
     candyManager
 } from './game_systems';
+import { GodRaySystem } from './godrays';
 import { GhostDebrisSystem } from './ghost_debris';
 
 // =============================================================================
@@ -54,11 +55,13 @@ export class LevelManager {
     cloudSystem: CloudSystem;
     atmosphereSystem: AtmosphereSystem;
     lastPopulatedEndX: number;
+    godRaySystem: GodRaySystem;
     ghostDebrisSystem: GhostDebrisSystem;
 
     constructor(options: any) {
         this.cloudSystem = new CloudSystem(scene);
         this.atmosphereSystem = new AtmosphereSystem(scene);
+        this.godRaySystem = options.godRaySystem;
         this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.currentLevel = 1;
         this.config = LEVEL_CONFIG;
@@ -78,6 +81,12 @@ export class LevelManager {
         // Update Game State
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
+
+        if (cfg.godRays && cfg.godRays.enabled) {
+            this.godRaySystem.activate(cfg.godRays);
+        } else {
+            this.godRaySystem.deactivate();
+        }
 
         // --- ATMOSPHERE UPDATE ---
         let transitionDuration = 2.0;
@@ -226,6 +235,7 @@ export class LevelManager {
         if (asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
+        if (this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed);
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
