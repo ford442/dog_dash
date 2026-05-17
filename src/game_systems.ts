@@ -77,7 +77,7 @@ export const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightMan
 export const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
 
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
-export const industrialSystem = new IndustrialBackgroundSystem(scene);
+export const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 export const godRaySystem = new GodRaySystem(scene);

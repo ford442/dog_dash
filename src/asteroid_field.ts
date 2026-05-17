@@ -11,7 +11,7 @@ import {
     float,
     smoothstep,
     distance,
-    loop,
+    Loop,
     normalView,
     vec4
 } from 'three/tsl';
@@ -42,7 +42,7 @@ function createAsteroidMaterial(baseColorHex: number, opacity: number, weaponLig
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan
 
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w; // 2.0 or 0.0

@@ -16,9 +16,8 @@ import {
     cos,
     float,
     step,
-    fract
-,
-    loop,
+    fract,
+    Loop,
     positionWorld,
     length,
     smoothstep
@@ -46,7 +45,7 @@ function createConveyorMaterial(speed: number, uPlayerPos: any, weaponLights: an
 
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
@@ -110,7 +109,7 @@ function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number
 
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
@@ -217,7 +216,7 @@ function createMechanismMaterial(colorHex: number, uPlayerPos: any, weaponLights
 
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
@@ -269,7 +268,7 @@ function createForegroundMaterial(uPlayerPos: any, weaponLights: any) {
 
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
@@ -305,7 +304,7 @@ function createSimpleIndustrialMaterial(colorHex: number, r: number, m: number, 
 
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
@@ -599,7 +598,7 @@ function createTunnelMaterial(speed: number, uPlayerPos: any, weaponLights: any)
 
     const weaponGlow = float(0.0).toVar();
     const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan weapon glow
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;

@@ -24,7 +24,7 @@ import {
     length,
     smoothstep,
     distance,
-    loop,
+    Loop,
     storage,
     UniformNode
 } from 'three/tsl';
@@ -106,7 +106,7 @@ function createNebulaMaterial(
     // 4. Weapon Light Interaction
     const weaponGlow = float(0.0).toVar();
 
-    loop({ start: 0, end: 20 }, ({ i }) => {
+    Loop({ start: 0, end: 20 }, ({ i }) => {
         const lightData = weaponLights.element(i);
         const lightPos = lightData.xyz;
         const lightIntensity = lightData.w;
