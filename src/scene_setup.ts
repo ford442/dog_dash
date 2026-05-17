@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
-import { generateEnvironment } from './environment';
+
 import {
     TouchControlsManager,
     detectTouchDevice
@@ -77,9 +77,31 @@ try {
     // Lighting (Moody, atmospheric)
     scene.add(ambientLight);
 
-    // Environment Map (for metallic reflections)
-    const envMap = generateEnvironment();
-    scene.environment = envMap;
+    // Environment Map (for metallic reflections) — inlined to avoid circular imports
+    const envMapCanvas = document.createElement('canvas');
+    envMapCanvas.width = 1024;
+    envMapCanvas.height = 512;
+    const envMapCtx = envMapCanvas.getContext('2d');
+    if (envMapCtx) {
+        const gradient = envMapCtx.createLinearGradient(0, 0, 0, envMapCanvas.height);
+        gradient.addColorStop(0, '#000000');
+        gradient.addColorStop(0.5, '#05051a');
+        gradient.addColorStop(1, '#110522');
+        envMapCtx.fillStyle = gradient;
+        envMapCtx.fillRect(0, 0, envMapCanvas.width, envMapCanvas.height);
+        for (let i = 0; i < 500; i++) {
+            const sx = Math.random() * envMapCanvas.width;
+            const sy = Math.random() * envMapCanvas.height;
+            const radius = Math.random() * 1.5;
+            envMapCtx.beginPath();
+            envMapCtx.arc(sx, sy, radius, 0, Math.PI * 2);
+            envMapCtx.fillStyle = `rgba(255, 255, 255, ${Math.random()})`;
+            envMapCtx.fill();
+        }
+    }
+    const envMapTexture = new THREE.CanvasTexture(envMapCanvas);
+    envMapTexture.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = envMapTexture;
 
     // Main directional light (from the side for dramatic shadows)
     mainLight.position.set(-5, 10, 10);
