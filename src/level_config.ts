@@ -102,11 +102,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         asteroidRate: 1.8,
         foliageDensity: {
             fern: 5,
-            rose: 0,
+            rose: 4,
             lotus: 15,
             glowingFlower: 5,
             tree: 5,
-            floweringTree: 0,
+            floweringTree: 3,
             shrub: 5,
             vine: 15,
             orb: 30,
@@ -122,27 +122,27 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x000510,
         skyColors: { top: 0x000011, bottom: 0x001133 },
         levelType: 'open',
-        squidSpawnRate: 0.0005
+        squidSpawnRate: 0.0012
     },
     4: {
         name: "The Rusty Gauntlet",
         distance: 3200,
         asteroidRate: 2.0,
         foliageDensity: {
-            fern: 0,
-            rose: 0,
-            lotus: 0,
+            fern: 6,
+            rose: 4,
+            lotus: 3,
             glowingFlower: 5,
-            tree: 0,
-            floweringTree: 0,
-            shrub: 0,
-            vine: 0,
+            tree: 4,
+            floweringTree: 3,
+            shrub: 4,
+            vine: 5,
             orb: 15,
-            mushroom: 0,
-            cloud: 0,
-            voidRootBall: 0,
-            vacuumKelp: 0,
-            iceNeedle: 0,
+            mushroom: 4,
+            cloud: 4,
+            voidRootBall: 3,
+            vacuumKelp: 3,
+            iceNeedle: 3,
             liquidMetal: 5,
             magmaHeart: 3
         },
@@ -152,7 +152,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'tunnel',
         tunnelHeight: 15,
         obstacleInterval: 20,
-        squidSpawnRate: 0.0003
+        squidSpawnRate: 0.001
     },
     5: {
         name: "The Astral Leviathan",
@@ -160,21 +160,21 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         asteroidRate: 2.5,
         foliageDensity: {
             fern: 5,
-            rose: 0,
+            rose: 4,
             lotus: 15,
             glowingFlower: 20,
-            tree: 0,
-            floweringTree: 0,
+            tree: 4,
+            floweringTree: 4,
             shrub: 0,
             vine: 10,
             orb: 30,
             mushroom: 8,
-            cloud: 0,
+            cloud: 5,
             voidRootBall: 5,
             vacuumKelp: 8,
-            iceNeedle: 0,
-            liquidMetal: 0,
-            magmaHeart: 0
+            iceNeedle: 4,
+            liquidMetal: 4,
+            magmaHeart: 4
         },
         speed: 10,
         bgColor: 0x0a0810,
@@ -183,7 +183,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         tunnelHeight: 20,
         obstacleInterval: 25,
         fogDensity: 0.02,
-        squidSpawnRate: 0.0008,
+        squidSpawnRate: 0.0015,
         godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 }
     },
     6: {
@@ -212,6 +212,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x001133,
         skyColors: { top: 0x001133, bottom: 0x002244 },
         levelType: 'open',
-        squidSpawnRate: 0.0006
+        squidSpawnRate: 0.0012
     }
 };

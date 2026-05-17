@@ -18,7 +18,12 @@ import {
     createVacuumKelpAtPosition,
     createIceNeedleClusterAtPosition,
     createLiquidMetalBlobAtPosition,
-    createMagmaHeartAtPosition
+    createMagmaHeartAtPosition,
+    sporeClouds,
+    voidRootBalls,
+    vacuumKelps,
+    iceNeedleClusters,
+    magmaHearts
 } from './environment';
 import { scene, camera, butterflySwarmSystem } from './scene_setup';
 import { playerState } from './game_config';
@@ -59,6 +64,17 @@ export class LevelManager {
     godRaySystem: GodRaySystem;
     ghostDebrisSystem: GhostDebrisSystem;
     debugSystem?: DebugSystem;
+    objectDensityMultiplier: number;
+    private baseAsteroidDensity = 0;
+
+    private readonly GEOLOGICAL_SPAWN_CAPS = {
+        cloud: 8,
+        voidRootBall: 8,
+        vacuumKelp: 6,
+        iceNeedle: 6,
+        liquidMetal: 6,
+        magmaHeart: 6
+    } as const;
 
     constructor(options: any) {
         this.cloudSystem = new CloudSystem(scene);
@@ -72,6 +88,14 @@ export class LevelManager {
         // Track planted objects to cleanup
         this.levelObjects = [];
         this.lastPopulatedEndX = -Infinity;
+        this.objectDensityMultiplier = 1.0;
+    }
+
+    setObjectDensityMultiplier(multiplier: number) {
+        this.objectDensityMultiplier = Math.min(1.0, Math.max(0.25, multiplier));
+        if (this.baseAsteroidDensity > 0) {
+            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
+        }
     }
 
     startLevel(levelIndex: number) {
@@ -165,9 +189,11 @@ export class LevelManager {
         if (cfg.asteroidRate && cfg.asteroidRate > 0) {
             asteroidFieldSystem.activate();
             // Scale density relative to default levels
-            asteroidFieldSystem.setDensity(cfg.asteroidRate * 0.5);
+            this.baseAsteroidDensity = cfg.asteroidRate * 0.5;
+            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
             asteroidFieldSystem.resetPositions(camera.position.x);
         } else {
+            this.baseAsteroidDensity = 0;
             asteroidFieldSystem.deactivate();
         }
 
@@ -296,9 +322,11 @@ export class LevelManager {
 
     // Helper method to spawn foliage with open scatter logic
     spawnOpenFoliage(startX: number, width: number, density: LevelConfig['foliageDensity'], yRange: [number, number] = [-20, 20]) {
+        const scaledCount = (count: number) => Math.max(0, Math.floor(count * this.objectDensityMultiplier));
+
         // Helper to spawn
         const spawn = (count: number, creatorFn: () => THREE.Object3D, customYRange = yRange, zRange: [number, number] = [-30, 0]) => {
-            for (let i = 0; i < count; i++) {
+            for (let i = 0; i < scaledCount(count); i++) {
                 const x = startX + Math.random() * width;
                 const y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
                 const z = zRange[0] + Math.random() * (zRange[1] - zRange[0]);
@@ -334,7 +362,11 @@ export class LevelManager {
 
         // Add clouds manually because they need the specific class wrapper
         if (density.cloud) {
-            for(let i=0; i<density.cloud; i++) {
+            const targetCount = Math.min(
+                scaledCount(density.cloud),
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.cloud - sporeClouds.length)
+            );
+            for(let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -40 + Math.random() * 30;
@@ -344,7 +376,11 @@ export class LevelManager {
 
         // Geological objects from plan.md
         if (density.voidRootBall) {
-            for(let i=0; i<density.voidRootBall; i++) {
+            const targetCount = Math.min(
+                scaledCount(density.voidRootBall),
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.voidRootBall - voidRootBalls.length)
+            );
+            for(let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -35 + Math.random() * 25;
@@ -353,7 +389,11 @@ export class LevelManager {
         }
 
         if (density.vacuumKelp) {
-            for(let i=0; i<density.vacuumKelp; i++) {
+            const targetCount = Math.min(
+                scaledCount(density.vacuumKelp),
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.vacuumKelp - vacuumKelps.length)
+            );
+            for(let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * 15;
                 const z = -35 + Math.random() * 25;
@@ -362,7 +402,11 @@ export class LevelManager {
         }
 
         if (density.iceNeedle) {
-            for(let i=0; i<density.iceNeedle; i++) {
+            const targetCount = Math.min(
+                scaledCount(density.iceNeedle),
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.iceNeedle - iceNeedleClusters.length)
+            );
+            for(let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -35 + Math.random() * 25;
@@ -371,7 +415,8 @@ export class LevelManager {
         }
 
         if (density.liquidMetal) {
-            for(let i=0; i<density.liquidMetal; i++) {
+            const targetCount = Math.min(scaledCount(density.liquidMetal), this.GEOLOGICAL_SPAWN_CAPS.liquidMetal);
+            for(let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -35 + Math.random() * 25;
@@ -380,7 +425,11 @@ export class LevelManager {
         }
 
         if (density.magmaHeart) {
-            for(let i=0; i<density.magmaHeart; i++) {
+            const targetCount = Math.min(
+                scaledCount(density.magmaHeart),
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.magmaHeart - magmaHearts.length)
+            );
+            for(let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -35 + Math.random() * 25;
