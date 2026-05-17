@@ -525,7 +525,7 @@ const waterfallSystem = new WaterfallSystem(scene, camera);
 const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
 
 // PLANETARY HORIZON SYSTEM (Massive scrolling planet)
-const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
+const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
 
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
 const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);

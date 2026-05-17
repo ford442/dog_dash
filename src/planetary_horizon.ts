@@ -282,6 +282,39 @@ function createDeepSpaceStars(count: number = 1000) {
     return stars;
 }
 
+
+export class AtmosphereOverlay {
+    mesh: THREE.Mesh;
+    uIntensity: any;
+
+    constructor(camera: THREE.Camera) {
+        const geo = new THREE.PlaneGeometry(2, 2);
+
+        this.uIntensity = uniform(0.0);
+
+        const mat = new MeshBasicNodeMaterial({
+            transparent: true,
+            depthWrite: false,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+
+        const atmColor = color(0x114488); // Atmospheric blue
+        mat.colorNode = vec4(atmColor, this.uIntensity);
+
+        this.mesh = new THREE.Mesh(geo, mat);
+        this.mesh.position.set(0, 0, -1.05); // Just in front of camera
+        this.mesh.visible = false;
+
+        camera.add(this.mesh);
+    }
+
+    setIntensity(intensity: number) {
+        this.uIntensity.value = intensity;
+        this.mesh.visible = intensity > 0.01;
+    }
+}
+
 export class PlanetaryHorizonSystem {
     scene: THREE.Scene;
     active: boolean = false;
@@ -301,7 +334,10 @@ export class PlanetaryHorizonSystem {
     // BgStars move at 95% camera speed (creating "Deep Space" depth where they drift slowly)
     starPositions: Float32Array;
 
-    constructor(scene: THREE.Scene) {
+
+    atmosphereOverlay: AtmosphereOverlay;
+
+    constructor(scene: THREE.Scene, camera: THREE.Camera) {
         this.scene = scene;
         this.container = new THREE.Group();
         this.scene.add(this.container);
@@ -337,19 +373,23 @@ export class PlanetaryHorizonSystem {
         this.starPositions = (this.bgStars.geometry.attributes.position as THREE.BufferAttribute).array as Float32Array;
         this.container.add(this.bgStars);
 
+        // 5. Atmosphere Overlay for gradual palette shift
+        this.atmosphereOverlay = new AtmosphereOverlay(camera);
+
         this.deactivate();
     }
-
     activate() {
         if (this.active) return;
         this.active = true;
         this.container.visible = true;
+        if (this.atmosphereOverlay) this.atmosphereOverlay.mesh.visible = true;
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.container.visible = false;
+        if (this.atmosphereOverlay) this.atmosphereOverlay.mesh.visible = false;
     }
 
     update(cameraX: number, delta: number = 0.016) {
@@ -414,6 +454,7 @@ export class PlanetaryHorizonSystem {
         this.planet.rotation.z += 0.005 * delta;
         this.clouds.rotation.z += 0.008 * delta; // Differential rotation
 
+
         // 4. Approach Scaling
         // Scale the planet as we move along X to simulate approaching it.
         // We use a dynamic distance value based on the level configuration if available, otherwise fallback.
@@ -429,5 +470,17 @@ export class PlanetaryHorizonSystem {
         this.planet.position.y = baseY + (approachScale - 1.0) * 50;
         this.clouds.position.y = this.planet.position.y;
         this.atmosphere.position.y = this.planet.position.y;
+
+        // 5. Atmospheric Palette Shift
+        // Gradually increase intensity of the blue overlay as we approach the planet
+        // e.g. start fading in at distance 1000m to 0m, reaching max 0.6 intensity
+        const fadeStartDistance = 1000.0;
+        let atmIntensity = 0.0;
+        if (distanceToPlanet < fadeStartDistance) {
+            atmIntensity = (1.0 - (distanceToPlanet / fadeStartDistance)) * 0.5;
+        }
+        if (this.atmosphereOverlay) {
+            this.atmosphereOverlay.setIntensity(atmIntensity);
+        }
     }
 }
