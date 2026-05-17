@@ -95,6 +95,7 @@ import { LevelManager } from './level_manager';
 import { DebugSystem } from './debug_system';
 import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
+import { VideoTumblingStar } from './video_tumbling_star';
 
 // --- Configuration ---
 const CONFIG = {
@@ -959,6 +960,12 @@ function cleanupGeologicalObjects(cameraX: number) {
 const moon = createMoon();
 moon.position.set(500, 5, -50); // Position far ahead
 scene.add(moon);
+
+const videoTumblingStars = [
+    new VideoTumblingStar(scene, 360, 12, -45),
+    new VideoTumblingStar(scene, 980, -6, -40),
+    new VideoTumblingStar(scene, 1620, 8, -48)
+];
 
 const industrialGeometryManager = new IndustrialGeometryManager(scene);
 const levelManager = new LevelManager({
@@ -1905,6 +1912,8 @@ let currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[
 renderer.setPixelRatio(currentPixelRatio);
 
 let shadowCullingFrame = 0;
+let geologicalUpdateFrame = 0;
+let objectDensityMultiplier = 1.0;
 
 function updateShadowQuality() {
     const targetSize = playerState.bossActive ? 2048 : 1024;
@@ -1980,6 +1989,16 @@ function animate() {
         } else {
             fpsLowDuration = 0;
             fpsHighDuration = 0;
+        }
+
+        if (fps < 45 && objectDensityMultiplier > 0.25) {
+            objectDensityMultiplier = Math.max(0.25, objectDensityMultiplier - 0.25);
+            levelManager.setObjectDensityMultiplier(objectDensityMultiplier);
+            console.log(`Performance low — reducing object density to ${Math.round(objectDensityMultiplier * 100)}%`);
+        } else if (fps > 55 && objectDensityMultiplier < 1.0) {
+            objectDensityMultiplier = Math.min(1.0, objectDensityMultiplier + 0.25);
+            levelManager.setObjectDensityMultiplier(objectDensityMultiplier);
+            console.log(`Performance recovered — restoring object density to ${Math.round(objectDensityMultiplier * 100)}%`);
         }
     }
 
@@ -2362,6 +2381,7 @@ function animate() {
         if (debugSystem.isEnabled('butterflySwarm')) {
             butterflySwarmSystem.update(delta, camera.position.x, player.position);
         }
+        videoTumblingStars.forEach(star => star.update(delta, camera));
     }
 
     // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
@@ -2383,11 +2403,23 @@ function animate() {
     
     // --- NEW: Update Geological Objects ---
     if (debugSystem.isEnabled('geologicalObjects')) {
+        geologicalUpdateFrame++;
+        const farUpdateFrame = geologicalUpdateFrame % 3 === 0;
         // Update spore clouds (brownian motion)
-        sporeClouds.forEach(cloud => cloud.update(delta));
+        sporeClouds.forEach(cloud => {
+            const isFar = camera.position.distanceTo(cloud.position) > 80;
+            if (!isFar || farUpdateFrame) {
+                cloud.update(delta);
+            }
+        });
 
         // Update chroma-shift rocks (color animation)
-        chromaRocks.forEach(rock => updateChromaRock(rock, camera.position, delta, time));
+        chromaRocks.forEach(rock => {
+            const isFar = camera.position.distanceTo(rock.position) > 80;
+            if (!isFar || farUpdateFrame) {
+                updateChromaRock(rock, camera.position, delta, time);
+            }
+        });
 
         // Update geodes (EM field pulse)
         geodes.forEach(geode => updateGeode(geode, delta, time));
@@ -2396,7 +2428,10 @@ function animate() {
         // Use reverse loop so we can remove items safely
         for (let i = jellyMosses.length - 1; i >= 0; i--) {
             const jellyMoss = jellyMosses[i];
-            updateNebulaJellyMoss(jellyMoss, delta, time);
+            const isFar = camera.position.distanceTo(jellyMoss.position) > 80;
+            if (!isFar || farUpdateFrame) {
+                updateNebulaJellyMoss(jellyMoss, delta, time);
+            }
 
             // --- NEW: Jelly Moss Interaction (Stealth, Shield & Overload) ---
             if (player && jellyMoss.visible && jellyMoss.userData.radius) {
