@@ -29,6 +29,7 @@ export type LevelConfig = {
     obstacleInterval?: number;
     fogDensity?: number;
     squidSpawnRate?: number;
+    meteorShower?: boolean;
     godRays?: {
         enabled: boolean;
         density: number;
@@ -121,6 +122,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         speed: 10,
         bgColor: 0x000510,
         skyColors: { top: 0x000011, bottom: 0x001133 },
+        meteorShower: true,
         levelType: 'open',
         squidSpawnRate: 0.0012
     },

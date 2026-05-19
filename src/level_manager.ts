@@ -38,6 +38,7 @@ import {
     biologicalSystem,
     nebulaSystem,
     cosmicDustSystem,
+    meteorShowerSystem,
     asteroidFieldSystem,
     planetaryHorizonSystem,
     reEntrySystem,
@@ -175,6 +176,12 @@ export class LevelManager {
             if (levelIndex !== 3) reEntrySystem.deactivate();
         }
 
+        if (cfg.meteorShower) {
+            meteorShowerSystem.activate();
+        } else {
+            meteorShowerSystem.deactivate();
+        }
+
         if (levelIndex === 4) {
             // Industrial Tunnel
             industrialSystem.activate();
@@ -265,6 +272,7 @@ export class LevelManager {
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
         // Pass player position to NebulaSystem for interactive lighting
         if (enabled('nebula')) nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
+        if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX);
         if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, player ? player.position : undefined);
         if (this.currentLevel === 5) {
             // nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());

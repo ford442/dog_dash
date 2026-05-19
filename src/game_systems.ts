@@ -9,6 +9,7 @@ import { ReEntrySystem } from './reentry';
 import { WaterfallSystem } from './waterfall';
 import { AsteroidFieldSystem } from './asteroid_field';
 import { PlanetaryHorizonSystem } from './planetary_horizon';
+import { MeteorShowerSystem } from './meteor_shower';
 import { IndustrialBackgroundSystem } from './industrial_background';
 import { GodRaySystem } from './godrays';
 import { NebulaSystem } from './nebula';
@@ -75,6 +76,9 @@ export const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightMan
 
 // PLANETARY HORIZON SYSTEM (Massive scrolling planet)
 export const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
+
+// METEOR SHOWER SYSTEM
+export const meteorShowerSystem = new MeteorShowerSystem(scene);
 
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
 export const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);
