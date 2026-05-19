@@ -5,6 +5,9 @@ import { LEVEL_CONFIG, type LevelConfig } from './level_config';
 import { IndustrialGeometryManager } from './industrial_geometry';
 import {
     createSubwooferLotus,
+    createShrub,
+    createVine,
+    createPuffballFlower,
     createFiberOpticWillow,
     createGlowingFlower,
     createStarDustFern,
@@ -356,6 +359,10 @@ export class LevelManager {
         const treeYRange: [number, number] = [Math.max(yRange[0], -20), Math.min(yRange[1], -5)];
         if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange);
         if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange);
+
+        if (density.shrub) spawn(density.shrub, () => createShrub({ color: 0x32CD32 }), yRange);
+        if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange);
+        if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange);
 
         // Floating items
         if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange);
