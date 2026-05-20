@@ -99,6 +99,7 @@ export class ReEntrySystem {
 
     // Data
     streakCount: number = 50;
+    levelDistance: number = 2200;
     streakPositions: Float32Array;
     streakSpeeds: Float32Array;
 
@@ -180,7 +181,8 @@ export class ReEntrySystem {
         const matGlow = this.heatGlowMesh.material as THREE.MeshBasicMaterial;
 
         // Fade Logic
-        const targetOpacity = this.active ? 1.0 : 0.0;
+        const progress = Math.max(0, Math.min(1, cameraX / this.levelDistance));
+        const targetOpacity = this.active ? Math.min(1.0, progress * 1.5) : 0.0;
 
         // We use a custom property on the material to track "intensity" for fading
         // because opacity behaves differently for Physical vs Basic
@@ -243,7 +245,7 @@ export class ReEntrySystem {
                 x = spawnX + Math.random() * 20;
                 y = cameraY + (Math.random() - 0.5) * 30;
                 z = (Math.random() - 0.5) * 30;
-                this.streakSpeeds[i] = 50 + Math.random() * 50;
+                this.streakSpeeds[i] = (50 + Math.random() * 50) * (0.5 + progress * 0.5);
 
                 this.streakPositions[i * 3 + 1] = y;
                 this.streakPositions[i * 3 + 2] = z;
