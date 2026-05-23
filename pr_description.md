@@ -6,11 +6,12 @@
 ### Implementation
 - Created `GodRaySystem` in `src/godrays.ts` using a highly performant **InstancedMesh** + **TSL shaders**.
 - Light shaft intensity and definition now react dynamically to the player’s dashing speed (stronger and more prominent at higher velocities).
+- Light shafts react dynamically to the camera angle to mimic a distant light source and have realistic Z-parallax.
 - Added `godRays` configuration to `LevelConfig` and enabled the effect on cloud/nebula-heavy levels (1, 2, and 5).
 
 ### Visuals
 - 20 instanced quads using `AdditiveBlending` and `depthWrite = false`.
-- Soft-edge fading (horizontal + vertical) with subtle procedural shimmering via TSL (UV + time based).
+- Soft-edge fading (horizontal + vertical) with subtle procedural swaying and shimmering via TSL `positionLocal` modification.
 - Warm ethereal color palette (e.g. `0xffcc88`) that can be tuned per level.
 
 ### Integration

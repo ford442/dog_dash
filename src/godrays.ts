@@ -75,6 +75,7 @@ function createGodRayMaterial() {
     const finalAlpha = baseShape.mul(shimmer).mul(shimmer2).mul(uIntensity.add(playerGlow));
 
     mat.colorNode = vec4(uColor, finalAlpha);
+    mat.positionNode = vec3(positionLocal.x.add(sway.mul(15.0)), positionLocal.y, positionLocal.z);
 
     mat.userData.uColor = uColor;
     mat.userData.uIntensity = uIntensity;
@@ -199,24 +200,30 @@ export class GodRaySystem {
 
         for (let i = 0; i < this.mesh.count; i++) {
             const idx = i * 3;
-            let x = this.positions[idx];
+            let baseX = this.positions[idx];
 
-            // Wrap
-            if (x < limitBack) {
-                x += width + margin * 2;
-                this.positions[idx] = x;
+            // Wrap base position
+            if (baseX < limitBack) {
+                baseX += width + margin * 2;
+                this.positions[idx] = baseX;
 
                 // Randomize a bit on wrap
                 this.positions[idx+2] = -40 + Math.random() * 60;
                 needsUpdate = true;
-            } else if (x > limitFront) {
-                x -= (width + margin * 2);
-                this.positions[idx] = x;
+            } else if (baseX > limitFront) {
+                baseX -= (width + margin * 2);
+                this.positions[idx] = baseX;
                 needsUpdate = true;
             }
 
-            // Animate angle slightly (Drifting light)
-            const angle = Math.PI / 8 + Math.sin(Date.now() * 0.001 + i) * 0.1;
+            // Calculate parallax-adjusted X position
+            // Farther back (more negative Z) means it scrolls slower relative to the camera
+            const zDist = Math.abs(this.positions[idx+2]);
+            const parallaxFactor = Math.min(1.0, zDist / 200.0);
+            let x = baseX + (cameraX - baseX) * parallaxFactor;
+
+            // Animate angle dynamically relative to camera (simulate distant light source)
+            const angle = Math.PI / 8 + Math.sin(Date.now() * 0.001 + i) * 0.1 + (x - cameraX) * 0.002;
 
             this.dummy.position.set(x, this.positions[idx+1], this.positions[idx+2]);
             this.dummy.rotation.set(0, 0, -angle); // Slant right
