@@ -16,7 +16,10 @@ import {
     float,
     smoothstep,
     positionLocal,
-    distance
+    distance,
+    normalView,
+    length,
+    positionWorld
 } from 'three/tsl';
 
 export type GodRayConfig = {
@@ -42,38 +45,40 @@ function createGodRayMaterial() {
     const uTime = time;
     const uColor = uniform(new THREE.Color(0xffffff));
     const uIntensity = uniform(1.0);
+    const uPlayerPos = uniform(new THREE.Vector3(9999, 9999, 9999));
     const vUv = uv();
 
-    // 1. Core Shape (Soft edges on X, fade out on Y)
-    // UV x goes 0 -> 1 across the width
-    // UV y goes 0 -> 1 along the length (0 is top/source, 1 is bottom/fade)
-
-    // Fade edges horizontally (bell curve)
-    const distToCenter = float(0.5).sub(vUv.x).abs().mul(2.0); // 0 at center, 1 at edge
-    const xFade = float(1.0).sub(distToCenter); // 1 at center, 0 at edge
-    const softX = smoothstep(0.0, 1.0, xFade);
+    // 1. Core Shape (Soft edges on Cylinder via normalView, fade out on Y)
+    // normalView gives us the normal in view space. The z component is 0 at the edge.
+    const viewZ = normalView.z.abs();
+    // Use smoothstep for softer edge
+    const softX = smoothstep(0.0, 0.5, viewZ);
 
     // Fade out vertically (fade out at the bottom where UV.y -> 0)
+    // CylinderGeometry UV y goes 0 to 1 from bottom to top.
+    // Pivot was moved so y=25 is top.
     const softY = smoothstep(0.0, 0.8, vUv.y);
 
     const baseShape = softX.mul(softY);
 
     // 2. Procedural Animation (Swaying and Pulsing)
-    // Add subtle wave over time to make it feel "alive" or dusty
     const noiseSpeed = uTime.mul(0.5);
-    const sway = sin(vUv.y.mul(5.0).add(noiseSpeed)).mul(0.1);
-    // (Sway is calculated for potential future vertex displacement, but currently unused to keep instance matrix simple)
-
-    // We can't easily move vertices here without breaking the instance matrix simplicity,
-    // so we'll just animate the brightness for a "shimmer" effect
+    // Swirling procedural noise / sine waves
     const shimmer = sin(vUv.y.mul(10.0).sub(uTime.mul(2.0))).mul(0.2).add(0.8);
+    const shimmer2 = cos(vUv.x.mul(Math.PI * 2.0).add(uTime)).mul(0.1).add(0.9);
 
-    const finalAlpha = baseShape.mul(shimmer).mul(uIntensity);
+    // 3. Dynamic Player Interaction
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    // When player is close (dist < 20), increase intensity
+    const playerGlow = float(1.0).sub(smoothstep(0.0, 20.0, distToPlayer)).mul(0.5);
+
+    const finalAlpha = baseShape.mul(shimmer).mul(shimmer2).mul(uIntensity.add(playerGlow));
 
     mat.colorNode = vec4(uColor, finalAlpha);
 
     mat.userData.uColor = uColor;
     mat.userData.uIntensity = uIntensity;
+    mat.userData.uPlayerPos = uPlayerPos;
 
     return mat;
 }
@@ -97,7 +102,7 @@ export class GodRaySystem {
         this.scene = scene;
 
         // Long soft quad geometry
-        const geo = new THREE.PlaneGeometry(5, 50, 1, 1);
+        const geo = new THREE.CylinderGeometry(1.5, 6, 50, 16, 1, true);
 
         // Move pivot to the top of the quad (y = 25)
         geo.translate(0, -25, 0);
@@ -155,7 +160,7 @@ export class GodRaySystem {
         // Don't hide immediately, let update() fade it out
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number = 8.0) {
+    update(delta: number, cameraX: number, playerSpeed: number = 8.0, playerPos?: THREE.Vector3) {
         // Handle Fading
         const targetIntensity = this.active && this.currentConfig ? this.currentConfig.baseIntensity : 0.0;
 
@@ -178,6 +183,10 @@ export class GodRaySystem {
         const mat = this.mesh.material as any;
         if (mat.userData && mat.userData.uIntensity) {
             mat.userData.uIntensity.value = finalIntensity;
+        }
+
+        if (playerPos && mat && mat.userData && mat.userData.uPlayerPos) {
+            mat.userData.uPlayerPos.value.copy(playerPos);
         }
 
         // Parallax and Wrapping
