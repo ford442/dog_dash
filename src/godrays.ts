@@ -74,6 +74,7 @@ function createGodRayMaterial() {
 
     const finalAlpha = baseShape.mul(shimmer).mul(shimmer2).mul(uIntensity.add(playerGlow));
 
+    const sway = sin(vUv.y.mul(5.0).add(uTime)).mul(0.1);
     mat.colorNode = vec4(uColor, finalAlpha);
     mat.positionNode = vec3(positionLocal.x.add(sway.mul(15.0)), positionLocal.y, positionLocal.z);
 
