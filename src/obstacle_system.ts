@@ -355,6 +355,8 @@ export class ObstacleSystem {
         
         const positions = generatePatternPositions(pattern);
         
+        const config = this.options.getCurrentConfig();
+
         for (let i = 0; i < positions.length; i++) {
             const pos = positions[i];
             const size = 0.4 + Math.random() * 0.8;
@@ -363,6 +365,12 @@ export class ObstacleSystem {
             const hue = Math.random();
             const color = new THREE.Color().setHSL(hue, 0.7, 0.5);
             
+            // Environment Tinting: Tint enemies based on the level configuration
+            if (config?.enemyTintColor !== undefined) {
+                const tintColor = new THREE.Color(config.enemyTintColor);
+                color.lerp(tintColor, 0.6); // 60% environment color tint
+            }
+
             const enemy = this.createPatternEnemy(
                 pos.x, pos.y, pos.z || 0, 
                 size, 
