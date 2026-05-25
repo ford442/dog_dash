@@ -37,6 +37,7 @@ export type LevelConfig = {
         color: number;
         speedMultiplier: number;
     };
+    enemyTintColor?: number;
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
@@ -160,6 +161,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         name: "The Astral Leviathan",
         distance: 4200,
         asteroidRate: 2.5,
+        enemyTintColor: 0xff1493, // Nebula pink/purple tint
         foliageDensity: {
             fern: 5,
             rose: 4,
