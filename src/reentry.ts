@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import {
     MeshBasicNodeMaterial,
-    MeshPhysicalNodeMaterial // Using Node material for consistency if we update distortion later, but currently standard MeshPhysical
+    // @ts-ignore
+    MeshPhysicalNodeMaterial
 } from 'three/webgpu';
 import {
     time,
     positionLocal,
     uv,
+    normalLocal,
     vec2,
     vec3,
     vec4,
@@ -18,30 +20,6 @@ import {
     float
 } from 'three/tsl';
 
-// Generate a simple noise normal map for distortion
-function createNoiseNormalMap() {
-    const size = 256;
-    const data = new Uint8Array(size * size * 4);
-    for (let i = 0; i < size * size * 4; i += 4) {
-        // Generate random normals (mostly pointing up Z)
-        // x, y deviation -0.5 to 0.5 mapped to 0-255
-        const x = Math.random() * 255;
-        const y = Math.random() * 255;
-        const z = 255; // Pointing up
-
-        data[i] = x;
-        data[i + 1] = y;
-        data[i + 2] = z;
-        data[i + 3] = 255;
-    }
-    const tex = new THREE.DataTexture(data, size, size, THREE.RGBAFormat);
-    tex.wrapS = THREE.RepeatWrapping;
-    tex.wrapT = THREE.RepeatWrapping;
-    tex.needsUpdate = true;
-    return tex;
-}
-
-const distortionMap = createNoiseNormalMap();
 const HEAT_COLOR = new THREE.Color(0xff4400);
 
 /**
@@ -109,20 +87,27 @@ export class ReEntrySystem {
 
         // 1. Heat Distortion Mesh (Physical Material with Transmission)
         // This provides the "wobbly" look by refracting the background
-        const distMat = new THREE.MeshPhysicalMaterial({
+        const distMat = new MeshPhysicalNodeMaterial({
             color: 0xffaa00, // Slight orange tint to the glass
             roughness: 0.2,
             metalness: 0.0,
             transmission: 0.95, // High transmission = glass-like
             thickness: 0.5,
             ior: 1.1, // Slight refraction
-            normalMap: distortionMap, // The noise map drives distortion
-            normalScale: new THREE.Vector2(0.5, 0.5),
             transparent: true,
             opacity: 0.0, // Start invisible
             depthWrite: false,
             side: THREE.DoubleSide
         });
+
+        // TSL normal node for horizontal line distortion (heat haze)
+        // We use sine waves based on world position and time
+        const pos = positionLocal;
+        const hazeNormalX = sin(pos.y.mul(20.0).add(time.mul(10.0))).mul(0.1);
+        const hazeNormalY = sin(pos.x.mul(15.0).sub(time.mul(8.0))).mul(0.05);
+
+        distMat.normalNode = vec3(normalLocal.x.add(hazeNormalX), normalLocal.y.add(hazeNormalY), normalLocal.z);
+
 
         // Full screen quad attached to camera
         const geometry = new THREE.PlaneGeometry(2, 2);
@@ -177,7 +162,7 @@ export class ReEntrySystem {
     }
 
     update(delta: number, cameraX: number, cameraY: number, player?: THREE.Object3D) {
-        const matDist = this.heatDistortionMesh.material as THREE.MeshPhysicalMaterial;
+        const matDist = this.heatDistortionMesh.material as MeshPhysicalNodeMaterial;
         const matGlow = this.heatGlowMesh.material as THREE.MeshBasicMaterial;
 
         // Fade Logic
@@ -207,12 +192,6 @@ export class ReEntrySystem {
 
         // Glow: Max 0.3 opacity to not blind player
         matGlow.opacity = intensity * 0.3;
-
-        // Animate Distortion (Scroll the normal map)
-        if (matDist.normalMap) {
-            matDist.normalMap.offset.x -= delta * 0.5; // Scroll horizontally
-            matDist.normalMap.offset.y -= delta * 0.2; // And slightly vertically
-        }
 
         // Pulse the Glow
         const pulse = 1.0 + Math.sin(Date.now() * 0.01) * 0.2;
