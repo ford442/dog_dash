@@ -289,25 +289,16 @@ const materials = {
 };
 
 // --- WASM Setup ---
+import { loadWasm as loadWasmModule } from './wasm_loader';
+
 let wasmExports: any = null;
 let wasmMemory: Float32Array | null = null;
 
 async function loadWasm() {
-    try {
-        // Fetch the compiled WASM binary
-        const response = await fetch('./build/optimized.wasm');
-        const buffer = await response.arrayBuffer();
-        const module = await WebAssembly.instantiate(buffer, {
-            env: {
-                abort: () => console.log('Abort called from WASM')
-            }
-        });
-        
-        wasmExports = module.instance.exports;
-        wasmMemory = new Float32Array((wasmExports.memory as WebAssembly.Memory).buffer);
-        console.log("✅ WASM Module Loaded");
-    } catch (err) {
-        console.error("❌ Failed to load WASM:", err);
+    const handle = await loadWasmModule();
+    if (handle) {
+        wasmExports = handle.exports;
+        wasmMemory  = handle.memory;
     }
 }
 
