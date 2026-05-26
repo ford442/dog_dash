@@ -10,6 +10,9 @@
     "preview": "vite preview",
     "build:wasm": "asc assembly/index.ts -o build/optimized.wasm -t build/optimized.wat --sourceMap --initialMemory 2 --optimize",
     "copy:wasm": "node -e \"const fs=require('fs'); fs.mkdirSync('public/build', { recursive: true }); ['optimized.wasm','optimized.wasm.map'].forEach(f => { const src = 'build/' + f; const dest = 'public/build/' + f; if (fs.existsSync(src)) fs.copyFileSync(src, dest); });\"",
+    "build:cpp-wasm": "bash cpp/build.sh --release",
+    "build:cpp-wasm:debug": "bash cpp/build.sh",
+    "copy:cpp-wasm": "node -e \"const fs=require('fs'); const src='build/game_cpp.wasm'; const dest='public/build/game_cpp.wasm'; if(fs.existsSync(src)){fs.mkdirSync('public/build',{recursive:true}); fs.copyFileSync(src,dest); console.log('Copied',dest);}\"",
     "predev": "npm run build:wasm && npm run copy:wasm",
     "watch:wasm": "node scripts/watch-wasm.cjs"
   },
