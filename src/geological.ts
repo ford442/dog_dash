@@ -1117,29 +1117,145 @@ export interface GravityAnchorInteraction {
     isInfluencing: boolean;
     /** Set to true on the frame the player exits the field after a clean sling arc. */
     slungExit: boolean;
+    /** Distance from player to anchor center this frame (0 when not influencing). */
+    distance: number;
+    /** Approximate angular speed of the player around the anchor (radians/s). */
+    angularSpeed: number;
 }
+
+/** Per-biome visual identity for Gravity Anchors. */
+interface GravityAnchorBiomeConfig {
+    coreColor: number;
+    coreEmissive: number;
+    coreMetalness: number;
+    coreRoughness: number;
+    coreClearcoat: number;
+    coreTransmission: number;
+    glowColor: number;
+    ringColors: number[];
+    ringCount: number;
+    inflowColor: number;
+}
+
+const GRAVITY_ANCHOR_BIOMES: { [biome: number]: GravityAnchorBiomeConfig } = {
+    // 1 — The Neon Garden: soft organic jelly-star, fractal moss rings, spore inflow
+    1: {
+        coreColor:       0x44ff99,
+        coreEmissive:    0x00ff66,
+        coreMetalness:   0.0,
+        coreRoughness:   0.05,
+        coreClearcoat:   0.8,
+        coreTransmission: 0.5,
+        glowColor:       0x00ff88,
+        ringColors:      [0x88ffcc, 0x44ff88, 0xaaffaa, 0x22dd66],
+        ringCount:       4,
+        inflowColor:     0x66ffaa
+    },
+    // 2 — The Asteroid Belt: dense rusted iron core, metallic debris rings, ember sparks
+    2: {
+        coreColor:       0x8b4513,
+        coreEmissive:    0xff4400,
+        coreMetalness:   0.9,
+        coreRoughness:   0.55,
+        coreClearcoat:   0.1,
+        coreTransmission: 0.0,
+        glowColor:       0xff6600,
+        ringColors:      [0xcc6622, 0xaa4400, 0xff8833],
+        ringCount:       3,
+        inflowColor:     0xff6600
+    },
+    // 3 — Orbital Descent: heat-distorted crystal, re-entry flame trails
+    3: {
+        coreColor:       0x0088ff,
+        coreEmissive:    0xff8800,
+        coreMetalness:   0.1,
+        coreRoughness:   0.0,
+        coreClearcoat:   1.0,
+        coreTransmission: 0.35,
+        glowColor:       0xff8833,
+        ringColors:      [0x00ccff, 0xff8800, 0xffcc00],
+        ringCount:       3,
+        inflowColor:     0xff9944
+    },
+    // 4 — The Rusty Gauntlet: industrial riveted well, warning strobe rings
+    4: {
+        coreColor:       0x443322,
+        coreEmissive:    0xffaa00,
+        coreMetalness:   0.95,
+        coreRoughness:   0.6,
+        coreClearcoat:   0.0,
+        coreTransmission: 0.0,
+        glowColor:       0xff8800,
+        ringColors:      [0xffaa00, 0xff4400, 0xffdd00],
+        ringCount:       3,
+        inflowColor:     0xffaa00
+    },
+    // 5 — The Astral Leviathan: bioluminescent whale-bone, memory-fog particles
+    5: {
+        coreColor:       0x220044,
+        coreEmissive:    0xff00ff,
+        coreMetalness:   0.05,
+        coreRoughness:   0.3,
+        coreClearcoat:   0.6,
+        coreTransmission: 0.2,
+        glowColor:       0xcc00ff,
+        ringColors:      [0xff44ff, 0x8800ff, 0x44ffff, 0xffffff],
+        ringCount:       4,
+        inflowColor:     0xdd44ff
+    },
+    // 6 — The Aqua Expanse: glowing coral + kelp, bubble-stream inflow
+    6: {
+        coreColor:       0x00ccaa,
+        coreEmissive:    0x00ffcc,
+        coreMetalness:   0.0,
+        coreRoughness:   0.1,
+        coreClearcoat:   0.9,
+        coreTransmission: 0.45,
+        glowColor:       0x00ffdd,
+        ringColors:      [0x00ddff, 0x00ffaa, 0x44bbff],
+        ringCount:       3,
+        inflowColor:     0x44ffee
+    }
+};
+
+/** Fallback biome config used when biome is 0 or unknown. */
+const GA_BIOME_DEFAULT: GravityAnchorBiomeConfig = {
+    coreColor:       0x8899ff,
+    coreEmissive:    0x2244dd,
+    coreMetalness:   0.2,
+    coreRoughness:   0.0,
+    coreClearcoat:   1.0,
+    coreTransmission: 0.25,
+    glowColor:       0x3355ff,
+    ringColors:      [0x44aaff, 0x9944ff, 0xff44bb],
+    ringCount:       3,
+    inflowColor:     0x4466ff
+};
+
 /**
- * Creates a Gravity Anchor: a large glossy crystalline icosahedron with a
- * pulsing emissive core and three orbiting additive rings.
+ * Creates a Gravity Anchor with biome-specific visual identity.
  *
- * @param config.size  Core radius in world units (8–15 recommended).
- * @param config.mass  Optional override for the gravitational force constant.
+ * @param config.size   Core radius in world units (8–15 recommended).
+ * @param config.mass   Optional override for the gravitational force constant.
+ * @param config.biome  Level index (1–6) that drives the visual theme.
  */
-export function createGravityAnchor(config: { size: number; mass?: number }): THREE.Group {
+export function createGravityAnchor(config: { size: number; mass?: number; biome?: number }): THREE.Group {
     const group = new THREE.Group();
     const { size } = config;
+    const bCfg: GravityAnchorBiomeConfig =
+        GRAVITY_ANCHOR_BIOMES[config.biome ?? 0] ?? GA_BIOME_DEFAULT;
 
-    // --- Core: glossy crystalline icosahedron ---
+    // --- Core: glossy icosahedron styled per biome ---
     const coreGeo = new THREE.IcosahedronGeometry(size, 1);
     const coreMat = new THREE.MeshPhysicalMaterial({
-        color: 0x8899ff,
-        emissive: 0x2244dd,
+        color:            bCfg.coreColor,
+        emissive:         bCfg.coreEmissive,
         emissiveIntensity: 1.5,
-        metalness: 0.2,
-        roughness: 0.0,
-        clearcoat: 1.0,
-        clearcoatRoughness: 0.0,
-        transmission: 0.25,
+        metalness:        bCfg.coreMetalness,
+        roughness:        bCfg.coreRoughness,
+        clearcoat:        bCfg.coreClearcoat,
+        clearcoatRoughness: 0.05,
+        transmission:     bCfg.coreTransmission,
         ior: 1.5,
         transparent: true,
         opacity: 0.92
@@ -1151,33 +1267,35 @@ export function createGravityAnchor(config: { size: number; mass?: number }): TH
     // --- Outer glow shell (back-side, additive) ---
     const glowGeo = new THREE.IcosahedronGeometry(size * 1.45, 1);
     const glowMat = new THREE.MeshBasicMaterial({
-        color: 0x3355ff,
+        color: bCfg.glowColor,
         transparent: true,
-        opacity: 0.12,
+        opacity: 0.14,
         side: THREE.BackSide,
         blending: THREE.AdditiveBlending,
         depthWrite: false
     });
     group.add(new THREE.Mesh(glowGeo, glowMat));
 
-    // --- Three orbiting rings with different tilts ---
-    const ringColors = [0x44aaff, 0x9944ff, 0xff44bb];
+    // --- Biome-specific orbiting rings (2–4 rings) ---
     const ringTilts: [number, number, number][] = [
-        [0.4, 0.0, 0.0],
-        [1.1, 0.5, 0.0],
-        [0.2, 1.2, 0.4]
+        [0.4,  0.0,  0.0],
+        [1.1,  0.5,  0.0],
+        [0.2,  1.2,  0.4],
+        [0.8, -0.3,  1.0]
     ];
-    for (let i = 0; i < 3; i++) {
+    const ringCount = bCfg.ringCount;
+    for (let i = 0; i < ringCount; i++) {
+        const ringColor = bCfg.ringColors[i % bCfg.ringColors.length];
         const ringGeo = new THREE.TorusGeometry(size * (1.9 + i * 0.45), 0.14, 8, 32);
         const ringMat = new THREE.MeshBasicMaterial({
-            color: ringColors[i],
+            color: ringColor,
             transparent: true,
             opacity: 0.55,
             blending: THREE.AdditiveBlending,
             depthWrite: false
         });
         const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.set(...ringTilts[i]);
+        ring.rotation.set(...ringTilts[i % ringTilts.length]);
         ring.userData.ringIndex = i;
         ring.userData.ringSpeedY = 0.35 + i * 0.18;
         ring.userData.ringSpeedZ = 0.22 + i * 0.12;
@@ -1186,17 +1304,21 @@ export function createGravityAnchor(config: { size: number; mass?: number }): TH
 
     group.userData = {
         type: 'gravityAnchor',
+        biome: config.biome ?? 0,
         fieldRadius: GA_FIELD_RADIUS,
         mass: config.mass ?? GA_MASS,
         size,
         coreObject: core,
+        inflowColor: bCfg.inflowColor,
         /** Marks this object as a valid target for the player's TetherSystem. */
         tetherable: true,
         /** Tracks whether the player was inside the field on the previous frame. */
         wasInField: false,
         /** Accumulated angle (radians) the player has swept around the anchor while inside. */
         sweepAngle: 0.0,
-        lastPlayerDir: null as THREE.Vector3 | null
+        lastPlayerDir: null as THREE.Vector3 | null,
+        /** Per-frame angular speed (radians/s) — updated in updateGravityAnchor. */
+        angularSpeed: 0.0
     };
 
     return group;
@@ -1218,7 +1340,9 @@ export function updateGravityAnchor(
     const result: GravityAnchorInteraction = {
         force: new THREE.Vector3(),
         isInfluencing: false,
-        slungExit: false
+        slungExit: false,
+        distance: 0,
+        angularSpeed: 0
     };
 
     const data = group.userData;
@@ -1253,6 +1377,7 @@ export function updateGravityAnchor(
     }
 
     result.isInfluencing = true;
+    result.distance = dist;
 
     // Softened inverse-square magnitude
     const soft2 = GA_SOFTENING * GA_SOFTENING;
@@ -1266,13 +1391,19 @@ export function updateGravityAnchor(
     result.force.copy(dir).multiplyScalar(forceMag * delta);
 
     // --- Sling detection: accumulate sweep angle while in field ---
+    let frameAngle = 0;
     if (data.lastPlayerDir) {
         const cosAngle = THREE.MathUtils.clamp(
             (data.lastPlayerDir as THREE.Vector3).dot(dir), -1, 1
         );
-        data.sweepAngle += Math.acos(cosAngle);
+        frameAngle = Math.acos(cosAngle);
+        data.sweepAngle += frameAngle;
     }
     data.lastPlayerDir = dir.clone();
+
+    // Angular speed in radians/s (smoothed to avoid spikes on first frame)
+    data.angularSpeed = delta > 0 ? frameAngle / delta : 0;
+    result.angularSpeed = data.angularSpeed as number;
 
     // --- Sling exit bonus: trigger on the first frame outside after a sweep ≥ 70° ---
     const wasIn = data.wasInField as boolean;

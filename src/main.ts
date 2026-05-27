@@ -915,8 +915,8 @@ function createMagmaHeartAtPosition(x: number, y: number, z: number) {
 // Gravity Anchors — Stellar Cores with localized inverse-square force fields
 const gravityAnchors: THREE.Group[] = [];
 
-function createGravityAnchorAtPosition(x: number, y: number, z: number) {
-    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7 });
+function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
+    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
     anchor.position.set(x, y, z);
     scene.add(anchor);
     gravityAnchors.push(anchor);
@@ -1044,9 +1044,9 @@ scene.add(moon);
 
 // --- Phase 1 test constellation: 3 Gravity Anchors in Level 1 (Neon Garden) ---
 // Intentionally placed at different heights to encourage curved sling arcs.
-createGravityAnchorAtPosition(80,  5, -25);
-createGravityAnchorAtPosition(180, -6, -20);
-createGravityAnchorAtPosition(280,  8, -22);
+createGravityAnchorAtPosition(80,  5, -25, 1);
+createGravityAnchorAtPosition(180, -6, -20, 1);
+createGravityAnchorAtPosition(280,  8, -22, 1);
 
 // --- Slingable debris prototype cluster (Phase 1 MVP test zone) ---
 createSlingableObjectAtPosition(96, 3, -14, {
@@ -2937,9 +2937,21 @@ function animate() {
         magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 
         // Update Gravity Anchors — apply inverse-square field forces to player Y velocity
+        let nearestGravDist = Infinity;
+        let nearestGravAngularSpeed = 0;
+        let anyInfluencing = false;
+
         gravityAnchors.forEach(anchor => {
             const interaction = updateGravityAnchor(anchor, delta, time, player.position);
             if (interaction.isInfluencing) {
+                anyInfluencing = true;
+
+                // Track the closest anchor for audio hum
+                if (interaction.distance < nearestGravDist) {
+                    nearestGravDist = interaction.distance;
+                    nearestGravAngularSpeed = interaction.angularSpeed;
+                }
+
                 // Apply Y component of radial force to vertical speed
                 playerState.currentSpeedY += interaction.force.y;
                 // Clamp to keep the flight model intact
@@ -2959,25 +2971,33 @@ function animate() {
                     // Record a perfect gravity-arc sling in the combo chain
                     slingComboManager.recordSlingAction('perfect', player.position.clone());
 
+                    // Sling release doppler whoosh
+                    audioSystem.playGravitySlingRelease('perfect', slingComboManager.getCombo());
+
                     // Tarsiers near this anchor cheer the clean sling-arc!
                     if (debugSystem.isEnabled('spaceFriends')) {
                         friendsManager.cheerTarsiersNearAnchor(anchor.position);
                         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.8);
                     }
                 }
-                // Subtle particle inflow effect
+                // Inflow particles — emit from random field-edge position toward core
                 if (Math.random() < 0.08) {
-                    const fieldCenter = anchor.position.clone();
-                    const offset = new THREE.Vector3(
-                        (Math.random() - 0.5) * 20,
-                        (Math.random() - 0.5) * 20,
-                        (Math.random() - 0.5) * 10
+                    const inflowColor: number = (anchor.userData.inflowColor as number) ?? 0x4466ff;
+                    const fieldR = (anchor.userData.fieldRadius as number) ?? 40;
+                    // Random point on the field sphere surface
+                    const theta = Math.random() * Math.PI * 2;
+                    const phi   = Math.acos(2 * Math.random() - 1);
+                    const spawnPos = new THREE.Vector3(
+                        anchor.position.x + fieldR * 0.7 * Math.sin(phi) * Math.cos(theta),
+                        anchor.position.y + fieldR * 0.7 * Math.sin(phi) * Math.sin(theta),
+                        anchor.position.z + fieldR * 0.3 * Math.cos(phi)
                     );
-                    particleSystem.emit(
-                        fieldCenter.add(offset),
-                        0x4466ff,
-                        1, 1.5, 0.4
-                    );
+                    // Velocity directed inward (toward anchor)
+                    const inwardDir = new THREE.Vector3()
+                        .subVectors(anchor.position, spawnPos)
+                        .normalize()
+                        .multiplyScalar(2.5 + Math.random() * 1.5);
+                    particleSystem.emit(spawnPos, inflowColor, 1, inwardDir.length(), 0.35);
                 }
 
                 // Dog becomes curious when first entering a gravity anchor's field
@@ -2993,6 +3013,14 @@ function animate() {
                 anchor.userData.dogCuriousTriggered = false;
             }
         });
+
+        // Gravity hum audio — start/update/stop based on field presence
+        if (anyInfluencing) {
+            audioSystem.startGravityHum();
+            audioSystem.updateGravityHum(nearestGravDist, nearestGravAngularSpeed);
+        } else {
+            audioSystem.stopGravityHum();
+        }
     }
 
     // Update industrial obstacles (Level 4)

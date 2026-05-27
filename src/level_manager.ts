@@ -465,7 +465,7 @@ export class LevelManager {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -35 + Math.random() * 25;
-                createGravityAnchorAtPosition(x, y, z);
+                createGravityAnchorAtPosition(x, y, z, this.currentLevel);
             }
         }
     }
