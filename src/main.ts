@@ -902,6 +902,13 @@ function createGravityAnchorAtPosition(x: number, y: number, z: number) {
     anchor.position.set(x, y, z);
     scene.add(anchor);
     gravityAnchors.push(anchor);
+
+    // Spawn 2–4 Astro Tarsiers that cling and orbit this anchor
+    if (debugSystem.isEnabled('spaceFriends')) {
+        const count = 2 + Math.floor(Math.random() * 3);
+        friendsManager.spawnTarsiersNearAnchor(anchor.position, count);
+    }
+
     return anchor;
 }
 
@@ -2668,6 +2675,23 @@ function animate() {
 
             // Update boss health bar UI
             updateBossHealthBar(squids);
+
+            // Tarsiers panic when a projectile passes near a gravity anchor
+            if (debugSystem.isEnabled('spaceFriends') && gravityAnchors.length > 0) {
+                for (const proj of projectiles) {
+                    if (!proj.active) continue;
+                    for (const anchor of gravityAnchors) {
+                        if (proj.mesh.position.distanceTo(anchor.position) < 22) {
+                            friendsManager.panicTarsiersNear(anchor.position);
+                            // Dog notices the commotion
+                            if (dogController.getCurrentState() === DogAnimationState.IDLE) {
+                                dogController.triggerAnimation(DogAnimationState.CURIOUS, 1.2);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -2897,6 +2921,12 @@ function animate() {
                         CONFIG.player.maxSpeedY
                     );
                     particleSystem.emit(player.position.clone(), 0x44aaff, 12, 3.0, 0.6);
+
+                    // Tarsiers near this anchor cheer the clean sling-arc!
+                    if (debugSystem.isEnabled('spaceFriends')) {
+                        friendsManager.cheerTarsiersNearAnchor(anchor.position);
+                        dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.8);
+                    }
                 }
                 // Subtle particle inflow effect
                 if (Math.random() < 0.08) {
@@ -2912,6 +2942,18 @@ function animate() {
                         1, 1.5, 0.4
                     );
                 }
+
+                // Dog becomes curious when first entering a gravity anchor's field
+                if (!anchor.userData.dogCuriousTriggered) {
+                    anchor.userData.dogCuriousTriggered = true;
+                    if (dogController.getCurrentState() === DogAnimationState.IDLE ||
+                        dogController.getCurrentState() === DogAnimationState.THRUST) {
+                        dogController.triggerAnimation(DogAnimationState.CURIOUS, 1.5);
+                    }
+                }
+            } else {
+                // Reset curious flag when player exits the field
+                anchor.userData.dogCuriousTriggered = false;
             }
         });
     }

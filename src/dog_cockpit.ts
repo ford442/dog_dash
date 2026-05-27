@@ -13,7 +13,9 @@ export enum DogAnimationState {
     COLLECT = 'collect',
     POWER_UP = 'power_up',
     HIT = 'hit',
-    VICTORY = 'victory'
+    VICTORY = 'victory',
+    CURIOUS = 'curious',
+    DELIGHTED = 'delighted'
 }
 
 /** Accessory types that can be unlocked and equipped */
@@ -356,6 +358,12 @@ export class DogCockpitController {
             case DogAnimationState.VICTORY:
                 this.animateVictory(deltaTime);
                 break;
+            case DogAnimationState.CURIOUS:
+                this.animateCurious(deltaTime);
+                break;
+            case DogAnimationState.DELIGHTED:
+                this.animateDelighted(deltaTime);
+                break;
         }
     }
     
@@ -544,6 +552,82 @@ export class DogCockpitController {
         this.excitement = 1;
         this.happiness = 1;
     }
+
+    /** CURIOUS: Head tilts sideways, one ear perks, slow tail wag */
+    private animateCurious(deltaTime: number): void {
+        // One ear up, one relaxed — curious asymmetry
+        if (this.bones.leftEar) {
+            const data = this.boneData.get('leftEar');
+            if (data) {
+                this.bones.leftEar.rotation.x = THREE.MathUtils.lerp(
+                    this.bones.leftEar.rotation.x,
+                    data.baseRotation.x - 0.5,
+                    0.08
+                );
+            }
+        }
+        if (this.bones.rightEar) {
+            const data = this.boneData.get('rightEar');
+            if (data) {
+                this.bones.rightEar.rotation.x = THREE.MathUtils.lerp(
+                    this.bones.rightEar.rotation.x,
+                    data.baseRotation.x + 0.15,
+                    0.08
+                );
+            }
+        }
+
+        // Head tilts to one side
+        if (this.bones.head || this.bones.pilotHead) {
+            const head = this.bones.head || this.bones.pilotHead!;
+            const data = this.boneData.get('head') || this.boneData.get('pilotHead');
+            if (data) {
+                head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, data.baseRotation.z + 0.35, 0.08);
+                head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, data.baseRotation.x - 0.1, 0.08);
+            }
+        }
+
+        // Slow, thoughtful tail wag
+        this.wagTail(2.5, 0.2);
+        this.happiness = Math.min(1, this.happiness + deltaTime * 0.3);
+    }
+
+    /** DELIGHTED: Tail frenzy, head bobs forward, bright happy energy */
+    private animateDelighted(deltaTime: number): void {
+        // Fast joyful tail wag (faster than collect, softer than power_up)
+        this.wagTail(14, 0.45);
+
+        // Both ears perked forward
+        this.perkEars(0.7);
+
+        // Happy bouncy head
+        const bobTime = this.time * 9;
+        if (this.bones.head || this.bones.pilotHead) {
+            const head = this.bones.head || this.bones.pilotHead!;
+            const data = this.boneData.get('head') || this.boneData.get('pilotHead');
+            if (data) {
+                head.position.y = data.basePosition.y + Math.abs(Math.sin(bobTime)) * 0.06;
+                head.rotation.z = Math.sin(bobTime * 0.5) * 0.08;
+            }
+        }
+
+        // Gentle body wiggle
+        if (this.bones.body || this.bones.pilotGroup) {
+            const body = this.bones.body || this.bones.pilotGroup!;
+            const data = this.boneData.get('body') || this.boneData.get('pilotGroup');
+            if (data) {
+                body.rotation.z = Math.sin(this.time * 7) * 0.05;
+            }
+        }
+
+        // Occasional happy sparkle
+        if (Math.random() < 0.2) {
+            this.spawnHappyParticles();
+        }
+
+        this.excitement = Math.min(1, this.excitement + deltaTime * 1.5);
+        this.happiness = 1;
+    }
     
     /** Return to idle state */
     private returnToIdle(): void {
@@ -673,6 +757,15 @@ export class DogCockpitController {
                 for (let i = 0; i < 5; i++) {
                     setTimeout(() => this.spawnHappyParticles(), i * 100);
                 }
+                break;
+            case DogAnimationState.CURIOUS:
+                // Tilt head immediately
+                this.tiltHead(0.35);
+                break;
+            case DogAnimationState.DELIGHTED:
+                // Perk ears and spawn initial burst of sparkles
+                this.perkEars(0.8);
+                this.spawnHappyParticles();
                 break;
         }
     }
