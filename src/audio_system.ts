@@ -2306,6 +2306,101 @@ export class AudioSystem {
     }
 
     /**
+     * Play tether latch sound — low thud + rising energy hum
+     */
+    playTetherLatch() {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        if (this.activeVoices >= this.maxVoices) return;
+        this.activeVoices++;
+        setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 500);
+
+        const now = this.ctx.currentTime;
+
+        // Impact thud: low sine burst
+        const thud = this.ctx.createOscillator();
+        thud.type = 'sine';
+        thud.frequency.setValueAtTime(120, now);
+        thud.frequency.exponentialRampToValueAtTime(55, now + 0.18);
+
+        const thudGain = this.ctx.createGain();
+        thudGain.gain.setValueAtTime(0.55, now);
+        thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+        thud.connect(thudGain);
+        thudGain.connect(this.sfxGain);
+        thud.start(now);
+        thud.stop(now + 0.22);
+
+        // Rising energy hum
+        const hum = this.ctx.createOscillator();
+        hum.type = 'sawtooth';
+        hum.frequency.setValueAtTime(200, now + 0.05);
+        hum.frequency.linearRampToValueAtTime(420, now + 0.35);
+
+        const humFilter = this.ctx.createBiquadFilter();
+        humFilter.type = 'bandpass';
+        humFilter.frequency.value = 320;
+        humFilter.Q.value = 3;
+
+        const humGain = this.ctx.createGain();
+        humGain.gain.setValueAtTime(0, now + 0.05);
+        humGain.gain.linearRampToValueAtTime(0.12, now + 0.12);
+        humGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+        hum.connect(humFilter);
+        humFilter.connect(humGain);
+        humGain.connect(this.sfxGain);
+        hum.start(now + 0.05);
+        hum.stop(now + 0.45);
+    }
+
+    /**
+     * Play tether release / sling whoosh — fast rising broadband sweep
+     */
+    playTetherRelease() {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        if (this.activeVoices >= this.maxVoices) return;
+        this.activeVoices++;
+        setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 600);
+
+        const now = this.ctx.currentTime;
+
+        // Fast rising broadband whoosh
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.5);
+        const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const src = this.ctx.createBufferSource();
+        src.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(250, now);
+        filter.frequency.exponentialRampToValueAtTime(3500, now + 0.4);
+        filter.Q.value = 1.8;
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.sfxGain);
+        if (this.reverbSend) {
+            const revGain = this.ctx.createGain();
+            revGain.gain.value = 0.25;
+            gain.connect(revGain);
+            revGain.connect(this.reverbSend);
+        }
+        src.start(now);
+    }
+
+    /**
      * Play graze / near-miss sound — bright, quick, satisfying chirp
      */
     playGraze(combo: number = 1) {

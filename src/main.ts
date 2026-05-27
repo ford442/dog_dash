@@ -93,6 +93,7 @@ import type { NebulaKraken } from './space_robot_squid';
 import { BOSS_DISPLAY_NAME } from './space_robot_squid';
 import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
+import { TetherSystem } from './tether_system';
 import { ButterflySwarmSystem } from './butterfly_swarm';
 import { LevelManager } from './level_manager';
 import { DebugSystem } from './debug_system';
@@ -709,6 +710,27 @@ const rollSystem = new RollSystem({
     }
 });
 
+// TETHER SYSTEM
+const tetherSystem = new TetherSystem(scene, {
+    maxRange: 60,
+    pullStrength: 18,
+    cooldown: 3,
+    slingImpulse: 22,
+    onLatch: (_anchorPos) => {
+        audioSystem.playTetherLatch();
+        juiceManager.shakeScreen(ShakeType.MEDIUM, 0.2);
+        updateTetherDisplay();
+    },
+    onRelease: (_impulse) => {
+        audioSystem.playTetherRelease();
+        juiceManager.shakeScreen(ShakeType.MEDIUM, 0.3);
+        updateTetherDisplay();
+    },
+    onCooldownEnd: () => {
+        updateTetherDisplay();
+    }
+});
+
 // SWARM #3 - DREAMY ENVIRONMENTS
 const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
 const candyManager = new CandyBeltManager(scene, audioSystem, particleSystem);
@@ -1111,6 +1133,7 @@ if (instructions) {
         createCoresDisplay();
         createBoostDisplay();
         createRollDisplay();
+        createTetherDisplay();
 
         // Add roll popup keyframes
         const rollStyle = document.createElement('style');
@@ -1419,6 +1442,84 @@ function showRollPopup() {
     setTimeout(() => popup.remove(), 600);
 }
 
+function createTetherDisplay() {
+    const tetherDiv = document.createElement('div');
+    tetherDiv.id = 'tether-display';
+    tetherDiv.style.cssText = `
+        position: absolute;
+        bottom: 70px;
+        right: 220px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 100;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        color: #00ffcc;
+        text-shadow: 0 0 8px rgba(0,255,204,0.6);
+    `;
+
+    const label = document.createElement('span');
+    label.textContent = 'TETHER [T]';
+    tetherDiv.appendChild(label);
+
+    const circle = document.createElement('div');
+    circle.id = 'tether-cooldown';
+    circle.style.cssText = `
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 3px solid rgba(0,255,204,0.4);
+        background: conic-gradient(#00ffcc 100%, transparent 100%);
+        transition: transform 0.1s;
+    `;
+    tetherDiv.appendChild(circle);
+
+    const dot = document.createElement('div');
+    dot.id = 'tether-ready';
+    dot.style.cssText = `
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #00ffcc;
+        box-shadow: 0 0 6px #00ffcc;
+        opacity: 1;
+        transition: opacity 0.3s;
+    `;
+    tetherDiv.appendChild(dot);
+
+    document.body.appendChild(tetherDiv);
+}
+
+function updateTetherDisplay() {
+    const circle = document.getElementById('tether-cooldown');
+    const dot = document.getElementById('tether-ready');
+    if (!circle || !dot) return;
+
+    const cooldownRatio = tetherSystem.getCooldownRatio();
+    const isLatched = tetherSystem.isLatched();
+    const canTether = tetherSystem.canTether();
+
+    if (isLatched) {
+        circle.style.background = 'conic-gradient(#00ffcc 100%, transparent 100%)';
+        circle.style.transform = 'scale(1.3)';
+        circle.style.borderColor = '#00ffcc';
+        dot.style.opacity = '0';
+    } else if (canTether) {
+        circle.style.background = 'conic-gradient(#00ffcc 100%, transparent 100%)';
+        circle.style.transform = 'scale(1.0)';
+        circle.style.borderColor = 'rgba(0,255,204,0.4)';
+        dot.style.opacity = '1';
+    } else {
+        const percent = Math.floor(cooldownRatio * 100);
+        circle.style.background = `conic-gradient(#00ffcc ${percent}%, transparent ${percent}%)`;
+        circle.style.transform = 'scale(1.0)';
+        circle.style.borderColor = 'rgba(0,255,204,0.4)';
+        dot.style.opacity = '0.3';
+    }
+}
+
 // Cores Display UI
 function createCoresDisplay() {
     const coresDiv = document.createElement('div');
@@ -1459,6 +1560,12 @@ let lastLeftTapTime = 0;
 let lastRightTapTime = 0;
 let wantsRoll = false;
 let wasTouchRolling = false;
+
+// --- Tether System ---
+let wantsTether = false;
+let wantsReleaseTether = false;
+let tetherKeyHeld = false;
+let tetherMouseHeld = false;
 
 canvas.addEventListener('click', (event) => {
     if (!gameStarted) return;
@@ -1519,6 +1626,35 @@ if (instructions) {
         gameStarted = true;
     }, { once: true });
 }
+
+// --- Tether input: T key (hold to latch, release to sling) ---
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'KeyT' && !e.repeat && gameStarted) {
+        tetherKeyHeld = true;
+        wantsTether = true;
+    }
+});
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'KeyT') {
+        tetherKeyHeld = false;
+        if (tetherSystem.isLatched()) wantsReleaseTether = true;
+    }
+});
+
+// --- Tether input: Right-click (hold to latch, release to sling) ---
+canvas.addEventListener('mousedown', (e) => {
+    if (e.button === 2 && gameStarted) {
+        tetherMouseHeld = true;
+        wantsTether = true;
+    }
+});
+canvas.addEventListener('mouseup', (e) => {
+    if (e.button === 2) {
+        tetherMouseHeld = false;
+        if (tetherSystem.isLatched()) wantsReleaseTether = true;
+    }
+});
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // =============================================================================
 // PHYSICS & COLLISION - Smooth Direct Control (No Thrust/Gravity Bobbing)
@@ -1780,6 +1916,58 @@ function updatePlayer(delta: number) {
                     }
                 }
             });
+        }
+    }
+
+    // --- TETHER SYSTEM ---
+    const tetherForce = tetherSystem.update(delta, player.position);
+
+    // Apply spring force while latched
+    if (tetherSystem.isLatched()) {
+        playerState.currentSpeedY += tetherForce.y;
+        playerState.currentSpeedY = THREE.MathUtils.clamp(
+            playerState.currentSpeedY,
+            -CONFIG.player.maxDescentSpeed * 1.5,
+            CONFIG.player.maxSpeedY * 1.5
+        );
+
+        // Emit particles along the tether beam
+        const anchorPos = tetherSystem.getAnchorPosition();
+        if (anchorPos && Math.random() < 0.3) {
+            const t = Math.random();
+            const beamPoint = player.position.clone().lerp(anchorPos, t);
+            particleSystem.emit(beamPoint, 0x00ffcc, 1, 2.5, 0.4, 0.15);
+        }
+    }
+
+    // Activate tether: T or right-click pressed
+    if (wantsTether) {
+        wantsTether = false;
+        if (tetherSystem.canTether() && !rollSystem.isRolling()) {
+            tetherSystem.activate(gravityAnchors, player.position);
+        }
+    }
+
+    // Release tether: T or right-click released
+    if (wantsReleaseTether) {
+        wantsReleaseTether = false;
+        if (tetherSystem.isLatched()) {
+            const impulse = tetherSystem.release(player.position);
+            // Apply sling impulse to vertical speed
+            playerState.currentSpeedY = THREE.MathUtils.clamp(
+                playerState.currentSpeedY + impulse.y,
+                -CONFIG.player.maxDescentSpeed * 1.5,
+                CONFIG.player.maxSpeedY * 2.0
+            );
+            // Minor forward speed boost from X component
+            const xBoost = Math.abs(impulse.x) * 0.25;
+            playerState.autoScrollSpeed = Math.min(
+                playerState.autoScrollSpeed + xBoost,
+                30
+            );
+            // Burst particles at player position
+            particleSystem.emit(player.position.clone(), 0x00ffcc, 16, 6.0, 0.9, 0.3);
+            dogController.triggerAnimation(DogAnimationState.POWER_UP, 0.6);
         }
     }
 
@@ -2743,6 +2931,7 @@ function animate() {
     updateCoresDisplay();
     updateBoostDisplay();
     updateRollDisplay();
+    updateTetherDisplay();
     
     // Check if player reached the moon (or defeated boss in level 1)
     if (player && player.position.x >= playerState.distanceToMoon - 10 && !playerState.hasWon && !playerState.bossActive) {
