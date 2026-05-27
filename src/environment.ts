@@ -18,7 +18,9 @@ import {
     createIceNeedleCluster,
     updateIceNeedleCluster,
     createMagmaHeart,
-    updateMagmaHeart
+    updateMagmaHeart,
+    createGravityAnchor,
+    updateGravityAnchor
 } from './geological';
 import { createSolarSail, updateSolarSail } from './foliage';
 import { createSubwooferLotus, createFiberOpticWillow, createGlowingFlower } from './foliage';
@@ -180,6 +182,17 @@ export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number)
     return blob;
 }
 
+// Gravity Anchors — Stellar Cores with localized inverse-square force fields
+export const gravityAnchors: THREE.Group[] = [];
+
+export function createGravityAnchorAtPosition(x: number, y: number, z: number) {
+    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7 });
+    anchor.position.set(x, y, z);
+    scene.add(anchor);
+    gravityAnchors.push(anchor);
+    return anchor;
+}
+
 // Magma Hearts - eruption cycle mechanics
 export const magmaHearts: THREE.Group[] = [];
 
@@ -277,6 +290,16 @@ export function cleanupGeologicalObjects(cameraX: number) {
             scene.remove(heart);
             disposeObject(heart);
             magmaHearts.splice(i, 1);
+        }
+    }
+
+    // Gravity anchors
+    for (let i = gravityAnchors.length - 1; i >= 0; i--) {
+        const anchor = gravityAnchors[i];
+        if (anchor.position.x < cutoff) {
+            scene.remove(anchor);
+            disposeObject(anchor);
+            gravityAnchors.splice(i, 1);
         }
     }
 }

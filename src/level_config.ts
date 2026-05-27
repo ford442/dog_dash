@@ -19,6 +19,7 @@ export type LevelConfig = {
         iceNeedle?: number;
         liquidMetal?: number;
         magmaHeart?: number;
+        gravityAnchor?: number;
     };
     ghostDebrisDensity?: number;
     speed: number;
@@ -61,7 +62,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vacuumKelp: 10,
             iceNeedle: 15,
             liquidMetal: 8,
-            magmaHeart: 5
+            magmaHeart: 5,
+            gravityAnchor: 3
         },
         speed: 8,
         bgColor: 0x1a1a2e,
