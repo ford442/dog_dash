@@ -107,10 +107,12 @@ const HUD_STYLES = `
     to { transform: rotate(360deg); }
 }
 
-@keyframes hud-countdown-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(0.9); }
+@keyframes sling-surge-pulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 16px rgba(200,68,255,0.8), inset 0 1px 0 rgba(255,255,255,0.4); }
+    50% { transform: scale(1.1); box-shadow: 0 0 32px rgba(200,68,255,1.0), inset 0 1px 0 rgba(255,255,255,0.4); }
 }
+
+
 
 .hud-element {
     font-family: 'Segoe UI', 'Comic Sans MS', cursive, sans-serif;
@@ -206,6 +208,8 @@ export class HUDManager {
     private victoryScreen: HTMLDivElement | null = null;
     private gameOverScreen: HTMLDivElement | null = null;
     private grazeComboDisplay: HTMLDivElement | null = null;
+    private slingComboDisplay: HTMLDivElement | null = null;
+    private slingComboLabel: HTMLSpanElement | null = null;
     
     // Active power-up tracking
     private activePowerUps: Map<PowerUpType, { element: HTMLDivElement; timeout: number }> = new Map();
@@ -241,6 +245,7 @@ export class HUDManager {
         this.createPowerUpDisplay();
         this.createOrbProgressDisplay();
         this.createGrazeComboDisplay();
+        this.createSlingComboDisplay();
     }
     
     /**
@@ -453,7 +458,83 @@ export class HUDManager {
         this.grazeComboDisplay.style.opacity = '0';
         this.grazeComboDisplay.style.transform = 'scale(0.8)';
     }
-    
+
+    /**
+     * Create sling combo display — arc-shaped badge, distinct from graze combo.
+     * Positioned just below the graze combo badge (top-left area).
+     * Uses purple/gold color scheme to differentiate from the cyan graze badge.
+     */
+    private createSlingComboDisplay(): void {
+        this.slingComboDisplay = document.createElement('div');
+        this.slingComboDisplay.style.cssText = `
+            position: fixed;
+            top: 140px;
+            left: 20px;
+            z-index: 100;
+            background: linear-gradient(135deg, #aa44ff, #ff8800);
+            color: white;
+            padding: 6px 14px 6px 10px;
+            border-radius: 20px 8px 20px 8px;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 14px rgba(170,68,255,0.5), inset 0 1px 0 rgba(255,255,255,0.4);
+            border: 2px solid rgba(255,255,255,0.8);
+            text-shadow: 1px 1px 0 rgba(0,0,0,0.3);
+            opacity: 0;
+            transform: scale(0.8);
+            transition: opacity 0.15s, transform 0.15s;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        `;
+
+        const icon = document.createElement('span');
+        icon.textContent = '⚡';
+        icon.style.fontSize = '14px';
+
+        this.slingComboLabel = document.createElement('span');
+        this.slingComboLabel.textContent = '';
+
+        this.slingComboDisplay.appendChild(icon);
+        this.slingComboDisplay.appendChild(this.slingComboLabel);
+        document.body.appendChild(this.slingComboDisplay);
+    }
+
+    /**
+     * Show sling combo counter badge.
+     * @param combo - Current chain count.
+     * @param isSurge - When true activates the Arc Surge visual treatment.
+     */
+    showSlingCombo(combo: number, isSurge: boolean = false): void {
+        if (!this.slingComboDisplay || !this.slingComboLabel) return;
+
+        if (isSurge) {
+            this.slingComboLabel.textContent = `ARC SURGE ×${combo}`;
+            this.slingComboDisplay.style.background = 'linear-gradient(135deg, #cc44ff, #ff4400)';
+            this.slingComboDisplay.style.animation = 'sling-surge-pulse 0.6s ease-in-out infinite';
+            this.slingComboDisplay.style.fontSize = '18px';
+        } else {
+            this.slingComboLabel.textContent = `Sling ×${combo}`;
+            this.slingComboDisplay.style.background = 'linear-gradient(135deg, #aa44ff, #ff8800)';
+            this.slingComboDisplay.style.animation = '';
+            this.slingComboDisplay.style.fontSize = '16px';
+        }
+
+        this.slingComboDisplay.style.opacity = '1';
+        this.slingComboDisplay.style.transform = 'scale(1)';
+    }
+
+    /**
+     * Hide sling combo badge (call on reset).
+     */
+    hideSlingCombo(): void {
+        if (!this.slingComboDisplay) return;
+        this.slingComboDisplay.style.opacity = '0';
+        this.slingComboDisplay.style.transform = 'scale(0.8)';
+        this.slingComboDisplay.style.animation = '';
+    }
+
     /**
      * Create power-up status display area
      */

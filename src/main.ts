@@ -101,6 +101,7 @@ import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
 import { VideoTumblingStar } from './video_tumbling_star';
 import { SlingableObjectSystem } from './slingable_objects';
+import { SlingComboManager } from './sling_combo';
 
 // --- Configuration ---
 const CONFIG = {
@@ -440,7 +441,9 @@ const playerState = {
     hasWon: false, // Track if player has won
     level: 1, // Current level
     bossActive: false, // Boss fight in progress
-    cores: 0 // Cores collected this run
+    cores: 0, // Cores collected this run
+    slingCombo: 0, // Current sling chain counter
+    slingAssistTimer: 0 // Seconds remaining on Sling Assist boost
 };
 
 // =============================================================================
@@ -730,6 +733,21 @@ const tetherSystem = new TetherSystem(scene, {
     },
     onCooldownEnd: () => {
         updateTetherDisplay();
+    }
+});
+
+// SLING COMBO MANAGER — Arc Surge Scoring & Feel Amplification
+const slingComboManager = new SlingComboManager({
+    juiceManager,
+    hudManager,
+    dogController,
+    audioSystem,
+    particleSystem,
+    onScoreBonus: (points) => {
+        hudManager.addScore(points);
+    },
+    onSlingAssist: (duration) => {
+        playerState.slingAssistTimer = duration;
     }
 });
 
@@ -1145,6 +1163,8 @@ obstacleSystem = new ObstacleSystem({
         }
         hudManager.updateHealth(playerState.health, playerState.maxHealth);
         audioSystem.playImpact(playerState.currentSpeedY);
+        // Break the sling chain on damage
+        slingComboManager.resetCombo();
     },
     getPowerUpModifiers: () => powerUpManager.getCombinedModifiers(),
     onAsteroidBounce: (asteroid) => {
@@ -1759,6 +1779,12 @@ function updatePlayer(delta: number) {
     const accel = (targetSpeed !== -CONFIG.player.gravity && targetSpeed !== 0)
         ? CONFIG.player.acceleration
         : CONFIG.player.deceleration;
+
+    // Sling Assist: temporary 30% gravity-control boost awarded by Arc Surge (7×+)
+    if (playerState.slingAssistTimer > 0) {
+        playerState.slingAssistTimer = Math.max(0, playerState.slingAssistTimer - delta);
+        playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * 0.3 * delta;
+    }
     
     playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * delta;
     player.position.y += playerState.currentSpeedY * delta;
@@ -2042,6 +2068,11 @@ function updatePlayer(delta: number) {
 
             slingableObjectSystem.setLatchedTarget(null);
             dogController.triggerAnimation(DogAnimationState.POWER_UP, 0.6);
+
+            // ── Sling Combo: classify quality by impulse magnitude ──────────
+            const impulseMag = impulse.length();
+            const slingQuality = impulseMag >= 26 ? 'perfect' : impulseMag >= 14 ? 'good' : 'messy';
+            slingComboManager.recordSlingAction(slingQuality, player.position.clone());
         }
     }
 
@@ -2242,6 +2273,9 @@ function animate() {
     const rawDelta = Math.min(clock.getDelta(), 0.1); // Cap delta
     const delta = juiceManager.update(rawDelta);
     const time = clock.getElapsedTime(); // For foliage animation and time-based motion
+
+    // --- Sling Combo Manager ---
+    slingComboManager.update(delta);
 
     // --- Debug System ---
     debugSystem.update(rawDelta);
@@ -2921,6 +2955,9 @@ function animate() {
                         CONFIG.player.maxSpeedY
                     );
                     particleSystem.emit(player.position.clone(), 0x44aaff, 12, 3.0, 0.6);
+
+                    // Record a perfect gravity-arc sling in the combo chain
+                    slingComboManager.recordSlingAction('perfect', player.position.clone());
 
                     // Tarsiers near this anchor cheer the clean sling-arc!
                     if (debugSystem.isEnabled('spaceFriends')) {
