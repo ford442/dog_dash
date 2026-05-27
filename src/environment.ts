@@ -185,8 +185,8 @@ export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number)
 // Gravity Anchors — Stellar Cores with localized inverse-square force fields
 export const gravityAnchors: THREE.Group[] = [];
 
-export function createGravityAnchorAtPosition(x: number, y: number, z: number) {
-    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7 });
+export function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
+    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
     anchor.position.set(x, y, z);
     scene.add(anchor);
     gravityAnchors.push(anchor);
