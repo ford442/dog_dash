@@ -2322,20 +2322,27 @@ function animate() {
                         // Try spawn pickup
                         pickupManager.trySpawn(obs.position.clone());
                         
-                        obstacleSystem.splitAsteroid(obs); // This modifies obstacles array!
+                        obstacleSystem.splitAsteroid(obs as THREE.Mesh);
 
                         // 3. Destroy Projectile
                         proj.deactivate();
-
-                        // Break inner loop (projectile done)
-                        // Outer loop continues (next asteroid), but current 'obs' is removed?
-                        // splitAsteroid removes 'obs' from 'obstacles' array.
-                        // Since we iterate backwards, removing current index is safe for outer loop continuation?
-                        // splitAsteroid does: const idx = obstacles.indexOf(asteroid); if (idx > -1) obstacles.splice(idx, 1);
-                        // If we splice, the indices shift. Iterating backwards handles this safely.
-                        // However, 'obs' is now invalid. We must break inner loop.
                         break;
                     }
+                }
+            }
+
+            // --- CHECK BACKGROUND ASTEROIDS ---
+            for (const proj of projectiles) {
+                if (!proj.active) continue;
+                // We pass the global camera position to calculate perspective projection
+                const shotDir = new THREE.Vector3(1, 0, 0);
+                if ((proj as any).velocity) {
+                    shotDir.copy((proj as any).velocity).normalize();
+                }
+                const hit = asteroidFieldSystem.hitAsteroid(proj.mesh.position, particleSystem, camera.position, shotDir);
+                if (hit) {
+                    audioSystem.play('explode');
+                    // We DO NOT deactivate the projectile here so it doesn't get blocked by background visual elements
                 }
             }
 
