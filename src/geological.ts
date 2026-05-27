@@ -1190,6 +1190,8 @@ export function createGravityAnchor(config: { size: number; mass?: number }): TH
         mass: config.mass ?? GA_MASS,
         size,
         coreObject: core,
+        /** Marks this object as a valid target for the player's TetherSystem. */
+        tetherable: true,
         /** Tracks whether the player was inside the field on the previous frame. */
         wasInField: false,
         /** Accumulated angle (radians) the player has swept around the anchor while inside. */
