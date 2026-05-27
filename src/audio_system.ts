@@ -2401,6 +2401,148 @@ export class AudioSystem {
     }
 
     /**
+     * Play sling charge hum — rising resonant tone that scales with combo level.
+     * Pitch and volume increase as the chain builds.
+     */
+    playSlingCharge(combo: number = 1) {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        if (this.activeVoices >= this.maxVoices) return;
+        this.activeVoices++;
+        setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 400);
+
+        const now = this.ctx.currentTime;
+
+        // Base pitch rises with combo (220 Hz at ×1, up to ~660 Hz at ×7+)
+        const baseFreq = Math.min(220 + combo * 60, 660);
+        const gainAmt = Math.min(0.08 + combo * 0.015, 0.22);
+
+        const osc = this.ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq * 0.95, now);
+        osc.frequency.linearRampToValueAtTime(baseFreq, now + 0.18);
+        osc.frequency.linearRampToValueAtTime(baseFreq * 1.08, now + 0.35);
+
+        // Harmonic overtone for richness
+        const osc2 = this.ctx.createOscillator();
+        osc2.type = 'triangle';
+        osc2.frequency.setValueAtTime(baseFreq * 2, now);
+
+        const gainNode = this.ctx.createGain();
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(gainAmt, now + 0.06);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+        const gainNode2 = this.ctx.createGain();
+        gainNode2.gain.setValueAtTime(0, now);
+        gainNode2.gain.linearRampToValueAtTime(gainAmt * 0.35, now + 0.06);
+        gainNode2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+        osc.connect(gainNode);
+        gainNode.connect(this.sfxGain);
+        osc2.connect(gainNode2);
+        gainNode2.connect(this.sfxGain);
+
+        if (this.reverbSend) {
+            const revGain = this.ctx.createGain();
+            revGain.gain.value = 0.3;
+            gainNode.connect(revGain);
+            revGain.connect(this.reverbSend);
+        }
+
+        osc.start(now);
+        osc.stop(now + 0.4);
+        osc2.start(now);
+        osc2.stop(now + 0.3);
+    }
+
+    /**
+     * Play Arc Surge release — massive low-end whump followed by a soaring whoosh.
+     * Played on 7×+ sling combo activation.
+     */
+    playSlingArcSurge() {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        if (this.activeVoices >= this.maxVoices) return;
+        this.activeVoices++;
+        setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 900);
+
+        const now = this.ctx.currentTime;
+
+        // ── Low-end WHUMP ──────────────────────────────────────────────────
+        const wumpOsc = this.ctx.createOscillator();
+        wumpOsc.type = 'sine';
+        wumpOsc.frequency.setValueAtTime(80, now);
+        wumpOsc.frequency.exponentialRampToValueAtTime(28, now + 0.35);
+
+        const wumpGain = this.ctx.createGain();
+        wumpGain.gain.setValueAtTime(0.55, now);
+        wumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+
+        wumpOsc.connect(wumpGain);
+        wumpGain.connect(this.sfxGain);
+        wumpOsc.start(now);
+        wumpOsc.stop(now + 0.38);
+
+        // ── Soaring WHOOSH ─────────────────────────────────────────────────
+        const bufSize = Math.floor(this.ctx.sampleRate * 0.75);
+        const buffer = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noiseSrc = this.ctx.createBufferSource();
+        noiseSrc.buffer = buffer;
+
+        const whooshFilter = this.ctx.createBiquadFilter();
+        whooshFilter.type = 'bandpass';
+        whooshFilter.frequency.setValueAtTime(200, now + 0.05);
+        whooshFilter.frequency.exponentialRampToValueAtTime(5000, now + 0.7);
+        whooshFilter.Q.value = 1.4;
+
+        const whooshGain = this.ctx.createGain();
+        whooshGain.gain.setValueAtTime(0, now + 0.05);
+        whooshGain.gain.linearRampToValueAtTime(0.4, now + 0.15);
+        whooshGain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+
+        noiseSrc.connect(whooshFilter);
+        whooshFilter.connect(whooshGain);
+        whooshGain.connect(this.sfxGain);
+
+        if (this.reverbSend) {
+            const revGain = this.ctx.createGain();
+            revGain.gain.value = 0.5;
+            whooshGain.connect(revGain);
+            revGain.connect(this.reverbSend);
+        }
+
+        noiseSrc.start(now + 0.05);
+
+        // ── Resonant rising tone — the "surge" identity ────────────────────
+        const surgeOsc = this.ctx.createOscillator();
+        surgeOsc.type = 'sawtooth';
+        surgeOsc.frequency.setValueAtTime(180, now + 0.1);
+        surgeOsc.frequency.exponentialRampToValueAtTime(900, now + 0.7);
+
+        const surgeFilter = this.ctx.createBiquadFilter();
+        surgeFilter.type = 'lowpass';
+        surgeFilter.frequency.setValueAtTime(400, now + 0.1);
+        surgeFilter.frequency.exponentialRampToValueAtTime(4000, now + 0.7);
+
+        const surgeGain = this.ctx.createGain();
+        surgeGain.gain.setValueAtTime(0, now + 0.1);
+        surgeGain.gain.linearRampToValueAtTime(0.2, now + 0.25);
+        surgeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+
+        surgeOsc.connect(surgeFilter);
+        surgeFilter.connect(surgeGain);
+        surgeGain.connect(this.sfxGain);
+        surgeOsc.start(now + 0.1);
+        surgeOsc.stop(now + 0.8);
+    }
+
+    /**
      * Play graze / near-miss sound — bright, quick, satisfying chirp
      */
     playGraze(combo: number = 1) {
