@@ -42,6 +42,7 @@ export class TetherSystem {
     private cooldownTimer: number = 0;
     private latchTimer: number = 0;
     private anchorPos: THREE.Vector3 | null = null;
+    private anchorTarget: THREE.Object3D | null = null;
 
     // --- Config ---
     readonly maxRange: number;
@@ -87,7 +88,12 @@ export class TetherSystem {
     }
 
     /** Position of the currently latched anchor, or null if not latched. */
-    getAnchorPosition(): THREE.Vector3 | null { return this.anchorPos; }
+    getAnchorPosition(): THREE.Vector3 | null {
+        return this.anchorTarget?.position ?? this.anchorPos;
+    }
+
+    /** Currently latched tether target, if any. */
+    getLatchedTarget(): THREE.Object3D | null { return this.anchorTarget; }
 
     /** How many seconds the tether has been held since the last latch. */
     getLatchDuration(): number { return this.latchTimer; }
@@ -100,10 +106,10 @@ export class TetherSystem {
      * Attempts to latch the tether to the nearest `tetherable` anchor.
      * @returns true if a latch was established, false otherwise.
      */
-    activate(anchors: THREE.Group[], playerPos: THREE.Vector3): boolean {
+    activate(anchors: THREE.Object3D[], playerPos: THREE.Vector3): boolean {
         if (!this.canTether()) return false;
 
-        let nearest: THREE.Group | null = null;
+        let nearest: THREE.Object3D | null = null;
         let nearestDist = this.maxRange;
 
         for (const anchor of anchors) {
@@ -118,11 +124,12 @@ export class TetherSystem {
         if (!nearest) return false;
 
         this.state = TetherState.LATCHED;
+        this.anchorTarget = nearest;
         this.anchorPos = nearest.position.clone();
         this.latchTimer = 0;
 
-        this._showBeam(playerPos, this.anchorPos);
-        this.onLatch?.(this.anchorPos.clone());
+        this._showBeam(playerPos, nearest.position);
+        this.onLatch?.(nearest.position.clone());
         return true;
     }
 
@@ -135,13 +142,14 @@ export class TetherSystem {
      * should add to the player velocity.  Returns a zero vector if not latched.
      */
     release(playerPos: THREE.Vector3): THREE.Vector3 {
-        if (this.state !== TetherState.LATCHED || !this.anchorPos) {
+        const anchorPosition = this.anchorTarget?.position ?? this.anchorPos;
+        if (this.state !== TetherState.LATCHED || !anchorPosition) {
             return new THREE.Vector3();
         }
 
         // Direction from anchor → player ("away" direction at release point)
         const awayDir = new THREE.Vector3()
-            .subVectors(playerPos, this.anchorPos)
+            .subVectors(playerPos, anchorPosition)
             .normalize();
 
         // Scale the impulse by how long the tether was held (caps at 2×)
@@ -151,6 +159,7 @@ export class TetherSystem {
         this.state = TetherState.COOLDOWN;
         this.cooldownTimer = this.cooldown;
         this.anchorPos = null;
+        this.anchorTarget = null;
         this.latchTimer = 0;
         this._hideBeam();
 
@@ -174,17 +183,18 @@ export class TetherSystem {
     update(delta: number, playerPos: THREE.Vector3): THREE.Vector3 {
         const force = new THREE.Vector3();
 
-        if (this.state === TetherState.LATCHED && this.anchorPos) {
+        const anchorPosition = this.anchorTarget?.position ?? this.anchorPos;
+        if (this.state === TetherState.LATCHED && anchorPosition) {
             this.latchTimer += delta;
 
             // Spring: pull player toward anchor
             const direction = new THREE.Vector3()
-                .subVectors(this.anchorPos, playerPos)
+                .subVectors(anchorPosition, playerPos)
                 .normalize();
             force.copy(direction).multiplyScalar(this.pullStrength * delta);
 
             // Keep beam visual up-to-date
-            this._updateBeam(playerPos, this.anchorPos);
+            this._updateBeam(playerPos, anchorPosition);
 
             // Animate beam opacity to pulse while latched
             if (this.beamLine) {

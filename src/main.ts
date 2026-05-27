@@ -100,6 +100,7 @@ import { DebugSystem } from './debug_system';
 import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
 import { VideoTumblingStar } from './video_tumbling_star';
+import { SlingableObjectSystem } from './slingable_objects';
 
 // --- Configuration ---
 const CONFIG = {
@@ -480,6 +481,7 @@ scene.add(galaxy3);
 // PARTICLE SYSTEM (engine trails & explosions)
 const particleSystem = new ParticleSystem(scene);
 const debrisSystem = new DebrisSystem(scene);
+const slingableObjectSystem = new SlingableObjectSystem(scene, particleSystem, debrisSystem);
 
 // WEAPON SYSTEM (Dynamic Lighting Projectiles)
 const weaponSystem = new WeaponSystem(scene);
@@ -903,6 +905,21 @@ function createGravityAnchorAtPosition(x: number, y: number, z: number) {
     return anchor;
 }
 
+function createSlingableObjectAtPosition(
+    x: number,
+    y: number,
+    z: number,
+    options: {
+        radius?: number;
+        mass?: number;
+        velocity?: THREE.Vector3;
+        color?: number;
+        emissive?: number;
+    } = {}
+) {
+    return slingableObjectSystem.createObject(new THREE.Vector3(x, y, z), options);
+}
+
 // Store plants that live on the moon to animate them later
 /* moonPlants moved to ./visuals */
 
@@ -990,6 +1007,8 @@ function cleanupGeologicalObjects(cameraX: number) {
             gravityAnchors.splice(i, 1);
         }
     }
+
+    slingableObjectSystem.cleanupBehind(cameraX);
 }
 
 // createMoon moved to ./visuals
@@ -1003,6 +1022,29 @@ scene.add(moon);
 createGravityAnchorAtPosition(80,  5, -25);
 createGravityAnchorAtPosition(180, -6, -20);
 createGravityAnchorAtPosition(280,  8, -22);
+
+// --- Slingable debris prototype cluster (Phase 1 MVP test zone) ---
+createSlingableObjectAtPosition(96, 3, -14, {
+    radius: 1.1,
+    mass: 1.6,
+    velocity: new THREE.Vector3(-1.6, 0.8, 0.25),
+    color: 0x8dffda,
+    emissive: 0x66ffee
+});
+createSlingableObjectAtPosition(154, -5, -16, {
+    radius: 1.35,
+    mass: 2.2,
+    velocity: new THREE.Vector3(-1.2, -0.55, -0.2),
+    color: 0xffb27d,
+    emissive: 0xff8f66
+});
+createSlingableObjectAtPosition(236, 7, -18, {
+    radius: 1.2,
+    mass: 1.9,
+    velocity: new THREE.Vector3(-1.45, 0.35, 0.3),
+    color: 0x8eb7ff,
+    emissive: 0x78d6ff
+});
 
 const videoTumblingStars = [
     new VideoTumblingStar(scene, 360, 12, -45),
@@ -1921,6 +1963,7 @@ function updatePlayer(delta: number) {
 
     // --- TETHER SYSTEM ---
     const tetherForce = tetherSystem.update(delta, player.position);
+    slingableObjectSystem.setLatchedTarget(tetherSystem.getLatchedTarget());
 
     // Apply spring force while latched
     if (tetherSystem.isLatched()) {
@@ -1944,7 +1987,10 @@ function updatePlayer(delta: number) {
     if (wantsTether) {
         wantsTether = false;
         if (tetherSystem.canTether() && !rollSystem.isRolling()) {
-            tetherSystem.activate(gravityAnchors, player.position);
+            tetherSystem.activate(
+                gravityAnchors.concat(slingableObjectSystem.getTetherTargets()),
+                player.position
+            );
         }
     }
 
@@ -1952,21 +1998,42 @@ function updatePlayer(delta: number) {
     if (wantsReleaseTether) {
         wantsReleaseTether = false;
         if (tetherSystem.isLatched()) {
+            const latchedTarget = tetherSystem.getLatchedTarget();
             const impulse = tetherSystem.release(player.position);
-            // Apply sling impulse to vertical speed
-            playerState.currentSpeedY = THREE.MathUtils.clamp(
-                playerState.currentSpeedY + impulse.y,
-                -CONFIG.player.maxDescentSpeed * 1.5,
-                CONFIG.player.maxSpeedY * 2.0
-            );
-            // Minor forward speed boost from X component
-            const xBoost = Math.abs(impulse.x) * 0.25;
-            playerState.autoScrollSpeed = Math.min(
-                playerState.autoScrollSpeed + xBoost,
-                30
-            );
-            // Burst particles at player position
-            particleSystem.emit(player.position.clone(), 0x00ffcc, 16, 6.0, 0.9, 0.3);
+            const threwSlingable = latchedTarget
+                ? slingableObjectSystem.applyTetherImpulse(latchedTarget, impulse)
+                : false;
+
+            if (threwSlingable) {
+                playerState.currentSpeedY = THREE.MathUtils.clamp(
+                    playerState.currentSpeedY + impulse.y * 0.35,
+                    -CONFIG.player.maxDescentSpeed * 1.5,
+                    CONFIG.player.maxSpeedY * 1.75
+                );
+                playerState.autoScrollSpeed = Math.min(
+                    playerState.autoScrollSpeed + Math.abs(impulse.x) * 0.12,
+                    30
+                );
+                particleSystem.emit(player.position.clone(), 0x8dffda, 10, 4.5, 0.7, 0.35);
+                juiceManager.showFloatingText('Comet Toss!', player.position.clone(), '#8dffda', 20);
+            } else {
+                // Apply sling impulse to vertical speed
+                playerState.currentSpeedY = THREE.MathUtils.clamp(
+                    playerState.currentSpeedY + impulse.y,
+                    -CONFIG.player.maxDescentSpeed * 1.5,
+                    CONFIG.player.maxSpeedY * 2.0
+                );
+                // Minor forward speed boost from X component
+                const xBoost = Math.abs(impulse.x) * 0.25;
+                playerState.autoScrollSpeed = Math.min(
+                    playerState.autoScrollSpeed + xBoost,
+                    30
+                );
+                // Burst particles at player position
+                particleSystem.emit(player.position.clone(), 0x00ffcc, 16, 6.0, 0.9, 0.3);
+            }
+
+            slingableObjectSystem.setLatchedTarget(null);
             dogController.triggerAnimation(DogAnimationState.POWER_UP, 0.6);
         }
     }
@@ -2161,6 +2228,7 @@ function updateShadowCulling() {
     iceNeedleClusters.forEach(updateObj);
     magmaHearts.forEach(updateObj);
     gravityAnchors.forEach(updateObj);
+    slingableObjectSystem.objects.forEach(obj => updateObj(obj.group));
 }
 
 function animate() {
@@ -2241,6 +2309,21 @@ function animate() {
 
     updatePlayer(delta);
     obstacleSystem.update(delta);
+    slingableObjectSystem.update(delta, camera.position.x);
+    slingableObjectSystem.handleAsteroidCollisions(
+        obstacleSystem.getObstacles(),
+        (asteroid) => {
+            audioSystem.play('explode');
+            pickupManager.trySpawn(asteroid.position.clone());
+            obstacleSystem.splitAsteroid(asteroid);
+        },
+        (position, heavyHit) => {
+            if (heavyHit) {
+                juiceManager.shakeScreen(ShakeType.MEDIUM, 0.18);
+            }
+            particleSystem.emit(position.clone(), 0xffffff, 4, 3.5, 0.5, 0.6);
+        }
+    );
 
     // Update graze combo HUD visibility
     if (obstacleSystem.getGrazeCombo() === 0) {
