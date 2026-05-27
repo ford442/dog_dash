@@ -38,7 +38,10 @@ import {
     updateIceNeedleCluster,
     createMagmaHeart,
     updateMagmaHeart,
-    LiquidMetalSystem
+    LiquidMetalSystem,
+    createGravityAnchor,
+    updateGravityAnchor,
+    GA_SLING_BONUS
 } from './geological';
 import { ReEntrySystem } from './reentry';
 import { WaterfallSystem } from './waterfall';
@@ -867,6 +870,17 @@ function createMagmaHeartAtPosition(x: number, y: number, z: number) {
     return heart;
 }
 
+// Gravity Anchors — Stellar Cores with localized inverse-square force fields
+const gravityAnchors: THREE.Group[] = [];
+
+function createGravityAnchorAtPosition(x: number, y: number, z: number) {
+    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7 });
+    anchor.position.set(x, y, z);
+    scene.add(anchor);
+    gravityAnchors.push(anchor);
+    return anchor;
+}
+
 // Store plants that live on the moon to animate them later
 /* moonPlants moved to ./visuals */
 
@@ -944,6 +958,16 @@ function cleanupGeologicalObjects(cameraX: number) {
             magmaHearts.splice(i, 1);
         }
     }
+
+    // Gravity anchors
+    for (let i = gravityAnchors.length - 1; i >= 0; i--) {
+        const anchor = gravityAnchors[i];
+        if (anchor.position.x < cutoff) {
+            scene.remove(anchor);
+            disposeObject(anchor);
+            gravityAnchors.splice(i, 1);
+        }
+    }
 }
 
 // createMoon moved to ./visuals
@@ -951,6 +975,12 @@ function cleanupGeologicalObjects(cameraX: number) {
 const moon = createMoon();
 moon.position.set(500, 5, -50); // Position far ahead
 scene.add(moon);
+
+// --- Phase 1 test constellation: 3 Gravity Anchors in Level 1 (Neon Garden) ---
+// Intentionally placed at different heights to encourage curved sling arcs.
+createGravityAnchorAtPosition(80,  5, -25);
+createGravityAnchorAtPosition(180, -6, -20);
+createGravityAnchorAtPosition(280,  8, -22);
 
 const videoTumblingStars = [
     new VideoTumblingStar(scene, 360, 12, -45),
@@ -993,7 +1023,8 @@ const levelManager = new LevelManager({
         createVacuumKelpAtPosition,
         createIceNeedleClusterAtPosition,
         createLiquidMetalBlobAtPosition,
-        createMagmaHeartAtPosition
+        createMagmaHeartAtPosition,
+        createGravityAnchorAtPosition
     },
     onLevelStart: (cfg) => {
         playerState.autoScrollSpeed = cfg.speed;
@@ -1941,6 +1972,7 @@ function updateShadowCulling() {
     vacuumKelps.forEach(updateObj);
     iceNeedleClusters.forEach(updateObj);
     magmaHearts.forEach(updateObj);
+    gravityAnchors.forEach(updateObj);
 }
 
 function animate() {
@@ -2574,6 +2606,43 @@ function animate() {
         }
 
         magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
+
+        // Update Gravity Anchors — apply inverse-square field forces to player Y velocity
+        gravityAnchors.forEach(anchor => {
+            const interaction = updateGravityAnchor(anchor, delta, time, player.position);
+            if (interaction.isInfluencing) {
+                // Apply Y component of radial force to vertical speed
+                playerState.currentSpeedY += interaction.force.y;
+                // Clamp to keep the flight model intact
+                playerState.currentSpeedY = THREE.MathUtils.clamp(
+                    playerState.currentSpeedY,
+                    -CONFIG.player.maxDescentSpeed,
+                    CONFIG.player.maxSpeedY
+                );
+                // Sling exit bonus: give a burst of upward velocity on clean tangent arcs
+                if (interaction.slungExit) {
+                    playerState.currentSpeedY = Math.max(
+                        playerState.currentSpeedY + GA_SLING_BONUS,
+                        CONFIG.player.maxSpeedY
+                    );
+                    particleSystem.emit(player.position.clone(), 0x44aaff, 12, 3.0, 0.6);
+                }
+                // Subtle particle inflow effect
+                if (Math.random() < 0.08) {
+                    const fieldCenter = anchor.position.clone();
+                    const offset = new THREE.Vector3(
+                        (Math.random() - 0.5) * 20,
+                        (Math.random() - 0.5) * 20,
+                        (Math.random() - 0.5) * 10
+                    );
+                    particleSystem.emit(
+                        fieldCenter.add(offset),
+                        0x4466ff,
+                        1, 1.5, 0.4
+                    );
+                }
+            }
+        });
     }
 
     // Update industrial obstacles (Level 4)

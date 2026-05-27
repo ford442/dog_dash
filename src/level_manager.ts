@@ -22,11 +22,13 @@ import {
     createIceNeedleClusterAtPosition,
     createLiquidMetalBlobAtPosition,
     createMagmaHeartAtPosition,
+    createGravityAnchorAtPosition,
     sporeClouds,
     voidRootBalls,
     vacuumKelps,
     iceNeedleClusters,
-    magmaHearts
+    magmaHearts,
+    gravityAnchors
 } from './environment';
 import { scene, camera, butterflySwarmSystem } from './scene_setup';
 import { playerState } from './game_config';
@@ -77,7 +79,8 @@ export class LevelManager {
         vacuumKelp: 6,
         iceNeedle: 6,
         liquidMetal: 6,
-        magmaHeart: 6
+        magmaHeart: 6,
+        gravityAnchor: 6
     } as const;
 
     constructor(options: any) {
@@ -450,6 +453,19 @@ export class LevelManager {
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
                 const z = -35 + Math.random() * 25;
                 createMagmaHeartAtPosition(x, y, z);
+            }
+        }
+
+        if (density.gravityAnchor) {
+            const targetCount = Math.min(
+                scaledCount(density.gravityAnchor),
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.gravityAnchor - gravityAnchors.length)
+            );
+            for (let i = 0; i < targetCount; i++) {
+                const x = startX + Math.random() * width;
+                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+                const z = -35 + Math.random() * 25;
+                createGravityAnchorAtPosition(x, y, z);
             }
         }
     }

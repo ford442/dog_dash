@@ -1097,3 +1097,191 @@ export class SporeCloud {
         return 5;
     }
 }
+
+// =============================================================================
+// 9. GRAVITY ANCHORS ("Stellar Cores") — Localized inverse-square force fields
+// =============================================================================
+
+// Physics constants — all tunable
+const GA_FIELD_RADIUS = 40.0;   // Influence radius in world units
+const GA_MASS = 500.0;           // Force constant (higher = stronger pull)
+const GA_SOFTENING = 8.0;        // Softening distance to avoid singularity at close range
+const GA_MAX_FORCE = 14.0;       // Max force magnitude per second (prevents runaway)
+/** Exit velocity bonus (units/s) added to player Y-speed on a clean tangent sling. */
+export const GA_SLING_BONUS = 14.0;
+
+export interface GravityAnchorInteraction {
+    /** Radial force vector already pre-multiplied by delta, ready to add to velocity. */
+    force: THREE.Vector3;
+    /** True while the player is inside the influence field. */
+    isInfluencing: boolean;
+    /** Set to true on the frame the player exits the field after a clean sling arc. */
+    slungExit: boolean;
+}
+/**
+ * Creates a Gravity Anchor: a large glossy crystalline icosahedron with a
+ * pulsing emissive core and three orbiting additive rings.
+ *
+ * @param config.size  Core radius in world units (8–15 recommended).
+ * @param config.mass  Optional override for the gravitational force constant.
+ */
+export function createGravityAnchor(config: { size: number; mass?: number }): THREE.Group {
+    const group = new THREE.Group();
+    const { size } = config;
+
+    // --- Core: glossy crystalline icosahedron ---
+    const coreGeo = new THREE.IcosahedronGeometry(size, 1);
+    const coreMat = new THREE.MeshPhysicalMaterial({
+        color: 0x8899ff,
+        emissive: 0x2244dd,
+        emissiveIntensity: 1.5,
+        metalness: 0.2,
+        roughness: 0.0,
+        clearcoat: 1.0,
+        clearcoatRoughness: 0.0,
+        transmission: 0.25,
+        ior: 1.5,
+        transparent: true,
+        opacity: 0.92
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    core.castShadow = true;
+    group.add(core);
+
+    // --- Outer glow shell (back-side, additive) ---
+    const glowGeo = new THREE.IcosahedronGeometry(size * 1.45, 1);
+    const glowMat = new THREE.MeshBasicMaterial({
+        color: 0x3355ff,
+        transparent: true,
+        opacity: 0.12,
+        side: THREE.BackSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    group.add(new THREE.Mesh(glowGeo, glowMat));
+
+    // --- Three orbiting rings with different tilts ---
+    const ringColors = [0x44aaff, 0x9944ff, 0xff44bb];
+    const ringTilts: [number, number, number][] = [
+        [0.4, 0.0, 0.0],
+        [1.1, 0.5, 0.0],
+        [0.2, 1.2, 0.4]
+    ];
+    for (let i = 0; i < 3; i++) {
+        const ringGeo = new THREE.TorusGeometry(size * (1.9 + i * 0.45), 0.14, 8, 32);
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: ringColors[i],
+            transparent: true,
+            opacity: 0.55,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.set(...ringTilts[i]);
+        ring.userData.ringIndex = i;
+        ring.userData.ringSpeedY = 0.35 + i * 0.18;
+        ring.userData.ringSpeedZ = 0.22 + i * 0.12;
+        group.add(ring);
+    }
+
+    group.userData = {
+        type: 'gravityAnchor',
+        fieldRadius: GA_FIELD_RADIUS,
+        mass: config.mass ?? GA_MASS,
+        size,
+        coreObject: core,
+        /** Tracks whether the player was inside the field on the previous frame. */
+        wasInField: false,
+        /** Accumulated angle (radians) the player has swept around the anchor while inside. */
+        sweepAngle: 0.0,
+        lastPlayerDir: null as THREE.Vector3 | null
+    };
+
+    return group;
+}
+
+/**
+ * Animates a Gravity Anchor and computes the gravitational interaction for
+ * the current frame.
+ *
+ * @returns GravityAnchorInteraction — caller should add `force` to player
+ *          Y-velocity when `isInfluencing` is true.
+ */
+export function updateGravityAnchor(
+    group: THREE.Group,
+    delta: number,
+    timeVal: number,
+    playerPos: THREE.Vector3
+): GravityAnchorInteraction {
+    const result: GravityAnchorInteraction = {
+        force: new THREE.Vector3(),
+        isInfluencing: false,
+        slungExit: false
+    };
+
+    const data = group.userData;
+
+    // --- Visual: pulse emissive core ---
+    const core = data.coreObject as THREE.Mesh;
+    if (core) {
+        const pulse = Math.sin(timeVal * 2.2) * 0.5 + 0.5;
+        (core.material as THREE.MeshPhysicalMaterial).emissiveIntensity = 0.7 + pulse * 1.6;
+    }
+
+    // --- Visual: rotate orbiting rings ---
+    group.children.forEach(child => {
+        if (child.userData.ringIndex !== undefined) {
+            child.rotation.y += delta * child.userData.ringSpeedY;
+            child.rotation.z += delta * child.userData.ringSpeedZ;
+        }
+    });
+
+    // --- Visual: slow core tumble ---
+    group.rotation.y += delta * 0.14;
+    group.rotation.x += delta * 0.06;
+
+    // --- Physics: inverse-square field ---
+    const dist = group.position.distanceTo(playerPos);
+
+    if (dist >= data.fieldRadius) {
+        data.wasInField = false;
+        data.sweepAngle = 0.0;
+        data.lastPlayerDir = null;
+        return result;
+    }
+
+    result.isInfluencing = true;
+
+    // Softened inverse-square magnitude
+    const soft2 = GA_SOFTENING * GA_SOFTENING;
+    const rawMag = data.mass / (dist * dist + soft2);
+    // Smooth edge fade so force drops to zero at the boundary
+    const edgeFade = 1.0 - (dist / data.fieldRadius);
+    const forceMag = Math.min(rawMag, GA_MAX_FORCE) * edgeFade;
+
+    // Direction from player toward anchor
+    const dir = new THREE.Vector3().subVectors(group.position, playerPos).normalize();
+    result.force.copy(dir).multiplyScalar(forceMag * delta);
+
+    // --- Sling detection: accumulate sweep angle while in field ---
+    if (data.lastPlayerDir) {
+        const cosAngle = THREE.MathUtils.clamp(
+            (data.lastPlayerDir as THREE.Vector3).dot(dir), -1, 1
+        );
+        data.sweepAngle += Math.acos(cosAngle);
+    }
+    data.lastPlayerDir = dir.clone();
+
+    // --- Sling exit bonus: trigger on the first frame outside after a sweep ≥ 70° ---
+    const wasIn = data.wasInField as boolean;
+    data.wasInField = true;
+
+    // Check for exit next frame is handled by the dist >= fieldRadius branch above,
+    // but we can also look at the player being near the edge.
+    if (wasIn && dist > data.fieldRadius * 0.85 && data.sweepAngle >= (70 * Math.PI / 180)) {
+        result.slungExit = true;
+        data.sweepAngle = 0.0;
+    }
+
+    return result;
+}
