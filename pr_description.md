@@ -1,26 +1,25 @@
-## 🌌 Dynamic Volumetric God Rays (Light Shafts)
+## 🌌 Architect: Atmospheric Re-Entry with Heat Distortion Fix
 
 ### Concept
-> "The effect is a palpable sense of flying through a vast, three-dimensional atmosphere rather than just over a flat background."
+> "6. Atmospheric Re-Entry with Heat Distortion
+> The Technique: Color palette shifting, transparency overlays, and sprite warping effects to simulate heat and friction."
 
 ### Implementation
-- Created `GodRaySystem` in `src/godrays.ts` using a highly performant **InstancedMesh** + **TSL shaders**.
-- Light shaft intensity and definition now react dynamically to the player’s dashing speed (stronger and more prominent at higher velocities).
-- Light shafts react dynamically to the camera angle to mimic a distant light source and have realistic Z-parallax.
-- Added `godRays` configuration to `LevelConfig` and enabled the effect on cloud/nebula-heavy levels (1, 2, and 5).
+- Added the missing `update()` call for the `ReEntrySystem` to `src/level_manager.ts`.
+- The system was previously instantiated and activated during Level 3, but its update loop was never executed.
+- This affects Level 3 (Orbital Descent).
 
 ### Visuals
-- 20 instanced quads using `AdditiveBlending` and `depthWrite = false`.
-- Soft-edge fading (horizontal + vertical) with subtle procedural swaying and shimmering via TSL `positionLocal` modification.
-- Warm ethereal color palette (e.g. `0xffcc88`) that can be tuned per level.
+- 50 Plasma streaks moving along the X axis.
+- Heat distortion overlay using `MeshPhysicalNodeMaterial` for refraction.
+- Heat glow overlay for color shifting.
+- Player engine glow dynamically tints to orange based on re-entry intensity.
 
 ### Integration
-- **`main.ts`**: Instantiates `GodRaySystem` and passes it to `LevelManager`.
-- **`level_manager.ts`**: Handles activation/deactivation on level transitions via `activate(cfg.godRays)` / `deactivate()`, plus per-frame updates.
-- **`level_config.ts`**: Extended `LevelConfig` with the new `godRays` properties.
+- `src/level_manager.ts`: Line 286, `reEntrySystem.update` hooked into `LevelManager.update`.
+- `level_config.ts`: N/A
 
 ### Testing
-- [x] `npm run build` passes cleanly
-- [x] Verified in Levels 1, 2, and 5 via `npm run dev`
-- [x] Mobile/touch controls unaffected
-- [x] WebGPU constraints respected (no heavy dependencies)
+- [x] `npm run build` passes
+- [x] Tested in Level 3
+- [x] Mobile/touch controls still work
