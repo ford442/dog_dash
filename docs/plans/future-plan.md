@@ -93,3 +93,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Uses `InstancedMesh` with Custom `MeshBasicNodeMaterial`
 - Additive blending (`THREE.AdditiveBlending`) with depthWrite disabled.
 - Active primarily in cloudy levels (Levels 1 and 2) and nebulous environments (Level 5) with varying color and density parameters.
+
+9. Dynamic Aurora Borealis / Plasma Storms
+
+**The Technique:** Shifting, colorful sky curtains implemented as wide procedural ribbons. TSL shaders handle the undulating wave motion (combining multiple sine and cosine waves), opacity gradients (fading smoothly at edges and heights), and color mixing.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` over `PlaneGeometry` curving through the deep background.
+- Custom `MeshBasicNodeMaterial` driving position offsets `positionLocal` to warp the geometry.
+- The animation speed organically reacts to the player's dashing speed to heighten the sense of momentum.
+- Deployed via LevelManager and configured through `level_config.ts`.

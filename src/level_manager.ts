@@ -49,6 +49,7 @@ import {
     candyManager
 } from './game_systems';
 import { GodRaySystem } from './godrays';
+import { AuroraSystem } from './aurora';
 import { GhostDebrisSystem } from './ghost_debris';
 import { DebugSystem } from './debug_system';
 
@@ -68,6 +69,7 @@ export class LevelManager {
     atmosphereSystem: AtmosphereSystem;
     lastPopulatedEndX: number;
     godRaySystem: GodRaySystem;
+    auroraSystem: AuroraSystem;
     ghostDebrisSystem: GhostDebrisSystem;
     debugSystem?: DebugSystem;
     objectDensityMultiplier: number;
@@ -87,6 +89,7 @@ export class LevelManager {
         this.cloudSystem = new CloudSystem(scene);
         this.atmosphereSystem = new AtmosphereSystem(scene);
         this.godRaySystem = options.godRaySystem;
+        this.auroraSystem = options.auroraSystem;
         this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.debugSystem = options.debugSystem;
         this.currentLevel = 1;
@@ -120,6 +123,12 @@ export class LevelManager {
             this.godRaySystem.activate(cfg.godRays);
         } else {
             this.godRaySystem.deactivate();
+        }
+
+        if (cfg.aurora && cfg.aurora.enabled) {
+            this.auroraSystem.activate(cfg.aurora);
+        } else {
+            this.auroraSystem.deactivate();
         }
 
         // --- ATMOSPHERE UPDATE ---
@@ -285,6 +294,7 @@ export class LevelManager {
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined);
+        if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed);
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
