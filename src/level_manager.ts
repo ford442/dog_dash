@@ -285,6 +285,8 @@ export class LevelManager {
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined);
+        if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
+
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
