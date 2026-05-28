@@ -38,6 +38,13 @@ export type LevelConfig = {
         color: number;
         speedMultiplier: number;
     };
+    aurora?: {
+        enabled: boolean;
+        density: number;
+        color1: number;
+        color2: number;
+        speed: number;
+    };
     enemyTintColor?: number;
 };
 
@@ -218,6 +225,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x001133,
         skyColors: { top: 0x001133, bottom: 0x002244 },
         levelType: 'open',
-        squidSpawnRate: 0.0012
+        squidSpawnRate: 0.0012,
+        aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 }
     }
 };

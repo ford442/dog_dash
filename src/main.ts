@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
 import { GhostDebrisSystem } from './ghost_debris';
-import { godRaySystem } from './game_systems';
+import { godRaySystem, auroraSystem } from './game_systems';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
 import { 
@@ -799,6 +799,7 @@ debugSystem.register('asteroidField', 'Asteroid Field', true);
 debugSystem.register('planetaryHorizon', 'Planetary Horizon', true);
 debugSystem.register('ghostDebris', 'Ghost Debris', true);
 debugSystem.register('godRays', 'God Rays', true);
+debugSystem.register('aurora', 'Aurora Borealis', true);
 
 let isGamePaused = false;
 
@@ -1086,6 +1087,7 @@ const levelManager = new LevelManager({
     planetaryHorizonSystem,
     ghostDebrisSystem,
     godRaySystem,
+    auroraSystem,
     reEntrySystem,
     industrialSystem,
     waterfallSystem,

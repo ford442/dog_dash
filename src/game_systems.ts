@@ -12,6 +12,7 @@ import { PlanetaryHorizonSystem } from './planetary_horizon';
 import { MeteorShowerSystem } from './meteor_shower';
 import { IndustrialBackgroundSystem } from './industrial_background';
 import { GodRaySystem } from './godrays';
+import { AuroraSystem } from './aurora';
 import { NebulaSystem } from './nebula';
 import { CosmicDustSystem } from './cosmic_dust';
 import { BiologicalBackgroundSystem } from './biological_background';
@@ -85,6 +86,7 @@ export const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLigh
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 export const godRaySystem = new GodRaySystem(scene);
+export const auroraSystem = new AuroraSystem(scene);
 export const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 export const cosmicDustSystem = new CosmicDustSystem(scene);
 nebulaSystem.setCamera(camera);
