@@ -1,3 +1,4 @@
+import { lightningBoltSystem } from './game_systems';
 import * as THREE from 'three';
 import { CloudSystem } from './clouds';
 import { AtmosphereSystem } from './sky';
@@ -167,7 +168,14 @@ export class LevelManager {
 
         // Configure clouds based on level type/name
         // Update cloud layers based on density and color
+
         this.cloudSystem.setLevel(cfg);
+        if (levelIndex === 1 || levelIndex === 2 || levelIndex === 3) {
+            lightningBoltSystem.activate();
+        } else {
+            lightningBoltSystem.deactivate();
+        }
+
 
         // Special Effects per Level
         if (levelIndex === 1) {
@@ -276,6 +284,7 @@ export class LevelManager {
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
         this.cloudSystem.update(delta, cameraX, speed);
+        lightningBoltSystem.update(delta, cameraX);
 
         const dbg = this.debugSystem;
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
