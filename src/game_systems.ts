@@ -1,3 +1,4 @@
+import { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
 import { scene, camera } from './scene_setup';
 import { player } from './player_loader';
@@ -276,3 +277,4 @@ if (shouldShowTutorial(saveManager)) {
         console.log('Tutorial complete! Starting game...');
     });
 }
+export const lightningBoltSystem = new LightningBoltSystem(scene);
