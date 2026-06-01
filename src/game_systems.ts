@@ -1,3 +1,4 @@
+import { ChromaShiftSystem } from './chroma_shift';
 import { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
 import { scene, camera } from './scene_setup';
@@ -278,3 +279,5 @@ if (shouldShowTutorial(saveManager)) {
     });
 }
 export const lightningBoltSystem = new LightningBoltSystem(scene);
+
+export const chromaShiftSystem = new ChromaShiftSystem(scene);

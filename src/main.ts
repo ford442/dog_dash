@@ -23,8 +23,6 @@ import { ParticleSystem, DebrisSystem } from './particles';
 import { CloudSystem } from './clouds';
 import {
     SporeCloud,
-    createChromaShiftRock,
-    updateChromaRock,
     createFracturedGeode,
     updateGeode,
     createNebulaJellyMoss,
@@ -798,6 +796,7 @@ debugSystem.register('waterfall', 'Waterfall', true);
 debugSystem.register('asteroidField', 'Asteroid Field', true);
 debugSystem.register('planetaryHorizon', 'Planetary Horizon', true);
 debugSystem.register('ghostDebris', 'Ghost Debris', true);
+debugSystem.register('chromaShift', 'Chroma Rocks', true);
 debugSystem.register('godRays', 'God Rays', true);
 debugSystem.register('aurora', 'Aurora Borealis', true);
 
@@ -816,16 +815,7 @@ function createSporeCloudAtPosition(x: number, y: number, z: number) {
     return cloud;
 }
 
-// Chroma-Shift Rocks - color-shifting crystalline rocks
-const chromaRocks: THREE.Group[] = [];
 
-function createChromaRockAtPosition(x: number, y: number, z: number) {
-    const rock = createChromaShiftRock({ size: 2 + Math.random() * 2 });
-    rock.position.set(x, y, z);
-    scene.add(rock);
-    chromaRocks.push(rock);
-    return rock;
-}
 
 // Fractured Geodes - safe harbors with EM fields
 const geodes: THREE.Group[] = [];
@@ -965,14 +955,7 @@ function cleanupGeologicalObjects(cameraX: number) {
     }
 
     // Chroma rocks
-    for (let i = chromaRocks.length - 1; i >= 0; i--) {
-        const rock = chromaRocks[i];
-        if (rock.position.x < cutoff) {
-            scene.remove(rock);
-            disposeObject(rock);
-            chromaRocks.splice(i, 1);
-        }
-    }
+
 
     // Geodes
     for (let i = geodes.length - 1; i >= 0; i--) {
@@ -2261,7 +2244,6 @@ function updateShadowCulling() {
     };
 
     levelManager.levelObjects.forEach(updateObj);
-    chromaRocks.forEach(updateObj);
     geodes.forEach(updateObj);
     voidRootBalls.forEach(updateObj);
     vacuumKelps.forEach(updateObj);
@@ -2774,13 +2756,7 @@ function animate() {
             }
         });
 
-        // Update chroma-shift rocks (color animation)
-        chromaRocks.forEach(rock => {
-            const isFar = camera.position.distanceTo(rock.position) > 80;
-            if (!isFar || farUpdateFrame) {
-                updateChromaRock(rock, camera.position, delta, time);
-            }
-        });
+
 
         // Update geodes (EM field pulse)
         geodes.forEach(geode => updateGeode(geode, delta, time));
