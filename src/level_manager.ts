@@ -38,6 +38,7 @@ import { moonPlants, disposeObject } from './environment';
 import {
     waterfallSystem,
     industrialSystem,
+    chromaShiftSystem,
     biologicalSystem,
     nebulaSystem,
     cosmicDustSystem,
@@ -170,6 +171,14 @@ export class LevelManager {
         // Update cloud layers based on density and color
 
         this.cloudSystem.setLevel(cfg);
+
+        // Reset and activate systems based on level configuration
+        chromaShiftSystem.clearRocks();
+        if (cfg.chromaShiftDensity && cfg.chromaShiftDensity > 0) {
+            chromaShiftSystem.activate();
+        } else {
+            chromaShiftSystem.deactivate();
+        }
         if (levelIndex === 1 || levelIndex === 2 || levelIndex === 3) {
             lightningBoltSystem.activate();
         } else {
@@ -302,6 +311,7 @@ export class LevelManager {
         if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
+        if (enabled('chromaShift')) chromaShiftSystem.update(delta, player ? player.position : undefined);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined);
         if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
 
@@ -454,6 +464,16 @@ export class LevelManager {
             }
         }
 
+        if (config.chromaShiftDensity && config.chromaShiftDensity > 0) {
+            const count = Math.min(scaledCount(config.chromaShiftDensity), this.GEOLOGICAL_SPAWN_CAPS.chromaShift || 200);
+            for (let i = 0; i < count; i++) {
+                const x = startX + Math.random() * width;
+                const y = Math.random() * (yRange[1] - yRange[0]) + yRange[0];
+                const z = -20 + Math.random() * 40; // Bring them closer so they react to the player (distance < 20)
+
+                chromaShiftSystem.addRock(new THREE.Vector3(x, y, z), 2 + Math.random() * 2);
+            }
+        }
         if (density.liquidMetal) {
             const targetCount = Math.min(scaledCount(density.liquidMetal), this.GEOLOGICAL_SPAWN_CAPS.liquidMetal);
             for(let i = 0; i < targetCount; i++) {

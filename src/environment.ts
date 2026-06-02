@@ -4,8 +4,6 @@ import { player } from './player_loader';
 import { playerState } from './game_config';
 import {
     SporeCloud,
-    createChromaShiftRock,
-    updateChromaRock,
     createFracturedGeode,
     updateGeode,
     createNebulaJellyMoss,
@@ -96,16 +94,7 @@ export function createSporeCloudAtPosition(x: number, y: number, z: number) {
     return cloud;
 }
 
-// Chroma-Shift Rocks - color-shifting crystalline rocks
-export const chromaRocks: THREE.Group[] = [];
 
-export function createChromaRockAtPosition(x: number, y: number, z: number) {
-    const rock = createChromaShiftRock({ size: 2 + Math.random() * 2 });
-    rock.position.set(x, y, z);
-    scene.add(rock);
-    chromaRocks.push(rock);
-    return rock;
-}
 
 // Fractured Geodes - safe harbors with EM fields
 export const geodes: THREE.Group[] = [];
@@ -395,8 +384,7 @@ export function updateGeologicalObjects(delta: number, time: number, cameraPos: 
     // Update spore clouds (brownian motion)
     sporeClouds.forEach(cloud => cloud.update(delta));
 
-    // Update chroma-shift rocks (color animation)
-    chromaRocks.forEach(rock => updateChromaRock(rock, cameraPos, delta, time));
+
 
     // Update geodes (EM field pulse)
     geodes.forEach(geode => updateGeode(geode, delta, time));

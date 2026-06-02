@@ -104,40 +104,6 @@ const fbm = (v: any) => {
 
 // --- GEOLOGICAL OBJECTS ---
 
-// 1. CHROMA-SHIFT ROCK (Color shifting crystalline structures)
-export function createChromaShiftRock(config: { size: number }) {
-    const geo = new THREE.DodecahedronGeometry(config.size, 1);
-
-    // TSL Material for color shifting
-    const mat = new MeshStandardNodeMaterial({
-        roughness: 0.2,
-        metalness: 0.8,
-    });
-    
-    // Animate color based on time and position
-    const uTime = time;
-    const pos = positionLocal;
-    
-    // Iridescence logic
-    const angle = sin(uTime.add(pos.x).add(pos.y));
-    const col1 = color(0xff00ff); // Magenta
-    const col2 = color(0x00ffff); // Cyan
-
-    mat.colorNode = mix(col1, col2, angle.add(1.0).mul(0.5)); // mix based on sine wave
-
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    return mesh;
-}
-
-export function updateChromaRock(mesh: THREE.Mesh, cameraPos: THREE.Vector3, delta: number, timeVal: number) {
-    // Slight rotation
-    mesh.rotation.x += delta * 0.1;
-    mesh.rotation.y += delta * 0.15;
-}
-
-
 // 2. FRACTURED GEODE (Safe harbors with EM fields)
 export function createFracturedGeode(config: { size: number }) {
     const group = new THREE.Group();

@@ -22,6 +22,7 @@ export type LevelConfig = {
         gravityAnchor?: number;
     };
     ghostDebrisDensity?: number;
+    chromaShiftDensity?: number;
     speed: number;
     bgColor: number;
     skyColors: { top: number, bottom: number };
@@ -83,6 +84,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         distance: 1200,
         asteroidRate: 0.8,
         ghostDebrisDensity: 100,
+        chromaShiftDensity: 150,
         foliageDensity: {
             fern: 10,
             rose: 5,
