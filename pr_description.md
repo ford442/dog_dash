@@ -1,27 +1,26 @@
-## 🌌 Architect: Lightning Bolt System
+## 🌌 Architect: Dynamic Starfield Parallax & Trail Colors
 
 ### Concept
-> "1. Flying Through Multi-Layered Cloudscapes
-> ...
-> - Lightning flashes that briefly illuminate the cloud layers from within, creating dynamic lighting"
+> "Dynamic starfield parallax - 3-4 layers of stars with speed scaling based on thrust. Occasional shooting stars."
+> "Dynamic Trail Colors - Instant visual feedback: blue (glide) → red (dive) → green (boost)."
+From `ideas.md` Quick Wins and Whimsical Edition.
 
 ### Implementation
-- Implemented `LightningBoltSystem` using `InstancedMesh` to render procedural jagged lightning bolts.
-- The TSL shader computes multiple sine waves with different frequencies to displace UV coordinates and generate a branching line effect.
-- Integrated into `level_manager.ts` and activated for levels 1, 2, and 3 where clouds and atmospheric phenomena are prevalent.
-- `cleanup()` logic included to properly dispose of geometry and material data.
+- Activated the existing `StarfieldSystem` (which was hidden behind a debug flag) globally in `main.ts` and removed the legacy static `createStars(3000)` implementation.
+- Implemented **Dynamic Trail Colors** by adjusting the engine exhaust particle emitter colors based on the player's movement state (Up/Thrust = Green, Down/Dive = Red, Idle/Glide = Blue).
+- The Starfield features 4 parallax layers with varying densities, sizes, and base speeds, configured with a dreamy pastel color palette.
 
 ### Visuals
-- Procedural bolts that dynamically appear in the deep background (`z: -30` to `-10`).
-- TSL fragment shader employs distance fields from the jagged center line, mixed with a glowing blue edge and bright white core.
-- Timed fading mimics rapid high-frequency flashing synchronized with the game's clock.
+- 4 star layers at varying `zRange`s, utilizing `THREE.Points` and TSL for twinkling animation and heart-shaped rendering.
+- Speed dynamically scales based on `playerState.currentSpeedY` relative to thrust, creating a sensation of blazing fast vertical momentum.
+- Occasional bright shooting stars streak across the screen using `THREE.Line`.
+- The player ship emits vivid particle trails providing intuitive motion feedback.
 
 ### Integration
-- `game_systems.ts`: Instantiated and exported `lightningBoltSystem`.
-- `level_manager.ts`: Checked `levelIndex === 1 || levelIndex === 2 || levelIndex === 3` inside `startLevel()` to trigger `lightningBoltSystem.activate()`, and called `update` inside the main `update` loop.
+- `main.ts`: Removed `debugSystem.isEnabled('starfield')` guard, ensuring `starfield.update()` is called every frame. Deleted legacy static `stars`. Added conditional trail color emitting in `updatePlayer()`.
 - `level_config.ts`: N/A
 
 ### Testing
 - [x] `npm run build` passes
-- [x] Tested in Level 1, 2, and 3 (where clouds are present)
+- [x] Tested globally across levels
 - [x] Mobile/touch controls still work

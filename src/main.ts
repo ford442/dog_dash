@@ -463,10 +463,6 @@ let obstacleSystem: ObstacleSystem;
 // SPACE ENVIRONMENT (Stars, Galaxies, Moon)
 // =============================================================================
 
-// Add stars to the scene
-const stars = createStars(3000);
-scene.add(stars);
-uStarOpacity.value = 0.8; // Make stars visible
 
 // Create distant galaxies/nebulae
 // createGalaxy moved to ./visuals
@@ -1828,7 +1824,7 @@ function updatePlayer(delta: number) {
                 const exhaustPos = player.position.clone();
                 exhaustPos.x -= 0.5;
                 exhaustPos.y -= 0.5;
-                particleSystem.emit(exhaustPos, 0xffaa00, 2, 5.0, 0.8, 0.2);
+                particleSystem.emit(exhaustPos, 0x00ff00, 2, 5.0, 0.8, 0.2); // Green for boost/thrust
             } else if (isMovingDown) {
                 // Diving → very small, dim flame + extra downward particle streaks
                 const flicker = 0.4 + Math.random() * 0.2;
@@ -1838,11 +1834,19 @@ function updatePlayer(delta: number) {
                 const streakPos = player.position.clone();
                 streakPos.x -= 0.5;
                 streakPos.y -= 0.3;
-                particleSystem.emit(streakPos, 0xff4400, 1, 3.0, 0.5, 0.3);
+                particleSystem.emit(streakPos, 0xff0000, 1, 3.0, 0.5, 0.3); // Red for dive
             } else {
                 // Gliding / idle → smaller, softer flame
                 const flicker = 0.5 + Math.random() * 0.2;
                 rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
+
+                // Blue trail for glide
+                const glidePos = player.position.clone();
+                glidePos.x -= 0.5;
+                glidePos.y -= 0.1;
+                if (Math.random() < 0.3) {
+                    particleSystem.emit(glidePos, 0x00aaff, 1, 3.0, 0.6, 0.2);
+                }
             }
         }
     }
@@ -2496,9 +2500,7 @@ function animate() {
         // --- MAGICAL SYSTEMS (from swarm) ---
         // Update starfield with speed multiplier
         const speedMultiplier = 1 + Math.abs(playerState.currentSpeedY) / 20;
-        if (debugSystem.isEnabled('starfield')) {
-            starfield.update(delta, speedMultiplier);
-        }
+        starfield.update(delta, speedMultiplier);
         
         // Update orb manager and check collection
         orbManager.update(delta, time);
