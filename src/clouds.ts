@@ -422,11 +422,7 @@ export class CloudSystem {
         this.layers.forEach(layer => layer.update(delta, cameraX));
 
         // Lightning Logic
-        this.lightningTimer -= delta;
-        if (this.lightningTimer <= 0) {
-            this.triggerLightning();
-            this.lightningTimer = 3 + Math.random() * 8; // Frequent storms
-        }
+        // (Lightning logic moved to external trigger)
 
         // Update flash decay
         this.layers.forEach(layer => {
@@ -442,32 +438,32 @@ export class CloudSystem {
         });
     }
 
-    triggerLightning() {
-        // Flash deep layers more often
-        const layerIdx = Math.floor(Math.random() * 3); // 0, 1, or 2
-        const layer = this.layers[layerIdx];
+    triggerLightningAt(strikePos: THREE.Vector3) {
+        if (this.layers.length === 0) return;
 
-        // Calculate random volumetric position for the strike
-        // X: Near camera (visible area)
-        const x = this.currentCameraX + (Math.random() - 0.5) * 150;
-        // Y: Random vertical spread
-        const y = (Math.random() - 0.5) * 40;
-        // Z: Near the layer's base Z (so it lights up relevant clouds)
-        // Add some variation so it's not always planar
-        const z = layer.baseZ + (Math.random() - 0.5) * 20;
+        // Find the closest layer by Z distance to the strike
+        let closestLayerIdx = 0;
+        let minZDist = Infinity;
+        for (let i = 0; i < this.layers.length; i++) {
+            const dist = Math.abs(this.layers[i].baseZ - strikePos.z);
+            if (dist < minZDist) {
+                minZDist = dist;
+                closestLayerIdx = i;
+            }
+        }
 
-        const pos = new THREE.Vector3(x, y, z);
+        const layer = this.layers[closestLayerIdx];
         const radius = 60.0 + Math.random() * 40.0; // Large radius
         const intensity = 0.8 + Math.random() * 0.4;
 
-        layer.flash(pos, radius, intensity);
+        layer.flash(strikePos, radius, intensity);
 
         // Chain reaction (flash nearby layers)
-        if (Math.random() > 0.5 && layerIdx < this.layers.length - 1) {
+        if (Math.random() > 0.5 && closestLayerIdx < this.layers.length - 1) {
             // Flash next layer with slightly different position/intensity
-            const nextLayer = this.layers[layerIdx + 1];
+            const nextLayer = this.layers[closestLayerIdx + 1];
             // Slightly offset z for 3D feel
-            const nextPos = pos.clone();
+            const nextPos = strikePos.clone();
             nextPos.z = nextLayer.baseZ;
 
             setTimeout(() => nextLayer.flash(nextPos, radius * 0.8, intensity * 0.5), 100);

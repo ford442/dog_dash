@@ -79,6 +79,7 @@ export class LightningBoltSystem {
 
     positions: Float32Array;
     timers: Float32Array; // Timers to control individual bolt visibility
+    onBoltStrike?: (position: THREE.Vector3) => void;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -147,9 +148,15 @@ export class LightningBoltSystem {
                 if (Math.random() < 0.005) {
                     this.timers[i] = 0.2 + Math.random() * 0.3; // Visible for 0.2-0.5s
 
+
                     const x = cameraX + (Math.random() - 0.5) * 200;
                     const y = (Math.random() - 0.5) * 20 + 10; // High up
                     const z = -30 + (Math.random() - 0.5) * 20; // Background
+
+                    if (this.onBoltStrike) {
+                        this.onBoltStrike(new THREE.Vector3(x, y, z));
+                    }
+
 
                     this.positions[i * 3] = x;
                     this.positions[i * 3 + 1] = y;

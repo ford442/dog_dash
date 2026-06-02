@@ -90,6 +90,11 @@ export class LevelManager {
     constructor(options: any) {
         this.cloudSystem = new CloudSystem(scene);
         this.atmosphereSystem = new AtmosphereSystem(scene);
+
+        // Link LightningBoltSystem to CloudSystem for synchronized volumetric lighting
+        lightningBoltSystem.onBoltStrike = (pos) => {
+            this.cloudSystem.triggerLightningAt(pos);
+        };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
         this.ghostDebrisSystem = options.ghostDebrisSystem;
