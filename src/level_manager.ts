@@ -251,7 +251,11 @@ export class LevelManager {
         if (levelIndex === 5) {
             // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
+
+            // Level 5: Nebula Activation (fixed)
+            // Correct behavior - was previously deactivate() in old main.ts
             nebulaSystem.activate();
+
             cosmicDustSystem.activate();
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
