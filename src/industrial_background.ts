@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { WeaponLightManager } from './lighting';
+// @ts-ignore
 import {
     MeshStandardNodeMaterial
 } from 'three/webgpu';
@@ -132,22 +133,32 @@ function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number
     // Usually cylinder U wraps around, V is height.
     // Let's assume V is along the length (vertical cylinder) or X axis if rotated.
 
-    // Energy flow calculation
-    const flow = sin(vUv.y.mul(20.0).sub(uTime.mul(pulseSpeed))).add(1.0).mul(0.5); // 0..1
+    // Energy flow calculation (Traveling Light Pulses)
+    // We want a glowing segment to travel along the UV x-axis (length of the conduit)
 
-    // Add some noise/variation?
-    const pulse = sin(uTime.mul(2.0)).add(1.0).mul(0.5); // Global pulse
+    // Create a scrolling coordinate based on time and pulse speed
+    const scrollPos = vUv.y.sub(uTime.mul(pulseSpeed));
+
+    // Use fract to repeat the pulse along the length of the pipe
+    const repeatPattern = fract(scrollPos.mul(3.0));
+
+    // Create a sharp, traveling glowing segment using smoothstep
+    const travelingPulse = smoothstep(0.8, 1.0, repeatPattern);
+
+    // Add a secondary, faster, smaller pulse for visual complexity
+    const scrollPosFast = vUv.y.sub(uTime.mul(pulseSpeed * 1.5));
+    const repeatPatternFast = fract(scrollPosFast.mul(5.0));
+    const travelingPulseFast = smoothstep(0.9, 1.0, repeatPatternFast).mul(0.5);
+
+    const combinedPulse = travelingPulse.add(travelingPulseFast).clamp(0.0, 1.0);
 
     const glowColor = color(glowColorHex);
-    // const baseColor = color(baseColorHex);
 
-    // Center glow (simulating core) -> assume uv.x 0..1 wraps around.
-    // If we want the pipe to look like it has a glowing core visible through slots,
-    // we can use a stripe pattern on UV.x
-    // stripe = step(0.8, fract(vUv.x * 4.0)) ...
+    // Add a very subtle global glow to the pipe so it's not entirely black
+    const baseGlow = glowColor.mul(0.1);
 
-    // Let's just make the whole pipe pulse for now as "energy conduit"
-    mat.emissiveNode = glowColor.mul(flow).mul(pulse).mul(2.0).add(dynamicLighting);
+    // Final emissive combining the traveling pulse, base glow, and dynamic lighting
+    mat.emissiveNode = glowColor.mul(combinedPulse).mul(3.0).add(baseGlow).add(dynamicLighting);
 
     return mat;
 }
