@@ -78,7 +78,7 @@ export const waterfallSystem = new WaterfallSystem(scene, camera);
 export const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
 
 // PLANETARY HORIZON SYSTEM (Massive scrolling planet)
-export const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene);
+export const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
 
 // METEOR SHOWER SYSTEM
 export const meteorShowerSystem = new MeteorShowerSystem(scene);
