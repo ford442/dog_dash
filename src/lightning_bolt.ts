@@ -18,7 +18,7 @@ import {
 /**
  * Creates a TSL material for jagged lightning bolts.
  */
-function createLightningMaterial() {
+function createLightningMaterial(uColor: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -42,11 +42,28 @@ function createLightningMaterial() {
 
     const totalOffset = wave1.add(wave2).add(wave3);
 
-    // The center line is at x = 0.5, modified by the jagged offset
+    // The main trunk line is at x = 0.5, modified by the jagged offset
     const center = float(0.5).add(totalOffset);
 
-    // Distance from the jagged center line
-    const dist = abs(x.sub(center));
+    // Distance from the main trunk line
+    const trunkDist = abs(x.sub(center));
+
+    // Generate secondary branches using absolute sine waves to create V-shapes shooting outwards
+    // We scale by y to make branches more prominent towards the bottom
+    const branchWave1 = abs(sin(y.mul(30.0).add(uTime.mul(40.0)))).mul(0.15).mul(y);
+    const branchWave2 = abs(sin(y.mul(55.0).sub(uTime.mul(60.0)))).mul(0.1).mul(y);
+    const branchOffset = branchWave1.add(branchWave2);
+
+    // Two side branches splitting from the trunk
+    const branchLeftCenter = center.sub(branchOffset);
+    const branchRightCenter = center.add(branchOffset);
+
+    const distLeft = abs(x.sub(branchLeftCenter));
+    const distRight = abs(x.sub(branchRightCenter));
+
+    // Combine distances, favoring the closest part (trunk or branch)
+    // We make branches thinner by dividing their distance by a smaller number
+    const dist = trunkDist.min(distLeft.mul(1.5)).min(distRight.mul(1.5));
 
     // Core of the bolt is bright, edges fade out quickly
     const coreGlow = float(0.02).div(dist);
@@ -57,7 +74,7 @@ function createLightningMaterial() {
 
     // Color
     const coreColor = color(0xffffff);
-    const edgeColor = color(0x88bbff);
+    const edgeColor = color(uColor);
 
     // Mix core and edge based on distance
     const boltColor = mix(edgeColor, coreColor, step(dist, 0.05));
@@ -79,14 +96,17 @@ export class LightningBoltSystem {
 
     positions: Float32Array;
     timers: Float32Array; // Timers to control individual bolt visibility
-    onBoltStrike?: (position: THREE.Vector3) => void;
+    onBoltStrike?: (position: THREE.Vector3, color: THREE.Color) => void;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
         // Use a wide plane to allow the jagged line to draw within it
         const geo = new THREE.PlaneGeometry(10, 40);
-        const mat = createLightningMaterial();
+        const uColor = uniform(new THREE.Color(0x88bbff));
+        const mat = createLightningMaterial(uColor) as any;
+        mat.userData = mat.userData || {};
+        mat.userData.uColor = uColor;
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false;
@@ -113,7 +133,18 @@ export class LightningBoltSystem {
         this.deactivate();
     }
 
-    activate() {
+    activate(config?: { color?: number }) {
+        if (config && config.color !== undefined) {
+            const mat = this.mesh.material as any;
+            if (mat.userData && mat.userData.uColor) {
+                mat.userData.uColor.value.setHex(config.color);
+            }
+        } else {
+            const mat = this.mesh.material as any;
+            if (mat.userData && mat.userData.uColor) {
+                mat.userData.uColor.value.setHex(0x88bbff); // Default blue
+            }
+        }
         if (this.active) return;
         this.active = true;
         this.mesh.visible = true;
@@ -154,7 +185,9 @@ export class LightningBoltSystem {
                     const z = -30 + (Math.random() - 0.5) * 20; // Background
 
                     if (this.onBoltStrike) {
-                        this.onBoltStrike(new THREE.Vector3(x, y, z));
+                        const mat = this.mesh.material as any;
+                        const strikeColor = mat.userData && mat.userData.uColor ? mat.userData.uColor.value : new THREE.Color(0x88bbff);
+                        this.onBoltStrike(new THREE.Vector3(x, y, z), strikeColor);
                     }
 
 

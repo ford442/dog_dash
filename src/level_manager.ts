@@ -92,8 +92,8 @@ export class LevelManager {
         this.atmosphereSystem = new AtmosphereSystem(scene);
 
         // Link LightningBoltSystem to CloudSystem for synchronized volumetric lighting
-        lightningBoltSystem.onBoltStrike = (pos) => {
-            this.cloudSystem.triggerLightningAt(pos);
+        lightningBoltSystem.onBoltStrike = (pos, color) => {
+            this.cloudSystem.triggerLightningAt(pos, color);
         };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
@@ -185,7 +185,11 @@ export class LevelManager {
             chromaShiftSystem.deactivate();
         }
         if (levelIndex === 1 || levelIndex === 2 || levelIndex === 3) {
-            lightningBoltSystem.activate();
+            if (levelIndex === 3) {
+                lightningBoltSystem.activate({ color: 0xaa44ff });
+            } else {
+                lightningBoltSystem.activate();
+            }
         } else {
             lightningBoltSystem.deactivate();
         }
