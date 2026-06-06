@@ -94,6 +94,7 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
     // Volumetric Lightning Uniforms
     const uLightningPos = uniform(new THREE.Vector3(0, 0, 0));
     const uLightningRadius = uniform(50.0);
+    const uLightningColor = uniform(new THREE.Color(0xffffff));
 
     // --- Fragment Shader ---
     const vUv = uv();
@@ -137,9 +138,17 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
     // Attenuation: 1.0 at center, 0.0 at radius
     const attenuation = smoothstep(uLightningRadius, float(0.0), distToStrike);
 
-    // Flash adds white emissive boost based on attenuation and intensity
-    const flashColor = color(0xffffff);
-    const flashFactor = uFlash.mul(attenuation);
+    // Fake normal based on UV from center for directional rim lighting
+    const fakeNormal = vec3(centeredUv.x, centeredUv.y, 0.5).normalize();
+    const lightDir = positionWorld.sub(uLightningPos).normalize();
+    const lightIntensity = dot(fakeNormal, lightDir).max(0.0).mul(0.5).add(0.5);
+
+    // Flash adds volumetric emissive boost based on attenuation, noise density and intensity
+    const flashColor = color(uLightningColor);
+
+    // Use noiseVal to highlight the cloud's internal structure during flash
+    const volumetricHighlight = noiseVal.add(0.5);
+    const flashFactor = uFlash.mul(attenuation).mul(volumetricHighlight).mul(lightIntensity);
 
     const flashedColor = mix(finalColor, flashColor, flashFactor);
 
@@ -149,6 +158,7 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
     mat.userData.uFlash = uFlash;
     mat.userData.uLightningPos = uLightningPos;
     mat.userData.uLightningRadius = uLightningRadius;
+    mat.userData.uLightningColor = uLightningColor;
 
     return mat;
 }
@@ -284,12 +294,13 @@ export class CloudLayer {
         }
     }
 
-    flash(position: THREE.Vector3, radius: number, intensity: number) {
+    flash(position: THREE.Vector3, radius: number, intensity: number, flashColor: THREE.Color = new THREE.Color(0xffffff)) {
         const mat = this.mesh.material as any;
         if (mat.userData) {
             if (mat.userData.uFlash) mat.userData.uFlash.value = intensity;
             if (mat.userData.uLightningPos) mat.userData.uLightningPos.value.copy(position);
             if (mat.userData.uLightningRadius) mat.userData.uLightningRadius.value = radius;
+            if (mat.userData.uLightningColor) mat.userData.uLightningColor.value.copy(flashColor);
         }
     }
 }
@@ -438,7 +449,7 @@ export class CloudSystem {
         });
     }
 
-    triggerLightningAt(strikePos: THREE.Vector3) {
+    triggerLightningAt(strikePos: THREE.Vector3, lightningColor?: THREE.Color) {
         if (this.layers.length === 0) return;
 
         // Find the closest layer by Z distance to the strike
@@ -456,7 +467,7 @@ export class CloudSystem {
         const radius = 60.0 + Math.random() * 40.0; // Large radius
         const intensity = 0.8 + Math.random() * 0.4;
 
-        layer.flash(strikePos, radius, intensity);
+        layer.flash(strikePos, radius, intensity, lightningColor);
 
         // Chain reaction (flash nearby layers)
         if (Math.random() > 0.5 && closestLayerIdx < this.layers.length - 1) {
@@ -466,7 +477,7 @@ export class CloudSystem {
             const nextPos = strikePos.clone();
             nextPos.z = nextLayer.baseZ;
 
-            setTimeout(() => nextLayer.flash(nextPos, radius * 0.8, intensity * 0.5), 100);
+            setTimeout(() => nextLayer.flash(nextPos, radius * 0.8, intensity * 0.5, lightningColor), 100);
         }
     }
 }
