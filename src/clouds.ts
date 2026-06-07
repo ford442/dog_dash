@@ -5,6 +5,8 @@ import {
 } from 'three/webgpu';
 import {
     time,
+    Loop,
+    Loop,
     positionLocal,
     positionWorld,
     uv,
@@ -78,7 +80,7 @@ const fbm = (v: any) => {
  * - Internal lighting/shading simulation via noise density
  * - Volumetric Lightning Flash (Distance-based)
  */
-function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacity: UniformNode<number>, detail: number = 1.0) {
+function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacity: UniformNode<number>, detail: number = 1.0, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         side: THREE.FrontSide, // Sprites face camera
@@ -150,11 +152,43 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
     const volumetricHighlight = noiseVal.add(0.5);
     const flashFactor = uFlash.mul(attenuation).mul(volumetricHighlight).mul(lightIntensity);
 
+
     const flashedColor = mix(finalColor, flashColor, flashFactor);
 
-    mat.colorNode = vec4(flashedColor, alpha);
+    let enhancedColor = flashedColor;
+
+    if (uPlayerPos !== undefined && weaponLights !== undefined) {
+        // Player Engine Glow Interaction
+        const distToPlayer = length(positionWorld.sub(uPlayerPos));
+        const glowIntensity = smoothstep(30.0, 0.0, distToPlayer);
+        const uGlowColor = uniform(new THREE.Color(0xff8844)); // Engine glow
+
+        // Weapon Light Interaction
+        const weaponGlow = float(0.0).toVar();
+        const uWeaponColor = uniform(new THREE.Color(0x00ffff));
+
+        Loop({ start: 0, end: 20 }, ({ i }) => {
+            const lightData = weaponLights.element(i);
+            const lightPos = lightData.xyz;
+            const lightIntensity = lightData.w;
+
+            const distToLight = distance(positionWorld, lightPos);
+            const lightRadius = float(25.0);
+            const falloff = smoothstep(lightRadius, 0.0, distToLight);
+
+            weaponGlow.addAssign(falloff.mul(lightIntensity));
+        });
+
+        enhancedColor = enhancedColor.add(uGlowColor.mul(glowIntensity.mul(0.6))).add(uWeaponColor.mul(weaponGlow.mul(0.8)));
+    }
+
+    mat.colorNode = vec4(enhancedColor, alpha);
 
     // Store uniforms
+    if (uPlayerPos !== undefined) {
+        mat.userData.uPlayerPos = uPlayerPos;
+    }
+
     mat.userData.uFlash = uFlash;
     mat.userData.uLightningPos = uLightningPos;
     mat.userData.uLightningRadius = uLightningRadius;
@@ -190,7 +224,11 @@ export class CloudLayer {
             scaleMax: number,
             windSpeed: number, // Speed relative to world (crawling)
             width: number,
-            detail?: number
+            detail?: number,
+            weaponLights?: any,
+            uPlayerPos?: any,
+            weaponLights?: any,
+            uPlayerPos?: any
         }
     ) {
         this.count = config.count;
@@ -202,7 +240,7 @@ export class CloudLayer {
 
         // Use PlaneGeometry for Sprites
         const geo = new THREE.PlaneGeometry(1, 1);
-        const mat = createCloudSpriteMaterial(config.uColor, config.uOpacity, config.detail || 1.0);
+        const mat = createCloudSpriteMaterial(config.uColor, config.uOpacity, config.detail || 1.0, config.weaponLights, config.uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false; // Infinite scroll
@@ -306,15 +344,20 @@ export class CloudLayer {
 }
 
 import { LevelConfig } from './level_config';
+import { WeaponLightManager } from './lighting';
 
 export class CloudSystem {
     scene: THREE.Scene;
     layers: CloudLayer[] = [];
     lightningTimer: number = 0;
     currentCameraX: number = 0;
+    weaponLightManager?: WeaponLightManager;
+    uPlayerPos: any;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager?: WeaponLightManager) {
         this.scene = scene;
+        this.weaponLightManager = weaponLightManager;
+        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
         this.initLayers();
     }
 
@@ -367,7 +410,9 @@ export class CloudSystem {
             scaleMax: 60,
             windSpeed: -2.0, // Crawl
             width: 400,
-            detail: 0.5
+            detail: 0.5,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Layer 2: Background (Dark, slightly faster)
@@ -381,7 +426,9 @@ export class CloudSystem {
             scaleMax: 45,
             windSpeed: -3.0,
             width: 350,
-            detail: 0.8
+            detail: 0.8,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Layer 3: Mid-Ground (Main cloud layer, semi-transparent)
@@ -395,7 +442,9 @@ export class CloudSystem {
             scaleMax: 30,
             windSpeed: -5.0,
             width: 300,
-            detail: 1.0
+            detail: 1.0,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Layer 4: Near-Mid (Lighter, faster)
@@ -409,7 +458,9 @@ export class CloudSystem {
             scaleMax: 20,
             windSpeed: -8.0,
             width: 250,
-            detail: 1.5
+            detail: 1.5,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Layer 5: Foreground (Passes in front/very close, fast, transparent, detailed)
@@ -424,11 +475,16 @@ export class CloudSystem {
             scaleMax: 12,
             windSpeed: -15.0, // Whoosh
             width: 200,
-            detail: 2.0
+            detail: 2.0,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number) {
+    update(delta: number, cameraX: number, playerSpeed: number, playerPos?: THREE.Vector3) {
+        if (playerPos) {
+            this.uPlayerPos.value.copy(playerPos);
+        }
         this.currentCameraX = cameraX;
         this.layers.forEach(layer => layer.update(delta, cameraX));
 

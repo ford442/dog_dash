@@ -88,7 +88,7 @@ export class LevelManager {
     } as const;
 
     constructor(options: any) {
-        this.cloudSystem = new CloudSystem(scene);
+        this.cloudSystem = new CloudSystem(scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(scene);
 
         // Link LightningBoltSystem to CloudSystem for synchronized volumetric lighting
@@ -305,7 +305,7 @@ export class LevelManager {
     update(delta: number, cameraX: number, speed: number, isFiring: boolean = false, fireDir?: THREE.Vector3) {
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
-        this.cloudSystem.update(delta, cameraX, speed);
+        this.cloudSystem.update(delta, cameraX, speed, player ? player.position : undefined);
         lightningBoltSystem.update(delta, cameraX);
 
         const dbg = this.debugSystem;

@@ -1,22 +1,25 @@
-## 🌌 Architect: Enhanced Volumetric Branching Lightning
+## 🌌 Architect: Cloud Interaction and Dynamic Lighting
 
 ### Concept
-> "Lightning flashes that briefly illuminate the cloud layers from within, creating dynamic lighting"
+> "The player's exhaust and weapons cast a subtle glow on nearby nebula clouds, creating a dynamic interplay of light"
+> (Adapted to Multi-Layered Cloudscapes from section 1 of future-plan.md to add player and weapon interactions to the dense volumetric clouds.)
 
 ### Implementation
-- Enhanced `src/clouds.ts` (Volumetric Lightning) to use procedural noise-based directional lighting, rather than a flat circular gradient, allowing lightning flashes to highlight the internal volume and crevices of clouds dynamically. Added support for configurable `uLightningColor`.
-- Enhanced `src/lightning_bolt.ts` (Lightning Bolts) to dynamically generate branching fractal patterns in TSL shaders instead of a single jagged line, improving realism. Added parameterized color support.
-- Modified `LevelManager` to activate unique colored lightning for specific levels (e.g., purple lightning in Level 3).
+- Enhanced `src/clouds.ts` (`createCloudSpriteMaterial`) by integrating the `WeaponLightManager` data and computing TSL lighting that reacts dynamically to weapon projectiles and the player's engine glow.
+- Supplied `weaponLightManager` to `CloudSystem` inside `LevelManager` (`src/level_manager.ts`), which in turn passes it down to `CloudLayer`.
+- Ensured `CloudSystem.update` accurately updates `uPlayerPos` for all layers.
 
 ### Visuals
-- Cloud shading highlights internal billows when flashed.
-- Lightning bolts now feature secondary branching paths.
-- Lightning inherits colors defined per-level for better integration.
+- Cloud layers now react realistically to passing weapons, illuminating their dense volumes with cyan light.
+- The player's engine exhaust casts an orange radial glow when passing through cloud layers.
+- Seamlessly integrates with the existing Volumetric Lightning flashes.
 
 ### Integration
-- `src/level_manager.ts`: Enabled custom lightning color initialization in level 3 (`lightningBoltSystem.activate({ color: 0xaa44ff })`). Synchronized colored bolt strikes with cloud flash triggers.
+- `src/main.ts`: Provided `weaponLightManager` into `LevelManager`.
+- `src/level_manager.ts`: Initialized `CloudSystem` with the `weaponLightManager` and updated it with `player.position`.
+- `src/clouds.ts`: Extensively modified the `MeshBasicNodeMaterial` logic to loop through `weaponLights` and apply dynamic `smoothstep` light attenuation to the cloud rendering output.
 
 ### Testing
 - [x] `npm run build` passes
-- [x] Tested in Level 3 with purple branching lightning
+- [ ] Tested in Levels 1-3
 - [x] Mobile/touch controls still work
