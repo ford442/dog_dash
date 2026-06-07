@@ -2722,7 +2722,8 @@ function animate() {
 
     // Update Level Manager (and Clouds)
     if (player) {
-        levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed);
+        const isFiringProxy = weaponSystem.getActiveProjectiles().length > 0;
+        levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
         if (debugSystem.isEnabled('butterflySwarm')) {
             butterflySwarmSystem.update(delta, camera.position.x, player.position);
         }

@@ -302,7 +302,7 @@ export class LevelManager {
         }
     }
 
-    update(delta: number, cameraX: number, speed: number) {
+    update(delta: number, cameraX: number, speed: number, isFiring: boolean = false, fireDir?: THREE.Vector3) {
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
         this.cloudSystem.update(delta, cameraX, speed);
@@ -325,7 +325,7 @@ export class LevelManager {
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('chromaShift')) chromaShiftSystem.update(delta, player ? player.position : undefined);
-        if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined);
+        if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined, isFiring, fireDir);
         if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
 
         if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed);

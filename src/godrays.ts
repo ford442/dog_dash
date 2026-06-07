@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
     MeshBasicNodeMaterial
 } from 'three/webgpu';
+
 import {
     time,
     uv,
@@ -22,6 +23,7 @@ import {
     positionWorld
 } from 'three/tsl';
 
+
 export type GodRayConfig = {
     enabled: boolean;
     density: number;        // 0-1
@@ -29,6 +31,7 @@ export type GodRayConfig = {
     color: number;
     speedMultiplier: number;
 };
+
 
 /**
  * Creates a TSL material for a God Ray (Light Shaft).
@@ -46,44 +49,60 @@ function createGodRayMaterial() {
     const uColor = uniform(new THREE.Color(0xffffff));
     const uIntensity = uniform(1.0);
     const uPlayerPos = uniform(new THREE.Vector3(9999, 9999, 9999));
+    const uDashIntensity = uniform(0.0);
+    const uWeaponFireTime = uniform(0.0);
+    const uFireDir = uniform(new THREE.Vector3(0, 0, -1));
     const vUv = uv();
 
-    // 1. Core Shape (Soft edges on Cylinder via normalView, fade out on Y)
-    // normalView gives us the normal in view space. The z component is 0 at the edge.
     const viewZ = normalView.z.abs();
-    // Use smoothstep for softer edge
     const softX = smoothstep(0.0, 0.5, viewZ);
-
-    // Fade out vertically (fade out at the bottom where UV.y -> 0)
-    // CylinderGeometry UV y goes 0 to 1 from bottom to top.
-    // Pivot was moved so y=25 is top.
     const softY = smoothstep(0.0, 0.8, vUv.y);
-
     const baseShape = softX.mul(softY);
 
-    // 2. Procedural Animation (Swaying and Pulsing)
-    const noiseSpeed = uTime.mul(0.5);
-    // Swirling procedural noise / sine waves
+    // Multi-layer noise
+    // Fallback pseudo-noise if 'noise' is not available
     const shimmer = sin(vUv.y.mul(10.0).sub(uTime.mul(2.0))).mul(0.2).add(0.8);
     const shimmer2 = cos(vUv.x.mul(Math.PI * 2.0).add(uTime)).mul(0.1).add(0.9);
+    const layeredNoise = shimmer.mul(shimmer2);
 
-    // 3. Dynamic Player Interaction
+    const sway = sin(uTime.mul(2).add(positionLocal.x)).mul(0.015).mul(uDashIntensity.add(0.3));
+
+    const depthAttenuation = positionWorld.z.mul(-0.01).clamp(0, 1);
+
+    // Weapon fire boost
+    const fireBurst = uWeaponFireTime.mul(uWeaponFireTime).mul(1.8);
+
+    // Dynamic Player Interaction
     const distToPlayer = length(positionWorld.sub(uPlayerPos));
-    // When player is close (dist < 20), increase intensity
     const playerGlow = float(1.0).sub(smoothstep(0.0, 20.0, distToPlayer)).mul(0.5);
 
-    const finalAlpha = baseShape.mul(shimmer).mul(shimmer2).mul(uIntensity.add(playerGlow));
+    // Final color + alpha
+    const rayColor = vec3(uColor).mul(float(0.6).add(fireBurst.mul(0.8)));
 
-    const sway = sin(vUv.y.mul(5.0).add(uTime)).mul(0.1);
-    mat.colorNode = vec4(uColor, finalAlpha);
+    // Combining the fireBurst, dash, and existing logic
+    const baseAlpha = baseShape.mul(layeredNoise).mul(uIntensity.add(playerGlow));
+
+    const enhancedAlpha = layeredNoise.mul(0.4)
+      .add(fireBurst.mul(0.6))
+      // .mul(depthAttenuation)
+      .mul(float(0.7).add(uDashIntensity.mul(0.3)));
+
+    const finalAlpha = baseAlpha.mul(enhancedAlpha).clamp(0, 1);
+
+    mat.colorNode = vec4(rayColor, finalAlpha);
+
     mat.positionNode = vec3(positionLocal.x.add(sway.mul(15.0)), positionLocal.y, positionLocal.z);
 
     mat.userData.uColor = uColor;
     mat.userData.uIntensity = uIntensity;
     mat.userData.uPlayerPos = uPlayerPos;
+    mat.userData.uDashIntensity = uDashIntensity;
+    mat.userData.uWeaponFireTime = uWeaponFireTime;
+    mat.userData.uFireDir = uFireDir;
 
     return mat;
 }
+
 
 export class GodRaySystem {
     scene: THREE.Scene;
@@ -162,8 +181,17 @@ export class GodRaySystem {
         // Don't hide immediately, let update() fade it out
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number = 8.0, playerPos?: THREE.Vector3) {
+    private weaponFireTime = 0;
+    private dashIntensity = 0;
+
+    update(delta: number, cameraX: number, playerSpeed: number = 8.0, playerPos?: THREE.Vector3, isFiring: boolean = false, fireDirection?: THREE.Vector3) {
+
+        this.weaponFireTime = isFiring ? 1.0 : Math.max(0, this.weaponFireTime - delta * 2.0);
+        const playerVelLength = Math.abs(playerSpeed);
+        this.dashIntensity = Math.max(this.dashIntensity - delta * 1.5, playerVelLength > 15 ? 0.8 : 0);
+
         // Handle Fading
+
         const targetIntensity = this.active && this.currentConfig ? this.currentConfig.baseIntensity : 0.0;
 
         if (Math.abs(this.globalIntensity - targetIntensity) > 0.01) {
@@ -187,9 +215,17 @@ export class GodRaySystem {
             mat.userData.uIntensity.value = finalIntensity;
         }
 
+
         if (playerPos && mat && mat.userData && mat.userData.uPlayerPos) {
             mat.userData.uPlayerPos.value.copy(playerPos);
         }
+
+        if (mat && mat.userData) {
+            if (mat.userData.uDashIntensity) mat.userData.uDashIntensity.value = this.dashIntensity;
+            if (mat.userData.uWeaponFireTime) mat.userData.uWeaponFireTime.value = this.weaponFireTime;
+            if (mat.userData.uFireDir && fireDirection) mat.userData.uFireDir.value.copy(fireDirection);
+        }
+
 
         // Parallax and Wrapping
         const margin = 100;
