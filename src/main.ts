@@ -1059,6 +1059,7 @@ const videoTumblingStars = [
 
 const industrialGeometryManager = new IndustrialGeometryManager(scene);
 const levelManager = new LevelManager({
+    weaponLightManager,
     scene,
     camera: camera,
     getPlayer: () => player,
