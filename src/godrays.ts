@@ -20,6 +20,8 @@ import {
     distance,
     normalView,
     length,
+    add,
+    mul,
     positionWorld
 } from 'three/tsl';
 
@@ -67,9 +69,10 @@ function createGodRayMaterial() {
 
     const sway = sin(uTime.mul(2).add(positionLocal.x)).mul(0.015).mul(uDashIntensity.add(0.3));
 
-    const depthAttenuation = positionWorld.z.mul(-0.01).clamp(0, 1);
 
     // Weapon fire boost
+    const depthAttenuation = positionWorld.z.mul(-0.01).clamp(0, 1);
+
     const fireBurst = uWeaponFireTime.mul(uWeaponFireTime).mul(1.8);
 
     // Dynamic Player Interaction
