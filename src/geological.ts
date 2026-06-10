@@ -104,35 +104,44 @@ const fbm = (v: any) => {
 
 // --- GEOLOGICAL OBJECTS ---
 
+
 // 2. FRACTURED GEODE (Safe harbors with EM fields)
 export function createFracturedGeode(config: { size: number }) {
     const group = new THREE.Group();
     
     // Outer Shell (Dark rock)
     const shellGeo = new THREE.IcosahedronGeometry(config.size, 1);
-    // Cut open the geode? (Simplified: just a dark rock for now with a glowing core inside sticking out)
-    // Better: Boolean operation is hard. Let's make a shell of rock chunks.
-
     const rockMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.9 });
     const shell = new THREE.Mesh(shellGeo, rockMat);
     group.add(shell);
 
-    // Inner Core (Glowing Crystal)
-    const coreGeo = new THREE.OctahedronGeometry(config.size * 0.6, 0);
+    // Inner Core (Multiple Glowing Crystals)
     const coreMat = new MeshStandardNodeMaterial({
         emissive: new THREE.Color(0x8844ff),
         roughness: 0.2,
         metalness: 0.5
     });
 
-    // Pulse effect
     const uTime = time;
     const pulse = sin(uTime.mul(2.0)).add(1.0).mul(0.5); // 0 to 1
     const baseEmit = color(0x8844ff);
-    coreMat.emissiveNode = baseEmit.mul(pulse.add(0.5)); // vary intensity
+    coreMat.emissiveNode = baseEmit.mul(pulse.add(0.5));
 
-    const core = new THREE.Mesh(coreGeo, coreMat);
-    group.add(core);
+    const coreGroup = new THREE.Group();
+    const crystalCount = 5;
+    for (let i = 0; i < crystalCount; i++) {
+        const crystalGeo = new THREE.OctahedronGeometry(config.size * 0.3, 0);
+        const crystal = new THREE.Mesh(crystalGeo, coreMat);
+
+        // Position crystals around center
+        const angle = (i / crystalCount) * Math.PI * 2;
+        const radius = config.size * 0.4;
+        crystal.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * radius, Math.sin(angle) * radius);
+        crystal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+
+        coreGroup.add(crystal);
+    }
+    group.add(coreGroup);
 
     // EM Field (Transparent Sphere)
     const fieldGeo = new THREE.SphereGeometry(config.size * 2.5, 32, 32);
@@ -147,16 +156,23 @@ export function createFracturedGeode(config: { size: number }) {
 
     group.userData.isGeode = true;
     group.userData.fieldRadius = config.size * 2.5;
+    group.userData.health = 100;
+    group.userData.maxHealth = 100;
+    group.userData.quality = 0.5 + Math.random() * 0.5; // Random initial quality between 0.5 and 1.0
+    group.userData.isDischarged = false;
+    group.userData.crystalCount = crystalCount;
 
     return group;
 }
 
 export function updateGeode(group: THREE.Group, delta: number, timeVal: number) {
-    // Rotate core differently than shell
-    const core = group.children[1];
-    if (core) {
-        core.rotation.y -= delta * 0.5;
-        core.rotation.z += delta * 0.2;
+    if (group.userData.isDischarged) return;
+
+    // Rotate core Group
+    const coreGroup = group.children[1];
+    if (coreGroup) {
+        coreGroup.rotation.y -= delta * 0.5;
+        coreGroup.rotation.z += delta * 0.2;
     }
 
     // Pulse field opacity
@@ -166,6 +182,43 @@ export function updateGeode(group: THREE.Group, delta: number, timeVal: number) 
         field.rotation.y += delta * 0.1;
     }
 }
+
+export function damageGeode(group: THREE.Group, amount: number): boolean {
+    if (group.userData.isDischarged) return false;
+
+    group.userData.health -= amount;
+
+    // Note: Quality remains static so it can be used for reward calculation upon depletion
+
+    // Visually remove/shrink crystals based on health
+    const coreGroup = group.children[1] as THREE.Group;
+    if (coreGroup) {
+        const activeCrystals = Math.ceil((group.userData.health / group.userData.maxHealth) * group.userData.crystalCount);
+        for (let i = 0; i < coreGroup.children.length; i++) {
+            if (i >= activeCrystals) {
+                coreGroup.children[i].visible = false;
+            } else {
+                // Shrink remaining slightly
+                const scale = 0.5 + 0.5 * (group.userData.health / group.userData.maxHealth);
+                coreGroup.children[i].scale.setScalar(scale);
+            }
+        }
+    }
+
+    if (group.userData.health <= 0) {
+        group.userData.isDischarged = true;
+
+        // Hide EM field
+        const field = group.children[2] as THREE.Mesh;
+        if (field) {
+            field.visible = false;
+        }
+        return true; // Indicates just depleted
+    }
+
+    return false;
+}
+
 
 
 // 3. NEBULA JELLY-MOSS (Advanced Behavior)

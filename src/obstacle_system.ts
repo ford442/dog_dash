@@ -20,7 +20,7 @@ type ObstacleSystemOptions = {
     scene: THREE.Scene;
     getPlayer: () => THREE.Group | null;
     getCurrentConfig: () => LevelConfig | undefined;
-    playerState: { health: number; invincible: boolean; velocity: THREE.Vector3 };
+    playerState: { health: number; invincible: boolean; inSafeHarbor?: boolean; velocity: THREE.Vector3 };
     getWasm: () => { exports: any; memory: Float32Array | null };
     setWasmMemory: (memory: Float32Array | null) => void;
     sporeClouds: SporeCloud[];
@@ -175,7 +175,7 @@ export class ObstacleSystem {
             squid.update(delta, playerX, playerY);
 
             // Player-squid collision (simple distance check)
-            if (!this.options.playerState.invincible) {
+            if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
                 const dist = squid.getPosition().distanceTo(new THREE.Vector3(playerX, playerY, 0));
                 if (dist < squid.getRadius() + 1.0) {
                     this.handleSquidCollision(squid);
@@ -216,7 +216,7 @@ export class ObstacleSystem {
                 const modifiers = this.options.getPowerUpModifiers ? this.options.getPowerUpModifiers() : { shieldActive: false, shieldBouncesAsteroids: false };
                 if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
                     this.handleBounce(activeObstacles[hitIndex]);
-                } else if (!this.options.playerState.invincible) {
+                } else if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
                     this.handleCollision(activeObstacles[hitIndex]);
                 }
             }
