@@ -52,7 +52,8 @@ function createLightningMaterial(uColor: any) {
     // We scale by y to make branches more prominent towards the bottom
     const branchWave1 = abs(sin(y.mul(30.0).add(uTime.mul(40.0)))).mul(0.15).mul(y);
     const branchWave2 = abs(sin(y.mul(55.0).sub(uTime.mul(60.0)))).mul(0.1).mul(y);
-    const branchOffset = branchWave1.add(branchWave2);
+    const branchWave3 = abs(sin(y.mul(45.0).add(uTime.mul(50.0)))).mul(0.12).mul(y);
+    const branchOffset = branchWave1.add(branchWave2).add(branchWave3);
 
     // Two side branches splitting from the trunk
     const branchLeftCenter = center.sub(branchOffset);
@@ -97,6 +98,7 @@ export class LightningBoltSystem {
     positions: Float32Array;
     timers: Float32Array; // Timers to control individual bolt visibility
     onBoltStrike?: (position: THREE.Vector3, color: THREE.Color) => void;
+    currentDensity: number = 1.0;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -133,7 +135,7 @@ export class LightningBoltSystem {
         this.deactivate();
     }
 
-    activate(config?: { color?: number }) {
+    activate(config?: { color?: number, density?: number }) {
         if (config && config.color !== undefined) {
             const mat = this.mesh.material as any;
             if (mat.userData && mat.userData.uColor) {
@@ -145,6 +147,7 @@ export class LightningBoltSystem {
                 mat.userData.uColor.value.setHex(0x88bbff); // Default blue
             }
         }
+        this.currentDensity = config?.density ?? 1.0;
         if (this.active) return;
         this.active = true;
         this.mesh.visible = true;
@@ -176,7 +179,7 @@ export class LightningBoltSystem {
             } else {
                 // Random chance to spawn a bolt
                 // Very rare per frame to keep it sparse, e.g. one bolt every few seconds
-                if (Math.random() < 0.005) {
+                if (Math.random() < 0.005 * this.currentDensity) {
                     this.timers[i] = 0.2 + Math.random() * 0.3; // Visible for 0.2-0.5s
 
 

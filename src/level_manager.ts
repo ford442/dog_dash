@@ -95,6 +95,7 @@ export class LevelManager {
         // Link LightningBoltSystem to CloudSystem for synchronized volumetric lighting
         lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
+            this.godRaySystem.triggerLightningFlash(1.0);
         };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
@@ -192,12 +193,8 @@ export class LevelManager {
             stormGeodeSystem.deactivate();
         }
 
-        if (levelIndex === 1 || levelIndex === 2 || levelIndex === 3) {
-            if (levelIndex === 3) {
-                lightningBoltSystem.activate({ color: 0xaa44ff });
-            } else {
-                lightningBoltSystem.activate();
-            }
+        if (cfg.lightning && cfg.lightning.enabled) {
+            lightningBoltSystem.activate(cfg.lightning);
         } else {
             lightningBoltSystem.deactivate();
         }
