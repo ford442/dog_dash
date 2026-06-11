@@ -60,6 +60,8 @@ import { BossManager, StarEaterBoss } from './boss_system';
 import { getAudioSystem, initAudioOnInteraction } from './audio_system';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager, createShopUI } from './save_manager';
+import { DiscoveryManager } from './discovery_system';
+import { SlingObjectiveManager } from './sling_objective';
 import { StarfieldSystem } from './stars';
 import { OrbManager, OrbType } from './collectibles';
 import { PowerUpManager, PowerUpType } from './powerup_manager';
@@ -667,6 +669,37 @@ playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
 // NEW MANAGERS (Swarm #2)
 const dogController = new DogCockpitController();
 const hudManager = new HUDManager(saveManager);
+const discoveryManager = new DiscoveryManager(saveManager);
+discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, isNewEver) => {
+    if (player) {
+        juiceManager.showFloatingText(`Scanned: ${name}!`, player.position.clone(), '#00ffcc', 22);
+        juiceManager.burstMagic(player.position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+    audioSystem.playMagicSequence('star_collect');
+
+    const objective = levelManager.config[levelManager.currentLevel]?.objective;
+    if (objective?.type === 'scan') {
+        hudManager.updateObjectiveProgress(totalThisRun, objective.target);
+    }
+};
+
+const slingObjectiveManager = new SlingObjectiveManager();
+slingObjectiveManager.onProgress = (current, target) => {
+    hudManager.updateObjectiveProgress(current, target);
+    if (player) {
+        juiceManager.showFloatingText(`Clean Sling! ${current}/${target}`, player.position.clone(), '#44aaff', 22);
+    }
+    audioSystem.playMagicSequence('star_collect');
+};
+slingObjectiveManager.onObjectiveComplete = () => {
+    if (player) {
+        juiceManager.showFloatingText('Slingshot Master!', player.position.clone(), '#ffcc00', 28);
+        juiceManager.burstMagic(player.position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
+    audioSystem.playMagicSequence('power_up');
+};
 const juiceManager = new JuiceManager(camera, scene, particleSystem);
 
 // BOOST SYSTEM
@@ -1101,6 +1134,17 @@ const levelManager = new LevelManager({
     onLevelStart: (cfg) => {
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
+        discoveryManager.reset();
+        slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
+        if (cfg.objective?.type === 'scan') {
+            hudManager.setObjectiveLabel('🔍 Catalog');
+            hudManager.updateObjectiveProgress(0, cfg.objective.target);
+        } else if (cfg.objective?.type === 'sling') {
+            hudManager.setObjectiveLabel('🎯 Slings');
+            hudManager.updateObjectiveProgress(0, cfg.objective.target);
+        } else {
+            hudManager.updateObjectiveProgress(0, 0);
+        }
     },
     onUpdateLevelDisplay: (levelIndex, name) => {
         const levelDiv = document.getElementById('level-display');
@@ -2064,6 +2108,7 @@ function updatePlayer(delta: number) {
             const impulseMag = impulse.length();
             const slingQuality = impulseMag >= 26 ? 'perfect' : impulseMag >= 14 ? 'good' : 'messy';
             slingComboManager.recordSlingAction(slingQuality, player.position.clone());
+            slingObjectiveManager.recordSling(slingQuality);
         }
     }
 
@@ -2801,6 +2846,7 @@ function animate() {
     if (player) {
         const isFiringProxy = weaponSystem.getActiveProjectiles().length > 0;
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
+        discoveryManager.update(player.position, levelManager.levelObjects);
         if (debugSystem.isEnabled('butterflySwarm')) {
             butterflySwarmSystem.update(delta, camera.position.x, player.position);
         }
@@ -3036,6 +3082,7 @@ function animate() {
 
                     // Record a perfect gravity-arc sling in the combo chain
                     slingComboManager.recordSlingAction('perfect', player.position.clone());
+                    slingObjectiveManager.recordSling('perfect');
 
                     // Sling release doppler whoosh
                     audioSystem.playGravitySlingRelease('perfect', slingComboManager.getCombo());

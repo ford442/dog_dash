@@ -204,6 +204,7 @@ export class HUDManager {
     private healthContainer: HTMLDivElement | null = null;
     private powerUpContainer: HTMLDivElement | null = null;
     private orbProgressContainer: HTMLDivElement | null = null;
+    private scanProgressContainer: HTMLDivElement | null = null;
     private pauseMenu: HTMLDivElement | null = null;
     private victoryScreen: HTMLDivElement | null = null;
     private gameOverScreen: HTMLDivElement | null = null;
@@ -244,6 +245,7 @@ export class HUDManager {
         this.createHealthDisplay();
         this.createPowerUpDisplay();
         this.createOrbProgressDisplay();
+        this.createScanProgressDisplay();
         this.createGrazeComboDisplay();
         this.createSlingComboDisplay();
     }
@@ -600,7 +602,89 @@ export class HUDManager {
         this.orbProgressContainer.appendChild(progressBar);
         document.body.appendChild(this.orbProgressContainer);
     }
-    
+
+    /**
+     * Create generic level objective progress display (top-right),
+     * e.g. flora "scan/catalog" objective or sling-count objective
+     */
+    private createScanProgressDisplay(): void {
+        this.scanProgressContainer = document.createElement('div');
+        this.scanProgressContainer.className = 'hud-element';
+        this.scanProgressContainer.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+            animation: hud-slide-in 0.5s ease-out 0.1s both;
+        `;
+
+        const label = document.createElement('div');
+        label.id = 'hud-scan-label';
+        label.style.cssText = `
+            font-size: 14px;
+            color: ${COLORS.textLight};
+            font-weight: 600;
+            text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+        `;
+        label.textContent = '🔍 Catalog';
+
+        const value = document.createElement('div');
+        value.id = 'hud-scan-value';
+        value.className = 'hud-float';
+        value.style.cssText = `
+            background: linear-gradient(135deg, ${COLORS.mint}, ${COLORS.lavender});
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            color: ${COLORS.textDark};
+            box-shadow: 0 4px 15px ${COLORS.shadow}, inset 0 1px 0 rgba(255,255,255,0.5);
+            border: 3px solid ${COLORS.white};
+            min-width: 70px;
+            text-align: center;
+            text-shadow: 1px 1px 0 rgba(255,255,255,0.5);
+        `;
+        value.textContent = '0/0';
+
+        this.scanProgressContainer.appendChild(label);
+        this.scanProgressContainer.appendChild(value);
+        document.body.appendChild(this.scanProgressContainer);
+    }
+
+    /**
+     * Set the icon + label text shown above the objective progress value
+     */
+    setObjectiveLabel(text: string): void {
+        const label = document.getElementById('hud-scan-label');
+        if (label) label.textContent = text;
+    }
+
+    /**
+     * Show/update the current level objective progress (e.g. "3/8")
+     */
+    updateObjectiveProgress(current: number, target: number): void {
+        if (!this.scanProgressContainer) return;
+
+        if (target <= 0) {
+            this.scanProgressContainer.style.display = 'none';
+            return;
+        }
+
+        this.scanProgressContainer.style.display = 'flex';
+        const value = document.getElementById('hud-scan-value');
+        if (value) {
+            value.textContent = `${current}/${target}`;
+        }
+
+        if (current >= target && target > 0) {
+            this.createSparkle(window.innerWidth - 60, 60, COLORS.mint);
+        }
+    }
+
     /**
      * Update the hearts display
      */
@@ -1350,6 +1434,7 @@ export class HUDManager {
         this.updateHealthDisplay();
         this.updateHighScoreDisplay();
         this.updateOrbProgress(0, 5);
+        this.updateObjectiveProgress(0, 0);
         
         // Remove screens
         if (this.victoryScreen) {
@@ -1373,6 +1458,7 @@ export class HUDManager {
         if (this.healthContainer) this.healthContainer.remove();
         if (this.powerUpContainer) this.powerUpContainer.remove();
         if (this.orbProgressContainer) this.orbProgressContainer.remove();
+        if (this.scanProgressContainer) this.scanProgressContainer.remove();
         if (this.pauseMenu) this.hidePauseMenu();
         if (this.victoryScreen) this.victoryScreen.remove();
         if (this.gameOverScreen) this.gameOverScreen.remove();
