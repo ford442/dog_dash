@@ -1,6 +1,21 @@
+export type LevelObjectiveType =
+    | 'scan'
+    | 'sling'
+    | 'rescue'
+    | 'combo'
+    | 'survive'
+    | 'boss';
+
+export type LevelObjective = {
+    type: LevelObjectiveType;
+    target: number;
+    description: string;
+};
+
 export type LevelConfig = {
     name: string;
     distance: number;
+    objective?: LevelObjective;
     asteroidRate: number;
     foliageDensity: {
         fern?: number;
@@ -53,6 +68,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
     1: {
         name: "The Neon Garden",
         distance: 3500,
+        objective: {
+            type: 'scan',
+            target: 8,
+            description: "Catalog 8 alien plants"
+        },
         asteroidRate: 2.5,
         foliageDensity: {
             fern: 80,
@@ -82,6 +102,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
     2: {
         name: "The Asteroid Belt",
         distance: 1200,
+        objective: {
+            type: 'sling',
+            target: 5,
+            description: "Complete 5 clean gravity slings"
+        },
         asteroidRate: 0.8,
         ghostDebrisDensity: 100,
         chromaShiftDensity: 150,
@@ -112,6 +137,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
     3: {
         name: "Orbital Descent",
         distance: 2200,
+        objective: {
+            type: 'rescue',
+            target: 4,
+            description: "Rescue 4 space friends"
+        },
         asteroidRate: 1.8,
         foliageDensity: {
             fern: 5,
@@ -141,6 +171,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
     4: {
         name: "The Rusty Gauntlet",
         distance: 3200,
+        objective: {
+            type: 'survive',
+            target: 1,
+            description: "Survive the rusty gauntlet"
+        },
         asteroidRate: 2.0,
         foliageDensity: {
             fern: 6,
@@ -171,6 +206,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
     5: {
         name: "The Astral Leviathan",
         distance: 4200,
+        objective: {
+            type: 'combo',
+            target: 7,
+            description: "Reach an Arc Surge combo"
+        },
         asteroidRate: 2.5,
         enemyTintColor: 0xff1493, // Nebula pink/purple tint
         foliageDensity: {
@@ -204,6 +244,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
     6: {
         name: "The Aqua Expanse",
         distance: 5200,
+        objective: {
+            type: 'boss',
+            target: 1,
+            description: "Find the path to the Moon"
+        },
         asteroidRate: 1.5,
         foliageDensity: {
             fern: 20,

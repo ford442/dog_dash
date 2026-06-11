@@ -4,7 +4,7 @@ Dog Dash - A 3D world exploration game.
 
 ## Features
 
-- **WebGPU rendering** - Modern GPU API for high-performance 3D graphics
+- **WebGPU rendering with WebGL2 fallback** - Modern GPU path by default, with a debug renderer for broader visual inspection
 - **Smooth, glossy graphics** - Rounded organic shapes with specular highlights
 - **First-person controls** - Explore the world with keyboard and mouse
 - **Animated elements** - Dynamic environment with clouds and effects
@@ -47,7 +47,8 @@ npm run preview
 ### Requirements
 
 - Node.js 16+ and npm
-- A modern browser with WebGPU support (Chrome 113+, Edge 113+, or other browsers with WebGPU enabled)
+- A modern browser with WebGPU support for the primary renderer
+- WebGL2 support for the fallback/debug renderer
 
 ## Controls
 
@@ -56,6 +57,24 @@ npm run preview
 - **Mouse Click** - Shoot plasma bolts
 - **K / Enter** - Fire weapon
 - **H** - Toggle heat effects (debug)
+- **`** - Toggle debug panel
+
+## Renderer Debugging
+
+Dog Dash defaults to WebGPU. To force the WebGL2 fallback, open:
+
+```text
+http://localhost:5173/?renderer=webgl
+```
+
+The fallback shares the same game state, camera, level data, entities, controls, and WASM collision path. Runtime breadcrumbs are available in the browser console:
+
+- `window.rendererType`
+- `window.usingWebGPU`
+- `window.usingWebGL`
+- `window.rendererFallbackReason`
+
+The debug panel includes `Wireframe` and `Collision Debug` toggles. These can also be enabled on startup with `?wireframe` and `?collisionDebug`.
 
 ## Gameplay
 
@@ -81,8 +100,8 @@ Navigate your rocket through 6 massive levels, blasting asteroids and dodging cr
 
 ## Technical Details
 
-- Built with Three.js and WebGPU renderer
+- Built with Three.js, WebGPU renderer, and a WebGL2 fallback renderer
 - **WASM Physics** - AssemblyScript for collision detection
 - **Mathematical Patterns** - Procedural enemy formations using parametric equations
-- Modern WebGPU API for next-generation graphics
+- Modern WebGPU API for next-generation graphics, with WebGL2 available for debugging and compatibility checks
 - Vite build system for fast development

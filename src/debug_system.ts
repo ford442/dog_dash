@@ -23,6 +23,8 @@ export class DebugSystem {
     private panel: HTMLDivElement | null = null;
     private panelVisible = false;
     private systemsContainer: HTMLDivElement | null = null;
+    private rendererInfo: string = '';
+    private rendererInfoElement: HTMLDivElement | null = null;
 
     constructor() {
         this.createOverlay();
@@ -58,6 +60,15 @@ export class DebugSystem {
             sys.enabled = value;
             this.updatePanelCheckbox(name, value);
         }
+    }
+
+    setRendererInfo(backend: string, requestedBackend: string, fallbackReason?: string): void {
+        this.rendererInfo = `renderer: ${backend}${backend !== requestedBackend ? ` (requested ${requestedBackend})` : ''}`;
+        if (fallbackReason) {
+            this.rendererInfo += `\n${fallbackReason}`;
+        }
+        this.updateRendererInfoElement();
+        this.updateOverlayText();
     }
 
     // ========================================================================
@@ -133,7 +144,8 @@ export class DebugSystem {
         const mn = Math.round(this.fpsMin);
         const mx = Math.round(this.fpsMax);
         const av = Math.round(this.fpsAvg);
-        this.overlay.textContent = `FPS: ${cur}\nmin: ${mn}  max: ${mx}  avg: ${av}`;
+        const rendererLine = this.rendererInfo ? `\n${this.rendererInfo}` : '';
+        this.overlay.textContent = `FPS: ${cur}\nmin: ${mn}  max: ${mx}  avg: ${av}${rendererLine}`;
     }
 
     private createPanel(): void {
@@ -173,6 +185,19 @@ export class DebugSystem {
         header.innerHTML = `<span>Debug Systems</span><span style="color:#888;font-size:11px;">\` toggle</span>`;
         this.panel.appendChild(header);
 
+        this.rendererInfoElement = document.createElement('div');
+        this.rendererInfoElement.style.cssText = `
+            color: #9fdcff;
+            font-family: monospace;
+            font-size: 11px;
+            white-space: pre-wrap;
+            margin-bottom: 6px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(255,255,255,0.12);
+            display: none;
+        `;
+        this.panel.appendChild(this.rendererInfoElement);
+
         this.systemsContainer = document.createElement('div');
         this.systemsContainer.style.display = 'flex';
         this.systemsContainer.style.flexDirection = 'column';
@@ -201,6 +226,12 @@ export class DebugSystem {
         this.panel.appendChild(bulkRow);
 
         document.body.appendChild(this.panel);
+    }
+
+    private updateRendererInfoElement(): void {
+        if (!this.rendererInfoElement) return;
+        this.rendererInfoElement.textContent = this.rendererInfo;
+        this.rendererInfoElement.style.display = this.rendererInfo ? 'block' : 'none';
     }
 
     private bulkBtnStyle(): string {
