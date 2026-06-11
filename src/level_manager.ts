@@ -39,6 +39,7 @@ import {
     waterfallSystem,
     industrialSystem,
     chromaShiftSystem,
+    stormGeodeSystem,
     biologicalSystem,
     nebulaSystem,
     cosmicDustSystem,
@@ -184,6 +185,13 @@ export class LevelManager {
         } else {
             chromaShiftSystem.deactivate();
         }
+
+        if (cfg.stormGeodeDensity && cfg.stormGeodeDensity > 0 && stormGeodeSystem) {
+            stormGeodeSystem.activate(cfg.stormGeodeDensity);
+        } else if (stormGeodeSystem) {
+            stormGeodeSystem.deactivate();
+        }
+
         if (levelIndex === 1 || levelIndex === 2 || levelIndex === 3) {
             if (levelIndex === 3) {
                 lightningBoltSystem.activate({ color: 0xaa44ff });
@@ -325,6 +333,7 @@ export class LevelManager {
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('chromaShift')) chromaShiftSystem.update(delta, player ? player.position : undefined);
+        if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, player ? player.position : undefined);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined, isFiring, fireDir);
         if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
 
