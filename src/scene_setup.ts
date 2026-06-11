@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
-import { WebGPURenderer } from 'three/webgpu';
 
 import {
     TouchControlsManager,
@@ -12,6 +10,7 @@ import {
 } from './touch_settings';
 import { ButterflySwarmSystem } from './butterfly_swarm';
 import { CONFIG, showError } from './game_config';
+import { createGameRenderer, type GameRenderer, type RendererBackend } from './renderer_mode';
 
 // --- Scene Setup ---
 export const canvas = document.querySelector('#glCanvas') as HTMLCanvasElement;
@@ -20,7 +19,10 @@ export const butterflySwarmSystem = new ButterflySwarmSystem(scene);
 scene.background = new THREE.Color(CONFIG.colors.background);
 scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
 
-export let renderer: WebGPURenderer;
+export let renderer: GameRenderer;
+export let rendererBackend: RendererBackend = 'webgpu';
+export let requestedRendererBackend: RendererBackend = 'webgpu';
+export let rendererFallbackReason = '';
 export const aspect = window.innerWidth / window.innerHeight;
 export const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
 export const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -33,32 +35,18 @@ export const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
 export let touchControls: TouchControlsManager | null = null;
 export let touchSettingsBtn: HTMLElement | null = null;
 
-// Check WebGPU & Initialize
+// Renderer / scene initialization
 try {
-    if (!WebGPU.isAvailable()) {
-        const warning = WebGPU.getErrorMessage();
-        const msg = warning.textContent || 'WebGPU is not supported by your browser/device.';
-        showError('WebGPU Not Supported', msg);
-        throw new Error('WebGPU not supported');
-    }
-
-    if (!window.isSecureContext) {
-        showError('Insecure Context', 'WebGPU requires a secure context (HTTPS or localhost). Please check your connection.');
-        throw new Error('Insecure Context');
-    }
-
     // Camera (Side-view, follows player on X axis)
     camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
     camera.lookAt(0, CONFIG.cameraHeight, 0);
 
     // Renderer
-    renderer = new WebGPURenderer({ canvas, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const rendererInit = createGameRenderer(canvas, { antialias: true });
+    renderer = rendererInit.renderer;
+    rendererBackend = rendererInit.backend;
+    requestedRendererBackend = rendererInit.requestedBackend;
+    rendererFallbackReason = rendererInit.fallbackReason || '';
 
     // Touch Controls Initialization
     touchControls = new TouchControlsManager();

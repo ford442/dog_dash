@@ -23,6 +23,7 @@ export interface SaveData {
     upgrades: PlayerUpgrades;
     stats: GameStats;
     unlockedLevels: number[];
+    discoveredSpecies: string[];
     version: string;
 }
 
@@ -77,6 +78,7 @@ export class SaveManager {
             upgrades: { ...DEFAULT_UPGRADES },
             stats: { ...DEFAULT_STATS },
             unlockedLevels: [1],
+            discoveredSpecies: [],
             version: CURRENT_VERSION
         };
     }
@@ -181,6 +183,19 @@ export class SaveManager {
     recordRunCompleted() {
         this.data.stats.runsCompleted++;
         this.save();
+    }
+
+    // Flora discovery (Level 1 "Catalog" objective)
+    getDiscoveredSpecies(): string[] {
+        return [...(this.data.discoveredSpecies || [])];
+    }
+
+    discoverSpecies(speciesId: string): boolean {
+        if (!this.data.discoveredSpecies) this.data.discoveredSpecies = [];
+        if (this.data.discoveredSpecies.includes(speciesId)) return false;
+        this.data.discoveredSpecies.push(speciesId);
+        this.save();
+        return true;
     }
 
     // Level unlocks

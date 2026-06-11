@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
-import { WebGPURenderer } from 'three/webgpu';
 import { GhostDebrisSystem } from './ghost_debris';
 import { godRaySystem, auroraSystem } from './game_systems';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -62,6 +60,8 @@ import { BossManager, StarEaterBoss } from './boss_system';
 import { getAudioSystem, initAudioOnInteraction } from './audio_system';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager, createShopUI } from './save_manager';
+import { DiscoveryManager } from './discovery_system';
+import { SlingObjectiveManager } from './sling_objective';
 import { StarfieldSystem } from './stars';
 import { OrbManager, OrbType } from './collectibles';
 import { PowerUpManager, PowerUpType } from './powerup_manager';
@@ -100,6 +100,18 @@ import { disposeObject } from './utils';
 import { VideoTumblingStar } from './video_tumbling_star';
 import { SlingableObjectSystem } from './slingable_objects';
 import { SlingComboManager } from './sling_combo';
+import {
+    createGameRenderer,
+    hasDebugUrlFlag,
+    type GameRenderer,
+    type RendererBackend
+} from './renderer_mode';
+import {
+    CollisionDebugOverlay,
+    WebGLMaterialFallbackRenderer,
+    WireframeDebugHelper,
+    type CollisionDebugTarget
+} from './render_debug_helpers';
 
 // --- Configuration ---
 const CONFIG = {
@@ -168,7 +180,10 @@ const butterflySwarmSystem = new ButterflySwarmSystem(scene);
 scene.background = new THREE.Color(CONFIG.colors.background);
 scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
 
-let renderer: WebGPURenderer;
+let renderer: GameRenderer;
+let rendererBackend: RendererBackend = 'webgpu';
+let requestedRendererBackend: RendererBackend = 'webgpu';
+let rendererFallbackReason = '';
 const aspect = window.innerWidth / window.innerHeight;
 const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
 const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -181,21 +196,8 @@ const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
 let touchControls: TouchControlsManager | null = null;
 let touchSettingsBtn: HTMLElement | null = null;
 
-// Check WebGPU & Initialize
+// Renderer / scene initialization
 try {
-    if (!WebGPU.isAvailable()) {
-        const warning = WebGPU.getErrorMessage();
-        // Extract message from warning element if possible, or use default text
-        const msg = warning.textContent || 'WebGPU is not supported by your browser/device.';
-        showError('WebGPU Not Supported', msg);
-        throw new Error('WebGPU not supported');
-    }
-
-    if (!window.isSecureContext) {
-         showError('Insecure Context', 'WebGPU requires a secure context (HTTPS or localhost). Please check your connection.');
-         throw new Error('Insecure Context');
-    }
-
     // --- Camera (Side-view, follows player on X axis) ---
     // Camera positioned to the side, looking at Z=0 plane
     camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
@@ -205,13 +207,11 @@ try {
     // PERFORMANCE: Start at 60% resolution for smooth playability on mid-range hardware.
     // Press R in-game to cycle through higher resolutions and test performance.
     const basePixelRatio = 0.60;
-    renderer = new WebGPURenderer({ canvas, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio * basePixelRatio));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3; // Slightly higher for more vibrant colors
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    const rendererInit = createGameRenderer(canvas, { antialias: true, basePixelRatio });
+    renderer = rendererInit.renderer;
+    rendererBackend = rendererInit.backend;
+    requestedRendererBackend = rendererInit.requestedBackend;
+    rendererFallbackReason = rendererInit.fallbackReason || '';
 
     // --- Touch Controls Initialization ---
     touchControls = new TouchControlsManager();
@@ -669,6 +669,37 @@ playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
 // NEW MANAGERS (Swarm #2)
 const dogController = new DogCockpitController();
 const hudManager = new HUDManager(saveManager);
+const discoveryManager = new DiscoveryManager(saveManager);
+discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, isNewEver) => {
+    if (player) {
+        juiceManager.showFloatingText(`Scanned: ${name}!`, player.position.clone(), '#00ffcc', 22);
+        juiceManager.burstMagic(player.position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+    audioSystem.playMagicSequence('star_collect');
+
+    const objective = levelManager.config[levelManager.currentLevel]?.objective;
+    if (objective?.type === 'scan') {
+        hudManager.updateObjectiveProgress(totalThisRun, objective.target);
+    }
+};
+
+const slingObjectiveManager = new SlingObjectiveManager();
+slingObjectiveManager.onProgress = (current, target) => {
+    hudManager.updateObjectiveProgress(current, target);
+    if (player) {
+        juiceManager.showFloatingText(`Clean Sling! ${current}/${target}`, player.position.clone(), '#44aaff', 22);
+    }
+    audioSystem.playMagicSequence('star_collect');
+};
+slingObjectiveManager.onObjectiveComplete = () => {
+    if (player) {
+        juiceManager.showFloatingText('Slingshot Master!', player.position.clone(), '#ffcc00', 28);
+        juiceManager.burstMagic(player.position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
+    audioSystem.playMagicSequence('power_up');
+};
 const juiceManager = new JuiceManager(camera, scene, particleSystem);
 
 // BOOST SYSTEM
@@ -768,6 +799,7 @@ if (shouldShowTutorial(saveManager)) {
 
 // DEBUG SYSTEM
 const debugSystem = new DebugSystem();
+debugSystem.setRendererInfo(rendererBackend, requestedRendererBackend, rendererFallbackReason);
 debugSystem.register('particles', 'Particles', true);
 debugSystem.register('debris', 'Debris', true);
 debugSystem.register('weaponLights', 'Weapon Lights', true);
@@ -795,6 +827,8 @@ debugSystem.register('ghostDebris', 'Ghost Debris', true);
 debugSystem.register('chromaShift', 'Chroma Rocks', true);
 debugSystem.register('godRays', 'God Rays', true);
 debugSystem.register('aurora', 'Aurora Borealis', true);
+debugSystem.register('wireframe', 'Wireframe', hasDebugUrlFlag('wireframe'));
+debugSystem.register('collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug'));
 
 let isGamePaused = false;
 
@@ -1100,6 +1134,17 @@ const levelManager = new LevelManager({
     onLevelStart: (cfg) => {
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
+        discoveryManager.reset();
+        slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
+        if (cfg.objective?.type === 'scan') {
+            hudManager.setObjectiveLabel('🔍 Catalog');
+            hudManager.updateObjectiveProgress(0, cfg.objective.target);
+        } else if (cfg.objective?.type === 'sling') {
+            hudManager.setObjectiveLabel('🎯 Slings');
+            hudManager.updateObjectiveProgress(0, cfg.objective.target);
+        } else {
+            hudManager.updateObjectiveProgress(0, 0);
+        }
     },
     onUpdateLevelDisplay: (levelIndex, name) => {
         const levelDiv = document.getElementById('level-display');
@@ -2063,6 +2108,7 @@ function updatePlayer(delta: number) {
             const impulseMag = impulse.length();
             const slingQuality = impulseMag >= 26 ? 'perfect' : impulseMag >= 14 ? 'good' : 'messy';
             slingComboManager.recordSlingAction(slingQuality, player.position.clone());
+            slingObjectiveManager.recordSling(slingQuality);
         }
     }
 
@@ -2217,8 +2263,70 @@ let currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[
 renderer.setPixelRatio(currentPixelRatio);
 
 let shadowCullingFrame = 0;
+let shadowCullingWarningIssued = false;
+let renderDebugWarningIssued = false;
 let geologicalUpdateFrame = 0;
 let objectDensityMultiplier = 1.0;
+const wireframeDebugHelper = new WireframeDebugHelper();
+const collisionDebugOverlay = new CollisionDebugOverlay(scene);
+const webglMaterialFallbackRenderer = new WebGLMaterialFallbackRenderer(rendererBackend);
+
+function renderGameFrame(): void {
+    webglMaterialFallbackRenderer.render(renderer, scene, camera);
+}
+
+function getCollisionDebugTargets(): CollisionDebugTarget[] {
+    const targets: CollisionDebugTarget[] = [];
+    const addTarget = (position: THREE.Vector3 | null | undefined, radius: number, color: number) => {
+        if (!position) return;
+        targets.push({ position, radius, color });
+    };
+
+    if (player) {
+        addTarget(player.position, 0.5, 0x55ff88);
+    }
+
+    if (obstacleSystem) {
+        obstacleSystem.getObstacles().slice(0, 120).forEach((obs) => {
+            if (!obs?.position) return;
+            addTarget(
+                obs.position,
+                obs.userData.radius || 1.0,
+                Math.abs(obs.position.z) < 2.0 ? 0xffaa33 : 0x6655ff
+            );
+        });
+
+        obstacleSystem.getSquids().forEach((squid) => {
+            if (!squid.isDestroyed) {
+                addTarget(squid.getPosition(), squid.getRadius(), 0xff44cc);
+            }
+        });
+    }
+
+    slingableObjectSystem.objects.forEach((obj) => {
+        if (obj?.active) {
+            addTarget(obj.group?.position, obj.radius, 0x44ddff);
+        }
+    });
+
+    sporeClouds.forEach((cloud) => {
+        if (cloud.active) {
+            addTarget(cloud.position, 5, 0x88ff88);
+        }
+    });
+
+    jellyMosses.forEach((jellyMoss) => {
+        if (jellyMoss.visible && jellyMoss.userData.radius) {
+            addTarget(jellyMoss.position, jellyMoss.userData.radius, 0x88ffaa);
+        }
+    });
+
+    gravityAnchors.forEach((anchor) => {
+        addTarget(anchor.position, (anchor.userData.fieldRadius as number) || 40, 0x6699ff);
+    });
+
+    return targets;
+}
 
 function updateShadowQuality() {
     const targetSize = playerState.bossActive ? 2048 : 1024;
@@ -2238,7 +2346,8 @@ function updateShadowCulling() {
     if (shadowCullingFrame % 15 !== 0) return;
 
     const playerX = player.position.x;
-    const updateObj = (obj: THREE.Object3D) => {
+    const updateObj = (obj: THREE.Object3D | null | undefined) => {
+        if (!obj || !obj.position || typeof obj.traverse !== 'function') return;
         const inRange = Math.abs(obj.position.x - playerX) < 40;
         obj.traverse((child) => {
             if ((child as THREE.Mesh).isMesh) {
@@ -2255,7 +2364,7 @@ function updateShadowCulling() {
     iceNeedleClusters.forEach(updateObj);
     magmaHearts.forEach(updateObj);
     gravityAnchors.forEach(updateObj);
-    slingableObjectSystem.objects.forEach(obj => updateObj(obj.group));
+    slingableObjectSystem.objects.forEach(obj => updateObj(obj?.group));
 }
 
 function animate() {
@@ -2268,6 +2377,18 @@ function animate() {
 
     // --- Debug System ---
     debugSystem.update(rawDelta);
+    try {
+        wireframeDebugHelper.update(scene, debugSystem.isEnabled('wireframe'));
+        collisionDebugOverlay.update(
+            debugSystem.isEnabled('collisionDebug'),
+            getCollisionDebugTargets()
+        );
+    } catch (error) {
+        if (!renderDebugWarningIssued) {
+            renderDebugWarningIssued = true;
+            console.warn('Renderer debug helpers skipped because a tracked object was malformed.', error);
+        }
+    }
 
     // --- FPS Tracking & Dynamic Pixel Ratio ---
     fpsFrameCount++;
@@ -2319,7 +2440,7 @@ function animate() {
     }
     
     if (isGamePaused) {
-        renderer.render(scene, camera);
+        renderGameFrame();
         return;
     }
 
@@ -2725,6 +2846,7 @@ function animate() {
     if (player) {
         const isFiringProxy = weaponSystem.getActiveProjectiles().length > 0;
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
+        discoveryManager.update(player.position, levelManager.levelObjects);
         if (debugSystem.isEnabled('butterflySwarm')) {
             butterflySwarmSystem.update(delta, camera.position.x, player.position);
         }
@@ -2733,7 +2855,14 @@ function animate() {
 
     // Phase 1 FPS Fixes - Quick Wins: shadow & object cleanup
     updateShadowQuality();
-    updateShadowCulling();
+    try {
+        updateShadowCulling();
+    } catch (error) {
+        if (!shadowCullingWarningIssued) {
+            shadowCullingWarningIssued = true;
+            console.warn('Shadow culling skipped because a tracked object was malformed.', error);
+        }
+    }
     cleanupGeologicalObjects(camera.position.x);
 
     // Keep directional light following player so shadows work throughout the level
@@ -2973,7 +3102,8 @@ function animate() {
         let nearestGravAngularSpeed = 0;
         let anyInfluencing = false;
 
-        gravityAnchors.forEach(anchor => {
+        if (player) gravityAnchors.forEach(anchor => {
+            if (!anchor) return;
             const interaction = updateGravityAnchor(anchor, delta, time, player.position);
             if (interaction.isInfluencing) {
                 anyInfluencing = true;
@@ -3002,6 +3132,7 @@ function animate() {
 
                     // Record a perfect gravity-arc sling in the combo chain
                     slingComboManager.recordSlingAction('perfect', player.position.clone());
+                    slingObjectiveManager.recordSling('perfect');
 
                     // Sling release doppler whoosh
                     audioSystem.playGravitySlingRelease('perfect', slingComboManager.getCombo());
@@ -3177,7 +3308,7 @@ function animate() {
         }
     }
 
-    renderer.render(scene, camera);
+    renderGameFrame();
 }
 
 renderer.setAnimationLoop(animate);

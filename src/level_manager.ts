@@ -39,6 +39,7 @@ import {
     waterfallSystem,
     industrialSystem,
     chromaShiftSystem,
+    stormGeodeSystem,
     biologicalSystem,
     nebulaSystem,
     cosmicDustSystem,
@@ -184,6 +185,13 @@ export class LevelManager {
         } else {
             chromaShiftSystem.deactivate();
         }
+
+        if (cfg.stormGeodeDensity && cfg.stormGeodeDensity > 0 && stormGeodeSystem) {
+            stormGeodeSystem.activate(cfg.stormGeodeDensity);
+        } else if (stormGeodeSystem) {
+            stormGeodeSystem.deactivate();
+        }
+
         if (levelIndex === 1 || levelIndex === 2 || levelIndex === 3) {
             if (levelIndex === 3) {
                 lightningBoltSystem.activate({ color: 0xaa44ff });
@@ -325,6 +333,7 @@ export class LevelManager {
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('chromaShift')) chromaShiftSystem.update(delta, player ? player.position : undefined);
+        if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, player ? player.position : undefined);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined, isFiring, fireDir);
         if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
 
@@ -384,7 +393,7 @@ export class LevelManager {
         const scaledCount = (count: number) => Math.max(0, Math.floor(count * this.objectDensityMultiplier));
 
         // Helper to spawn
-        const spawn = (count: number, creatorFn: () => THREE.Object3D, customYRange = yRange, zRange: [number, number] = [-30, 0]) => {
+        const spawn = (count: number, creatorFn: () => THREE.Object3D, customYRange = yRange, zRange: [number, number] = [-30, 0], speciesId?: string) => {
             for (let i = 0; i < scaledCount(count); i++) {
                 const x = startX + Math.random() * width;
                 const y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
@@ -397,6 +406,8 @@ export class LevelManager {
                 const s = 0.8 + Math.random() * 0.5;
                 obj.scale.set(s, s, s);
 
+                if (speciesId) obj.userData.speciesId = speciesId;
+
                 scene.add(obj);
                 this.levelObjects.push(obj);
 
@@ -406,22 +417,22 @@ export class LevelManager {
         };
 
         // Spawn all types
-        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }));
-        if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }));
-        if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }));
-        if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }));
+        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }), yRange, [-30, 0], 'fern');
+        if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }), yRange, [-30, 0], 'rose');
+        if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }), yRange, [-30, 0], 'lotus');
+        if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }), yRange, [-30, 0], 'glowingFlower');
 
         // Standard foliage (trees at lower positions)
         const treeYRange: [number, number] = [Math.max(yRange[0], -20), Math.min(yRange[1], -5)];
-        if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange);
-        if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange);
+        if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange, [-30, 0], 'tree');
+        if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange, [-30, 0], 'floweringTree');
 
-        if (density.shrub) spawn(density.shrub, () => createShrub({ color: 0x32CD32 }), yRange);
-        if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange);
-        if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange);
+        if (density.shrub) spawn(density.shrub, () => createShrub({ color: 0x32CD32 }), yRange, [-30, 0], 'shrub');
+        if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange, [-30, 0], 'vine');
+        if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange, [-30, 0], 'mushroom');
 
         // Floating items
-        if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange);
+        if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange, [-30, 0], 'orb');
 
         // Add clouds manually because they need the specific class wrapper
         if (density.cloud) {

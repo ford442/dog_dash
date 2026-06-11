@@ -1,0 +1,75 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**Dog Dash** (also branded as *Space Dash — Journey to the Moon*) is a 3D browser-based space exploration/action game. The player pilots a rocket through 6 levels, dodging obstacles, blasting enemies, and discovering alien flora and geological objects, with a kid-friendly aesthetic, touch controls, and a tutorial system led by a space dog.
+
+- **Renderer**: Three.js + WebGPU (`three/webgpu` renderer, `three/tsl` for node-based shader materials)
+- **Language**: TypeScript, ES2022, ES modules, strict mode
+- **Build Tool**: Vite v7
+- **Physics**: AssemblyScript compiled to WASM for collision detection (also a parallel C++/Emscripten WASM build under `cpp/`)
+- **Audio**: 100% procedural synthesis via Web Audio API (`audio_system.ts`) — no external audio files
+- **Entry point**: `index.html` → `src/main.ts`
+
+## Build & Dev Commands
+
+```bash
+npm install                  # install deps
+
+npm run dev                   # predev builds+copies WASM, then starts Vite dev server on :5173
+npm run build                 # prebuild (brace check) -> build:wasm -> copy:wasm -> vite build -> dist/
+npm run preview                # preview production build
+
+npm run build:wasm             # compile assembly/index.ts to build/optimized.wasm via asc
+npm run copy:wasm               # copy optimized.wasm(.map) into public/build/
+npm run watch:wasm               # watch assembly/ and rebuild WASM on change
+
+npm run build:cpp-wasm           # release build of cpp/ via cpp/build.sh --release
+npm run build:cpp-wasm:debug     # debug build of cpp/ via cpp/build.sh
+npm run copy:cpp-wasm             # copy build/game_cpp.wasm into public/build/
+```
+
+There is no test suite, linter, or CI pipeline. The only automated quality gate is `tools/check_braces.cjs`, which walks all `.ts`/`.js`/`.cjs` files and verifies brace balance — it runs automatically as `prebuild`. WebGPU is unavailable headlessly, so runtime verification requires a browser with WebGPU enabled (Chrome/Edge 113+).
+
+## Architecture
+
+### Source layout
+All gameplay TypeScript lives in `src/` (~70 modules, flat — no further subdirectories). `assembly/index.ts` is AssemblyScript (separate from `src/`, excluded from `tsconfig.json`). `shaders/jelly-moss.ts` holds TSL node-based shader materials. `cpp/` contains an alternative/experimental C++ physics WASM build.
+
+### Core loop
+`src/main.ts` (~3000 lines) wires together nearly every system: WebGPU renderer/scene setup, the rocket/player, game loop (`requestAnimationFrame`), level progression driven by `LEVEL_CONFIG` (`src/level_config.ts`, levels 1–6 with distance, speed, sky colors, foliage/asteroid density, tunnel params, boss spawn rates), input, collisions, and HUD updates. Most other modules export either classes (instantiated and `update()`-ed each frame from `main.ts`) or factory functions (`createX`/`updateX`/`destroyX` triplets) for procedurally generated objects.
+
+### WASM physics
+`assembly/index.ts` exports buffer-allocation and collision-check functions consumed from `src/physics_utils.ts` and `main.ts`:
+- `allocAsteroids(count)`, `allocSporeClouds(count)`, `allocBossHitboxes(count)` — allocate `Float32Array` views into WASM memory for circular/spherical hitboxes
+- `checkCollision`, `checkSporeCollision`, `checkBossCollision` — run collision checks against those buffers
+
+JS writes object positions directly into the `Float32Array` views, then calls the check functions. After editing `assembly/index.ts`, run `npm run build:wasm && npm run copy:wasm` (or `npm run watch:wasm` during dev) to regenerate `public/build/optimized.wasm`.
+
+### Domain map (where to make changes)
+| Domain | Files |
+|--------|-------|
+| Core game loop, renderer, level progression | `main.ts`, `level_config.ts`, `level_manager.ts` |
+| Environment & backgrounds | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts`, `aurora.ts`, `cosmic_dust.ts`, `meteor_shower.ts`, `ghost_debris.ts` |
+| Gameplay & obstacles | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
+| Visual effects | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
+| UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
+| Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
+| Characters | `dog_cockpit.ts`, `space_friends.ts`, `player_loader.ts` |
+| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `assembly/index.ts` |
+| Audio | `audio_system.ts` |
+| Game-wide config | `game_config.ts`, `game_systems.ts` |
+
+## Code Style
+
+- Three.js: always `import * as THREE from 'three'`
+- WebGPU/TSL: import specific nodes from `three/tsl` (e.g. `color`, `time`, `sin`, `vec3`) and classes from `three/webgpu` (e.g. `MeshStandardNodeMaterial`)
+- Prefer named exports; only a few modules (`dog_cockpit.ts`, `magical_effects.ts`, `powerup_manager.ts`, `space_friends.ts`, `cloud_castles.ts`) use `export default`
+- Global config objects use `ALL_CAPS` (e.g. `LEVEL_CONFIG`, `UPGRADE_CONFIGS`)
+- 4-space indentation; no Prettier/ESLint configured — match surrounding file style
+
+## Deployment
+
+`deploy.py` uploads `dist/` to `test.1ink.us/dog-dash` via SFTP (Paramiko). It contains hardcoded credentials — do not commit modified versions with credentials in plaintext, and avoid running it without explicit user instruction.

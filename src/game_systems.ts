@@ -1,4 +1,5 @@
 import { ChromaShiftSystem } from './chroma_shift';
+import { StormGeodeSystem } from './storm_geodes';
 import { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
 import { scene, camera } from './scene_setup';
@@ -281,3 +282,6 @@ if (shouldShowTutorial(saveManager)) {
 export const lightningBoltSystem = new LightningBoltSystem(scene);
 
 export const chromaShiftSystem = new ChromaShiftSystem(scene);
+
+// STORM GEODE SYSTEM
+export const stormGeodeSystem = new StormGeodeSystem(scene);

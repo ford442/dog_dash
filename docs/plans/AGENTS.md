@@ -9,7 +9,7 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 **Dog Dash** (also branded as *Space Dash — Journey to the Moon*) is a 3D browser-based space exploration and action game. The player pilots a rocket through six massive levels, dodging obstacles, blasting enemies, and discovering alien flora and geological objects. The game is built around a kid-friendly aesthetic with touch controls, a tutorial system led by an adorable space dog, and whimsical audio.
 
 - **Primary language**: English (all code comments and documentation are in English)
-- **Target runtime**: Modern browsers with WebGPU support (Chrome 113+, Edge 113+)
+- **Target runtime**: Modern browsers with WebGPU support (Chrome 113+, Edge 113+) and a WebGL2 fallback for debugging/compatibility checks
 - **Entry point**: `index.html` loads `main.ts`
 
 ---
@@ -18,7 +18,7 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 
 | Layer | Technology | Notes |
 |-------|------------|-------|
-| **Renderer** | Three.js + WebGPU | Uses `three/webgpu` renderer and `three/tsl` (Three.js Shading Language) for node-based materials |
+| **Renderer** | Three.js + WebGPU / WebGL2 | WebGPU is primary. `?renderer=webgl` forces the WebGL2 fallback for visual debugging. Runtime breadcrumbs are exposed on `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL`, and `window.rendererFallbackReason` |
 | **Language** | TypeScript | ES2022, ES modules, strict mode enabled |
 | **Build Tool** | Vite v7 | Zero-config; handles bundling, dev server, and production builds |
 | **WASM** | AssemblyScript (`asc`) | Collision-detection physics compiled to `.wasm` |
@@ -30,15 +30,15 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 
 ## Project Structure
 
-The project uses a **flat module structure** — all TypeScript source files live in the repository root. There is **no `src/` directory**.
+The project uses a mostly flat `src/` module structure. Most TypeScript source files live directly under `src/`, with a few shader helpers in `shaders/`.
 
 ```
 /
-├── *.ts                          # 49 TypeScript modules in repo root (see Key Module Divisions)
+├── src/*.ts                      # TypeScript modules (see Key Module Divisions)
 ├── index.html                    # Main HTML entry point
 ├── package.json                  # npm scripts and dependencies
 ├── tsconfig.json                 # TypeScript config (strict, ESNext, bundler mode)
-├── vite-env.d.ts                 # Vite client types + Three.js WebGPU type stubs
+├── src/vite-env.d.ts             # Vite client types + Three.js WebGPU type stubs
 ├── assembly/
 │   └── index.ts                  # AssemblyScript source for WASM physics
 ├── shaders/
@@ -62,6 +62,8 @@ The project uses a **flat module structure** — all TypeScript source files liv
 ### Notable files by size and importance
 
 - `main.ts` (~3,000 lines) — Scene setup, game loop, level progression, renderer config
+- `renderer_mode.ts` — WebGPU/WebGL2 renderer selection and runtime backend breadcrumbs
+- `render_debug_helpers.ts` — Wireframe, collision bounds, and WebGL node-material fallback helpers
 - `audio_system.ts` (~2,500 lines) — Procedural music and sound synthesis
 - `magical_effects.ts` (~2,300 lines) — Visual effect systems
 - `powerup_manager.ts` (~1,700 lines) — Power-up logic and UI
@@ -165,6 +167,15 @@ When you need to find or add functionality, start in the module that matches the
 ### Level configuration
 Level data is centralized in `level_config.ts`. There are 6 levels defined in `LEVEL_CONFIG` (keys `1`–`6`), each specifying distance, speed, background color, sky colors, foliage density, asteroid rate, tunnel parameters, and squid spawn rate.
 
+### Renderer fallback
+Renderer selection is centralized in `renderer_mode.ts`.
+
+- Default: WebGPU when available.
+- Force WebGL2: `?renderer=webgl` or `?webgl`.
+- Debug startup flags: `?wireframe`, `?collisionDebug`.
+- Debug overlay: backquote opens the panel and reports the active renderer backend.
+- Keep game state, scene objects, camera, level data, controls, and WASM collision shared across renderer paths.
+
 ### WASM physics
 `assembly/index.ts` exports the following functions used by the TypeScript side:
 - `allocAsteroids(count)` — allocates a float buffer for 2D circular objects
@@ -182,12 +193,13 @@ The JavaScript side writes object positions into `Float32Array` views backed by 
 
 - **There is no active automated test suite.** `@playwright/test` is installed as a devDependency, but there are no test files, no `playwright.config.*`, and no CI pipeline.
 - The only automated quality gate is **`tools/check_braces.cjs`**, which runs automatically before `npm run build`.
-- **WebGPU is unavailable in headless/automated environments**, so full runtime verification requires a browser with WebGPU enabled.
+- **WebGPU is often unavailable in headless/automated environments.** Use `?renderer=webgl` for browser smoke tests that do not require WebGPU, and use a real WebGPU-enabled browser to verify the primary renderer.
 - **Manual testing workflow**:
   1. `npm run dev`
-  2. Open `http://localhost:5173` in a supported browser
-  3. Verify the title screen appears and the game loop starts on click/tap
-  4. Smoke-test level transitions, touch controls (if on a touch device), and audio
+  2. Open `http://localhost:5173` in a supported browser for WebGPU
+  3. Open `http://localhost:5173/?renderer=webgl` to verify the WebGL2 fallback
+  4. Verify the title screen appears and the game loop starts on click/tap
+  5. Smoke-test level transitions, touch controls (if on a touch device), audio, wireframe, and collision debug
 
 ---
 
@@ -228,6 +240,7 @@ python deploy.py
 | Add a new enemy pattern | `enemy_patterns.ts` + `obstacle_system.ts` |
 | Add a visual effect | `magical_effects.ts`, `juice_effects.ts`, or `particles.ts` |
 | Add a new shader material | `shaders/*.ts` and import into the relevant background module |
+| Change renderer selection | `renderer_mode.ts`, `render_debug_helpers.ts`, `main.ts`, `scene_setup.ts`, and `docs/RENDERER_FALLBACK.md` |
 | Change collision logic | `assembly/index.ts` → `npm run build:wasm` |
 | Update UI / HUD | `hud_system.ts` or `ui_controls.ts` |
 | Build for release | `npm run build` |
