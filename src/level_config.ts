@@ -38,6 +38,7 @@ export type LevelConfig = {
     };
     ghostDebrisDensity?: number;
     chromaShiftDensity?: number;
+    stormGeodeDensity?: number;
     speed: number;
     bgColor: number;
     skyColors: { top: number, bottom: number };
@@ -110,6 +111,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         asteroidRate: 0.8,
         ghostDebrisDensity: 100,
         chromaShiftDensity: 150,
+        stormGeodeDensity: 20,
         foliageDensity: {
             fern: 10,
             rose: 5,
@@ -177,6 +179,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             description: "Survive the rusty gauntlet"
         },
         asteroidRate: 2.0,
+        stormGeodeDensity: 40,
         foliageDensity: {
             fern: 6,
             rose: 4,
@@ -212,6 +215,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             description: "Reach an Arc Surge combo"
         },
         asteroidRate: 2.5,
+        stormGeodeDensity: 50,
         enemyTintColor: 0xff1493, // Nebula pink/purple tint
         foliageDensity: {
             fern: 5,
