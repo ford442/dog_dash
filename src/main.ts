@@ -528,6 +528,7 @@ const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManage
 const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 const cosmicDustSystem = new CosmicDustSystem(scene);
 nebulaSystem.setCamera(camera);
+levelManager.cloudSystem.setCamera(camera);
 
 // === GHOST DEBRIS (new Cosmic Architect feature) ===
 const ghostDebrisSystem = new GhostDebrisSystem(scene);

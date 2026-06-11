@@ -62,6 +62,11 @@ export type LevelConfig = {
         color2: number;
         speed: number;
     };
+    lightning?: {
+        enabled: boolean;
+        density: number;
+        color?: number;
+    };
     enemyTintColor?: number;
 };
 
@@ -98,7 +103,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x1a1a2e,
         skyColors: { top: 0x000000, bottom: 0x1a1a2e },
         levelType: 'open',
-        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 }
+        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
+        lightning: { enabled: true, density: 1.0 }
     },
     2: {
         name: "The Asteroid Belt",
@@ -134,7 +140,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x2d1a1a,
         skyColors: { top: 0x000000, bottom: 0x2d1a1a },
         levelType: 'open',
-        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 }
+        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
+        lightning: { enabled: true, density: 1.5 }
     },
     3: {
         name: "Orbital Descent",
@@ -168,7 +175,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x000011, bottom: 0x001133 },
         meteorShower: true,
         levelType: 'open',
-        squidSpawnRate: 0.0012
+        squidSpawnRate: 0.0012,
+        lightning: { enabled: true, density: 2.0, color: 0xaa44ff }
     },
     4: {
         name: "The Rusty Gauntlet",
@@ -243,7 +251,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         obstacleInterval: 25,
         fogDensity: 0.02,
         squidSpawnRate: 0.0015,
-        godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 }
+        godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
+        lightning: { enabled: true, density: 2.5, color: 0xff00ff }
     },
     6: {
         name: "The Aqua Expanse",

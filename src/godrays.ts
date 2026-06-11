@@ -121,6 +121,7 @@ export class GodRaySystem {
 
     currentConfig: GodRayConfig | null = null;
     globalIntensity: number = 0.0;
+    lightningSpike: number = 0.0;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -184,6 +185,12 @@ export class GodRaySystem {
         // Don't hide immediately, let update() fade it out
     }
 
+    triggerLightningFlash(intensity: number = 1.0) {
+        if (this.active) {
+            this.lightningSpike = intensity;
+        }
+    }
+
     private weaponFireTime = 0;
     private dashIntensity = 0;
 
@@ -211,7 +218,12 @@ export class GodRaySystem {
 
         // Speed reactivity: Dashing increases intensity
         const speedBoost = Math.max(0, (playerSpeed - 10.0) / 10.0); // > 10 adds intensity
-        const finalIntensity = this.globalIntensity * (1.0 + speedBoost * 0.5);
+
+        // Lightning reactivity
+        const activeLightningSpike = this.lightningSpike;
+        this.lightningSpike = Math.max(0, this.lightningSpike - delta * 3.0);
+
+        const finalIntensity = this.globalIntensity * (1.0 + speedBoost * 0.5) + activeLightningSpike * 0.5;
 
         const mat = this.mesh.material as any;
         if (mat.userData && mat.userData.uIntensity) {

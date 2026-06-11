@@ -346,19 +346,69 @@ export class CloudLayer {
 import { LevelConfig } from './level_config';
 import { WeaponLightManager } from './lighting';
 
+
+export class LightningFlashOverlay {
+    mesh: THREE.Mesh;
+    camera: THREE.Camera | null = null;
+    uIntensity: UniformNode<number>;
+
+    constructor() {
+        const geo = new THREE.PlaneGeometry(2, 2);
+        this.uIntensity = uniform(0.0);
+
+        const mat = new MeshBasicNodeMaterial({
+            transparent: true,
+            depthWrite: false,
+            depthTest: false,
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending
+        });
+
+        const vUv = uv();
+        const dist = length(vUv.sub(0.5)).mul(1.5);
+        const vignette = smoothstep(0.4, 1.2, dist);
+        const flashColor = color(0xffffff); // Bright white/blue flash
+        // Base flash across screen, stronger at edges
+        const alpha = float(0.3).add(vignette.mul(0.7)).mul(this.uIntensity).mul(0.6);
+
+        mat.colorNode = vec4(flashColor, alpha);
+
+        this.mesh = new THREE.Mesh(geo, mat);
+        this.mesh.position.set(0, 0, -1.02); // Just behind UI
+    }
+
+    init(camera: THREE.Camera) {
+        this.camera = camera;
+        camera.add(this.mesh);
+    }
+
+    update(delta: number) {
+        if (this.uIntensity.value > 0.0) {
+            this.uIntensity.value = Math.max(0, this.uIntensity.value - delta * 4.0);
+        }
+    }
+}
+
 export class CloudSystem {
+
     scene: THREE.Scene;
     layers: CloudLayer[] = [];
     lightningTimer: number = 0;
     currentCameraX: number = 0;
     weaponLightManager?: WeaponLightManager;
     uPlayerPos: any;
+    flashOverlay: LightningFlashOverlay;
 
     constructor(scene: THREE.Scene, weaponLightManager?: WeaponLightManager) {
         this.scene = scene;
         this.weaponLightManager = weaponLightManager;
         this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
+        this.flashOverlay = new LightningFlashOverlay();
         this.initLayers();
+    }
+
+    setCamera(camera: THREE.Camera) {
+        this.flashOverlay.init(camera);
     }
 
     setLevel(config: LevelConfig) {
@@ -491,6 +541,11 @@ export class CloudSystem {
         // Lightning Logic
         // (Lightning logic moved to external trigger)
 
+        // Update full screen flash
+        if (this.flashOverlay) {
+            this.flashOverlay.update(delta);
+        }
+
         // Update flash decay
         this.layers.forEach(layer => {
             const mat = layer.mesh.material as any;
@@ -524,6 +579,11 @@ export class CloudSystem {
         const intensity = 0.8 + Math.random() * 0.4;
 
         layer.flash(strikePos, radius, intensity, lightningColor);
+
+        // Trigger full screen flash overlay
+        if (this.flashOverlay) {
+            this.flashOverlay.uIntensity.value = intensity;
+        }
 
         // Chain reaction (flash nearby layers)
         if (Math.random() > 0.5 && closestLayerIdx < this.layers.length - 1) {

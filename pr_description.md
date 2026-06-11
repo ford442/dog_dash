@@ -1,28 +1,27 @@
-## 🌌 Architect: Fractured Geodes (Mining Mechanics)
+## 🌌 Architect: Volumetric Lightning Integration
 
 ### Concept
-> "Allow players to mine internal crystals; adjust EM field strength and discharge mechanic if crystals are shot too many times. Add interior safe harbor gameplay and spawn points for resources."
+> "Lightning flashes that briefly illuminate the cloud layers from within, creating dynamic lighting" (from Multi-Layered Cloudscapes, Thunder Force IV reference).
+> Enhances existing lightning mechanics with volumetric cloud integration, screen-space flashes, and God Ray synergies.
 
 ### Implementation
-- Rebuilt `createFracturedGeode` in `src/geological.ts` to spawn multiple individual crystal meshes instead of a single core. Attached `userData` containing state for `health`, `maxHealth`, `quality`, and `isDischarged`.
-- Implemented `damageGeode` helper to handle the health math and visual shrinking/hiding of individual crystals upon taking projectile hits.
-- Implemented hit detection for geodes in `src/main.ts` by checking distance against `weaponSystem.getActiveProjectiles()`. On core depletion, the geode drops floating gems based on its quality.
-- Added `inSafeHarbor` boolean to `playerState`.
-- Calculated safe harbor state in the main update loop based on player distance to active geode EM fields.
-- Updated player damage pipelines across `src/main.ts` and `src/obstacle_system.ts` to skip taking damage if the player is in a safe harbor.
+- Added a `lightning` config object (`{ enabled: boolean, density: number, color: number }`) to `LevelConfig` to drive spawn rates and colors dynamically per level.
+- Updated `LightningBoltSystem` to read the density param, tying bolt generation directly to level definitions rather than a hardcoded chance, and added an extra procedural branch step (`branchWave3`) to the TSL material for more dramatic forks.
+- Added `LightningFlashOverlay` to `CloudSystem`, a screen-space additive TSL overlay using a vignette mask that fades rapidly when a strike occurs.
+- Hooked `GodRaySystem` into the strike event via a new `triggerLightningFlash` method that temporarily spikes light shaft intensity (`lightningSpike`).
+- Configured lightning to appear in Levels 1, 2, 3, 4, 5 and 6 with varying densities and colors (e.g., purple strikes in the Nebula level).
 
 ### Visuals
-- Geodes now contain multiple crystal meshes at their center that visually scale down and disappear as they take damage.
-- When struck by a projectile, a bright purple particle spark is emitted.
-- Upon depletion, the protective EM field (the outer wireframe sphere) vanishes entirely.
-- Drop multiple `OrbType.STAR` style gems (randomized) upon breaking the final crystal.
+- Full-screen additive vignette flash (`LightningFlashOverlay`) creates the blinding impact of a storm.
+- Lightning material is now thicker and more jagged due to the added sine wave branch interference.
+- God Rays pulse brightly in sync with the lightning strikes before decaying, simulating "light piercing through clouds."
 
 ### Integration
-- `src/main.ts`: Hooked hit detection into the main geological system update loop. Updated boss snap/hit logic to respect `inSafeHarbor`.
-- `src/obstacle_system.ts`: Updated squid and asteroid collision logic to respect `inSafeHarbor`.
-- `src/game_config.ts`: Added `inSafeHarbor` to `playerState`.
-- `src/geological.ts`: Significantly modified internal geode creation and management logic.
+- `level_manager.ts`: Updates `onBoltStrike` to trigger both cloud flash and god ray flash. Configures `lightningBoltSystem.activate(cfg.lightning)` based on the level.
+- `main.ts`: Ensures `levelManager.cloudSystem.setCamera(camera)` is called so the screen-space flash overlay is properly attached to the scene view.
+- `level_config.ts`: Added the `lightning` parameters to the configs for testing across the game.
 
 ### Testing
 - [x] `npm run build` passes
-- [ ] Mobile/touch controls still work
+- [x] Tested in various levels with different densities.
+- [x] Mobile/touch controls remain unaffected.
