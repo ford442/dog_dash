@@ -21,7 +21,7 @@ import { ParticleSystem, DebrisSystem } from './particles';
 import { CloudSystem } from './clouds';
 import {
     SporeCloud,
-    createFracturedGeode,
+    createFracturedGeode, damageGeode,
     updateGeode,
     createNebulaJellyMoss,
     updateNebulaJellyMoss,
@@ -2505,7 +2505,7 @@ function animate() {
                     },
                     onPlayerHit: () => {
                         // Boss hit player
-                        if (!playerState.invincible) {
+                        if (!playerState.invincible && !playerState.inSafeHarbor) {
                             playerState.health--;
                             audioSystem.play('hit');
                             updateHealthDisplay(playerState);
@@ -2891,8 +2891,58 @@ function animate() {
 
 
 
-        // Update geodes (EM field pulse)
-        geodes.forEach(geode => updateGeode(geode, delta, time));
+        // Update geodes and check for projectile hits & safe harbor
+        playerState.inSafeHarbor = false;
+
+        geodes.forEach(geode => {
+            updateGeode(geode, delta, time);
+
+            // Check safe harbor distance
+            if (player && !geode.userData.isDischarged && geode.userData.fieldRadius) {
+                const distToPlayer = player.position.distanceTo(geode.position);
+                if (distToPlayer < geode.userData.fieldRadius) {
+                    playerState.inSafeHarbor = true;
+                }
+            }
+
+            // Check projectile hits
+            if (!geode.userData.isDischarged) {
+                const projectiles = weaponSystem.getActiveProjectiles();
+                for (const proj of projectiles) {
+                    if (!proj.active) continue;
+
+                    const distToProj = proj.mesh.position.distanceTo(geode.position);
+                    // Hit the core
+                    if (distToProj < (geode.userData.fieldRadius * 0.4)) {
+                        // Deactivate projectile
+                        proj.deactivate();
+
+                        // Spawn sparks
+                        particleSystem.emit(proj.mesh.position.clone(), 0x8844ff, 10, 3.0, 0.5, 0.8);
+
+                        // Apply damage
+                        const justDepleted = damageGeode(geode, 20); // 5 hits to deplete
+                        if (justDepleted) {
+                            audioSystem.playCollect(); // Or a breaking sound
+                            // Release gems (Void Gems) based on quality
+                            const gemCount = Math.floor(3 + Math.random() * 3 * geode.userData.quality);
+                            for (let i = 0; i < gemCount; i++) {
+                                // Add small offset
+                                const offset = new THREE.Vector3(
+                                    (Math.random() - 0.5) * 2,
+                                    (Math.random() - 0.5) * 2,
+                                    (Math.random() - 0.5) * 2
+                                );
+                                const orbPos = geode.position.clone().add(offset);
+                                // Spawn a valuable floating orb
+                                orbManager.spawnRandomOrb(orbPos.x, orbPos.y, orbPos.z);
+                            }
+                        }
+                        break; // Only hit once per frame per projectile
+                    }
+                }
+            }
+        });
 
         // Update nebula jelly-moss (pulsing and drifting)
         // Use reverse loop so we can remove items safely

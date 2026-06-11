@@ -35,6 +35,7 @@ export const playerState = {
     facingRight: true,
     isRunning: false,
     autoScrollSpeed: 8, // Constant forward movement
+    inSafeHarbor: false, // Protected by geode EM field
     health: 3, // Ship can survive 3 collisions
     maxHealth: 3,
     invincible: false, // Invincibility frames after hit
