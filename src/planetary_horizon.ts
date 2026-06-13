@@ -22,7 +22,7 @@ import {
     normalWorld,
     positionLocal,
     cameraPosition
-} from 'three/tsl';
+, length } from 'three/tsl';
 
 // --- Global Config ---
 // Light coming from top-left-front: (-1, 0.5, 1) normalized
@@ -58,9 +58,9 @@ const valueNoise = (v: any) => {
 
 // Fractal Brownian Motion (3 Octaves)
 const fbm = (v: any) => {
-    let total = float(0.0);
-    let amplitude = float(0.5);
-    let frequency = float(1.0);
+    let total: any = float(0.0);
+    let amplitude: any = float(0.5);
+    let frequency: any = float(1.0);
 
     // Octave 1
     total = total.add(valueNoise(v.mul(frequency)).mul(amplitude));
@@ -283,6 +283,51 @@ function createDeepSpaceStars(count: number = 1000) {
 }
 
 
+
+/**
+ * Creates a TSL material for Planetary Rings.
+ */
+function createPlanetaryRingMaterial(ringColorHex: number) {
+    const mat = new MeshStandardNodeMaterial({
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        roughness: 0.4,
+        metalness: 0.1
+    });
+
+    const pos = positionLocal;
+    // RingGeometry is in XY plane, so radius is length of xy
+    const radius = length(pos.xy);
+
+    // Procedural banding using fbm
+    const bandNoise = fbm(vec2(radius.mul(0.05), float(0.0)));
+    const bandNoise2 = fbm(vec2(radius.mul(0.1), float(100.0)));
+
+    // Combine noises for dense and sparse bands
+    let density: any = smoothstep(0.3, 0.7, bandNoise).add(smoothstep(0.5, 0.8, bandNoise2).mul(0.5));
+    density = density.clamp(0.0, 1.0);
+
+    // Fade edges (inner and outer)
+    // Assuming inner radius ~ 500, outer radius ~ 800
+    const innerFade = smoothstep(500.0, 520.0, radius);
+    const outerFade = float(1.0).sub(smoothstep(780.0, 800.0, radius));
+    density = density.mul(innerFade).mul(outerFade);
+
+    // Color
+    const baseColor = color(ringColorHex);
+    // Add some variation
+    const finalColor = mix(baseColor, color(0xffffff), bandNoise2.mul(0.3));
+
+    mat.colorNode = vec4(finalColor, density.mul(0.6));
+
+    // Optional: add a bit of emissive so they glow in the dark
+    mat.emissiveNode = finalColor.mul(density).mul(0.2);
+
+    return mat;
+}
+
 export class AtmosphereOverlay {
     mesh: THREE.Mesh;
     uIntensity: any;
@@ -324,6 +369,7 @@ export class PlanetaryHorizonSystem {
     planet: THREE.Mesh;
     clouds: THREE.Mesh;
     atmosphere: THREE.Mesh;
+    rings: THREE.Mesh;
     bgStars: THREE.Points;
 
     // Level Config
@@ -367,6 +413,17 @@ export class PlanetaryHorizonSystem {
         this.atmosphere.position.copy(this.planet.position);
         this.container.add(this.atmosphere);
 
+
+        // 3.5 Planetary Rings
+        const ringGeo = new THREE.RingGeometry(500, 800, 128);
+        const ringMat = createPlanetaryRingMaterial(0x88ccff);
+        this.rings = new THREE.Mesh(ringGeo, ringMat);
+        this.rings.position.copy(this.planet.position);
+        // Tilt the rings
+        this.rings.rotation.x = Math.PI / 2 - 0.2; // Tilted slightly towards camera
+        this.rings.rotation.y = 0.1;
+        this.container.add(this.rings);
+
         // 4. Deep Space Stars
         this.bgStars = createDeepSpaceStars(2000);
         this.bgStars.position.z = -200; // Far back
@@ -399,7 +456,10 @@ export class PlanetaryHorizonSystem {
         // This makes the planet feel massive and stationary relative to the "horizon" line
         this.planet.position.x = cameraX;
         this.clouds.position.x = cameraX;
+
         this.atmosphere.position.x = cameraX;
+        this.rings.position.x = cameraX;
+
 
         // 2. Stars Parallax
         // Stars should move SLOWER than camera to appear far away.
@@ -452,7 +512,10 @@ export class PlanetaryHorizonSystem {
         // 3. Rotation (Simulated by Shader mostly, but we can add slow mesh rotation too)
         // Rotating the mesh slightly adds 3D curvature feel at the poles
         this.planet.rotation.z += 0.005 * delta;
+
         this.clouds.rotation.z += 0.008 * delta; // Differential rotation
+        this.rings.rotation.z -= 0.002 * delta; // Rings rotate slowly
+
 
 
         // 4. Approach Scaling
@@ -464,12 +527,16 @@ export class PlanetaryHorizonSystem {
         let approachScale = 1.0 + Math.max(0, (levelDistance - distanceToPlanet) / levelDistance) * 0.5;
         this.planet.scale.setScalar(approachScale);
         this.clouds.scale.setScalar(approachScale);
+
         this.atmosphere.scale.setScalar(approachScale);
+        this.rings.scale.setScalar(approachScale);
         // Move the planet up slightly as it gets closer
         const baseY = -405;
         this.planet.position.y = baseY + (approachScale - 1.0) * 50;
         this.clouds.position.y = this.planet.position.y;
         this.atmosphere.position.y = this.planet.position.y;
+        this.rings.position.y = this.planet.position.y;
+
 
         // 5. Atmospheric Palette Shift
         // Gradually increase intensity of the blue overlay as we approach the planet
