@@ -5,6 +5,10 @@ import {
 } from 'three/webgpu';
 import {
     time,
+    distance,
+    positionWorld,
+    smoothstep,
+    Loop,
     positionLocal,
     uv,
     vec2,
@@ -27,10 +31,11 @@ import {
  * - Vertex displacement for curvature
  * - Foam/Color variation
  */
-function createWaterMaterial(baseColorHex: number, opacity: number, speed: number) {
+function createWaterMaterial(baseColorHex: number, opacity: number, speed: number, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshStandardNodeMaterial({
         color: baseColorHex,
         transparent: true,
+        depthWrite: false,
         opacity: opacity,
         roughness: 0.1,
         metalness: 0.8,
@@ -87,6 +92,34 @@ function createWaterMaterial(baseColorHex: number, opacity: number, speed: numbe
     // Emission for glowing water
     mat.emissiveNode = baseColor.mul(0.5);
 
+    // --- Dynamic Lighting ---
+    // 1. Player Glow Interaction
+    if (uPlayerPos) {
+        const distToPlayer = distance(positionWorld, uPlayerPos);
+        const glowIntensity = smoothstep(50.0, 0.0, distToPlayer);
+        const playerGlowColor = color(0x00ffff);
+        mat.colorNode = mat.colorNode.add(playerGlowColor.mul(glowIntensity.mul(0.5)));
+    }
+
+    // 2. Weapon Light Interaction
+    if (weaponLights) {
+        const weaponGlow = float(0.0).toVar();
+        Loop({ start: 0, end: 20 }, ({ i }) => {
+            const lightData = weaponLights.element(i);
+            const lightPos = lightData.xyz;
+            const lightIntensity = lightData.w;
+
+            const distToLight = distance(positionWorld, lightPos);
+            const lightRadius = float(30.0);
+            const falloff = smoothstep(lightRadius, 0.0, distToLight);
+
+            weaponGlow.addAssign(falloff.mul(lightIntensity));
+        });
+        const weaponColor = color(0xffffff); // Default weapon color
+        mat.colorNode = mat.colorNode.add(weaponColor.mul(weaponGlow.mul(0.8)));
+    }
+
+
     // Store uniforms on userData so we can update them
     mat.userData.uCameraX = uCameraX;
     mat.userData.uParallaxFactor = uParallaxFactor;
@@ -101,6 +134,7 @@ function createBubbleMaterial() {
     const mat = new MeshStandardNodeMaterial({
         color: 0x88ccff,
         transparent: true,
+        depthWrite: false,
         opacity: 0.6,
         roughness: 0.0,
         metalness: 0.1,
@@ -189,7 +223,9 @@ export class WaterfallLayer {
         color: number,
         opacity: number,
         speed: number,
-        parallaxFactor: number // How much texture slides vs camera move
+        parallaxFactor: number, // How much texture slides vs camera move
+        weaponLights?: any,
+        uPlayerPos?: any
     }) {
         this.width = config.width;
         this.height = config.height;
@@ -198,7 +234,7 @@ export class WaterfallLayer {
 
         // High segmentation for smooth curvature (Mode 7 effect)
         const geo = new THREE.PlaneGeometry(this.width, this.height, 64, 128);
-        const mat = createWaterMaterial(config.color, config.opacity, config.speed);
+        const mat = createWaterMaterial(config.color, config.opacity, config.speed, config.weaponLights, config.uPlayerPos);
 
         // Initialize parallax factor uniform
         if (mat.userData.uParallaxFactor) {
@@ -475,16 +511,22 @@ export class SubmersionOverlay {
     }
 }
 
+import { WeaponLightManager } from './lighting';
+
 export class WaterfallSystem {
     scene: THREE.Scene;
     camera: THREE.Camera;
     layers: WaterfallLayer[] = [];
+    weaponLightManager?: WeaponLightManager;
+    uPlayerPos: any;
     bubbles!: BubbleLayer;
     splash!: SplashSystem;
     submersion!: SubmersionOverlay;
     active: boolean = false;
 
-    constructor(scene: THREE.Scene, camera: THREE.Camera) {
+    constructor(scene: THREE.Scene, camera: THREE.Camera, weaponLightManager?: WeaponLightManager) {
+        this.weaponLightManager = weaponLightManager;
+        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
         this.scene = scene;
         this.camera = camera;
         this.initLayers();
@@ -500,7 +542,9 @@ export class WaterfallSystem {
             color: 0x002244,
             opacity: 0.9,
             speed: 0.2,
-            parallaxFactor: 0.02 // Texture moves 2% of camera speed
+            parallaxFactor: 0.02,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Layer 2: Midground
@@ -511,7 +555,9 @@ export class WaterfallSystem {
             color: 0x0066aa,
             opacity: 0.6,
             speed: 0.5,
-            parallaxFactor: 0.05
+            parallaxFactor: 0.05,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Layer 3: Foreground (Spray)
@@ -523,7 +569,9 @@ export class WaterfallSystem {
             color: 0x88ccff,
             opacity: 0.3,
             speed: 0.8,
-            parallaxFactor: 0.1
+            parallaxFactor: 0.1,
+            weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
+            uPlayerPos: this.uPlayerPos
         }));
 
         // Bubbles Layer
@@ -563,7 +611,10 @@ export class WaterfallSystem {
         this.submersion.setIntensity(0.0);
     }
 
-    update(cameraX: number, delta: number = 0.016) {
+    update(cameraX: number, delta: number = 0.016, playerPos?: THREE.Vector3) {
+        if (playerPos) {
+            this.uPlayerPos.value.copy(playerPos);
+        }
         // Always update splash particles (they might be finishing animation)
         this.splash.update(delta);
 

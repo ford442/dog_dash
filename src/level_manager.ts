@@ -316,7 +316,7 @@ export class LevelManager {
         const dbg = this.debugSystem;
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
 
-        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta);
+        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, player ? player.position : undefined);
         if (enabled('industrialBg')) industrialSystem.update(cameraX, delta, player ? player.position : undefined);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
         // Pass player position to NebulaSystem for interactive lighting

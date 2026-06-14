@@ -513,7 +513,7 @@ weaponSystem.fire = function(position: THREE.Vector3, direction: THREE.Vector3) 
 const reEntrySystem = new ReEntrySystem(scene, camera);
 
 // WATERFALL SYSTEM (Vertical Water Effects)
-const waterfallSystem = new WaterfallSystem(scene, camera);
+const waterfallSystem = new WaterfallSystem(scene, camera, weaponLightManager);
 
 // ASTEROID FIELD SYSTEM (Parallax Asteroids)
 const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
