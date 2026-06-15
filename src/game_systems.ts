@@ -89,7 +89,7 @@ export const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLigh
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 export const godRaySystem = new GodRaySystem(scene);
-export const auroraSystem = new AuroraSystem(scene);
+export const auroraSystem = new AuroraSystem(scene, weaponLightManager);
 export const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 export const cosmicDustSystem = new CosmicDustSystem(scene);
 nebulaSystem.setCamera(camera);
