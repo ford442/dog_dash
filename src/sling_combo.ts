@@ -52,6 +52,8 @@ export interface SlingComboManagerOptions {
     onScoreBonus?: (points: number) => void;
     /** Called when Arc Surge activates (≥7×) — passes assist duration */
     onSlingAssist?: (duration: number) => void;
+    /** Overrides the default Sling Assist duration (e.g. Tarsier memory bonus) */
+    slingAssistDuration?: number;
 }
 
 /**
@@ -82,8 +84,10 @@ export class SlingComboManager {
      * @param quality - 'perfect' for clean arc exits & strong tether releases,
      *                  'good' for standard releases, 'messy' for short holds.
      * @param position - World position for floating text / particle bursts.
+     * @param bonusMultiplier - Extra score multiplier (e.g. from a rainbow
+     *                  slipstream left by a chroma rock). Defaults to 1.
      */
-    recordSlingAction(quality: SlingQuality, position: THREE.Vector3): void {
+    recordSlingAction(quality: SlingQuality, position: THREE.Vector3, bonusMultiplier: number = 1): void {
         // Messy slings still reset the timeout but don't advance high chains
         if (quality === 'messy' && this.combo >= 5) {
             // Don't break a long chain on a messy sling — just reset the timer
@@ -98,9 +102,13 @@ export class SlingComboManager {
 
         // Score bonus
         const baseScore = QUALITY_SCORE[quality];
-        const bonus = Math.round(baseScore * comboMultiplier(this.combo));
+        const bonus = Math.round(baseScore * comboMultiplier(this.combo) * bonusMultiplier);
         onScoreBonus?.(bonus);
         juiceManager.showScoreText(bonus, position.clone());
+
+        if (bonusMultiplier > 1) {
+            juiceManager.showFloatingText('Rainbow Slipstream!', position.clone(), '#ff66cc', 22);
+        }
 
         // Audio: rising charge hum scales with combo
         audioSystem.playSlingCharge(this.combo);
@@ -189,7 +197,7 @@ export class SlingComboManager {
     // -------------------------------------------------------------------------
 
     private _activateArcSurge(position: THREE.Vector3, quality: SlingQuality): void {
-        const { juiceManager, hudManager, dogController, audioSystem, particleSystem, onSlingAssist } = this.options;
+        const { juiceManager, hudManager, dogController, audioSystem, particleSystem, onSlingAssist, slingAssistDuration } = this.options;
 
         this.inArcSurge = true;
         this.arcSurgeTimer = 0;
@@ -217,7 +225,7 @@ export class SlingComboManager {
         hudManager.showSlingCombo(this.combo, true);
 
         // Grant Sling Assist
-        onSlingAssist?.(SLING_ASSIST_DURATION);
+        onSlingAssist?.(slingAssistDuration ?? SLING_ASSIST_DURATION);
 
         // Trailing particle arc
         for (let i = 0; i < 6; i++) {

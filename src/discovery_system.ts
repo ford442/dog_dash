@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { SaveManager } from './save_manager';
+import { BESTIARY_ENTRIES, type BestiaryEntryId } from './bestiary';
 
 // Display names for catalogable flora species, keyed by the `userData.speciesId`
 // tag applied in level_manager.spawnOpenFoliage()
@@ -52,5 +53,37 @@ export class DiscoveryManager {
                 }
             }
         }
+    }
+}
+
+/**
+ * Generalized "Weird Life Log" cataloging — the bestiary equivalent of
+ * DiscoveryManager. Each rare creature can be cataloged at most once per
+ * run via a non-lethal interaction (see BESTIARY_ENTRIES for the conditions
+ * and the "memory" bonus each entry grants on future runs).
+ */
+export class CreatureCatalogManager {
+    private catalogedThisRun = new Set<BestiaryEntryId>();
+    private saveManager: SaveManager;
+
+    /** Fired the first time a creature is cataloged in the current run. */
+    onCreatureCataloged?: (id: BestiaryEntryId, name: string, isNewEver: boolean) => void;
+
+    constructor(saveManager: SaveManager) {
+        this.saveManager = saveManager;
+    }
+
+    reset() {
+        this.catalogedThisRun.clear();
+    }
+
+    /** Records a non-lethal encounter with a bestiary creature. */
+    catalog(id: BestiaryEntryId): void {
+        if (this.catalogedThisRun.has(id)) return;
+        this.catalogedThisRun.add(id);
+
+        const isNewEver = this.saveManager.catalogCreature(id);
+        const entry = BESTIARY_ENTRIES[id];
+        this.onCreatureCataloged?.(id, entry.name, isNewEver);
     }
 }

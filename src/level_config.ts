@@ -57,6 +57,9 @@ export type LevelConfig = {
     // probability while the level has none of that creature active.
     crystalTarsierRate?: number;
     geodeTitanRate?: number;
+    // Environmental hazards/rewards woven into the asteroid spawn cycle.
+    mineRobotRate?: number;
+    barnaclePodRate?: number;
     meteorShower?: boolean;
     godRays?: {
         enabled: boolean;
@@ -229,6 +232,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         tunnelHeight: 15,
         obstacleInterval: 20,
         squidSpawnRate: 0.001,
+        mineRobotRate: 0.12,
         enemyTintColor: 0xcc6633
     },
     5: {
@@ -270,7 +274,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         squidSpawnRate: 0.0015,
         godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
         lightning: { enabled: true, density: 2.5, color: 0xff00ff },
-        geodeTitanRate: 0.0008
+        geodeTitanRate: 0.0008,
+        barnaclePodRate: 0.18
     },
     6: {
         name: "The Aqua Expanse",

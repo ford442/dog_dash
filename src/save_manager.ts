@@ -24,6 +24,7 @@ export interface SaveData {
     stats: GameStats;
     unlockedLevels: number[];
     discoveredSpecies: string[];
+    catalogedCreatures: string[];
     version: string;
 }
 
@@ -79,6 +80,7 @@ export class SaveManager {
             stats: { ...DEFAULT_STATS },
             unlockedLevels: [1],
             discoveredSpecies: [],
+            catalogedCreatures: [],
             version: CURRENT_VERSION
         };
     }
@@ -196,6 +198,25 @@ export class SaveManager {
         this.data.discoveredSpecies.push(speciesId);
         this.save();
         return true;
+    }
+
+    // Bestiary / "Weird Life Log" creature cataloging
+    getCatalogedCreatures(): string[] {
+        return [...(this.data.catalogedCreatures || [])];
+    }
+
+    /** Marks a creature as cataloged. Returns true the first time ever. */
+    catalogCreature(creatureId: string): boolean {
+        if (!this.data.catalogedCreatures) this.data.catalogedCreatures = [];
+        if (this.data.catalogedCreatures.includes(creatureId)) return false;
+        this.data.catalogedCreatures.push(creatureId);
+        this.save();
+        return true;
+    }
+
+    /** True if this creature has been cataloged (its "memory" bonus is active). */
+    hasMemory(creatureId: string): boolean {
+        return (this.data.catalogedCreatures || []).includes(creatureId);
     }
 
     // Level unlocks

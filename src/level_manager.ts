@@ -77,8 +77,13 @@ export class LevelManager {
     ghostDebrisSystem: GhostDebrisSystem;
     debugSystem?: DebugSystem;
     friendsManager?: FriendsManager;
+    industrialGeometryManager: IndustrialGeometryManager;
     objectDensityMultiplier: number;
     private baseAsteroidDensity = 0;
+    /** True once this level's objective has been completed and the "fast lane"
+     *  (reduced hazard density, bonus orbs) toward the level exit is active. */
+    fastLaneActive = false;
+    private fastLaneDensityFactor = 1.0;
 
     private readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -104,6 +109,7 @@ export class LevelManager {
         this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.debugSystem = options.debugSystem;
         this.friendsManager = options.friendsManager;
+        this.industrialGeometryManager = options.industrialGeometryManager;
         this.currentLevel = 1;
         this.config = LEVEL_CONFIG;
 
@@ -116,7 +122,22 @@ export class LevelManager {
     setObjectDensityMultiplier(multiplier: number) {
         this.objectDensityMultiplier = Math.min(1.0, Math.max(0.25, multiplier));
         if (this.baseAsteroidDensity > 0) {
-            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
+            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
+        }
+    }
+
+    /**
+     * Open the "fast lane" toward the level exit once the chapter objective
+     * is complete: thins out the background asteroid field as a reward for
+     * finishing the mission (called once per level via main.ts's
+     * hudManager.onObjectiveComplete hook).
+     */
+    enterFastLane() {
+        if (this.fastLaneActive) return;
+        this.fastLaneActive = true;
+        this.fastLaneDensityFactor = 0.35;
+        if (this.baseAsteroidDensity > 0) {
+            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
         }
     }
 
@@ -124,6 +145,9 @@ export class LevelManager {
         this.currentLevel = levelIndex;
         const cfg = this.config[levelIndex];
         if (!cfg) return;
+
+        this.fastLaneActive = false;
+        this.fastLaneDensityFactor = 1.0;
 
         console.log(`Starting Level ${levelIndex}: ${cfg.name}`);
 
@@ -365,7 +389,7 @@ export class LevelManager {
             
             for (let i = 0; i < sectionCount; i++) {
                 const xPos = startX + i * interval;
-                industrialGeometryManager.createIndustrialSection(xPos);
+                this.industrialGeometryManager.createIndustrialSection(xPos);
             }
             
             // Spawn minimal foliage inside tunnel bounds (constrained Y range)
@@ -382,7 +406,7 @@ export class LevelManager {
             
             for (let i = 0; i < sectionCount; i++) {
                 const xPos = startX + i * interval;
-                industrialGeometryManager.createWhaleRibSection(xPos);
+                this.industrialGeometryManager.createWhaleRibSection(xPos);
             }
             
             // Spawn organic foliage inside whale bounds
@@ -562,5 +586,4 @@ export class LevelManager {
     }
 }
 
-export const industrialGeometryManager = new IndustrialGeometryManager(scene);
 // levelManager is now instantiated in main.ts

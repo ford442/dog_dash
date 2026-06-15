@@ -1388,12 +1388,13 @@ export class AstroTarsier {
 // TRAPPED FRIEND - A space friend stuck in wreckage, waiting to be rescued
 // =============================================================================
 
-export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier';
+export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup';
 
 const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
     kitty: 0xfff0f5,
     bunny: 0xffd9a0,
-    tarsier: 0xb088ff
+    tarsier: 0xb088ff,
+    moonpup: 0xffe4b5
 };
 
 export class TrappedFriend {
@@ -1498,10 +1499,15 @@ export class TrappedFriend {
 export class FlotillaMember {
     group: THREE.Group;
     index: number;
+    kind: TrappedFriendKind;
     private time: number;
+    /** While > 0, the member swoops ahead of the rocket for a victory fly-by. */
+    private flybyTimer: number = 0;
+    private propeller?: THREE.Mesh;
 
-    constructor(scene: THREE.Scene, color: number, index: number) {
+    constructor(scene: THREE.Scene, color: number, index: number, kind: TrappedFriendKind = 'kitty') {
         this.index = index;
+        this.kind = kind;
         this.time = Math.random() * Math.PI * 2;
         this.group = new THREE.Group();
 
@@ -1513,6 +1519,68 @@ export class FlotillaMember {
             roughness: 0.6
         });
         this.group.add(new THREE.Mesh(bodyGeo, bodyMat));
+
+        // Species-flavored decorations so each rescued friend stays
+        // recognizable in the flotilla behind the rocket.
+        switch (kind) {
+            case 'kitty': {
+                const earMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+                for (const side of [-1, 1]) {
+                    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.22, 8), earMat);
+                    ear.position.set(0.12, 0.32, side * 0.18);
+                    ear.rotation.z = -0.3;
+                    this.group.add(ear);
+                }
+                break;
+            }
+            case 'bunny': {
+                const earMat = new THREE.MeshStandardMaterial({ color, roughness: 0.6 });
+                for (const side of [-1, 1]) {
+                    const ear = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.45, 4, 8), earMat);
+                    ear.position.set(0.05, 0.42, side * 0.14);
+                    ear.rotation.z = side * 0.25;
+                    this.group.add(ear);
+                }
+                break;
+            }
+            case 'tarsier': {
+                const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+                const pupilMat = new THREE.MeshStandardMaterial({
+                    color: 0x221133,
+                    emissive: 0xb088ff,
+                    emissiveIntensity: 0.6,
+                    roughness: 0.3
+                });
+                for (const side of [-1, 1]) {
+                    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), eyeMat);
+                    eye.position.set(0.28, 0.1, side * 0.18);
+                    this.group.add(eye);
+                    const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 8), pupilMat);
+                    pupil.position.set(0.08, 0, 0);
+                    eye.add(pupil);
+                }
+                break;
+            }
+            case 'moonpup': {
+                // Fishbowl helmet
+                const helmetMat = new THREE.MeshPhysicalMaterial({
+                    color: 0xaaddff,
+                    transmission: 0.9,
+                    roughness: 0.05,
+                    transparent: true,
+                    opacity: 0.35
+                });
+                const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 12), helmetMat);
+                this.group.add(helmet);
+
+                // Spinning propeller on top
+                const propMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, metalness: 0.6, roughness: 0.3 });
+                this.propeller = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.08), propMat);
+                this.propeller.position.set(0, 0.42, 0);
+                this.group.add(this.propeller);
+                break;
+            }
+        }
 
         // Tiny thruster glow trailing behind the rescued friend
         const glowGeo = new THREE.ConeGeometry(0.15, 0.5, 8);
@@ -1531,15 +1599,47 @@ export class FlotillaMember {
         scene.add(this.group);
     }
 
+    /** Briefly swoop ahead of the rocket in celebration (e.g. chapter complete). */
+    triggerFlyby(duration: number = 2.5): void {
+        this.flybyTimer = duration;
+    }
+
+    /** Quick happy bounce - used when the flotilla cheers (clean sling, near miss, ...). */
+    cheer(): void {
+        this.group.scale.setScalar(1.4);
+    }
+
     update(dt: number, playerPos: THREE.Vector3): void {
         this.time += dt;
 
-        // V-formation behind the rocket, alternating sides per index
+        if (this.propeller) {
+            this.propeller.rotation.y += dt * 25;
+        }
+
+        // Ease the cheer bounce back to normal size
+        if (this.group.scale.x > 1.0) {
+            this.group.scale.setScalar(Math.max(1.0, this.group.scale.x - dt * 3));
+        }
+
         const row = Math.floor(this.index / 2) + 1;
         const side = (this.index % 2 === 0) ? 1 : -1;
-        const targetX = playerPos.x - 2.5 - row * 1.8;
-        const targetY = playerPos.y + side * row * 1.4 + Math.sin(this.time * 2 + this.index) * 0.3;
-        const targetZ = playerPos.z + side * 0.5;
+
+        let targetX: number;
+        let targetY: number;
+        let targetZ: number;
+
+        if (this.flybyTimer > 0) {
+            this.flybyTimer -= dt;
+            // Swoop out ahead of the rocket in a spread formation
+            targetX = playerPos.x + 3 + row * 1.5;
+            targetY = playerPos.y + side * row * 1.2 + Math.sin(this.time * 4 + this.index) * 0.5;
+            targetZ = playerPos.z + side * 0.5;
+        } else {
+            // V-formation behind the rocket, alternating sides per index
+            targetX = playerPos.x - 2.5 - row * 1.8;
+            targetY = playerPos.y + side * row * 1.4 + Math.sin(this.time * 2 + this.index) * 0.3;
+            targetZ = playerPos.z + side * 0.5;
+        }
 
         const followRate = Math.min(1, dt * 4);
         this.group.position.x += (targetX - this.group.position.x) * followRate;
@@ -1584,7 +1684,7 @@ export class FriendsManager {
     private rescuedCount: number = 0;
 
     /** Fired the moment a trapped friend is freed. count = running total rescued. */
-    onFriendRescued?: (count: number, position: THREE.Vector3) => void;
+    onFriendRescued?: (count: number, position: THREE.Vector3, kind: TrappedFriendKind) => void;
 
     // Cooldowns for audio (prevent spam)
     private lastKittySound: number = 0;
@@ -1652,7 +1752,16 @@ export class FriendsManager {
      * Spawn a single trapped friend (cage/wreckage) awaiting rescue.
      */
     spawnTrappedFriend(x: number, y: number, kind?: TrappedFriendKind): TrappedFriend {
-        const chosen = kind ?? (['kitty', 'bunny', 'tarsier'] as TrappedFriendKind[])[Math.floor(Math.random() * 3)];
+        let chosen = kind;
+        if (!chosen) {
+            // Moon Pup is a rare "good dog" find - the rest are evenly likely.
+            const r = Math.random();
+            if (r < 0.08) {
+                chosen = 'moonpup';
+            } else {
+                chosen = (['kitty', 'bunny', 'tarsier'] as TrappedFriendKind[])[Math.floor(Math.random() * 3)];
+            }
+        }
         const friend = new TrappedFriend(this.scene, x, y, chosen);
         this.trappedFriends.push(friend);
         return friend;
@@ -1782,11 +1891,11 @@ export class FriendsManager {
                 ]);
                 this.particles.emit(trapped.worldPosition, TRAPPED_FRIEND_COLORS[trapped.kind], 16, 4.0, 0.6, 1.2);
 
-                const member = new FlotillaMember(this.scene, TRAPPED_FRIEND_COLORS[trapped.kind], this.flotilla.length);
+                const member = new FlotillaMember(this.scene, TRAPPED_FRIEND_COLORS[trapped.kind], this.flotilla.length, trapped.kind);
                 member.group.position.copy(trapped.worldPosition);
                 this.flotilla.push(member);
 
-                this.onFriendRescued?.(this.rescuedCount, trapped.worldPosition.clone());
+                this.onFriendRescued?.(this.rescuedCount, trapped.worldPosition.clone(), trapped.kind);
 
                 trapped.destroy(this.scene);
                 this.trappedFriends.splice(i, 1);
@@ -1939,6 +2048,36 @@ export class FriendsManager {
      */
     getRescuedCount(): number {
         return this.rescuedCount;
+    }
+
+    /**
+     * The flotilla cheers: a happy bounce + heart particles from each
+     * rescued friend. Call on a clean sling or a close graze dodge.
+     */
+    cheerFlotilla(position: THREE.Vector3): void {
+        if (this.flotilla.length === 0) return;
+        for (const member of this.flotilla) {
+            member.cheer();
+        }
+        this.particles.emit(position, 0xff69b4, 6 + this.flotilla.length * 2, 3.0, 0.5, 1.0);
+    }
+
+    /**
+     * The full flotilla swoops ahead of the rocket for a brief victory
+     * fly-by - used when a level's chapter objective is completed.
+     */
+    triggerVictoryFlyby(duration: number = 2.5): void {
+        for (const member of this.flotilla) {
+            member.triggerFlyby(duration);
+        }
+    }
+
+    /**
+     * True once the flotilla is large enough to grant passive bonuses
+     * (orb magnet radius, etc.)
+     */
+    hasFullFlotilla(): boolean {
+        return this.flotilla.length >= 4;
     }
 
     /**

@@ -2179,6 +2179,64 @@ export class AudioSystem {
     }
 
     /**
+     * Play a slow, procedural "whale song" - a low sine fundamental with a
+     * gliding overtone, washed through the reverb send. Used as an ambient
+     * spectacle moment in the Level 6 aquatic finale.
+     */
+    playWhaleSong() {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        if (this.activeVoices >= this.maxVoices) return;
+        this.activeVoices++;
+        const duration = 4.5;
+        setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, duration * 1000);
+
+        const now = this.ctx.currentTime;
+
+        // Low fundamental "moan" with a gentle pitch glide
+        const fundamental = this.ctx.createOscillator();
+        fundamental.type = 'sine';
+        fundamental.frequency.setValueAtTime(85, now);
+        fundamental.frequency.linearRampToValueAtTime(110, now + duration * 0.5);
+        fundamental.frequency.linearRampToValueAtTime(75, now + duration);
+
+        // Higher overtone for the "cry" character
+        const overtone = this.ctx.createOscillator();
+        overtone.type = 'sine';
+        overtone.frequency.setValueAtTime(85 * 2.5, now);
+        overtone.frequency.linearRampToValueAtTime(110 * 2.5, now + duration * 0.5);
+        overtone.frequency.linearRampToValueAtTime(75 * 2.5, now + duration);
+
+        const fundamentalGain = this.ctx.createGain();
+        fundamentalGain.gain.setValueAtTime(0, now);
+        fundamentalGain.gain.linearRampToValueAtTime(0.18, now + duration * 0.3);
+        fundamentalGain.gain.linearRampToValueAtTime(0.18, now + duration * 0.7);
+        fundamentalGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        const overtoneGain = this.ctx.createGain();
+        overtoneGain.gain.setValueAtTime(0, now);
+        overtoneGain.gain.linearRampToValueAtTime(0.05, now + duration * 0.35);
+        overtoneGain.gain.linearRampToValueAtTime(0.05, now + duration * 0.65);
+        overtoneGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        fundamental.connect(fundamentalGain);
+        overtone.connect(overtoneGain);
+        fundamentalGain.connect(this.sfxGain);
+        overtoneGain.connect(this.sfxGain);
+
+        if (this.reverbSend) {
+            fundamentalGain.connect(this.reverbSend);
+            overtoneGain.connect(this.reverbSend);
+        }
+
+        fundamental.start(now);
+        overtone.start(now);
+        fundamental.stop(now + duration);
+        overtone.stop(now + duration);
+    }
+
+    /**
      * Play rainbow comet tail activation sound
      */
     playCometActivate() {

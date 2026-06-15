@@ -52,7 +52,7 @@ import { WeaponSystem } from './weapons';
 import { WeaponLightManager } from './lighting';
 import { generateEnvironment } from './environment';
 import { IndustrialGeometryManager } from './industrial_geometry';
-import { LEVEL_CONFIG, type LevelConfig } from './level_config';
+import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
 import { ObstacleSystem } from './obstacle_system';
 import { createUI, gameOver, gameWin, keys, setupKeyboardControls, updateDistanceDisplay, updateHealthDisplay } from './ui_controls';
 import { checkPlatformCollision } from './physics_utils';
@@ -61,12 +61,14 @@ import { CreatureManager } from './creature_manager';
 import { getAudioSystem, initAudioOnInteraction } from './audio_system';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager, createShopUI } from './save_manager';
-import { DiscoveryManager } from './discovery_system';
+import { DiscoveryManager, CreatureCatalogManager } from './discovery_system';
+import { createBestiaryUI } from './bestiary';
 import { SlingObjectiveManager } from './sling_objective';
 import { StarfieldSystem } from './stars';
 import { OrbManager, OrbType } from './collectibles';
 import { PowerUpManager, PowerUpType } from './powerup_manager';
-import { FriendsManager } from './space_friends';
+import { FriendsManager, FlotillaMember } from './space_friends';
+import { AquaticLifeManager } from './aquatic_life';
 import { DogCockpitController, DogAnimationState, DogAccessory } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType, BurstType } from './juice_effects';
@@ -99,7 +101,7 @@ import { DebugSystem } from './debug_system';
 import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
 import { VideoTumblingStar } from './video_tumbling_star';
-import { SlingableObjectSystem } from './slingable_objects';
+import { SlingableObjectSystem, type SlingableObjectConfig } from './slingable_objects';
 import { SlingComboManager } from './sling_combo';
 import {
     createGameRenderer,
@@ -614,6 +616,14 @@ const powerUpManager = new PowerUpManager({
 // SPACE FRIENDS (cute companions for a 7-year-old girl)
 const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
 
+// AQUA EXPANSE (Level 6 finale): jellyfish, kelp forests, plankton, bubble reefs
+const aquaticLifeManager = new AquaticLifeManager(scene);
+let aquaticLifeSpawnedL6 = false;
+let level6BossDefeated = false;
+let whaleSongTimer = 30;
+let moonGateSequenceActive = false;
+let moonGateSequenceTimer = 0;
+
 // BESTIARY CREATURES (Crystal Tarsier Guardian, Living Geode Titan, ...)
 const creatureManager = new CreatureManager({
     scene,
@@ -679,6 +689,15 @@ playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
 // NEW MANAGERS (Swarm #2)
 const dogController = new DogCockpitController();
 const hudManager = new HUDManager(saveManager);
+
+// "Good Dog!" score multiplier (granted by rescuing a Moon Pup)
+let scoreMultiplierUntil = 0;
+let scoreMultiplierValue = 1;
+const originalAddScore = hudManager.addScore.bind(hudManager);
+hudManager.addScore = (points: number) => {
+    const mult = performance.now() < scoreMultiplierUntil ? scoreMultiplierValue : 1;
+    originalAddScore(Math.round(points * mult));
+};
 const discoveryManager = new DiscoveryManager(saveManager);
 discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, isNewEver) => {
     if (player) {
@@ -693,6 +712,22 @@ discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, isNewEver
         hudManager.updateObjectiveProgress(totalThisRun, objective.target);
     }
 };
+
+// "Weird Life Log" bestiary — non-lethal creature cataloging meta-layer
+const creatureCatalogManager = new CreatureCatalogManager(saveManager);
+creatureCatalogManager.onCreatureCataloged = (id, name, isNewEver) => {
+    if (player) {
+        const label = isNewEver ? `New! Cataloged: ${name}` : `Cataloged: ${name}`;
+        juiceManager.showFloatingText(label, player.position.clone(), '#aaffee', isNewEver ? 26 : 20);
+        if (isNewEver) juiceManager.burstMagic(player.position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.CURIOUS, 1.0);
+    audioSystem.playMagicSequence('star_collect');
+};
+// Tracks which Nebula Krakens already paid out their "kraken" memory bonus this run
+const krakenMemoryRewarded = new WeakSet<object>();
+// Mine Robot memory: one free "wrench" auto-bounce charge per level
+let wrenchChargeAvailable = false;
 
 const slingObjectiveManager = new SlingObjectiveManager();
 slingObjectiveManager.onProgress = (current, target) => {
@@ -712,12 +747,25 @@ slingObjectiveManager.onObjectiveComplete = () => {
 };
 
 // Level 3 "Rescue" objective: trapped friends join a growing flotilla behind the rocket
-friendsManager.onFriendRescued = (count, position) => {
+friendsManager.onFriendRescued = (count, position, kind) => {
     const objective = levelManager.config[levelManager.currentLevel]?.objective;
 
     dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
     juiceManager.burstMagic(position.clone());
     saveManager.addCores(15);
+
+    // Moon Pup is a rare "good dog" find - big bark + temporary score multiplier
+    if (kind === 'moonpup') {
+        dogController.triggerAnimation(DogAnimationState.VICTORY, 1.8);
+        const moonPupMemory = saveManager.hasMemory('moon_pup');
+        scoreMultiplierValue = 2;
+        scoreMultiplierUntil = performance.now() + (moonPupMemory ? 16000 : 10000);
+        if (player) {
+            juiceManager.showFloatingText('Good Dog! Score x2!', player.position.clone(), '#ffe4b5', 26);
+        }
+        audioSystem.playMagicSequence('power_up');
+        creatureCatalogManager.catalog('moon_pup');
+    }
 
     if (objective?.type === 'rescue') {
         hudManager.updateObjectiveProgress(count, objective.target);
@@ -735,6 +783,39 @@ friendsManager.onFriendRescued = (count, position) => {
     }
 };
 const juiceManager = new JuiceManager(camera, scene, particleSystem);
+
+// Level 5 "Arc Surge" objective: report the sling combo chain as progress
+// toward the combo threshold (e.g. 7x).
+function reportComboObjectiveProgress() {
+    const objective = levelManager.config[levelManager.currentLevel]?.objective;
+    if (objective?.type === 'combo') {
+        hudManager.updateObjectiveProgress(slingComboManager.getCombo(), objective.target);
+    }
+}
+
+// The moment a level's chapter objective is fully met: a big celebratory
+// beat, then open the "fast lane" (thinned hazards + bonus orbs) toward
+// the level exit so finishing the mission feels like the actual goal.
+hudManager.onObjectiveComplete = () => {
+    if (!player) return;
+
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 2.5);
+    juiceManager.showFloatingText('Chapter Complete!', player.position.clone(), '#ffcc00', 32);
+    juiceManager.flashRainbow(1.0);
+    juiceManager.shakeScreen(ShakeType.MEDIUM, 0.5);
+    juiceManager.burstMagic(player.position.clone());
+    audioSystem.playMagicSequence('power_up');
+
+    levelManager.enterFastLane();
+    friendsManager.triggerVictoryFlyby(3.0);
+
+    // Sprinkle bonus orbs along the path ahead as a reward for the home stretch
+    for (let i = 0; i < 5; i++) {
+        const ox = player.position.x + 20 + i * 15 + Math.random() * 8;
+        const oy = (Math.random() - 0.5) * 10;
+        orbManager.spawnRandomOrb(ox, oy, 0);
+    }
+};
 
 // BOOST SYSTEM
 const boostSystem = new BoostSystem({
@@ -795,6 +876,11 @@ const tetherSystem = new TetherSystem(scene, {
     }
 });
 
+// Tether Sprite "full loop" tracking — swing a tether sprite all the way
+// around for a big bonus + a free heart.
+let tetherSpriteSweep = 0;
+let tetherSpritePrevAngle: number | null = null;
+
 // SLING COMBO MANAGER — Arc Surge Scoring & Feel Amplification
 const slingComboManager = new SlingComboManager({
     juiceManager,
@@ -807,8 +893,35 @@ const slingComboManager = new SlingComboManager({
     },
     onSlingAssist: (duration) => {
         playerState.slingAssistTimer = duration;
-    }
+    },
+    // Tarsier memory: longer Sling Assist window on Arc Surge
+    slingAssistDuration: saveManager.hasMemory('tarsier') ? 6.0 : 4.0
 });
+
+// Slingable personality payoffs: puffball lift-offs & chroma slipstreams
+slingableObjectSystem.onSpecialEffect = (effect) => {
+    if (effect.type === 'puffballPop') {
+        if (player) {
+            playerState.currentSpeedY = THREE.MathUtils.clamp(
+                playerState.currentSpeedY + effect.liftAmount,
+                -CONFIG.player.maxDescentSpeed * 1.5,
+                CONFIG.player.maxSpeedY * 2.0
+            );
+            juiceManager.showFloatingText('Spore Pop!', player.position.clone(), '#99ffaa', 22);
+            dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
+            audioSystem.playMagicSequence('power_up');
+
+            slingComboManager.recordSlingAction('perfect', effect.position.clone());
+            slingObjectiveManager.recordSling('perfect');
+            reportComboObjectiveProgress();
+            friendsManager.cheerFlotilla(effect.position.clone());
+        }
+    } else if (effect.type === 'chromaSlipstream') {
+        if (player) {
+            juiceManager.showFloatingText('Rainbow Slipstream!', effect.position.clone(), '#ff66cc', 20);
+        }
+    }
+};
 
 // SWARM #3 - DREAMY ENVIRONMENTS
 const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
@@ -865,6 +978,7 @@ debugSystem.register('wireframe', 'Wireframe', hasDebugUrlFlag('wireframe'));
 debugSystem.register('collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug'));
 
 let isGamePaused = false;
+let bestiaryUI: HTMLDivElement | null = null;
 
 // =============================================================================
 // GEOLOGICAL OBJECTS & ANOMALIES (from plan.md)
@@ -989,13 +1103,7 @@ function createSlingableObjectAtPosition(
     x: number,
     y: number,
     z: number,
-    options: {
-        radius?: number;
-        mass?: number;
-        velocity?: THREE.Vector3;
-        color?: number;
-        emissive?: number;
-    } = {}
+    options: SlingableObjectConfig = {}
 ) {
     return slingableObjectSystem.createObject(new THREE.Vector3(x, y, z), options);
 }
@@ -1119,6 +1227,42 @@ createSlingableObjectAtPosition(236, 7, -18, {
     emissive: 0x78d6ff
 });
 
+// --- "Dance with the world" puzzlelet: a puffball, a chroma rock, and a
+// tether sprite clustered together, each with their own sling payoff. ---
+createSlingableObjectAtPosition(400, -2, -15, {
+    radius: 1.3,
+    mass: 1.2,
+    velocity: new THREE.Vector3(-1.0, 0, 0.15),
+    kind: 'puffball'
+});
+createSlingableObjectAtPosition(460, 6, -17, {
+    radius: 1.15,
+    mass: 1.7,
+    velocity: new THREE.Vector3(-1.3, -0.4, 0.2),
+    kind: 'chromaRock'
+});
+createSlingableObjectAtPosition(520, 0, -14, {
+    radius: 0.85,
+    mass: 0.6,
+    velocity: new THREE.Vector3(-1.1, 0.5, 0.1),
+    kind: 'tetherSprite'
+});
+
+// --- L4/L5 wrecking balls: salvage debris heavy enough to plow through
+// smaller obstacles when slung — a risk/reward path-clearing tool. ---
+createSlingableObjectAtPosition(2350, 3, -16, {
+    radius: 1.6,
+    mass: 4.0,
+    velocity: new THREE.Vector3(-0.8, 0, 0),
+    kind: 'wreckingBall'
+});
+createSlingableObjectAtPosition(3350, -4, -16, {
+    radius: 1.8,
+    mass: 4.5,
+    velocity: new THREE.Vector3(-0.9, 0.2, 0),
+    kind: 'wreckingBall'
+});
+
 const videoTumblingStars = [
     new VideoTumblingStar(scene, 360, 12, -45),
     new VideoTumblingStar(scene, 980, -6, -40),
@@ -1170,6 +1314,8 @@ const levelManager = new LevelManager({
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
         discoveryManager.reset();
+        // Mine Robot memory: recharge the wrench auto-bounce for the new level
+        wrenchChargeAvailable = saveManager.hasMemory('mine_robot');
         slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
         if (cfg.objective?.type === 'scan') {
             hudManager.setObjectiveLabel('🔍 Catalog');
@@ -1213,7 +1359,18 @@ function handleGameOver() {
 obstacleSystem = new ObstacleSystem({
     scene,
     getPlayer: () => player,
-    getCurrentConfig: () => levelManager.config[levelManager.currentLevel],
+    getCurrentConfig: () => {
+        const cfg = levelManager.config[levelManager.currentLevel];
+        if (!cfg) return cfg;
+        if (!levelManager.fastLaneActive) return cfg;
+        // Fast lane: thin out asteroids/hazards on the run to the level exit
+        return {
+            ...cfg,
+            asteroidRate: cfg.asteroidRate * 2.5,
+            mineRobotRate: 0,
+            barnaclePodRate: 0
+        };
+    },
     playerState,
     getWasm: () => ({ exports: wasmExports, memory: wasmMemory }),
     setWasmMemory: (memory) => {
@@ -1251,7 +1408,22 @@ obstacleSystem = new ObstacleSystem({
         hudManager.showGrazeCombo(combo);
         if (combo === 1 && player) {
             juiceManager.showFloatingText("Near Miss!", player.position, '#00ffff', 20);
+            friendsManager.cheerFlotilla(player.position.clone());
         }
+    },
+    tryConsumeWrenchCharge: () => {
+        if (wrenchChargeAvailable) {
+            wrenchChargeAvailable = false;
+            return true;
+        }
+        return false;
+    },
+    onWrenchSave: (asteroid) => {
+        juiceManager.showFloatingText("Wrench Save!", asteroid.position.clone(), '#ffaa66', 24);
+        audioSystem.playBoing();
+    },
+    onMineRobotProximity: () => {
+        creatureCatalogManager.catalog('mine_robot');
     }
 });
 
@@ -1307,6 +1479,21 @@ window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyM') {
         const muted = audioSystem.toggleMute();
         console.log(muted ? '🔇 Audio muted' : '🔊 Audio unmuted');
+    }
+    // "Weird Life Log" bestiary — press L any time in-game
+    if (e.code === 'KeyL') {
+        if (bestiaryUI) {
+            bestiaryUI.remove();
+            bestiaryUI = null;
+            isGamePaused = false;
+        } else {
+            isGamePaused = true;
+            bestiaryUI = createBestiaryUI(saveManager, () => {
+                bestiaryUI = null;
+                isGamePaused = false;
+            });
+            document.body.appendChild(bestiaryUI);
+        }
     }
     // Resolution cycle hotkey — press R any time in-game
     if (e.code === 'KeyR') {
@@ -2093,6 +2280,22 @@ function updatePlayer(delta: number) {
             const beamPoint = player.position.clone().lerp(anchorPos, t);
             particleSystem.emit(beamPoint, 0x00ffcc, 1, 2.5, 0.4, 0.15);
         }
+
+        // Track full loops around a Tether Sprite for the "Crane Loop" bonus
+        const latchedTarget = tetherSystem.getLatchedTarget();
+        if (anchorPos && latchedTarget?.userData.kind === 'tetherSprite') {
+            const angle = Math.atan2(player.position.y - anchorPos.y, player.position.x - anchorPos.x);
+            if (tetherSpritePrevAngle !== null) {
+                let dAngle = angle - tetherSpritePrevAngle;
+                if (dAngle > Math.PI) dAngle -= Math.PI * 2;
+                if (dAngle < -Math.PI) dAngle += Math.PI * 2;
+                tetherSpriteSweep += dAngle;
+            }
+            tetherSpritePrevAngle = angle;
+        } else {
+            tetherSpriteSweep = 0;
+            tetherSpritePrevAngle = null;
+        }
     }
 
     // Activate tether: T or right-click pressed
@@ -2115,6 +2318,22 @@ function updatePlayer(delta: number) {
             const threwSlingable = latchedTarget
                 ? slingableObjectSystem.applyTetherImpulse(latchedTarget, impulse)
                 : false;
+
+            // Crane Loop bonus: a full 360° swing around a Tether Sprite
+            if (latchedTarget?.userData.kind === 'tetherSprite' && Math.abs(tetherSpriteSweep) >= Math.PI * 1.85) {
+                hudManager.addScore(500);
+                juiceManager.showFloatingText('Crane Loop! +500', player.position.clone(), '#ffaaee', 28);
+                juiceManager.burstMagic(player.position.clone());
+                dogController.triggerAnimation(DogAnimationState.VICTORY, 1.5);
+                if (playerState.health < playerState.maxHealth) {
+                    playerState.health++;
+                    hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                    updateHealthDisplay(playerState);
+                    juiceManager.showFloatingText('+1 Heart!', player.position.clone().add(new THREE.Vector3(0, 1.5, 0)), '#ff6699', 24);
+                }
+            }
+            tetherSpriteSweep = 0;
+            tetherSpritePrevAngle = null;
 
             if (threwSlingable) {
                 playerState.currentSpeedY = THREE.MathUtils.clamp(
@@ -2151,8 +2370,13 @@ function updatePlayer(delta: number) {
             // ── Sling Combo: classify quality by impulse magnitude ──────────
             const impulseMag = impulse.length();
             const slingQuality = impulseMag >= 26 ? 'perfect' : impulseMag >= 14 ? 'good' : 'messy';
-            slingComboManager.recordSlingAction(slingQuality, player.position.clone());
+            const slipstreamBonus = slingableObjectSystem.isInSlipstream(player.position) ? 2 : 1;
+            slingComboManager.recordSlingAction(slingQuality, player.position.clone(), slipstreamBonus);
             slingObjectiveManager.recordSling(slingQuality);
+            reportComboObjectiveProgress();
+            if (slingQuality === 'perfect') {
+                friendsManager.cheerFlotilla(player.position.clone());
+            }
         }
     }
 
@@ -2161,6 +2385,21 @@ function updatePlayer(delta: number) {
 
     // Level Checking
     levelManager.checkProgress(player.position.x);
+
+    // "Survive" objectives (e.g. L4 Rusty Gauntlet) don't have a running
+    // counter - treat reaching 80% of the level's span as "survived" and
+    // open the fast lane for the home stretch.
+    {
+        const currentCfg = levelManager.config[levelManager.currentLevel];
+        if (currentCfg?.objective?.type === 'survive') {
+            const levelStart = LEVEL_DISTANCE_BOUNDARIES[levelManager.currentLevel - 1] ?? 0;
+            const levelEnd = LEVEL_DISTANCE_BOUNDARIES[levelManager.currentLevel] ?? (levelStart + currentCfg.distance);
+            const span = levelEnd - levelStart;
+            if (span > 0 && player.position.x - levelStart >= span * 0.8) {
+                hudManager.updateObjectiveProgress(1, 1);
+            }
+        }
+    }
 
     // Journey map: overall progress from Earth to the Moon across all 6 levels
     const journey = levelManager.getJourneyProgress(player.position.x);
@@ -2519,11 +2758,22 @@ function animate() {
             weaponSystem.getActiveProjectiles()
         );
         for (const result of creatureResults) {
-            if (result.cores) {
-                saveManager.addCores(result.cores);
+            let cores = result.cores ?? 0;
+            // Memory bonuses: cataloging a creature once grants small lasting perks
+            if (result.type === 'geode_titan_flythrough' && cores > 0 && saveManager.hasMemory('geode_titan')) {
+                cores = Math.round(cores * 1.5);
+            }
+            if (cores) {
+                saveManager.addCores(cores);
             }
             if (result.label) {
                 juiceManager.showFloatingText(result.label, result.position.clone(), '#aaffee', 24);
+            }
+            // Non-lethal, calm interactions catalog the creature for the bestiary
+            if (result.type === 'tarsier_guardian_blessing') {
+                creatureCatalogManager.catalog('tarsier');
+            } else if (result.type === 'geode_titan_flythrough') {
+                creatureCatalogManager.catalog('geode_titan');
             }
             if (result.type === 'tarsier_guardian_blessing' || result.type === 'geode_titan_flythrough') {
                 juiceManager.burstMagic(result.position.clone());
@@ -2534,7 +2784,7 @@ function animate() {
         }
     }
 
-    slingableObjectSystem.update(delta, camera.position.x);
+    slingableObjectSystem.update(delta, camera.position.x, player?.position);
     slingableObjectSystem.handleAsteroidCollisions(
         obstacleSystem.getObstacles(),
         (asteroid) => {
@@ -2567,13 +2817,24 @@ function animate() {
                         // Boss defeated - give rewards and continue
                         playerState.cores += 50;
                         saveManager.addCores(50);
+                        // Star-Eater memory: a few extra cores for veterans who've cataloged it
+                        if (saveManager.hasMemory('star_eater')) {
+                            playerState.cores += 10;
+                            saveManager.addCores(10);
+                        }
                         saveManager.recordBossDefeated();
                         audioSystem.play('boss_defeat');
                         playerState.bossActive = false;
                         
                         // Resume auto-scroll
                         playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
-                        
+
+                        // 'boss' objective (L6): defeating the boss completes the chapter
+                        const objective = levelManager.config[levelManager.currentLevel]?.objective;
+                        if (objective?.type === 'boss') {
+                            hudManager.updateObjectiveProgress(objective.target, objective.target);
+                        }
+
                         // Show victory message briefly
                         console.log('🎉 BOSS DEFEATED! +50 Cores');
                     },
@@ -2604,6 +2865,8 @@ function animate() {
                         playerState.autoScrollSpeed = 2;
                         audioSystem.play('boss_roar');
                         audioSystem.updateDroneIntensity(2.0);
+                        // Surviving the first roar catalogs the Star-Eater
+                        creatureCatalogManager.catalog('star_eater');
                     }
                 }
             );
@@ -2682,7 +2945,7 @@ function animate() {
         
         // Update orb manager and check collection
         orbManager.update(delta, time);
-        const collectionResult = orbManager.checkCollection(player.position);
+        const collectionResult = orbManager.checkCollection(player.position, friendsManager.hasFullFlotilla() ? 4.0 : 2.0);
         if (collectionResult.collected && player) {
             dogController.triggerAnimation(DogAnimationState.COLLECT, 0.5);
             juiceManager.burstCollect(player.position.clone());
@@ -2800,9 +3063,68 @@ function animate() {
             friendsManager.maybeSpawnFriends(player.position.x);
             friendsManager.cleanupFarFriends(player.position.x);
         }
-        
+
+        // --- LEVEL 6 "AQUA EXPANSE" FINALE ---
+        if (levelManager.currentLevel === 6) {
+            if (!aquaticLifeSpawnedL6) {
+                aquaticLifeSpawnedL6 = true;
+                const cfg6 = levelManager.config[6];
+                aquaticLifeManager.spawnForLevel6(player.position.x + 80, cfg6.distance - 200);
+
+                // Bubble-reef rescue friends feeding the final flotilla parade
+                const reefFriends = friendsManager.spawnTrappedFriendsAlong(
+                    player.position.x + 150,
+                    cfg6.distance - 400,
+                    3
+                );
+                for (const reefFriend of reefFriends) {
+                    aquaticLifeManager.spawnBubbleReef(reefFriend.position);
+                }
+            }
+
+            const aquaEvents = aquaticLifeManager.update(delta, player.position);
+            for (const ev of aquaEvents) {
+                if (ev.type === 'jellyfish') {
+                    hudManager.addScore(15);
+                    juiceManager.showFloatingText('Jellyfish Drift! +15', ev.position.clone(), '#aaffee', 20);
+                    particleSystem.emit(ev.position.clone(), 0x66ffee, 10, 2.0, 1.0, 1.0);
+                    audioSystem.playGraze(1);
+                } else if (ev.type === 'kelp') {
+                    hudManager.addScore(10);
+                    juiceManager.showFloatingText('Swimming!', ev.position.clone(), '#88ffaa', 18);
+                    particleSystem.emit(ev.position.clone(), 0x44cc88, 8, 3.0, 0.8, 0.8);
+                } else if (ev.type === 'plankton') {
+                    juiceManager.burstMagic(ev.position.clone());
+                    particleSystem.emit(ev.position.clone(), 0x99ffee, 14, 2.5, 1.2, 0.8);
+                }
+            }
+            aquaticLifeManager.cleanupFarBehind(player.position.x);
+
+            // "Whale song" ambience - a slow procedural moan from the deep
+            whaleSongTimer -= delta;
+            if (whaleSongTimer <= 0) {
+                whaleSongTimer = 25 + Math.random() * 15;
+                audioSystem.playWhaleSong();
+            }
+        }
+
         // Update dog cockpit animation
         dogController.update(delta, playerState);
+    }
+
+    // "Path to the Moon" gate animates independently of the planet horizon
+    planetaryHorizonSystem.updateMoonGate(delta);
+
+    // Once the Moon Gate has opened, gently pull the camera back for a
+    // celebratory view before handing off to the victory approach sequence.
+    if (moonGateSequenceActive) {
+        moonGateSequenceTimer += delta;
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, camera.position.z - 0.5, Math.min(1, delta * 0.5));
+        camera.position.y = THREE.MathUtils.lerp(camera.position.y, camera.position.y + 0.3, Math.min(1, delta * 0.5));
+        if (moonGateSequenceTimer > 3.0 && player && victorySystem.getState() === VictoryState.NONE) {
+            moonGateSequenceActive = false;
+            victorySystem.startApproach(moon.position);
+        }
     }
     
     // Update HUD system
@@ -2844,10 +3166,26 @@ function animate() {
 
                         // 2. Destroy Asteroid
                         audioSystem.play('explode');
-                        
+
+                        // Barnacle pods (L5): cracking one open can reveal a
+                        // memory fragment (bonus cores) and/or a tiny whale
+                        // lice critter that joins the flotilla.
+                        if (obs.userData.type === 'barnacle') {
+                            if (obs.userData.hasMemoryFragment) {
+                                saveManager.addCores(25);
+                                juiceManager.showFloatingText('Memory Fragment! +25', obs.position.clone(), '#aaffee', 24);
+                            }
+                            if (obs.userData.hasWhaleLice) {
+                                const member = new FlotillaMember(scene, 0x88ffaa, friendsManager.flotilla.length);
+                                friendsManager.flotilla.push(member);
+                                juiceManager.showFloatingText('Whale Lice joined!', obs.position.clone(), '#88ffaa', 22);
+                                dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
+                            }
+                        }
+
                         // Try spawn pickup
                         pickupManager.trySpawn(obs.position.clone());
-                        
+
                         obstacleSystem.splitAsteroid(obs as THREE.Mesh);
 
                         // 3. Destroy Projectile
@@ -2876,6 +3214,12 @@ function animate() {
             const squids = obstacleSystem.getSquids();
             for (const squid of squids) {
                 if (squid.isDestroyed) continue;
+
+                // Cataloging: get close to a living Kraken without destroying it
+                if (player && squid.getPosition().distanceTo(player.position) < squid.getRadius() + 6) {
+                    creatureCatalogManager.catalog('kraken');
+                }
+
                 for (const proj of projectiles) {
                     if (!proj.active) continue;
                     const dist = proj.mesh.position.distanceTo(squid.getPosition());
@@ -2884,6 +3228,46 @@ function animate() {
                         particleSystem.emit(proj.mesh.position.clone(), 0x9900ff, 15, 6.0, 1.0, 1.5);
                         squid.takeDamage(30);
                         proj.deactivate();
+
+                        // Kraken memory: bonus cores the first time this Kraken is defeated
+                        if (squid.isDestroyed && saveManager.hasMemory('kraken') && !krakenMemoryRewarded.has(squid)) {
+                            krakenMemoryRewarded.add(squid);
+                            saveManager.addCores(20);
+                            if (player) {
+                                juiceManager.showFloatingText('Kraken Memory +20', squid.getPosition().clone(), '#cc88ff', 22);
+                            }
+                        }
+
+                        // Aquatic capstone: an ink + bubble burst marks the
+                        // wounded Kraken's defeat - the L6 "boss" objective.
+                        if (squid.isDestroyed) {
+                            particleSystem.emit(squid.getPosition().clone(), 0xeeffff, 25, 5.0, 1.2, 1.4);
+                            particleSystem.emit(squid.getPosition().clone(), 0x440088, 20, 4.0, 1.4, 1.6);
+                            waterfallSystem.triggerSplash(squid.getPosition().clone(), 35);
+                            audioSystem.playWhaleSong();
+
+                            const objective6 = levelManager.config[levelManager.currentLevel]?.objective;
+                            if (levelManager.currentLevel === 6 && objective6?.type === 'boss' && !level6BossDefeated) {
+                                level6BossDefeated = true;
+                                saveManager.addCores(50);
+                                hudManager.updateObjectiveProgress(objective6.target, objective6.target);
+                                hudManager.onObjectiveComplete?.();
+
+                                if (player) {
+                                    juiceManager.showFloatingText('The Path to the Moon Opens!', player.position.clone(), '#aaffff', 30);
+                                    juiceManager.burstMagic(player.position.clone());
+                                }
+                                dogController.triggerAnimation(DogAnimationState.VICTORY, 2.0);
+
+                                // Open the Moon Gate ahead and begin the celebratory pull-back
+                                planetaryHorizonSystem.activateMoonGate(
+                                    new THREE.Vector3(squid.getPosition().x + 120, 0, -30)
+                                );
+                                friendsManager.triggerVictoryFlyby(4.0);
+                                moonGateSequenceActive = true;
+                                moonGateSequenceTimer = 0;
+                            }
+                        }
                         break;
                     }
                 }
@@ -3205,8 +3589,11 @@ function animate() {
                     particleSystem.emit(player.position.clone(), 0x44aaff, 12, 3.0, 0.6);
 
                     // Record a perfect gravity-arc sling in the combo chain
-                    slingComboManager.recordSlingAction('perfect', player.position.clone());
+                    const gaSlipstreamBonus = slingableObjectSystem.isInSlipstream(player.position) ? 2 : 1;
+                    slingComboManager.recordSlingAction('perfect', player.position.clone(), gaSlipstreamBonus);
                     slingObjectiveManager.recordSling('perfect');
+                    reportComboObjectiveProgress();
+                    friendsManager.cheerFlotilla(player.position.clone());
 
                     // Sling release doppler whoosh
                     audioSystem.playGravitySlingRelease('perfect', slingComboManager.getCombo());

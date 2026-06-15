@@ -208,6 +208,8 @@ export class HUDManager {
     private scanProgressContainer: HTMLDivElement | null = null;
     private journeyMapContainer: HTMLDivElement | null = null;
     private objectiveCompleted: boolean = false;
+    /** Fired once when the current level's objective target is first reached. */
+    onObjectiveComplete?: () => void;
     private pauseMenu: HTMLDivElement | null = null;
     private victoryScreen: HTMLDivElement | null = null;
     private gameOverScreen: HTMLDivElement | null = null;
@@ -698,6 +700,7 @@ export class HUDManager {
         if (current >= target && !this.objectiveCompleted) {
             this.objectiveCompleted = true;
             this.celebrateObjectiveComplete();
+            this.onObjectiveComplete?.();
         }
     }
 

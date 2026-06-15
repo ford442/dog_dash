@@ -383,6 +383,15 @@ export class PlanetaryHorizonSystem {
 
     atmosphereOverlay: AtmosphereOverlay;
 
+    // "Path to the Moon" finale gate - a glowing crystal arch that opens
+    // once the Level 6 capstone objective is complete.
+    moonGate: THREE.Group;
+    moonGateRing: THREE.Mesh;
+    moonGateCore: THREE.Mesh;
+    moonGateLight: THREE.PointLight;
+    moonGateActive: boolean = false;
+    moonGateOpenTime: number = 0;
+
     constructor(scene: THREE.Scene, camera: THREE.Camera) {
         this.scene = scene;
         this.container = new THREE.Group();
@@ -433,7 +442,73 @@ export class PlanetaryHorizonSystem {
         // 5. Atmosphere Overlay for gradual palette shift
         this.atmosphereOverlay = new AtmosphereOverlay(camera);
 
+        // 6. "Path to the Moon" gate - hidden crystal arch, added directly to
+        // the scene so it can be revealed independently of activate/deactivate.
+        this.moonGate = new THREE.Group();
+        const ringGeo2 = new THREE.TorusGeometry(14, 1.4, 24, 64);
+        const ringMat2 = new THREE.MeshStandardMaterial({
+            color: 0xbbeeff,
+            emissive: 0x88ddff,
+            emissiveIntensity: 1.5,
+            roughness: 0.2,
+            metalness: 0.6
+        });
+        this.moonGateRing = new THREE.Mesh(ringGeo2, ringMat2);
+        this.moonGate.add(this.moonGateRing);
+
+        const coreGeo = new THREE.CircleGeometry(12.5, 48);
+        const coreMat = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.0,
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
+        });
+        this.moonGateCore = new THREE.Mesh(coreGeo, coreMat);
+        this.moonGate.add(this.moonGateCore);
+
+        this.moonGateLight = new THREE.PointLight(0xaaeeff, 0, 120);
+        this.moonGate.add(this.moonGateLight);
+
+        this.moonGate.visible = false;
+        this.moonGate.scale.setScalar(0.01);
+        this.scene.add(this.moonGate);
+
         this.deactivate();
+    }
+
+    /**
+     * Reveal the "Path to the Moon" gate ahead of the player, with a gentle
+     * scale-up + glow animation. Independent of activate()/deactivate() so it
+     * can appear even on levels that don't use the planet horizon.
+     */
+    activateMoonGate(position: THREE.Vector3) {
+        this.moonGate.position.copy(position);
+        this.moonGate.visible = true;
+        this.moonGate.scale.setScalar(0.01);
+        this.moonGateActive = true;
+        this.moonGateOpenTime = 0;
+    }
+
+    /** Animates the moon gate's open/idle state. Call every frame regardless of activate state. */
+    updateMoonGate(delta: number) {
+        if (!this.moonGateActive) return;
+        this.moonGateOpenTime += delta;
+
+        // Scale-up "bloom" over the first 2.5s
+        const openProgress = Math.min(1, this.moonGateOpenTime / 2.5);
+        const eased = 1 - Math.pow(1 - openProgress, 3);
+        this.moonGate.scale.setScalar(0.01 + eased * 0.99);
+
+        // Gentle rotation + pulsing glow once open
+        this.moonGateRing.rotation.z += delta * 0.15;
+        const pulse = Math.sin(this.moonGateOpenTime * 1.5) * 0.3 + 0.7;
+        (this.moonGateRing.material as THREE.MeshStandardMaterial).emissiveIntensity = 1.2 + pulse * 0.8;
+
+        const coreMat = this.moonGateCore.material as THREE.MeshBasicMaterial;
+        coreMat.opacity = eased * (0.35 + pulse * 0.15);
+
+        this.moonGateLight.intensity = eased * (3 + pulse * 2);
     }
     activate() {
         if (this.active) return;

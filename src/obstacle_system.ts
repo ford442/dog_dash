@@ -37,6 +37,15 @@ type ObstacleSystemOptions = {
     getPowerUpModifiers?: () => GameplayModifiers;
     onAsteroidBounce?: (asteroid: THREE.Mesh) => void;
     onGraze?: (asteroid: THREE.Mesh, score: number, combo: number) => void;
+    /**
+     * "Wrench" memory bonus (cataloging the Grumpy Mine Robot): if this
+     * returns true, the next collision is auto-bounced harmlessly instead
+     * of damaging the player. Should consume a per-level charge internally.
+     */
+    tryConsumeWrenchCharge?: () => boolean;
+    onWrenchSave?: (asteroid: THREE.Mesh) => void;
+    /** Fired when a Grumpy Mine Robot's eyes go wide at the player (for bestiary cataloging). */
+    onMineRobotProximity?: () => void;
 };
 
 export class ObstacleSystem {
@@ -63,6 +72,9 @@ export class ObstacleSystem {
     private readonly GRAZE_MAX_DIST = 1.8;
     private readonly GRAZE_COMBO_TIMEOUT = 2.5;
     private readonly GRAZE_COOLDOWN = 0.4;
+
+    // Level 6 capstone: a wounded Nebula Kraken guards the path to the Moon
+    private level6KrakenSpawned = false;
 
     constructor(options: ObstacleSystemOptions) {
         this.options = options;
@@ -108,7 +120,16 @@ export class ObstacleSystem {
             // Use sine wave for Y position to create flowing patterns
             const waveY = Math.sin(playerX * 0.1) * 5 + Math.cos(playerX * 0.05) * 3;
             const spawnY = waveY + (Math.random() - 0.5) * 8;
-            this.createAsteroid(spawnX, spawnY, 0);
+
+            const mineRate = currentCfg?.mineRobotRate || 0;
+            const barnacleRate = currentCfg?.barnaclePodRate || 0;
+            if (mineRate > 0 && Math.random() < mineRate) {
+                this.createMineRobot(spawnX, spawnY, 0);
+            } else if (barnacleRate > 0 && Math.random() < barnacleRate) {
+                this.createBarnaclePod(spawnX, spawnY, 0);
+            } else {
+                this.createAsteroid(spawnX, spawnY, 0);
+            }
         }
         
         // --- UPDATE PATTERN ENEMIES ---
@@ -129,6 +150,21 @@ export class ObstacleSystem {
 
             if (obs.userData.velocity) {
                 obs.position.addScaledVector(obs.userData.velocity, delta);
+            }
+
+            // Grumpy mine robots: pupils glow brighter and widen when the player gets close
+            if (obs.userData.isMineRobot && obs.userData.pupils) {
+                const distToPlayer = Math.hypot(obs.position.x - playerX, obs.position.y - playerY);
+                const alert = distToPlayer < 12 ? 1.0 : 0.0;
+                for (const pupil of obs.userData.pupils as THREE.Mesh[]) {
+                    const pmat = pupil.material as THREE.MeshStandardMaterial;
+                    pmat.emissiveIntensity = 0.4 + alert * 0.8;
+                    pupil.scale.setScalar(1.0 + alert * 0.3);
+                }
+                // Cataloging: making the robot's eyes go wide without shooting it
+                if (alert === 1.0) {
+                    this.options.onMineRobotProximity?.();
+                }
             }
 
             const zDepth = Math.abs(obs.position.z);
@@ -159,7 +195,15 @@ export class ObstacleSystem {
 
         // --- Nebula Kraken (Boss Squid) Spawning & Update ---
         const squidRate = currentCfg?.squidSpawnRate || 0;
-        if (squidRate > 0 && this.squids.length === 0 && Math.random() < squidRate) {
+        const currentLevel = this.options.getCurrentLevel();
+
+        // Level 6 capstone: guarantee a Kraken guards the final stretch toward
+        // the Moon Gate, so the "boss" objective always has something to defeat.
+        const isLevel6Capstone = currentLevel === 6 && !this.level6KrakenSpawned
+            && this.squids.length === 0 && currentCfg?.distance
+            && playerX > currentCfg.distance - 750;
+
+        if (isLevel6Capstone || (squidRate > 0 && this.squids.length === 0 && Math.random() < squidRate)) {
             const spawnX = playerX + 55;
             const spawnY = (Math.random() - 0.5) * 12;
             const squid = new NebulaKraken({
@@ -167,6 +211,9 @@ export class ObstacleSystem {
                 particleSystem: this.options.particleSystem,
                 debrisSystem: this.options.debrisSystem,
             }, spawnX, spawnY);
+            if (isLevel6Capstone) {
+                this.level6KrakenSpawned = true;
+            }
             this.squids.push(squid);
         }
 
@@ -218,7 +265,12 @@ export class ObstacleSystem {
                 if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
                     this.handleBounce(activeObstacles[hitIndex]);
                 } else if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
-                    this.handleCollision(activeObstacles[hitIndex]);
+                    if (this.bounceCooldown <= 0 && this.options.tryConsumeWrenchCharge?.()) {
+                        this.handleBounce(activeObstacles[hitIndex]);
+                        this.options.onWrenchSave?.(activeObstacles[hitIndex]);
+                    } else {
+                        this.handleCollision(activeObstacles[hitIndex]);
+                    }
                 }
             }
         }
@@ -485,6 +537,103 @@ export class ObstacleSystem {
         this.scene.add(asteroid);
         this.obstacles.push(asteroid);
         return asteroid;
+    }
+
+    /** L4 "Rusty Gauntlet": a small grumpy mine robot with glowing eyes. */
+    private createMineRobot(x: number, y: number, z = 0): THREE.Mesh {
+        const size = 0.7;
+        const geo = new THREE.IcosahedronGeometry(size, 0);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0xaa2222,
+            roughness: 0.5,
+            metalness: 0.6,
+            emissive: 0xff2200,
+            emissiveIntensity: 0.6,
+            flatShading: true
+        });
+
+        const mine = new THREE.Mesh(geo, mat);
+        mine.position.set(x, y, z);
+        mine.castShadow = true;
+        mine.receiveShadow = true;
+
+        // Cartoon eyes glaring toward the player (-X face)
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+        const pupils: THREE.Mesh[] = [];
+        for (const side of [-1, 1]) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(size * 0.32, 10, 10), eyeMat);
+            eye.position.set(-size * 0.75, size * 0.25, side * size * 0.35);
+            mine.add(eye);
+
+            const pupilMat = new THREE.MeshStandardMaterial({
+                color: 0x110000,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.5,
+                roughness: 0.3
+            });
+            const pupil = new THREE.Mesh(new THREE.SphereGeometry(size * 0.14, 8, 8), pupilMat);
+            pupil.position.set(-size * 0.28, 0, 0);
+            eye.add(pupil);
+            pupils.push(pupil);
+        }
+
+        // Furrowed "eyebrows" for a grumpy expression
+        const browMat = new THREE.MeshStandardMaterial({ color: 0x551111, roughness: 0.8 });
+        for (const side of [-1, 1]) {
+            const brow = new THREE.Mesh(new THREE.BoxGeometry(size * 0.12, size * 0.55, size * 0.12), browMat);
+            brow.position.set(-size * 0.78, size * 0.55, side * size * 0.35);
+            brow.rotation.x = side * 0.4;
+            mine.add(brow);
+        }
+
+        mine.userData = {
+            rotationSpeed: 0,
+            rotationSpeedY: (Math.random() - 0.5) * 0.3,
+            rotationSpeedZ: 0,
+            radius: size,
+            velocity: new THREE.Vector3(0, 0, 0),
+            isMineRobot: true,
+            pupils
+        };
+
+        this.scene.add(mine);
+        this.obstacles.push(mine);
+        return mine;
+    }
+
+    /** L5 "Astral Leviathan": a barnacle-like pod growing on the whale's hide.
+     *  Shooting it may reveal a memory fragment and/or a tiny whale lice
+     *  critter that joins the player's flotilla (see main.ts collision handler). */
+    private createBarnaclePod(x: number, y: number, z = 0): THREE.Mesh {
+        const size = 0.4 + Math.random() * 0.4;
+        const geo = new THREE.DodecahedronGeometry(size, 0);
+        const mat = new THREE.MeshStandardMaterial({
+            color: 0x556677,
+            roughness: 0.9,
+            metalness: 0.1,
+            emissive: 0x223344,
+            emissiveIntensity: 0.4,
+            flatShading: true
+        });
+
+        const barnacle = new THREE.Mesh(geo, mat);
+        barnacle.position.set(x, y, z);
+        barnacle.castShadow = true;
+        barnacle.receiveShadow = true;
+        barnacle.userData = {
+            rotationSpeed: (Math.random() - 0.5) * 0.4,
+            rotationSpeedY: (Math.random() - 0.5) * 0.4,
+            rotationSpeedZ: (Math.random() - 0.5) * 0.4,
+            radius: size,
+            velocity: new THREE.Vector3(0, 0, 0),
+            type: 'barnacle',
+            hasMemoryFragment: Math.random() < 0.3,
+            hasWhaleLice: Math.random() < 0.25
+        };
+
+        this.scene.add(barnacle);
+        this.obstacles.push(barnacle);
+        return barnacle;
     }
 
     getSquids(): NebulaKraken[] {
