@@ -57,6 +57,7 @@ import { ObstacleSystem } from './obstacle_system';
 import { createUI, gameOver, gameWin, keys, setupKeyboardControls, updateDistanceDisplay, updateHealthDisplay } from './ui_controls';
 import { checkPlatformCollision } from './physics_utils';
 import { BossManager, StarEaterBoss } from './boss_system';
+import { CreatureManager } from './creature_manager';
 import { getAudioSystem, initAudioOnInteraction } from './audio_system';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager, createShopUI } from './save_manager';
@@ -613,6 +614,14 @@ const powerUpManager = new PowerUpManager({
 // SPACE FRIENDS (cute companions for a 7-year-old girl)
 const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
 
+// BESTIARY CREATURES (Crystal Tarsier Guardian, Living Geode Titan, ...)
+const creatureManager = new CreatureManager({
+    scene,
+    particleSystem,
+    debrisSystem,
+    audioSystem
+});
+
 // Connect orb collection to power-ups
 orbManager.onPowerUpReady = () => {
     const triggered = powerUpManager.collectOrb();
@@ -700,6 +709,30 @@ slingObjectiveManager.onObjectiveComplete = () => {
     }
     dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
     audioSystem.playMagicSequence('power_up');
+};
+
+// Level 3 "Rescue" objective: trapped friends join a growing flotilla behind the rocket
+friendsManager.onFriendRescued = (count, position) => {
+    const objective = levelManager.config[levelManager.currentLevel]?.objective;
+
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+    juiceManager.burstMagic(position.clone());
+    saveManager.addCores(15);
+
+    if (objective?.type === 'rescue') {
+        hudManager.updateObjectiveProgress(count, objective.target);
+        if (player) {
+            juiceManager.showFloatingText(`Rescued! ${count}/${objective.target}`, player.position.clone(), '#ffaa44', 22);
+        }
+
+        if (count >= objective.target) {
+            if (player) {
+                juiceManager.showFloatingText('Flotilla Assembled!', player.position.clone(), '#ffcc00', 28);
+                juiceManager.burstMagic(player.position.clone());
+            }
+            audioSystem.playMagicSequence('power_up');
+        }
+    }
 };
 const juiceManager = new JuiceManager(camera, scene, particleSystem);
 
@@ -1098,6 +1131,7 @@ const levelManager = new LevelManager({
     scene,
     camera: camera,
     getPlayer: () => player,
+    friendsManager,
     industrialGeometryManager,
     planetaryHorizonSystem,
     ghostDebrisSystem,
@@ -1143,6 +1177,15 @@ const levelManager = new LevelManager({
         } else if (cfg.objective?.type === 'sling') {
             hudManager.setObjectiveLabel('🎯 Slings');
             hudManager.updateObjectiveProgress(0, cfg.objective.target);
+        } else if (cfg.objective?.type === 'rescue') {
+            hudManager.setObjectiveLabel('🚀 Rescue');
+            hudManager.updateObjectiveProgress(friendsManager.getRescuedCount(), cfg.objective.target);
+        } else if (cfg.objective) {
+            // 'survive' / 'combo' / 'boss' - no running counter, show the description as the label
+            const OBJECTIVE_ICONS: Record<string, string> = { survive: '🛡️', combo: '⚡', boss: '👑' };
+            const icon = OBJECTIVE_ICONS[cfg.objective.type] ?? '🎯';
+            hudManager.setObjectiveLabel(`${icon} ${cfg.objective.description}`);
+            hudManager.updateObjectiveProgress(0, 0);
         } else {
             hudManager.updateObjectiveProgress(0, 0);
         }
@@ -2118,6 +2161,10 @@ function updatePlayer(delta: number) {
 
     // Level Checking
     levelManager.checkProgress(player.position.x);
+
+    // Journey map: overall progress from Earth to the Moon across all 6 levels
+    const journey = levelManager.getJourneyProgress(player.position.x);
+    hudManager.updateJourneyProgress(journey.percent, journey.level);
 }
 
 // =============================================================================
@@ -2461,6 +2508,32 @@ function animate() {
 
     updatePlayer(delta);
     obstacleSystem.update(delta);
+
+    // Bestiary creatures: Crystal Tarsier Guardian, Living Geode Titan, etc.
+    if (player) {
+        const creatureResults = creatureManager.update(
+            delta,
+            player.position.x,
+            player.position.y,
+            levelManager.config[levelManager.currentLevel],
+            weaponSystem.getActiveProjectiles()
+        );
+        for (const result of creatureResults) {
+            if (result.cores) {
+                saveManager.addCores(result.cores);
+            }
+            if (result.label) {
+                juiceManager.showFloatingText(result.label, result.position.clone(), '#aaffee', 24);
+            }
+            if (result.type === 'tarsier_guardian_blessing' || result.type === 'geode_titan_flythrough') {
+                juiceManager.burstMagic(result.position.clone());
+                dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+            } else {
+                juiceManager.shakeScreen(ShakeType.LIGHT, 0.15);
+            }
+        }
+    }
+
     slingableObjectSystem.update(delta, camera.position.x);
     slingableObjectSystem.handleAsteroidCollisions(
         obstacleSystem.getObstacles(),

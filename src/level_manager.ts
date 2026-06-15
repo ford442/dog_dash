@@ -2,7 +2,7 @@ import { lightningBoltSystem } from './game_systems';
 import * as THREE from 'three';
 import { CloudSystem } from './clouds';
 import { AtmosphereSystem } from './sky';
-import { LEVEL_CONFIG, type LevelConfig } from './level_config';
+import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
 import { IndustrialGeometryManager } from './industrial_geometry';
 import {
     createSubwooferLotus,
@@ -55,6 +55,7 @@ import { GodRaySystem } from './godrays';
 import { AuroraSystem } from './aurora';
 import { GhostDebrisSystem } from './ghost_debris';
 import { DebugSystem } from './debug_system';
+import { FriendsManager } from './space_friends';
 
 // =============================================================================
 // LEVEL MANAGER
@@ -75,6 +76,7 @@ export class LevelManager {
     auroraSystem: AuroraSystem;
     ghostDebrisSystem: GhostDebrisSystem;
     debugSystem?: DebugSystem;
+    friendsManager?: FriendsManager;
     objectDensityMultiplier: number;
     private baseAsteroidDensity = 0;
 
@@ -101,6 +103,7 @@ export class LevelManager {
         this.auroraSystem = options.auroraSystem;
         this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.debugSystem = options.debugSystem;
+        this.friendsManager = options.friendsManager;
         this.currentLevel = 1;
         this.config = LEVEL_CONFIG;
 
@@ -214,6 +217,15 @@ export class LevelManager {
             // Activate Re-Entry Heat in Level 3 "Orbital Descent"
             reEntrySystem.levelDistance = cfg.distance;
             reEntrySystem.activate();
+
+            // Seed the "Rescue" objective: scatter trapped friends along the descent
+            if (this.friendsManager && cfg.objective?.type === 'rescue') {
+                this.friendsManager.spawnTrappedFriendsAlong(
+                    player!.position.x + 100,
+                    cfg.distance - 200,
+                    cfg.objective.target
+                );
+            }
         } else {
             planetaryHorizonSystem.deactivate();
             // Only deactivate reentry if not in level 3 (handled below generally, but explicit here for clarity)
@@ -533,18 +545,20 @@ export class LevelManager {
     }
 
     checkProgress(playerX: number) {
-        // Transition logic
-        if (this.currentLevel === 1 && playerX > 500) {
-            this.startLevel(2);
-        } else if (this.currentLevel === 2 && playerX > 1200) {
-            this.startLevel(3);
-        } else if (this.currentLevel === 3 && playerX > 2200) {
-            this.startLevel(4);
-        } else if (this.currentLevel === 4 && playerX > 3200) {
-            this.startLevel(5);
-        } else if (this.currentLevel === 5 && playerX > 4200) {
-            this.startLevel(6);
+        // Transition to the next level once the player crosses its starting boundary
+        const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
+        if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
+            this.startLevel(this.currentLevel + 1);
         }
+    }
+
+    /**
+     * Overall progress toward the Moon (0-100%), for the HUD journey map.
+     */
+    getJourneyProgress(playerX: number): { percent: number; level: number } {
+        const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
+        const percent = Math.min(100, Math.max(0, (playerX / total) * 100));
+        return { percent, level: this.currentLevel };
     }
 }
 

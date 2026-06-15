@@ -10,6 +10,7 @@ import {
     getPatternName
 } from './enemy_patterns';
 import { NebulaKraken } from './space_robot_squid';
+import { applyLevelVariant } from './enemy_variants';
 
 type GameplayModifiers = {
     shieldActive: boolean;
@@ -427,9 +428,11 @@ export class ObstacleSystem {
             health: 1
         };
         
+        applyLevelVariant(mesh, this.options.getCurrentLevel(), size, color);
+
         this.scene.add(mesh);
         this.obstacles.push(mesh);
-        
+
         return {
             mesh,
             basePosition: new THREE.Vector3(x, y, z),
@@ -477,6 +480,8 @@ export class ObstacleSystem {
             radius: finalSize,
             velocity: velocity || new THREE.Vector3(0, 0, 0)
         };
+        applyLevelVariant(asteroid, this.options.getCurrentLevel(), finalSize);
+
         this.scene.add(asteroid);
         this.obstacles.push(asteroid);
         return asteroid;

@@ -12,6 +12,12 @@ export type LevelObjective = {
     description: string;
 };
 
+// Cumulative player-x thresholds for the journey toward the Moon.
+// Index i is the x position where level (i+1) begins; the final entry is the
+// Moon's position (the victory threshold). Shared by LevelManager.checkProgress
+// and the HUD journey map so both stay in sync.
+export const LEVEL_DISTANCE_BOUNDARIES = [0, 500, 1200, 2200, 3200, 4200, 5200];
+
 export type LevelConfig = {
     name: string;
     distance: number;
@@ -47,6 +53,10 @@ export type LevelConfig = {
     obstacleInterval?: number;
     fogDensity?: number;
     squidSpawnRate?: number;
+    // Rare bestiary creatures (see creature_manager.ts) - per-frame spawn
+    // probability while the level has none of that creature active.
+    crystalTarsierRate?: number;
+    geodeTitanRate?: number;
     meteorShower?: boolean;
     godRays?: {
         enabled: boolean;
@@ -104,7 +114,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x000000, bottom: 0x1a1a2e },
         levelType: 'open',
         godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
-        lightning: { enabled: true, density: 1.0 }
+        lightning: { enabled: true, density: 1.0 },
+        crystalTarsierRate: 0.0006,
+        enemyTintColor: 0x66ff99
     },
     2: {
         name: "The Asteroid Belt",
@@ -141,7 +153,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x000000, bottom: 0x2d1a1a },
         levelType: 'open',
         godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
-        lightning: { enabled: true, density: 1.5 }
+        lightning: { enabled: true, density: 1.5 },
+        crystalTarsierRate: 0.0006,
+        geodeTitanRate: 0.0008,
+        enemyTintColor: 0x8844ff
     },
     3: {
         name: "Orbital Descent",
@@ -176,7 +191,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         meteorShower: true,
         levelType: 'open',
         squidSpawnRate: 0.0012,
-        lightning: { enabled: true, density: 2.0, color: 0xaa44ff }
+        lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
+        enemyTintColor: 0xff5500
     },
     4: {
         name: "The Rusty Gauntlet",
@@ -212,7 +228,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'tunnel',
         tunnelHeight: 15,
         obstacleInterval: 20,
-        squidSpawnRate: 0.001
+        squidSpawnRate: 0.001,
+        enemyTintColor: 0xcc6633
     },
     5: {
         name: "The Astral Leviathan",
@@ -252,7 +269,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         fogDensity: 0.02,
         squidSpawnRate: 0.0015,
         godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
-        lightning: { enabled: true, density: 2.5, color: 0xff00ff }
+        lightning: { enabled: true, density: 2.5, color: 0xff00ff },
+        geodeTitanRate: 0.0008
     },
     6: {
         name: "The Aqua Expanse",
@@ -286,6 +304,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x001133, bottom: 0x002244 },
         levelType: 'open',
         squidSpawnRate: 0.0012,
-        aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 }
+        aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 },
+        enemyTintColor: 0x66ccff
     }
 };

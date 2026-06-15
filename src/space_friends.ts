@@ -1385,6 +1385,186 @@ export class AstroTarsier {
 }
 
 // =============================================================================
+// TRAPPED FRIEND - A space friend stuck in wreckage, waiting to be rescued
+// =============================================================================
+
+export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier';
+
+const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
+    kitty: 0xfff0f5,
+    bunny: 0xffd9a0,
+    tarsier: 0xb088ff
+};
+
+export class TrappedFriend {
+    group: THREE.Group;
+    position: THREE.Vector3;
+    kind: TrappedFriendKind;
+    rescued: boolean = false;
+    time: number = 0;
+
+    readonly RESCUE_DISTANCE = 7;
+
+    private cage: THREE.Group;
+    private beacon: THREE.PointLight;
+
+    constructor(scene: THREE.Scene, x: number, y: number, kind: TrappedFriendKind = 'kitty') {
+        this.position = new THREE.Vector3(x, y, 0);
+        this.kind = kind;
+        this.group = new THREE.Group();
+        this.group.position.copy(this.position);
+
+        // Occupant - the trapped friend, glowing softly inside the wreckage
+        const occupantGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        const occupantMat = new THREE.MeshStandardMaterial({
+            color: TRAPPED_FRIEND_COLORS[kind],
+            emissive: TRAPPED_FRIEND_COLORS[kind],
+            emissiveIntensity: 0.4,
+            roughness: 0.6
+        });
+        const occupant = new THREE.Mesh(occupantGeo, occupantMat);
+        this.group.add(occupant);
+
+        // Cage - rotating wreckage struts trapping the friend
+        this.cage = new THREE.Group();
+        const barGeo = new THREE.CylinderGeometry(0.06, 0.06, 1.6, 6);
+        const barMat = new THREE.MeshStandardMaterial({
+            color: 0x888899,
+            metalness: 0.7,
+            roughness: 0.4
+        });
+        const barCount = 6;
+        for (let i = 0; i < barCount; i++) {
+            const bar = new THREE.Mesh(barGeo, barMat);
+            const angle = (i / barCount) * Math.PI * 2;
+            bar.position.set(Math.cos(angle) * 0.7, Math.sin(angle) * 0.3, Math.sin(angle) * 0.7);
+            bar.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            this.cage.add(bar);
+        }
+        this.group.add(this.cage);
+
+        // Distress beacon - pulsing light to draw the player's attention
+        this.beacon = new THREE.PointLight(0xff6644, 1.2, 6);
+        this.beacon.position.set(0, 0.8, 0);
+        this.group.add(this.beacon);
+
+        scene.add(this.group);
+    }
+
+    /** Returns true the moment the player rescues this friend */
+    update(dt: number, playerPos: THREE.Vector3): boolean {
+        if (this.rescued) return false;
+        this.time += dt;
+
+        // Gentle bob + slowly rotating wreckage conveys "trapped and drifting"
+        this.group.position.y = this.position.y + Math.sin(this.time * 1.5) * 0.4;
+        this.cage.rotation.y += dt * 0.8;
+        this.cage.rotation.x += dt * 0.3;
+
+        // Pulse the distress beacon
+        this.beacon.intensity = 0.8 + Math.sin(this.time * 6) * 0.6;
+
+        const dist = this.group.position.distanceTo(playerPos);
+        if (dist < this.RESCUE_DISTANCE) {
+            this.rescued = true;
+            return true;
+        }
+        return false;
+    }
+
+    get worldPosition(): THREE.Vector3 {
+        return this.group.position;
+    }
+
+    destroy(scene: THREE.Scene): void {
+        scene.remove(this.group);
+        this.group.traverse(child => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+        });
+    }
+}
+
+// =============================================================================
+// FLOTILLA MEMBER - A rescued friend flying in formation behind the rocket
+// =============================================================================
+
+export class FlotillaMember {
+    group: THREE.Group;
+    index: number;
+    private time: number;
+
+    constructor(scene: THREE.Scene, color: number, index: number) {
+        this.index = index;
+        this.time = Math.random() * Math.PI * 2;
+        this.group = new THREE.Group();
+
+        const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
+        const bodyMat = new THREE.MeshStandardMaterial({
+            color,
+            emissive: color,
+            emissiveIntensity: 0.35,
+            roughness: 0.6
+        });
+        this.group.add(new THREE.Mesh(bodyGeo, bodyMat));
+
+        // Tiny thruster glow trailing behind the rescued friend
+        const glowGeo = new THREE.ConeGeometry(0.15, 0.5, 8);
+        const glowMat = new THREE.MeshStandardMaterial({
+            color: 0x88ddff,
+            emissive: 0x88ddff,
+            emissiveIntensity: 1.0,
+            transparent: true,
+            opacity: 0.7
+        });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.rotation.z = Math.PI / 2;
+        glow.position.x = -0.4;
+        this.group.add(glow);
+
+        scene.add(this.group);
+    }
+
+    update(dt: number, playerPos: THREE.Vector3): void {
+        this.time += dt;
+
+        // V-formation behind the rocket, alternating sides per index
+        const row = Math.floor(this.index / 2) + 1;
+        const side = (this.index % 2 === 0) ? 1 : -1;
+        const targetX = playerPos.x - 2.5 - row * 1.8;
+        const targetY = playerPos.y + side * row * 1.4 + Math.sin(this.time * 2 + this.index) * 0.3;
+        const targetZ = playerPos.z + side * 0.5;
+
+        const followRate = Math.min(1, dt * 4);
+        this.group.position.x += (targetX - this.group.position.x) * followRate;
+        this.group.position.y += (targetY - this.group.position.y) * followRate;
+        this.group.position.z += (targetZ - this.group.position.z) * followRate;
+
+        this.group.rotation.z = Math.sin(this.time * 3) * 0.1;
+    }
+
+    destroy(scene: THREE.Scene): void {
+        scene.remove(this.group);
+        this.group.traverse(child => {
+            if (child instanceof THREE.Mesh) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+        });
+    }
+}
+
+// =============================================================================
 // FRIENDS MANAGER - Manages all space friends
 // =============================================================================
 
@@ -1397,7 +1577,15 @@ export class FriendsManager {
     bunnies: SpaceBunny[] = [];
     lanterns: WishLantern[] = [];
     tarsiers: AstroTarsier[] = [];
-    
+    trappedFriends: TrappedFriend[] = [];
+    flotilla: FlotillaMember[] = [];
+
+    // Total friends rescued this run (drives the Level 3 "Rescue" objective)
+    private rescuedCount: number = 0;
+
+    /** Fired the moment a trapped friend is freed. count = running total rescued. */
+    onFriendRescued?: (count: number, position: THREE.Vector3) => void;
+
     // Cooldowns for audio (prevent spam)
     private lastKittySound: number = 0;
     private lastBunnySound: number = 0;
@@ -1458,6 +1646,30 @@ export class FriendsManager {
                 t.triggerPanic();
             }
         }
+    }
+
+    /**
+     * Spawn a single trapped friend (cage/wreckage) awaiting rescue.
+     */
+    spawnTrappedFriend(x: number, y: number, kind?: TrappedFriendKind): TrappedFriend {
+        const chosen = kind ?? (['kitty', 'bunny', 'tarsier'] as TrappedFriendKind[])[Math.floor(Math.random() * 3)];
+        const friend = new TrappedFriend(this.scene, x, y, chosen);
+        this.trappedFriends.push(friend);
+        return friend;
+    }
+
+    /**
+     * Spawn `count` trapped friends spread evenly across [startX, startX + length],
+     * used to seed the Level 3 "Rescue" objective.
+     */
+    spawnTrappedFriendsAlong(startX: number, length: number, count: number): TrappedFriend[] {
+        const spawned: TrappedFriend[] = [];
+        for (let i = 0; i < count; i++) {
+            const x = startX + (length / (count + 1)) * (i + 1);
+            const y = (Math.random() - 0.5) * 16;
+            spawned.push(this.spawnTrappedFriend(x, y));
+        }
+        return spawned;
     }
 
     /**
@@ -1555,6 +1767,35 @@ export class FriendsManager {
             if (result) {
                 this.handleInteraction(result, now);
             }
+        }
+
+        // Update trapped friends and free any the player has reached
+        for (let i = this.trappedFriends.length - 1; i >= 0; i--) {
+            const trapped = this.trappedFriends[i];
+            const justRescued = trapped.update(dt, playerPos);
+            if (justRescued) {
+                this.rescuedCount++;
+
+                this.audio.playSequence([
+                    { sound: 'twinkle', delay: 0, volume: 0.8 },
+                    { sound: 'heart_pop', delay: 0.1, volume: 0.6 }
+                ]);
+                this.particles.emit(trapped.worldPosition, TRAPPED_FRIEND_COLORS[trapped.kind], 16, 4.0, 0.6, 1.2);
+
+                const member = new FlotillaMember(this.scene, TRAPPED_FRIEND_COLORS[trapped.kind], this.flotilla.length);
+                member.group.position.copy(trapped.worldPosition);
+                this.flotilla.push(member);
+
+                this.onFriendRescued?.(this.rescuedCount, trapped.worldPosition.clone());
+
+                trapped.destroy(this.scene);
+                this.trappedFriends.splice(i, 1);
+            }
+        }
+
+        // Update the rescued-friend flotilla following the player
+        for (const member of this.flotilla) {
+            member.update(dt, playerPos);
         }
     }
     
@@ -1682,8 +1923,24 @@ export class FriendsManager {
                 this.tarsiers.splice(i, 1);
             }
         }
+
+        // Remove trapped friends the player has flown past without rescuing
+        for (let i = this.trappedFriends.length - 1; i >= 0; i--) {
+            const trapped = this.trappedFriends[i];
+            if (trapped.position.x < playerX - buffer) {
+                trapped.destroy(this.scene);
+                this.trappedFriends.splice(i, 1);
+            }
+        }
     }
-    
+
+    /**
+     * Number of trapped friends freed so far this run.
+     */
+    getRescuedCount(): number {
+        return this.rescuedCount;
+    }
+
     /**
      * Get total friend count
      */
@@ -1696,7 +1953,7 @@ export class FriendsManager {
             total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length
         };
     }
-    
+
     /**
      * Clear all friends
      */
@@ -1720,6 +1977,17 @@ export class FriendsManager {
             tarsier.destroy(this.scene);
         }
         this.tarsiers = [];
+
+        for (const trapped of this.trappedFriends) {
+            trapped.destroy(this.scene);
+        }
+        this.trappedFriends = [];
+
+        for (const member of this.flotilla) {
+            member.destroy(this.scene);
+        }
+        this.flotilla = [];
+        this.rescuedCount = 0;
     }
 }
 

@@ -6,6 +6,7 @@
 
 import { SaveManager } from './save_manager';
 import { AudioSystem, getAudioSystem } from './audio_system';
+import { LEVEL_DISTANCE_BOUNDARIES } from './level_config';
 
 // Power-up types matching the game's powerup system
 export type PowerUpType = 
@@ -205,6 +206,8 @@ export class HUDManager {
     private powerUpContainer: HTMLDivElement | null = null;
     private orbProgressContainer: HTMLDivElement | null = null;
     private scanProgressContainer: HTMLDivElement | null = null;
+    private journeyMapContainer: HTMLDivElement | null = null;
+    private objectiveCompleted: boolean = false;
     private pauseMenu: HTMLDivElement | null = null;
     private victoryScreen: HTMLDivElement | null = null;
     private gameOverScreen: HTMLDivElement | null = null;
@@ -248,6 +251,7 @@ export class HUDManager {
         this.createScanProgressDisplay();
         this.createGrazeComboDisplay();
         this.createSlingComboDisplay();
+        this.createJourneyMapDisplay();
     }
     
     /**
@@ -612,7 +616,7 @@ export class HUDManager {
         this.scanProgressContainer.className = 'hud-element';
         this.scanProgressContainer.style.cssText = `
             position: fixed;
-            top: 20px;
+            top: 100px;
             right: 20px;
             z-index: 100;
             display: none;
@@ -629,6 +633,8 @@ export class HUDManager {
             color: ${COLORS.textLight};
             font-weight: 600;
             text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+            max-width: 220px;
+            text-align: right;
         `;
         label.textContent = '🔍 Catalog';
 
@@ -656,33 +662,190 @@ export class HUDManager {
     }
 
     /**
-     * Set the icon + label text shown above the objective progress value
+     * Set the icon + label text shown above the objective progress value.
+     * Pass the full description (e.g. "🛡️ Survive the rusty gauntlet") for
+     * objectives that don't have a numeric counter.
      */
     setObjectiveLabel(text: string): void {
         const label = document.getElementById('hud-scan-label');
         if (label) label.textContent = text;
+        this.objectiveCompleted = false;
     }
 
     /**
-     * Show/update the current level objective progress (e.g. "3/8")
+     * Show/update the current level objective progress (e.g. "3/8").
+     * If target <= 0, the numeric badge is hidden and only the label
+     * (set via setObjectiveLabel) is shown - useful for objectives like
+     * "survive" or "boss" that don't have a running count.
      */
     updateObjectiveProgress(current: number, target: number): void {
         if (!this.scanProgressContainer) return;
 
+        const value = document.getElementById('hud-scan-value');
+
         if (target <= 0) {
-            this.scanProgressContainer.style.display = 'none';
+            if (value) value.style.display = 'none';
+            this.scanProgressContainer.style.display = 'flex';
             return;
         }
 
         this.scanProgressContainer.style.display = 'flex';
-        const value = document.getElementById('hud-scan-value');
         if (value) {
+            value.style.display = 'block';
             value.textContent = `${current}/${target}`;
         }
 
-        if (current >= target && target > 0) {
-            this.createSparkle(window.innerWidth - 60, 60, COLORS.mint);
+        if (current >= target && !this.objectiveCompleted) {
+            this.objectiveCompleted = true;
+            this.celebrateObjectiveComplete();
         }
+    }
+
+    /**
+     * Bigger celebration the moment a level objective is fully completed.
+     */
+    private celebrateObjectiveComplete(): void {
+        const value = document.getElementById('hud-scan-value');
+        if (value) {
+            value.style.background = `linear-gradient(135deg, ${COLORS.gold}, ${COLORS.mint})`;
+            value.classList.remove('hud-pulse');
+            void (value as HTMLElement).offsetHeight; // reflow to restart animation
+            value.classList.add('hud-pulse');
+        }
+
+        for (let i = 0; i < 6; i++) {
+            setTimeout(() => {
+                const x = window.innerWidth - 40 - Math.random() * 90;
+                const y = 90 + Math.random() * 70;
+                this.createSparkle(x, y, COLORS.gold);
+            }, i * 80);
+        }
+
+        if (this.soundEnabled) {
+            this.audioSystem.playMagicSequence('spell_complete');
+        }
+    }
+
+    /**
+     * Create the bottom-center "journey map" - a small Earth-to-Moon track
+     * with a rocket icon showing overall progress across all 6 levels.
+     */
+    private createJourneyMapDisplay(): void {
+        this.journeyMapContainer = document.createElement('div');
+        this.journeyMapContainer.className = 'hud-element';
+        this.journeyMapContainer.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 260px;
+            background: rgba(255, 255, 255, 0.75);
+            padding: 8px 18px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px ${COLORS.shadow};
+            border: 2px solid ${COLORS.white};
+            animation: hud-slide-in 0.5s ease-out 0.5s both;
+        `;
+
+        const earth = document.createElement('div');
+        earth.textContent = '🌍';
+        earth.style.fontSize = '18px';
+
+        const track = document.createElement('div');
+        track.id = 'hud-journey-track';
+        track.style.cssText = `
+            position: relative;
+            flex: 1;
+            height: 6px;
+            background: ${COLORS.lavender};
+            border-radius: 3px;
+        `;
+
+        const fill = document.createElement('div');
+        fill.id = 'hud-journey-fill';
+        fill.style.cssText = `
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, ${COLORS.mint}, ${COLORS.gold});
+            border-radius: 3px;
+            transition: width 0.3s ease-out;
+        `;
+        track.appendChild(fill);
+
+        // Tick marks where each level begins
+        const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
+        for (let i = 1; i < LEVEL_DISTANCE_BOUNDARIES.length - 1; i++) {
+            const tick = document.createElement('div');
+            tick.style.cssText = `
+                position: absolute;
+                left: ${(LEVEL_DISTANCE_BOUNDARIES[i] / total) * 100}%;
+                top: -3px;
+                width: 2px;
+                height: 12px;
+                background: ${COLORS.lavenderDark};
+                border-radius: 1px;
+            `;
+            track.appendChild(tick);
+        }
+
+        const rocket = document.createElement('div');
+        rocket.id = 'hud-journey-rocket';
+        rocket.textContent = '🚀';
+        rocket.style.cssText = `
+            position: absolute;
+            left: 0%;
+            top: 50%;
+            transform: translate(-50%, -50%) rotate(90deg);
+            font-size: 16px;
+            transition: left 0.3s ease-out;
+            filter: drop-shadow(0 0 4px rgba(255,255,255,0.9));
+        `;
+        track.appendChild(rocket);
+
+        const moon = document.createElement('div');
+        moon.textContent = '🌕';
+        moon.style.fontSize = '18px';
+
+        const label = document.createElement('div');
+        label.id = 'hud-journey-label';
+        label.style.cssText = `
+            font-size: 12px;
+            color: ${COLORS.textLight};
+            font-weight: 600;
+            white-space: nowrap;
+        `;
+        label.textContent = 'Lvl 1/6';
+
+        this.journeyMapContainer.appendChild(earth);
+        this.journeyMapContainer.appendChild(track);
+        this.journeyMapContainer.appendChild(moon);
+        this.journeyMapContainer.appendChild(label);
+        document.body.appendChild(this.journeyMapContainer);
+    }
+
+    /**
+     * Update the journey map's rocket position and level label.
+     * @param percent  Overall progress toward the Moon, 0-100.
+     * @param level    Current level index (1-6), shown as "Lvl N/6".
+     */
+    updateJourneyProgress(percent: number, level: number): void {
+        const clamped = Math.min(100, Math.max(0, percent));
+
+        const fill = document.getElementById('hud-journey-fill');
+        if (fill) fill.style.width = `${clamped}%`;
+
+        const rocket = document.getElementById('hud-journey-rocket');
+        if (rocket) rocket.style.left = `${clamped}%`;
+
+        const label = document.getElementById('hud-journey-label');
+        if (label) label.textContent = `Lvl ${level}/6`;
     }
 
     /**
@@ -1434,7 +1597,9 @@ export class HUDManager {
         this.updateHealthDisplay();
         this.updateHighScoreDisplay();
         this.updateOrbProgress(0, 5);
+        this.objectiveCompleted = false;
         this.updateObjectiveProgress(0, 0);
+        this.updateJourneyProgress(0, 1);
         
         // Remove screens
         if (this.victoryScreen) {
@@ -1459,6 +1624,7 @@ export class HUDManager {
         if (this.powerUpContainer) this.powerUpContainer.remove();
         if (this.orbProgressContainer) this.orbProgressContainer.remove();
         if (this.scanProgressContainer) this.scanProgressContainer.remove();
+        if (this.journeyMapContainer) this.journeyMapContainer.remove();
         if (this.pauseMenu) this.hidePauseMenu();
         if (this.victoryScreen) this.victoryScreen.remove();
         if (this.gameOverScreen) this.gameOverScreen.remove();
