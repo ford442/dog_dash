@@ -95,7 +95,7 @@ export class LevelManager {
         // Link LightningBoltSystem to CloudSystem for synchronized volumetric lighting
         lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
-            this.godRaySystem.triggerLightningFlash(1.0);
+            this.godRaySystem.triggerLightningFlash(1.0, color);
         };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
@@ -311,7 +311,7 @@ export class LevelManager {
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
         this.cloudSystem.update(delta, cameraX, speed, player ? player.position : undefined);
-        lightningBoltSystem.update(delta, cameraX);
+        lightningBoltSystem.update(delta, cameraX, speed);
 
         const dbg = this.debugSystem;
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
