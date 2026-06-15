@@ -185,9 +185,16 @@ export class GodRaySystem {
         // Don't hide immediately, let update() fade it out
     }
 
-    triggerLightningFlash(intensity: number = 1.0) {
+    lightningColorTarget: THREE.Color | null = null;
+    lightningColorTimer: number = 0;
+
+    triggerLightningFlash(intensity: number = 1.0, color?: THREE.Color) {
         if (this.active) {
             this.lightningSpike = intensity;
+            if (color) {
+                this.lightningColorTarget = color.clone();
+                this.lightningColorTimer = 1.0;
+            }
         }
     }
 
@@ -228,6 +235,19 @@ export class GodRaySystem {
         const mat = this.mesh.material as any;
         if (mat.userData && mat.userData.uIntensity) {
             mat.userData.uIntensity.value = finalIntensity;
+        }
+
+        if (this.lightningColorTimer > 0) {
+            this.lightningColorTimer -= delta * 2.0;
+            if (this.lightningColorTimer < 0) this.lightningColorTimer = 0;
+        }
+
+        if (mat.userData && mat.userData.uColor && this.currentConfig) {
+            const baseColor = new THREE.Color(this.currentConfig.color);
+            if (this.lightningColorTarget && this.lightningColorTimer > 0) {
+                baseColor.lerp(this.lightningColorTarget, this.lightningColorTimer);
+            }
+            mat.userData.uColor.value.copy(baseColor);
         }
 
 

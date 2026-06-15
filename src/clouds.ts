@@ -150,10 +150,12 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
 
     // Use noiseVal to highlight the cloud's internal structure during flash
     const volumetricHighlight = noiseVal.add(0.5);
-    const flashFactor = uFlash.mul(attenuation).mul(volumetricHighlight).mul(lightIntensity);
+    // Include a height-based component (y-axis) so foreground/higher clouds flash more brightly
+    const heightBoost = positionWorld.y.div(50.0).add(1.0).clamp(0.5, 2.0);
+    const flashFactor = uFlash.mul(attenuation).mul(volumetricHighlight).mul(lightIntensity).mul(heightBoost);
 
-
-    const flashedColor = mix(finalColor, flashColor, flashFactor);
+    // Make the flash additive rather than just a mix for a more powerful volumetric explosion
+    const flashedColor = finalColor.add(flashColor.mul(flashFactor));
 
     let enhancedColor = flashedColor;
 
