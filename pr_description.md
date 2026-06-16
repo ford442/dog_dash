@@ -1,25 +1,24 @@
-## 🌌 Architect: Volumetric Lightning Storm Enhancement
+## 🌌 Architect: Plasma Storm Aurora Enhancement
 
 ### Concept
-> "1. Flying Through Multi-Layered Cloudscapes... Lightning flashes that briefly illuminate the cloud layers from within, creating dynamic lighting. The effect is a palpable sense of flying through a vast, three-dimensional atmosphere rather than just over a flat background."
+> "9. Dynamic Aurora Borealis / Plasma Storms... Shifting, colorful sky curtains implemented as wide procedural ribbons." We want to elevate this to Cosmic Architect standards by adding depth and dynamic lighting via TSL, turning it into a truly reactive plasma storm.
 
 ### Implementation
-- `src/lightning_bolt.ts` has been upgraded from simple 2D planes to full 3D `CylinderGeometry` bolts using TSL procedural distortions.
-- `src/clouds.ts` flash logic upgraded to be fully additive and height-weighted, giving depth to the flashes.
-- `src/godrays.ts` updated to temporarily shift god ray color temp towards the lightning strike color.
-- Dash speed directly impacts the spawn rate of the lightning, making storms reactive.
+- `src/aurora.ts` has been enhanced to react directly to player activity, elevating it to the 'Depth is King' standard.
+- The `AuroraSystem` now accepts `weaponLightManager` and `playerPos`, injecting them into the `createAuroraMaterial`.
+- `LevelManager.update()` passes the player's position into the aurora update loop.
+- The TSL `MeshBasicNodeMaterial` uses `length` and `smoothstep` to calculate proximity to the player and dynamic weapon projectiles.
 
 ### Visuals
-- Bolts now use `normalView` for soft edges, with procedural side branching built in to create jagged forks in 3D space.
-- The flash adds a massive volumetric emissive blast to the clouds using `finalColor.add(flashFactor)`.
-- Foreground clouds flash brighter than background clouds via a height-based component.
+- **Player Engine Glow:** A subtle brightening effect happens within the plasma ribbons whenever the player flies close to them.
+- **Weapon Lighting Interaction:** Projectiles passing near the ribbons trigger localized intense light bursts (Plasma Reactions), making the sky feel alive and reactive to combat.
 
 ### Integration
-- `src/godrays.ts`: Hooked up `lightningColorTimer` inside `update()` to smoothly lerp base godray color.
-- `src/level_manager.ts`: Bound `onBoltStrike` to `godRaySystem.triggerLightningFlash(1.0, color)` and passed `speed` to `lightningBoltSystem.update`.
-- `src/lightning_bolt.ts`: Receives player dash speed and dynamically boosts `currentDensity`.
+- `src/aurora.ts`: Modified `AuroraSystem` constructor, `update` method, and `createAuroraMaterial` to handle TSL lighting logic.
+- `src/game_systems.ts`: Passed `weaponLightManager` into `new AuroraSystem()`.
+- `src/level_manager.ts`: Passed `player.position` into `auroraSystem.update()` for real-time tracking.
 
 ### Testing
 - [x] `npm run build` passes
-- [x] Tested locally to verify behavior
-- [x] Mobile/touch controls still work
+- [x] Verified TSL uniform additions don't throw warnings
+- [x] Tested mathematically via static analysis to ensure smoothstep values don't clip

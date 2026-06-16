@@ -14,8 +14,11 @@ import {
     cos,
     float,
     smoothstep,
-    positionLocal
+    positionLocal,
+    positionWorld,
+    length
 } from 'three/tsl';
+import { WeaponLightManager } from './lighting';
 
 export type AuroraConfig = {
     enabled: boolean;
@@ -29,7 +32,7 @@ export type AuroraConfig = {
  * Creates a TSL material for an Aurora Borealis ribbon.
  * Features procedural sine-wave distortion and color blending.
  */
-function createAuroraMaterial() {
+function createAuroraMaterial(weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -69,7 +72,33 @@ function createAuroraMaterial() {
     const colorMix = sin(vUv.x.mul(5.0).add(t)).mul(0.5).add(0.5);
     const finalColor = mix(color(uColor1), color(uColor2), colorMix);
 
-    mat.colorNode = vec4(finalColor, finalAlpha);
+
+    // 4. Dynamic Lighting Interaction
+    let finalColorWithInteraction = finalColor;
+
+    // Player Engine Glow Interaction
+    if (uPlayerPos) {
+        const distToPlayer = length(positionWorld.sub(uPlayerPos));
+        // Add a subtle brightening when player is nearby
+        const playerGlow = smoothstep(150.0, 0.0, distToPlayer).mul(0.3);
+        finalColorWithInteraction = finalColorWithInteraction.add(vec3(0.5, 0.8, 1.0).mul(playerGlow));
+    }
+
+    // Weapon Projectile Interactions
+    if (weaponLights) {
+        for (let i = 0; i < 10; i++) {
+            const lightPos = weaponLights.positions[i];
+            const lightColor = weaponLights.colors[i];
+            const dist = length(positionWorld.sub(lightPos));
+
+            // Plasma storm reacts intensely to nearby projectiles
+            const lightFactor = smoothstep(80.0, 0.0, dist).mul(1.5);
+            finalColorWithInteraction = finalColorWithInteraction.add(lightColor.mul(lightFactor));
+        }
+    }
+
+    mat.colorNode = vec4(finalColorWithInteraction, finalAlpha);
+
 
     // Procedural geometry distortion (waving ribbons)
     const zOffset = sin(positionLocal.x.mul(0.05).add(t)).mul(10.0);
@@ -86,6 +115,8 @@ function createAuroraMaterial() {
 }
 
 export class AuroraSystem {
+    weaponLightManager?: WeaponLightManager;
+    uPlayerPos: any;
     scene: THREE.Scene;
     active: boolean = false;
 
@@ -99,12 +130,15 @@ export class AuroraSystem {
     currentConfig: AuroraConfig | null = null;
     globalIntensity: number = 0.0;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager?: WeaponLightManager) {
+        this.weaponLightManager = weaponLightManager;
+        this.uPlayerPos = uniform(new THREE.Vector3(9999, 9999, 9999));
         this.scene = scene;
 
         // Long, curved ribbon base geometry
         const geo = new THREE.PlaneGeometry(800, 100, 64, 8);
-        const mat = createAuroraMaterial();
+        const weaponLights = this.weaponLightManager ? this.weaponLightManager.getUniforms() : undefined;
+        const mat = createAuroraMaterial(weaponLights, this.uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.maxCount);
         this.mesh.frustumCulled = false;
@@ -154,7 +188,10 @@ export class AuroraSystem {
         // Let update() fade it out
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number = 8.0) {
+    update(delta: number, cameraX: number, playerSpeed: number = 8.0, playerPos?: THREE.Vector3) {
+        if (playerPos) {
+            this.uPlayerPos.value.copy(playerPos);
+        }
         const targetIntensity = this.active && this.currentConfig ? 1.0 : 0.0;
 
         if (Math.abs(this.globalIntensity - targetIntensity) > 0.01) {

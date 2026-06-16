@@ -370,7 +370,7 @@ export class LevelManager {
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined, isFiring, fireDir);
         if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
 
-        if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed);
+        if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed, player ? player.position : undefined);
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
