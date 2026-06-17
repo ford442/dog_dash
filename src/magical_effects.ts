@@ -8,6 +8,22 @@ import * as THREE from 'three';
 import { AudioSystem } from './audio_system';
 
 // =============================================================================
+// MAGIC EDITION SHADERS
+// =============================================================================
+
+import {
+  createPastelRainbowNebulaMaterial,
+  createDynamicAuroraMaterial,
+  createSolarSailsMaterial
+} from '../shaders/magical_edition';
+
+export const MagicalShaders = {
+  createPastelRainbowNebulaMaterial,
+  createDynamicAuroraMaterial,
+  createSolarSailsMaterial
+};
+
+// =============================================================================
 // EFFECT TYPE ENUM
 // =============================================================================
 

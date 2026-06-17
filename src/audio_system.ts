@@ -137,7 +137,8 @@ export class AudioSystem {
 
     // ========== VOICE LIMITER ==========
     private activeVoices: number = 0;
-    private readonly maxVoices: number = 8;
+    private readonly maxVoices: number = 32;
+    private activeVoiceNodes: Array<{ osc?: OscillatorNode, source?: AudioBufferSourceNode, gain: GainNode, priority: number, endTime: number, timeoutId?: any }> = [];
 
     // ========== REVERB ==========
     private reverbNode: DelayNode | null = null;
@@ -428,26 +429,53 @@ export class AudioSystem {
         const config = this.soundConfigs[type];
         if (!config) return;
 
-        // Voice limiting: skip low-priority sounds when at capacity
-        if (this.activeVoices >= this.maxVoices && priority < 8) return;
+        // Cleanup expired voices
+        const now = this.ctx.currentTime;
+        this.activeVoiceNodes = this.activeVoiceNodes.filter(v => v.endTime > now);
+        this.activeVoices = this.activeVoiceNodes.length;
+
+        // Voice limiting: stop lowest priority sound if at capacity
+        if (this.activeVoices >= this.maxVoices) {
+            // Find lowest priority voice
+            let lowestIdx = -1;
+            let lowestPri = priority;
+            for (let i = 0; i < this.activeVoiceNodes.length; i++) {
+                if (this.activeVoiceNodes[i].priority < lowestPri) {
+                    lowestIdx = i;
+                    lowestPri = this.activeVoiceNodes[i].priority;
+                }
+            }
+
+            if (lowestIdx !== -1) {
+                // Stop it
+                const voice = this.activeVoiceNodes[lowestIdx];
+                if (voice.osc) { try { voice.osc.stop(); } catch(e){} voice.osc.disconnect(); }
+                if (voice.source) { try { voice.source.stop(); } catch(e){} voice.source.disconnect(); }
+                voice.gain.disconnect();
+                if (voice.timeoutId) clearTimeout(voice.timeoutId);
+                this.activeVoiceNodes.splice(lowestIdx, 1);
+                this.activeVoices--;
+            } else {
+                // If this sound is lower priority than everything playing, skip it
+                return;
+            }
+        }
+        
         this.activeVoices++;
 
-        const duration = (config.decay || config.duration) * 1000 + 150;
-        setTimeout(() => {
-            this.activeVoices = Math.max(0, this.activeVoices - 1);
-        }, duration);
+        const durationSecs = (config.decay || config.duration);
 
         if (config.noise) {
-            this.playNoise(config, volumeMultiplier);
+            this.playNoise(config, volumeMultiplier, priority, durationSecs);
         } else {
-            this.playTone(config, volumeMultiplier);
+            this.playTone(config, volumeMultiplier, priority, durationSecs);
         }
     }
 
     /**
      * Play synthesized tone
      */
-    private playTone(config: SoundConfig, volumeMultiplier: number) {
+    private playTone(config: SoundConfig, volumeMultiplier: number, priority: number, durationSecs: number) {
         if (!this.ctx || !this.sfxGain) return;
 
         const osc = this.ctx.createOscillator();
@@ -465,7 +493,6 @@ export class AudioSystem {
         }
 
         // Envelope with custom decay if specified
-        const decay = config.decay || config.duration;
         gain.gain.setValueAtTime(0, this.ctx.currentTime);
         gain.gain.linearRampToValueAtTime(
             config.volume * volumeMultiplier, 
@@ -473,7 +500,7 @@ export class AudioSystem {
         );
         gain.gain.exponentialRampToValueAtTime(
             0.001, 
-            this.ctx.currentTime + decay
+            this.ctx.currentTime + durationSecs
         );
 
         osc.connect(gain);
@@ -490,24 +517,30 @@ export class AudioSystem {
         osc.start(this.ctx.currentTime);
         osc.stop(this.ctx.currentTime + config.duration);
 
+        const voiceEntry = {
+            osc,
+            gain,
+            priority,
+            endTime: this.ctx.currentTime + durationSecs + 0.1,
+            timeoutId: setTimeout(() => {
+                osc.disconnect();
+                gain.disconnect();
+            }, durationSecs * 1000 + 100)
+        };
+        this.activeVoiceNodes.push(voiceEntry);
+
         // Play harmonics for magical sounds
         if (config.harmonics) {
             config.harmonics.forEach((harmonicFreq, index) => {
-                this.playHarmonic(harmonicFreq, config, volumeMultiplier, index * 0.02);
+                this.playHarmonic(harmonicFreq, config, volumeMultiplier, index * 0.02, priority, durationSecs);
             });
         }
-
-        // Cleanup
-        setTimeout(() => {
-            osc.disconnect();
-            gain.disconnect();
-        }, config.duration * 1000 + 100);
     }
 
     /**
      * Play a harmonic overtone for magical shimmer effect
      */
-    private playHarmonic(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number) {
+    private playHarmonic(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number, priority: number, baseDurationSecs: number) {
         if (!this.ctx || !this.sfxGain) return;
 
         const osc = this.ctx.createOscillator();
@@ -517,7 +550,7 @@ export class AudioSystem {
         osc.frequency.setValueAtTime(frequency, this.ctx.currentTime + delay);
 
         const harmonicVolume = config.volume * volumeMultiplier * 0.3;
-        const decay = (config.decay || config.duration) * 0.8;
+        const decay = baseDurationSecs * 0.8;
 
         gain.gain.setValueAtTime(0, this.ctx.currentTime + delay);
         gain.gain.linearRampToValueAtTime(harmonicVolume, this.ctx.currentTime + delay + 0.01);
@@ -529,16 +562,23 @@ export class AudioSystem {
         osc.start(this.ctx.currentTime + delay);
         osc.stop(this.ctx.currentTime + config.duration + delay);
 
-        setTimeout(() => {
-            osc.disconnect();
-            gain.disconnect();
-        }, (config.duration + delay) * 1000 + 100);
+        const voiceEntry = {
+            osc,
+            gain,
+            priority: priority - 1, // Harmonics are lower priority
+            endTime: this.ctx.currentTime + config.duration + delay + 0.1,
+            timeoutId: setTimeout(() => {
+                osc.disconnect();
+                gain.disconnect();
+            }, (config.duration + delay) * 1000 + 100)
+        };
+        this.activeVoiceNodes.push(voiceEntry);
     }
 
     /**
      * Play noise burst (for explosions)
      */
-    private playNoise(config: SoundConfig, volumeMultiplier: number) {
+    private playNoise(config: SoundConfig, volumeMultiplier: number, priority: number, durationSecs: number) {
         if (!this.ctx || !this.sfxGain) return;
 
         const bufferSize = this.ctx.sampleRate * config.duration;
@@ -580,6 +620,18 @@ export class AudioSystem {
         }
 
         noise.start(this.ctx.currentTime);
+
+        const voiceEntry = {
+            source: noise,
+            gain,
+            priority,
+            endTime: this.ctx.currentTime + config.duration + 0.1,
+            timeoutId: setTimeout(() => {
+                noise.disconnect();
+                gain.disconnect();
+            }, config.duration * 1000 + 100)
+        };
+        this.activeVoiceNodes.push(voiceEntry);
     }
 
     // ============================================================
@@ -1494,20 +1546,23 @@ export class AudioSystem {
 
         // Base drone pitch + volume
         if (this.engineDroneNode) {
-            const baseFreq = isBoosting ? 80 + absSpeed * 2.5 : 55 + absSpeed * 1.8;
-            this.engineDroneNode.frequency.setTargetAtTime(baseFreq, now, 0.1);
+            // Tie pitch distinctly: diving (speedY < 0) drops pitch to simulate deep boom/sweep
+            const baseFreq = isBoosting ? 80 + absSpeed * 2.5 : (currentSpeedY < -10 ? 30 + (22 - absSpeed) * 1.5 : 55 + absSpeed * 1.8);
+            this.engineDroneNode.frequency.setTargetAtTime(baseFreq, now, currentSpeedY < -10 ? 0.3 : 0.1);
         }
         if (this.engineBaseGain) {
             let baseVol = 0.035 + speedRatio * 0.035;
             if (isMovingUp) baseVol += 0.015;
             if (isBoosting) baseVol += 0.025;
+            // distinct boom for fast diving
+            if (currentSpeedY < -15) baseVol += 0.04;
             this.engineBaseGain.gain.setTargetAtTime(baseVol, now, 0.1);
         }
 
         // Thrust layer: brighter when moving up or boosting
         if (this.engineThrustNode) {
             const thrustFreq = isBoosting ? 400 + absSpeed * 8
-                : (isMovingUp ? 240 + absSpeed * 6 : (isMovingDown ? 80 : 140));
+                : (isMovingUp ? 240 + absSpeed * 6 : (currentSpeedY < -10 ? 60 : 140));
             this.engineThrustNode.frequency.setTargetAtTime(thrustFreq, now, 0.1);
         }
         if (this.engineThrustGain) {
@@ -1516,6 +1571,9 @@ export class AudioSystem {
                 thrustVol = 0.1 + speedRatio * 0.06;
             } else if (isMovingUp) {
                 thrustVol = 0.05 + speedRatio * 0.04;
+            } else if (currentSpeedY < -15) {
+                // sonic boom resonance
+                thrustVol = 0.06;
             } else if (isMovingDown) {
                 thrustVol = 0.008;
             } else {
@@ -1529,20 +1587,20 @@ export class AudioSystem {
             let whooshVol = 0;
             if (isBoosting) {
                 whooshVol = 0.08 + speedRatio * 0.04;
-            } else if (isMovingDown && currentSpeedY < -5) {
-                whooshVol = 0.03 + (Math.abs(currentSpeedY) - 5) * 0.007;
+            } else if (currentSpeedY < -10) {
+                whooshVol = 0.05 + (absSpeed - 10) * 0.015; // distinct sweep
             } else if (absSpeed > 12) {
                 whooshVol = 0.015;
             }
-            this.engineWhooshGain.gain.setTargetAtTime(Math.min(whooshVol, 0.15), now, 0.1);
+            this.engineWhooshGain.gain.setTargetAtTime(Math.min(whooshVol, 0.2), now, 0.1);
         }
 
-        // Filter opens wide when boosting or thrusting
+        // Filter opens wide when boosting or thrusting, or creates a deep sweep when diving
         if (this.engineFilter) {
             const filterFreq = isBoosting
                 ? 1200 + absSpeed * 40
-                : (isMovingUp ? 700 + absSpeed * 25 : (isMovingDown ? 250 + absSpeed * 8 : 450));
-            this.engineFilter.frequency.setTargetAtTime(filterFreq, now, 0.2);
+                : (isMovingUp ? 700 + absSpeed * 25 : (currentSpeedY < -10 ? 150 + absSpeed * 5 : 450));
+            this.engineFilter.frequency.setTargetAtTime(filterFreq, now, currentSpeedY < -10 ? 0.4 : 0.2);
         }
     }
 
@@ -1645,6 +1703,86 @@ export class AudioSystem {
     playWhoosh(speed: number): void {
         const volume = Math.min(speed / 10, 1) * 0.5;
         this.play('whoosh', volume);
+    }
+
+    /**
+     * Play unique FM synthesis patches for new alien flora.
+     * Uses FM (frequency modulation) to create organic, chime-like, bell-like, or squishy sounds.
+     */
+    playFlora(size: number, energy: number): void {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        // Voice limit check for manual nodes (FM needs 2 nodes)
+        const now = this.ctx.currentTime;
+        this.activeVoiceNodes = this.activeVoiceNodes.filter(v => v.endTime > now);
+        if (this.activeVoiceNodes.length >= this.maxVoices - 1) return;
+
+        // Carrier oscillator
+        const carrier = this.ctx.createOscillator();
+        const carrierGain = this.ctx.createGain();
+        
+        // Modulator oscillator
+        const modulator = this.ctx.createOscillator();
+        const modulatorGain = this.ctx.createGain();
+
+        // Base frequency varies by flora size (smaller = higher pitch)
+        const baseFreq = 400 + (1.0 - size) * 800;
+        
+        // FM Synthesis setup
+        carrier.type = 'sine';
+        carrier.frequency.setValueAtTime(baseFreq, now);
+
+        modulator.type = 'sine';
+        // The harmonicity ratio (modulator freq / carrier freq)
+        // Adjust based on energy for different timbers (bell-like vs metallic)
+        const ratio = 1.414 + energy * 0.5; 
+        modulator.frequency.setValueAtTime(baseFreq * ratio, now);
+
+        // Modulation index (depth)
+        const modulationIndex = 2 + energy * 3;
+        modulatorGain.gain.setValueAtTime(baseFreq * ratio * modulationIndex, now);
+
+        // Connect modulator to carrier frequency
+        modulator.connect(modulatorGain);
+        modulatorGain.connect(carrier.frequency);
+
+        // Envelope for carrier (the actual sound envelope)
+        const duration = 0.5 + size * 0.5;
+        carrierGain.gain.setValueAtTime(0, now);
+        carrierGain.gain.linearRampToValueAtTime(0.2 + energy * 0.1, now + 0.05);
+        carrierGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+        // Routing
+        carrier.connect(carrierGain);
+        carrierGain.connect(this.sfxGain);
+
+        if (this.reverbSend) {
+            const revGain = this.ctx.createGain();
+            revGain.gain.value = 0.3;
+            carrierGain.connect(revGain);
+            revGain.connect(this.reverbSend);
+        }
+
+        // Start/Stop
+        carrier.start(now);
+        modulator.start(now);
+        carrier.stop(now + duration);
+        modulator.stop(now + duration);
+
+        // Track voices
+        this.activeVoiceNodes.push({
+            osc: carrier,
+            gain: carrierGain,
+            priority: 6,
+            endTime: now + duration + 0.1
+        });
+        this.activeVoiceNodes.push({
+            osc: modulator,
+            gain: modulatorGain,
+            priority: 6,
+            endTime: now + duration + 0.1
+        });
     }
 
     /**

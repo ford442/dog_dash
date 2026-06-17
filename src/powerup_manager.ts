@@ -713,6 +713,7 @@ export interface PowerUpManagerOptions {
     particleSystem: ParticleSystem;
     audioSystem?: AudioSystem;
     rocket?: THREE.Group;
+    dogController?: any; // Add dogController here
     onPowerUpStart?: (type: PowerUpType, config: PowerUpConfig) => void;
     onPowerUpEnd?: (type: PowerUpType, config: PowerUpConfig) => void;
     onOrbCountChange?: (count: number, needed: number) => void;
@@ -723,6 +724,7 @@ export class PowerUpManager {
     private particleSystem: ParticleSystem;
     private audioSystem?: AudioSystem;
     private rocket?: THREE.Group;
+    private dogController?: any;
     
     // Active effects
     activeEffects: Map<PowerUpType, PowerUpEffect>;
@@ -752,6 +754,7 @@ export class PowerUpManager {
         this.particleSystem = options.particleSystem;
         this.audioSystem = options.audioSystem;
         this.rocket = options.rocket;
+        this.dogController = options.dogController;
         
         this.activeEffects = new Map();
         this.effectMeshes = new Map();
@@ -838,6 +841,23 @@ export class PowerUpManager {
         // Play sound
         if (this.audioSystem) {
             this.audioSystem.play('powerup');
+        }
+
+        // Trigger dog dance and emit appropriate particle effects upon collection
+        const powerUpCfg = POWER_UP_CONFIGS[type];
+        if (this.dogController) {
+            // Assumes DogAnimationState.POWER_UP = 'power_up'
+            this.dogController.triggerAnimation('power_up', 2.0);
+        }
+        if (this.rocket) {
+            this.particleSystem.emit(
+                this.rocket.position.clone(),
+                powerUpCfg.color || 0xffd700,
+                15,
+                4.0,
+                0.8,
+                0.5
+            );
         }
         
         // Callback
@@ -1517,6 +1537,13 @@ export class PowerUpManager {
             this.particleSystem.emit(worldPos, 0xff69b4, 8, 3.5, 0.5, 0.6);
             this.particleSystem.emit(worldPos, 0xffffff, 4, 2.5, 0.4, 0.4);
         }
+    }
+
+    /**
+     * Set the dog controller reference
+     */
+    setDogController(dogController: any): void {
+        this.dogController = dogController;
     }
 
     /**

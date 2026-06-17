@@ -2,14 +2,17 @@
  (type $0 (func (param i32) (result i32)))
  (type $1 (func (param i32 i32) (result i32)))
  (type $2 (func (param i32 i32)))
- (type $3 (func (param f32 f32 f32 i32) (result i32)))
- (type $4 (func (param i32 i32 i32 i32)))
- (type $5 (func (param i32 i32 i64)))
- (type $6 (func))
+ (type $3 (func))
+ (type $4 (func (param f32 f32 f32 i32) (result i32)))
+ (type $5 (func (param i32 i32 i32 i32)))
+ (type $6 (func (param i32 i32 i64)))
  (type $7 (func (param i32 i32 i32)))
  (type $8 (func (param i32 i32 i32) (result i32)))
- (type $9 (func (param f32 f32 f32 f32 i32) (result i32)))
+ (type $9 (func (result i32)))
+ (type $10 (func (param f32 f32 f32 f32 i32) (result i32)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
+ (global $assembly/index/objectsPtr (mut i32) (i32.const 0))
+ (global $assembly/index/objectsCapacity (mut i32) (i32.const 0))
  (global $assembly/index/asteroidsPtr (mut i32) (i32.const 0))
  (global $assembly/index/asteroidsCapacity (mut i32) (i32.const 0))
  (global $assembly/index/sporeCloudsPtr (mut i32) (i32.const 0))
@@ -22,6 +25,9 @@
  (data $0.1 (i32.const 1048) "\02\00\00\00\1e\00\00\00~\00l\00i\00b\00/\00r\00t\00/\00t\00l\00s\00f\00.\00t\00s")
  (data $1 (i32.const 1100) "<")
  (data $1.1 (i32.const 1112) "\02\00\00\00(\00\00\00A\00l\00l\00o\00c\00a\00t\00i\00o\00n\00 \00t\00o\00o\00 \00l\00a\00r\00g\00e")
+ (export "allocObjects" (func $assembly/index/allocObjects))
+ (export "freeObjects" (func $assembly/index/freeObjects))
+ (export "getObjectPtr" (func $assembly/index/getObjectPtr))
  (export "allocAsteroids" (func $assembly/index/allocAsteroids))
  (export "allocSporeClouds" (func $assembly/index/allocSporeClouds))
  (export "checkCollision" (func $assembly/index/checkCollision))
@@ -1118,6 +1124,77 @@
   local.get $0
   i32.const 4
   i32.add
+ )
+ (func $assembly/index/allocObjects (param $0 i32) (result i32)
+  (local $1 i32)
+  local.get $0
+  global.get $assembly/index/objectsCapacity
+  i32.gt_s
+  if
+   local.get $0
+   i32.const 4
+   i32.shl
+   local.set $1
+   global.get $assembly/index/objectsCapacity
+   if (result i32)
+    global.get $assembly/index/objectsPtr
+    local.get $1
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $1
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/index/objectsPtr
+   local.get $0
+   global.set $assembly/index/objectsCapacity
+  end
+  global.get $assembly/index/objectsPtr
+ )
+ (func $assembly/index/freeObjects
+  (local $0 i32)
+  (local $1 i32)
+  global.get $assembly/index/objectsPtr
+  if
+   global.get $assembly/index/objectsPtr
+   local.tee $1
+   i32.const 33932
+   i32.ge_u
+   if
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.set $0
+    local.get $1
+    call $~lib/rt/tlsf/checkUsedBlock
+    local.tee $1
+    local.get $1
+    i32.load
+    i32.const 1
+    i32.or
+    i32.store
+    local.get $0
+    local.get $1
+    call $~lib/rt/tlsf/insertBlock
+   end
+   i32.const 0
+   global.set $assembly/index/objectsPtr
+   i32.const 0
+   global.set $assembly/index/objectsCapacity
+  end
+ )
+ (func $assembly/index/getObjectPtr (result i32)
+  global.get $assembly/index/objectsPtr
  )
  (func $assembly/index/allocAsteroids (param $0 i32) (result i32)
   (local $1 i32)

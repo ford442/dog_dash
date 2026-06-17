@@ -42,6 +42,9 @@ export interface CoreWasmExports {
     checkSporeCollision(playerX: number, playerY: number, playerZ: number, playerRadius: number, objectCount: number): number;
     allocBossHitboxes(count: number): number;
     checkBossCollision(projX: number, projY: number, projRadius: number, hitboxCount: number): number;
+    allocObjects(count: number): number;
+    freeObjects(): void;
+    getObjectPtr(): number;
 }
 
 /** Extra exports available only in the C++ backend. */

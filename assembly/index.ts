@@ -1,3 +1,32 @@
+// --- GENERIC OBJECT ALLOCATOR ---
+let objectsPtr: usize = 0;
+let objectsCapacity: i32 = 0;
+
+export function allocObjects(count: i32): usize {
+  const requiredBytes = count * 16; // 4 floats (x, y, z, radius) per object
+  if (count > objectsCapacity) {
+    if (objectsCapacity == 0) {
+      objectsPtr = heap.alloc(requiredBytes);
+    } else {
+      objectsPtr = heap.realloc(objectsPtr, requiredBytes);
+    }
+    objectsCapacity = count;
+  }
+  return objectsPtr;
+}
+
+export function freeObjects(): void {
+  if (objectsPtr != 0) {
+    heap.free(objectsPtr);
+    objectsPtr = 0;
+    objectsCapacity = 0;
+  }
+}
+
+export function getObjectPtr(): usize {
+  return objectsPtr;
+}
+
 // Memory management for asteroid data
 // We use a global buffer to store the asteroid data (x, y, radius)
 // This prevents overwriting the stack or other globals at offset 0

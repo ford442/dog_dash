@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GhostDebrisSystem } from './ghost_debris';
-import { godRaySystem, auroraSystem } from './game_systems';
+import { godRaySystem, auroraSystem, blackHoleSystem } from './game_systems';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
 import { 
@@ -689,6 +689,7 @@ playerState.autoScrollSpeed = saveManager.applyToSpeed(8);
 // NEW MANAGERS (Swarm #2)
 const dogController = new DogCockpitController();
 const hudManager = new HUDManager(saveManager);
+powerUpManager.setDogController(dogController);
 
 // "Good Dog!" score multiplier (granted by rescuing a Moon Pup)
 let scoreMultiplierUntil = 0;
@@ -3298,6 +3299,25 @@ function animate() {
     // Update Re-Entry System
     if (player && debugSystem.isEnabled('reEntry')) {
         reEntrySystem.update(delta, camera.position.x, camera.position.y, player);
+    }
+
+    // BLACK HOLE SYSTEM (Level 2 environmental hazard)
+    if (player && debugSystem.isEnabled('blackHole')) {
+        blackHoleSystem.update(delta, camera.position.x, player.position);
+
+        // Gentle player gravity pull (very light bias on desired velocity)
+        const yPull = blackHoleSystem.getPlayerPullForce(player.position);
+        if (yPull !== 0 && playerState.desiredVelocityY !== undefined) {
+            playerState.desiredVelocityY += yPull;
+        }
+
+        // Projectile accretion-disk feedback (capped internally)
+        const projectiles = weaponSystem.getActiveProjectiles();
+        if (projectiles.length > 0) {
+            blackHoleSystem.handleProjectileInteractions(projectiles, particleSystem, () => {
+                if (juiceManager) juiceManager.triggerScreenShake(0.6);
+            });
+        }
     }
 
     // Update Level Manager (and Clouds)
