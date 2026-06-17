@@ -18,6 +18,7 @@ import { GodRaySystem } from './godrays';
 import { AuroraSystem } from './aurora';
 import { NebulaSystem } from './nebula';
 import { CosmicDustSystem } from './cosmic_dust';
+import { BlackHoleSystem } from './black_hole';
 import { BiologicalBackgroundSystem } from './biological_background';
 import { LiquidMetalSystem } from './geological';
 import { BossManager } from './boss_system';
@@ -285,3 +286,6 @@ export const chromaShiftSystem = new ChromaShiftSystem(scene);
 
 // STORM GEODE SYSTEM
 export const stormGeodeSystem = new StormGeodeSystem(scene);
+
+// BLACK HOLE SYSTEM (Galactic Core)
+export const blackHoleSystem = new BlackHoleSystem(scene);
