@@ -228,8 +228,6 @@ export class CloudLayer {
             width: number,
             detail?: number,
             weaponLights?: any,
-            uPlayerPos?: any,
-            weaponLights?: any,
             uPlayerPos?: any
         }
     ) {
