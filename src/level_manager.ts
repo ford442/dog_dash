@@ -36,6 +36,7 @@ import { playerState } from './game_config';
 import { player } from './player_loader';
 import { moonPlants, disposeObject } from './environment';
 import {
+    blackHoleSystem,
     waterfallSystem,
     industrialSystem,
     chromaShiftSystem,
@@ -293,6 +294,12 @@ export class LevelManager {
             this.ghostDebrisSystem.deactivate();
         }
 
+
+        if (levelIndex === 2) {
+            blackHoleSystem.activate();
+        } else {
+            blackHoleSystem.deactivate();
+        }
         if (levelIndex === 5) {
             // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
@@ -365,6 +372,7 @@ export class LevelManager {
         if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
+        if (blackHoleSystem) blackHoleSystem.update(delta, cameraX);
         if (enabled('chromaShift')) chromaShiftSystem.update(delta, player ? player.position : undefined);
         if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, player ? player.position : undefined);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined, isFiring, fireDir);

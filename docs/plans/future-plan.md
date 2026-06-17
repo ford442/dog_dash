@@ -103,3 +103,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` driving position offsets `positionLocal` to warp the geometry.
 - The animation speed organically reacts to the player's dashing speed to heighten the sense of momentum.
 - Deployed via LevelManager and configured through `level_config.ts`.
+
+10. Approaching a Galactic Core / Accretion Disk
+
+**The Technique:** A massive, slowly spinning black hole or quasar in the deep background, surrounded by an intensely glowing accretion disk that warps and distorts due to gravitational lensing. Uses slow parallax to emphasize distance.
+
+**Specific Example:**
+- A dark sphere in the center representing the event horizon.
+- A wide, flat RingGeometry representing the accretion disk, using TSL shaders with radial noise and fiery colors.
+- Additive blending for the disk, and a secondary "halo" sprite to simulate gravitational lensing glow around the edge.
+- The disk rotates and billows using procedural noise and time.
