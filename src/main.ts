@@ -54,6 +54,8 @@ import {
   generateEnvironment,
   // Canonical geological helpers + cleanup (single copy; adds to shared scene)
   sporeClouds,
+  jellyMosses,
+  solarSails,
   geodes,
   voidRootBalls,
   vacuumKelps,
@@ -3260,19 +3262,21 @@ function animate() {
         }
 
         // Update solar sails (iridescent rippling, unfold near player)
-        solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
+        if (player) {
+            solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
 
-        // Update new geological objects from plan.md
-        voidRootBalls.forEach(rootBall => {
-            const interaction = updateVoidRootBall(rootBall, delta, time, player);
-            if (interaction.isLatched) {
-                playerState.velocity.add(interaction.force);
-                // Visual feedback
-                if (interaction.hitPoint && Math.random() < 0.2) {
-                    particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
+            // Update new geological objects from plan.md
+            voidRootBalls.forEach(rootBall => {
+                const interaction = updateVoidRootBall(rootBall, delta, time, player);
+                if (interaction.isLatched) {
+                    playerState.velocity.add(interaction.force);
+                    // Visual feedback
+                    if (interaction.hitPoint && Math.random() < 0.2) {
+                        particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
+                    }
                 }
-            }
-        });
+            });
+        }
         vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
         iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
 
