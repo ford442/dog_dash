@@ -15,6 +15,11 @@ export const SPECIES_NAMES: Record<string, string> = {
     vine: 'Wisteria Vine',
     mushroom: 'Puffball Mushroom',
     orb: 'Floating Orb',
+    // Geological species (now scannable for objectives)
+    voidRootBall: 'Void Root Ball',
+    magmaHeart: 'Magma Heart',
+    iceNeedleCluster: 'Ice Needle Cluster',
+    gravityAnchor: 'Gravity Anchor',
 };
 
 const SCAN_RADIUS = 12;

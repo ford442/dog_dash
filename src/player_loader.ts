@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { scene } from './scene_setup';
+import { scene } from './scene_context';
 import { CONFIG } from './game_config';
 
 // =============================================================================

@@ -263,46 +263,10 @@ export class LevelManager {
             lightningBoltSystem.deactivate();
         }
 
-        if (levelIndex === 1) {
-            this.butterflySwarmSystem.activate();
-        } else {
-            this.butterflySwarmSystem.deactivate();
-        }
-
-        if (levelIndex === 3) {
-            planetaryHorizonSystem.levelDistance = levelLength;
-            planetaryHorizonSystem.activate();
-            reEntrySystem.levelDistance = levelLength;
-            reEntrySystem.activate();
-
-            if (this.friendsManager && cfg.objective?.type === 'rescue') {
-                this.friendsManager.spawnTrappedFriendsAlong(
-                    playerX + 100,
-                    levelLength - 200,
-                    cfg.objective.target
-                );
-            }
-        } else {
-            planetaryHorizonSystem.deactivate();
-            if (levelIndex !== 3) reEntrySystem.deactivate();
-        }
-
         if (cfg.meteorShower) {
             meteorShowerSystem.activate();
         } else {
             meteorShowerSystem.deactivate();
-        }
-
-        if (levelIndex === 4) {
-            industrialSystem.activate();
-        } else {
-            industrialSystem.deactivate();
-        }
-
-        if (levelIndex === 6) {
-            waterfallSystem.activate();
-        } else {
-            waterfallSystem.deactivate();
         }
 
         if (cfg.asteroidRate && cfg.asteroidRate > 0) {
@@ -321,23 +285,80 @@ export class LevelManager {
             this.ghostDebrisSystem.deactivate();
         }
 
-        if (levelIndex === 2) {
-            blackHoleSystem.activate();
-        } else {
-            blackHoleSystem.deactivate();
-        }
+        // Environment / background system toggles driven by LevelConfig.environments.
+        // Replaces previous `if (levelIndex === N)` blocks. Allows composition and
+        // new levels without code changes here.
+        const environments = cfg.environments || {};
+        const applyEnv = (flag: string, activate: () => void, deactivate: () => void) => {
+            if (environments[flag as keyof typeof environments]) {
+                activate();
+            } else {
+                deactivate();
+            }
+        };
 
-        if (levelIndex === 5) {
-            biologicalSystem.activate();
-            nebulaSystem.activate();
-            cosmicDustSystem.activate();
-            this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
-        } else {
-            biologicalSystem.deactivate();
-            nebulaSystem.deactivate();
-            cosmicDustSystem.deactivate();
-            if (levelIndex !== 4) {
-                this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
+        applyEnv('butterflySwarm',
+            () => this.butterflySwarmSystem.activate(),
+            () => this.butterflySwarmSystem.deactivate()
+        );
+
+        applyEnv('blackHole',
+            () => blackHoleSystem.activate(),
+            () => blackHoleSystem.deactivate()
+        );
+
+        applyEnv('industrial',
+            () => industrialSystem.activate(),
+            () => industrialSystem.deactivate()
+        );
+
+        applyEnv('waterfall',
+            () => waterfallSystem.activate(),
+            () => waterfallSystem.deactivate()
+        );
+
+        applyEnv('planetaryHorizon',
+            () => {
+                planetaryHorizonSystem.levelDistance = levelLength;
+                planetaryHorizonSystem.activate();
+            },
+            () => planetaryHorizonSystem.deactivate()
+        );
+
+        applyEnv('reEntry',
+            () => {
+                reEntrySystem.levelDistance = levelLength;
+                reEntrySystem.activate();
+            },
+            () => reEntrySystem.deactivate()
+        );
+
+        applyEnv('biological',
+            () => {
+                biologicalSystem.activate();
+                nebulaSystem.activate();
+                cosmicDustSystem.activate();
+                this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
+            },
+            () => {
+                biologicalSystem.deactivate();
+                nebulaSystem.deactivate();
+                cosmicDustSystem.deactivate();
+                if (levelIndex !== 4) {
+                    this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
+                }
+            }
+        );
+
+        // Level 3 rescue objective friends spawn (kept with level guard for exact prior behavior;
+        // objective-driven but historically only on level 3).
+        if (levelIndex === 3) {
+            if (this.friendsManager && cfg.objective?.type === 'rescue') {
+                this.friendsManager.spawnTrappedFriendsAlong(
+                    playerX + 100,
+                    levelLength - 200,
+                    cfg.objective.target
+                );
             }
         }
 
@@ -519,6 +540,70 @@ export class LevelManager {
         if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange, foliageZ, 'vine');
         if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange, foliageZ, 'mushroom');
         if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange, foliageZ, 'orb');
+
+        // --- Vignette clusters for composed set dressing (after uniform scatter) ---
+        // At least tree groves + rose arches implemented. Cheap reuse of factories.
+        // Respects objectDensityMultiplier via vignetteCount. Uses passed yRange for tunnels.
+        const vignettes = levelConfig.vignettes || {};
+        const vignetteCount = (base: number | undefined) =>
+            base ? Math.max(0, Math.floor(scaledCount(base * (width / 100)))) : 0;
+
+        // Tree groves: 3-6 trees in ~14 unit X cluster, shared tight Y band
+        if ((vignettes.treeGroves || 0) > 0 && (density.tree || density.floweringTree)) {
+            const nGroves = vignetteCount(vignettes.treeGroves);
+            for (let g = 0; g < nGroves; g++) {
+                const gx = startX + Math.random() * width;
+                const gY = treeYRange[0] + Math.random() * (treeYRange[1] - treeYRange[0]);
+                const gSize = 3 + Math.floor(Math.random() * 4);
+                const gZ = randomZInRange(foliageZ);
+                const isFlowering = density.floweringTree && (Math.random() < 0.5 || !density.tree);
+                for (let t = 0; t < gSize; t++) {
+                    const tx = gx + (Math.random() - 0.5) * 14;
+                    const ty = gY + (Math.random() - 0.5) * 2.5;
+                    const tz = gZ + (Math.random() - 0.5) * 2;
+                    const creator = isFlowering
+                        ? () => createFloweringTree({ color: 0xffaa44 })
+                        : () => createFloweringTree({ color: 0x44ffaa });
+                    const obj = creator();
+                    obj.position.set(tx, ty, tz);
+                    const s = 0.75 + Math.random() * 0.35;
+                    obj.scale.set(s, s, s);
+                    obj.userData.speciesId = isFlowering ? 'floweringTree' : 'tree';
+                    this.scene.add(obj);
+                    this.levelObjects.push(obj);
+                    moonPlants.push(obj);
+                }
+            }
+        }
+
+        // Rose arches: pairs offset in X/Z framing a vertical gap (encourages diving)
+        if ((vignettes.roseArches || 0) > 0 && density.rose) {
+            const nArches = vignetteCount(vignettes.roseArches);
+            for (let a = 0; a < nArches; a++) {
+                const ax = startX + Math.random() * width;
+                const az = randomZInRange(foliageZ);
+                const gapY = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+                const sep = 5.5 + Math.random() * 3.5;
+                // lower of pair
+                const obj1 = createNebulaRose({ color: 0xFF1493 });
+                obj1.position.set(ax - 1.5, gapY - sep * 0.5, az - 0.8);
+                let s = 0.65 + Math.random() * 0.25;
+                obj1.scale.set(s, s, s);
+                obj1.userData.speciesId = 'rose';
+                this.scene.add(obj1);
+                this.levelObjects.push(obj1);
+                moonPlants.push(obj1);
+                // upper of pair
+                const obj2 = createNebulaRose({ color: 0xFF1493 });
+                obj2.position.set(ax + 1.5, gapY + sep * 0.5, az + 0.8);
+                s = 0.65 + Math.random() * 0.25;
+                obj2.scale.set(s, s, s);
+                obj2.userData.speciesId = 'rose';
+                this.scene.add(obj2);
+                this.levelObjects.push(obj2);
+                moonPlants.push(obj2);
+            }
+        }
 
         if (density.cloud) {
             const targetCount = Math.min(

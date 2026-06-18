@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { canvas, camera } from './scene_setup';
+import { canvas, camera } from './scene_context';
 import { player } from './player_loader';
 import { playerState } from './game_config';
 import { createUI, setupKeyboardControls, updateHealthDisplay } from './ui_controls';

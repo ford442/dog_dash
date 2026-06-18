@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GhostDebrisSystem } from './ghost_debris';
-import { godRaySystem, auroraSystem, blackHoleSystem } from './game_systems';
+import { godRaySystem, auroraSystem, blackHoleSystem, createGameManagers } from './game_systems';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
 import { 
@@ -50,7 +50,45 @@ import { BiologicalBackgroundSystem } from './biological_background';
 import { AtmosphereSystem } from './sky';
 import { WeaponSystem } from './weapons';
 import { WeaponLightManager } from './lighting';
-import { generateEnvironment } from './environment';
+import {
+  generateEnvironment,
+  // Canonical geological helpers + cleanup (single copy; adds to shared scene)
+  sporeClouds,
+  geodes,
+  voidRootBalls,
+  vacuumKelps,
+  iceNeedleClusters,
+  magmaHearts,
+  gravityAnchors,
+  createSporeCloudAtPosition,
+  createGeodeAtPosition,
+  createVoidRootBallAtPosition,
+  createVacuumKelpAtPosition,
+  createIceNeedleClusterAtPosition,
+  createMagmaHeartAtPosition,
+  createLiquidMetalBlobAtPosition,
+  cleanupGeologicalObjects,
+
+} from './environment';
+import {
+  scene,
+  camera,
+  canvas,
+  mainLight,
+  rimLight,
+  accentLight1,
+  accentLight2,
+  ambientLight,
+  renderer,
+  rendererBackend,
+  requestedRendererBackend,
+  rendererFallbackReason,
+  touchControls,
+  touchSettingsBtn,
+  initializeSceneAndRenderer,
+  attachLightsAndEnv,
+} from './scene_context';
+import { player, playerLoadCallbacks } from './player_loader';
 import { IndustrialGeometryManager } from './industrial_geometry';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
 import { ObstacleSystem } from './obstacle_system';
@@ -67,27 +105,16 @@ import { SlingObjectiveManager } from './sling_objective';
 import { StarfieldSystem } from './stars';
 import { OrbManager, OrbType } from './collectibles';
 import { PowerUpManager, PowerUpType } from './powerup_manager';
-import { FriendsManager, FlotillaMember } from './space_friends';
+import { FlotillaMember } from './space_friends';
 import { AquaticLifeManager } from './aquatic_life';
 import { DogCockpitController, DogAnimationState, DogAccessory } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType, BurstType } from './juice_effects';
-import { ConstellationManager, FlowerType } from './flower_constellations';
-import { CandyBeltManager, CandyType } from './candy_obstacles';
-import { CastleBackgroundManager } from './cloud_castles';
 import { EffectManager, MagicalEffectType } from './magical_effects';
 import { 
     TouchControlsManager, 
-    ControlMode, 
-    TouchInput,
-    detectTouchDevice,
-    getRecommendedControlMode
+    TouchInput
 } from './touch_controls';
-import { 
-    createTouchSettingsButton,
-    showTouchSettings,
-    loadTouchSettings
-} from './touch_settings';
 import { VictorySystem, VictoryState } from './victory_system';
 import { TutorialSystem, TutorialStep, shouldShowTutorial } from './tutorial_system';
 import type { NebulaKraken } from './space_robot_squid';
@@ -95,7 +122,6 @@ import { BOSS_DISPLAY_NAME } from './space_robot_squid';
 import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
 import { TetherSystem } from './tether_system';
-import { ButterflySwarmSystem } from './butterfly_swarm';
 import { LevelManager } from './level_manager';
 import { DebugSystem } from './debug_system';
 import { createGalaxy, createMoon, moonPlants } from './visuals';
@@ -104,7 +130,6 @@ import { VideoTumblingStar } from './video_tumbling_star';
 import { SlingableObjectSystem, type SlingableObjectConfig } from './slingable_objects';
 import { SlingComboManager } from './sling_combo';
 import {
-    createGameRenderer,
     hasDebugUrlFlag,
     type GameRenderer,
     type RendererBackend
@@ -176,93 +201,19 @@ function showError(title: string, message: string) {
     console.error(`ERROR: ${title} - ${message}`);
 }
 
-// --- Scene Setup ---
-const canvas = document.querySelector('#glCanvas') as HTMLCanvasElement;
-const scene = new THREE.Scene();
-const butterflySwarmSystem = new ButterflySwarmSystem(scene);
-scene.background = new THREE.Color(CONFIG.colors.background);
-scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
-
-let renderer: GameRenderer;
-let rendererBackend: RendererBackend = 'webgpu';
-let requestedRendererBackend: RendererBackend = 'webgpu';
-let rendererFallbackReason = '';
-const aspect = window.innerWidth / window.innerHeight;
-const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
-const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-const rimLight = new THREE.DirectionalLight(0x6699ff, 0.4);
-const accentLight1 = new THREE.PointLight(0xff8844, 0.6, 50);
-const accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 50);
-const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
-
-// --- Touch Controls ---
-let touchControls: TouchControlsManager | null = null;
-let touchSettingsBtn: HTMLElement | null = null;
-
-// Renderer / scene initialization
+// --- Scene / Renderer / Touch (single source via scene_context) ---
+// All creation of scene/camera/lights happens in scene_context.
+// Main orchestrates init + attachments (no parallel objects created here).
+// (Old local consts for scene/camera/lights/renderer removed.)
 try {
-    // --- Camera (Side-view, follows player on X axis) ---
-    // Camera positioned to the side, looking at Z=0 plane
-    camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
-    camera.lookAt(0, CONFIG.cameraHeight, 0);
-
-    // --- Renderer ---
-    // PERFORMANCE: Start at 60% resolution for smooth playability on mid-range hardware.
-    // Press R in-game to cycle through higher resolutions and test performance.
+    // Camera + renderer + touch init (delegated, uses shared canvas/scene/camera)
+    // PERFORMANCE: Start at 60% resolution...
     const basePixelRatio = 0.60;
-    const rendererInit = createGameRenderer(canvas, { antialias: true, basePixelRatio });
-    renderer = rendererInit.renderer;
-    rendererBackend = rendererInit.backend;
-    requestedRendererBackend = rendererInit.requestedBackend;
-    rendererFallbackReason = rendererInit.fallbackReason || '';
+    initializeSceneAndRenderer({ basePixelRatio });
 
-    // --- Touch Controls Initialization ---
-    touchControls = new TouchControlsManager();
-    touchControls.initialize(canvas);
-    
-    // Load saved settings and apply
-    const savedSettings = loadTouchSettings();
-    touchControls.setMode(savedSettings.mode);
-    
-    // Add settings button (only on touch devices)
-    if (detectTouchDevice()) {
-        touchSettingsBtn = createTouchSettingsButton(touchControls);
-        document.body.appendChild(touchSettingsBtn);
-    }
-
-    // --- Lighting (Moody, atmospheric) ---
-    scene.add(ambientLight);
-
-    // Environment Map (for metallic reflections)
+    // Environment Map (for metallic reflections) — uses shared scene
     const envMap = generateEnvironment();
-    scene.environment = envMap;
-
-    // Main directional light (from the side for dramatic shadows)
-    mainLight.position.set(-5, 10, 10);
-    mainLight.castShadow = true;
-    // Phase 1 FPS Fixes - Quick Wins: default shadow map to 1024, scaled up during boss fights
-    mainLight.shadow.mapSize.width = 1024;
-    mainLight.shadow.mapSize.height = 1024;
-    mainLight.shadow.camera.near = 0.5;
-    mainLight.shadow.camera.far = 50;
-    mainLight.shadow.camera.left = -30;
-    mainLight.shadow.camera.right = 30;
-    mainLight.shadow.camera.top = 20;
-    mainLight.shadow.camera.bottom = -10;
-    mainLight.shadow.bias = -0.0001;
-    scene.add(mainLight);
-    scene.add(mainLight.target);
-
-    // Rim light from behind (cinematic depth) - enhanced
-    rimLight.position.set(5, 5, -10);
-    scene.add(rimLight);
-
-    // Add accent lights for more depth
-    accentLight1.position.set(0, 5, 5);
-    scene.add(accentLight1);
-
-    accentLight2.position.set(0, 3, -5);
-    scene.add(accentLight2);
+    attachLightsAndEnv(envMap);
 
 } catch (err: any) {
     showError('Initialization Error', err.message || 'Unknown error occurred during startup.');
@@ -313,118 +264,24 @@ async function loadWasm() {
 loadWasm();
 
 // =============================================================================
-// PLAYER (Rocket Character) - GLB Model Integration
+// PLAYER (Rocket Character) — now loaded by player_loader.ts (single canonical copy)
 // =============================================================================
-let player: THREE.Group | null = null;
-const gltfLoader = new GLTFLoader();
-// Load the rocket GLB model
-gltfLoader.load(
-    'rocket.glb',
-    (gltf) => {
-        const rocketModel = gltf.scene;
-        
-        // Enable shadows for all meshes in the model
-        rocketModel.traverse((child) => {
-            if (child.isMesh) {
-                child.castShadow = true;
-                // Don't set receiveShadow to avoid self-shadowing artifacts
-            }
-        });
-        
-        // Create a container group for the model
-        const group = new THREE.Group();
-        group.add(rocketModel);
-        
-        // Scale the model to match the previous rocket size (~2 units tall)
-        const box = new THREE.Box3().setFromObject(rocketModel);
-        const size = box.getSize(new THREE.Vector3());
-        const maxDimension = Math.max(size.x, size.y, size.z);
-        const targetSize = 2.0;
-        const scale = targetSize / maxDimension;
-        rocketModel.scale.setScalar(scale);
-        
-        // Center the model
-        box.setFromObject(rocketModel);
-        const center = box.getCenter(new THREE.Vector3());
-        rocketModel.position.sub(center);
-        
-        // ROTATE HORIZONTAL: Nose points RIGHT (+X direction)
-        group.rotation.z = -Math.PI / 2;
-        
-        // Add a flame effect to the thruster (procedural, like before)
-        const glowMat = new THREE.MeshStandardMaterial({
-            color: 0xffaa00,
-            emissive: 0xff4400,
-            emissiveIntensity: 1.0
-        });
-        const flameGeo = new THREE.ConeGeometry(0.15, 0.5, 8);
-        const flame = new THREE.Mesh(flameGeo, glowMat);
-        flame.position.y = -0.5;
-        flame.rotation.x = Math.PI;
-        group.add(flame);
-        group.userData.flame = flame;
-        
-        // Container for pitch animation
-        const tiltGroup = new THREE.Group();
-        tiltGroup.add(group);
-        tiltGroup.position.set(0, 5, 0); // Start higher in space
-        
-        // Set as the player
-        player = tiltGroup;
-        scene.add(player);
-        
-        // Connect player to effect manager (for magical effects)
-        effectManager.setTarget(player);
-        
-        // Initialize dog cockpit animation system
-        dogController.initialize(rocketModel);
-        
-        console.log('🚀 Rocket GLB model loaded successfully!');
-    },
-    (xhr) => {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-    },
-    (error) => {
-        console.error('Error loading rocket GLB model:', error);
-        // Fallback: create a simple placeholder if model fails to load
-        const group = new THREE.Group();
-        
-        const geometry = new THREE.ConeGeometry(0.5, 2, 8);
-        const material = new THREE.MeshStandardMaterial({ color: 0xe94560 });
-        const placeholder = new THREE.Mesh(geometry, material);
-        placeholder.rotation.x = Math.PI;
-        placeholder.castShadow = true;
-        group.add(placeholder);
-        
-        // Add flame effect (same as GLB version)
-        const glowMat = new THREE.MeshStandardMaterial({
-            color: 0xffaa00,
-            emissive: 0xff4400,
-            emissiveIntensity: 1.0
-        });
-        const flameGeo = new THREE.ConeGeometry(0.15, 0.5, 8);
-        const flame = new THREE.Mesh(flameGeo, glowMat);
-        flame.position.y = -0.5;
-        flame.rotation.x = Math.PI;
-        group.add(flame);
-        group.userData.flame = flame;
-        
-        const tiltGroup = new THREE.Group();
-        tiltGroup.add(group);
-        tiltGroup.position.set(0, 5, 0);
-        
-        player = tiltGroup;
-        scene.add(player);
-        
-        // Connect player to effect manager (for magical effects)
-        effectManager.setTarget(player);
-        
-        // Initialize dog cockpit animation system
-        dogController.initialize(group);
-        
-        console.warn('Using placeholder rocket due to loading error');
+// player_loader imports the shared scene from scene_context and does scene.add(player).
+// We removed the 100+ line duplication that used to live here (and in player_loader.ts).
+// Register post-load hooks for systems that depend on the player existing.
+playerLoadCallbacks.push((loadedPlayer: THREE.Group, rocketModelOrGroup: any) => {
+    effectManager.setTarget(loadedPlayer);
+    const dogTarget = rocketModelOrGroup || loadedPlayer;
+    try {
+        dogController.initialize(dogTarget);
+    } catch {
+        dogController.initialize(loadedPlayer);
     }
-);
+    console.log('🚀 Rocket loaded via player_loader onto canonical scene');
+});
+
+// `player` (imported from player_loader) is a live binding; code below uses the name directly.
+// (local `let player` + gltfLoader + load() body deleted to eliminate duplication + dual loads)
 
 // Player state - Smooth direct control system
 const playerState = {
@@ -613,8 +470,14 @@ const powerUpManager = new PowerUpManager({
     }
 });
 
-// SPACE FRIENDS (cute companions for a 7-year-old girl)
-const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
+// SPACE FRIENDS + dreamy env managers + butterfly (created once, correct scene)
+const {
+  friendsManager,
+  flowerManager,
+  candyManager,
+  castleManager,
+  butterflySwarmSystem,
+} = createGameManagers(scene, audioSystem, particleSystem);
 
 // AQUA EXPANSE (Level 6 finale): jellyfish, kelp forests, plankton, bubble reefs
 const aquaticLifeManager = new AquaticLifeManager(scene);
@@ -925,9 +788,7 @@ slingableObjectSystem.onSpecialEffect = (effect) => {
 };
 
 // SWARM #3 - DREAMY ENVIRONMENTS
-const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
-const candyManager = new CandyBeltManager(scene, audioSystem, particleSystem);
-const castleManager = new CastleBackgroundManager(scene);
+// (provided by createGameManagers call above — no duplicate instantiation)
 
 // Effect manager - will set target when player loads
 const tempTarget = new THREE.Group();
@@ -948,6 +809,10 @@ if (shouldShowTutorial(saveManager)) {
 // DEBUG SYSTEM
 const debugSystem = new DebugSystem();
 debugSystem.setRendererInfo(rendererBackend, requestedRendererBackend, rendererFallbackReason);
+creatureManager.setDebugSystem(debugSystem);
+debugSystem.register('creature_tarsier_guardian', 'Crystal Tarsier', true);
+debugSystem.register('creature_geode_titan', 'Geode Titan', true);
+debugSystem.register('creature_moon_jelly', 'Moon Jelly', true);
 debugSystem.register('particles', 'Particles', true);
 debugSystem.register('debris', 'Debris', true);
 debugSystem.register('weaponLights', 'Weapon Lights', true);
@@ -982,112 +847,27 @@ let isGamePaused = false;
 let bestiaryUI: HTMLDivElement | null = null;
 
 // =============================================================================
-// GEOLOGICAL OBJECTS & ANOMALIES (from plan.md)
+// GEOLOGICAL OBJECTS & ANOMALIES
+// (single copy imported from ./environment using the scene from scene_context)
 // =============================================================================
 
-// Spore Clouds - floating clouds of glowing spores
-const sporeClouds: SporeCloud[] = [];
-
-function createSporeCloudAtPosition(x: number, y: number, z: number) {
-    const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(Math.random() * 500));
-    sporeClouds.push(cloud);
-    return cloud;
-}
 
 
+// (geodes/jelly/solar spawners removed — imported from environment)
 
-// Fractured Geodes - safe harbors with EM fields
-const geodes: THREE.Group[] = [];
+// (void root spawner removed — imported)
 
-function createGeodeAtPosition(x: number, y: number, z: number) {
-    const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
-    geode.position.set(x, y, z);
-    scene.add(geode);
-    geodes.push(geode);
-    return geode;
-}
+// (vacuum kelp spawner removed)
 
-// Nebula Jelly-Moss - floating gelatinous organisms with fractal moss
-const jellyMosses: THREE.Group[] = [];
+// (ice needles removed)
 
-function createJellyMossAtPosition(x: number, y: number, z: number, size?: number) {
-    const jellyMoss = createNebulaJellyMoss({ size: size || 2 + Math.random() * 8 });
-    jellyMoss.position.set(x, y, z);
-    scene.add(jellyMoss);
-    jellyMosses.push(jellyMoss);
-    return jellyMoss;
-}
+// (liquid + magma removed)
 
-// Solar Sails / Light Leaves - thin-film iridescent organisms catching solar wind
-const solarSails: THREE.Group[] = [];
-
-function createSolarSailAtPosition(x: number, y: number, z: number) {
-    const solarSail = createSolarSail({ 
-        leafCount: 6 + Math.floor(Math.random() * 6),
-        leafLength: 8 + Math.random() * 8
-    });
-    solarSail.position.set(x, y, z);
-    scene.add(solarSail);
-    solarSails.push(solarSail);
-    return solarSail;
-}
-
-// Void Root Balls - active threats with grapple mechanics
-const voidRootBalls: THREE.Group[] = [];
-
-function createVoidRootBallAtPosition(x: number, y: number, z: number) {
-    const rootBall = createVoidRootBall({ size: 2 + Math.random() * 2 });
-    rootBall.position.set(x, y, z);
-    scene.add(rootBall);
-    voidRootBalls.push(rootBall);
-    return rootBall;
-}
-
-// Vacuum Kelp - energy-draining tunnel obstacles
-const vacuumKelps: THREE.Group[] = [];
-
-function createVacuumKelpAtPosition(x: number, y: number, z: number) {
-    const kelp = createVacuumKelp({ length: 20 + Math.random() * 20, nodes: 5 + Math.floor(Math.random() * 4) });
-    kelp.position.set(x, y, z);
-    scene.add(kelp);
-    vacuumKelps.push(kelp);
-    return kelp;
-}
-
-// Ice Needle Clusters - super-bleed and thermal dynamics
-const iceNeedleClusters: THREE.Group[] = [];
-
-function createIceNeedleClusterAtPosition(x: number, y: number, z: number) {
-    const cluster = createIceNeedleCluster({ count: 15 + Math.floor(Math.random() * 15) });
-    cluster.position.set(x, y, z);
-    scene.add(cluster);
-    iceNeedleClusters.push(cluster);
-    return cluster;
-}
-
-// Liquid Metal Blobs - splitting and recombination
-function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
-    const blob = liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
-    return blob;
-}
-
-// Magma Hearts - eruption cycle mechanics
-const magmaHearts: THREE.Group[] = [];
-
-function createMagmaHeartAtPosition(x: number, y: number, z: number) {
-    const heart = createMagmaHeart({ size: 3 + Math.random() * 2 });
-    heart.position.set(x, y, z);
-    scene.add(heart);
-    magmaHearts.push(heart);
-    return heart;
-}
-
-// Gravity Anchors — Stellar Cores with localized inverse-square force fields
-const gravityAnchors: THREE.Group[] = [];
-
+// Gravity Anchors (array from env; local wrapper preserves tarsier spawn logic)
 function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
     const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
     anchor.position.set(x, y, z);
+    anchor.userData.speciesId = 'gravityAnchor';
     scene.add(anchor);
     gravityAnchors.push(anchor);
 
@@ -1113,85 +893,7 @@ function createSlingableObjectAtPosition(
 /* moonPlants moved to ./visuals */
 
 // disposeObject moved to ./utils
-
-// Cleanup geological objects that have fallen behind the camera
-function cleanupGeologicalObjects(cameraX: number) {
-    const cutoff = cameraX - 100;
-
-    // Spore clouds
-    for (let i = sporeClouds.length - 1; i >= 0; i--) {
-        const cloud = sporeClouds[i];
-        if (cloud.position.x < cutoff) {
-            scene.remove(cloud.spores);
-            sporeClouds.splice(i, 1);
-        }
-    }
-
-    // Chroma rocks
-
-
-    // Geodes
-    for (let i = geodes.length - 1; i >= 0; i--) {
-        const geode = geodes[i];
-        if (geode.position.x < cutoff) {
-            scene.remove(geode);
-            disposeObject(geode);
-            geodes.splice(i, 1);
-        }
-    }
-
-    // Void root balls
-    for (let i = voidRootBalls.length - 1; i >= 0; i--) {
-        const rootBall = voidRootBalls[i];
-        if (rootBall.position.x < cutoff) {
-            scene.remove(rootBall);
-            disposeObject(rootBall);
-            voidRootBalls.splice(i, 1);
-        }
-    }
-
-    // Vacuum kelp
-    for (let i = vacuumKelps.length - 1; i >= 0; i--) {
-        const kelp = vacuumKelps[i];
-        if (kelp.position.x < cutoff) {
-            scene.remove(kelp);
-            disposeObject(kelp);
-            vacuumKelps.splice(i, 1);
-        }
-    }
-
-    // Ice needle clusters
-    for (let i = iceNeedleClusters.length - 1; i >= 0; i--) {
-        const cluster = iceNeedleClusters[i];
-        if (cluster.position.x < cutoff) {
-            scene.remove(cluster);
-            disposeObject(cluster);
-            iceNeedleClusters.splice(i, 1);
-        }
-    }
-
-    // Magma hearts
-    for (let i = magmaHearts.length - 1; i >= 0; i--) {
-        const heart = magmaHearts[i];
-        if (heart.position.x < cutoff) {
-            scene.remove(heart);
-            disposeObject(heart);
-            magmaHearts.splice(i, 1);
-        }
-    }
-
-    // Gravity anchors
-    for (let i = gravityAnchors.length - 1; i >= 0; i--) {
-        const anchor = gravityAnchors[i];
-        if (anchor.position.x < cutoff) {
-            scene.remove(anchor);
-            disposeObject(anchor);
-            gravityAnchors.splice(i, 1);
-        }
-    }
-
-    slingableObjectSystem.cleanupBehind(cameraX);
-}
+// cleanupGeologicalObjects now imported from ./environment (single copy)
 
 // createMoon moved to ./visuals
 
@@ -2748,7 +2450,8 @@ function animate() {
             player.position.x,
             player.position.y,
             levelManager.config[levelManager.currentLevel],
-            weaponSystem.getActiveProjectiles()
+            weaponSystem.getActiveProjectiles(),
+            levelManager.currentLevel
         );
         for (const result of creatureResults) {
             let cores = result.cores ?? 0;
@@ -3057,17 +2760,19 @@ function animate() {
             friendsManager.cleanupFarFriends(player.position.x);
         }
 
-        // --- LEVEL 6 "AQUA EXPANSE" FINALE ---
-        if (levelManager.currentLevel === 6) {
+        // --- AQUA EXPANSE / aquatic environments (level 6 and any future level with environments.aquaticLife) ---
+        const currentLevelCfg = levelManager.config[levelManager.currentLevel];
+        const isAquaEnv = !!currentLevelCfg?.environments?.aquaticLife;
+        if (isAquaEnv) {
             if (!aquaticLifeSpawnedL6) {
                 aquaticLifeSpawnedL6 = true;
-                const cfg6 = levelManager.config[6];
-                aquaticLifeManager.spawnForLevel6(player.position.x + 80, cfg6.distance - 200);
+                const cfgA = currentLevelCfg;
+                aquaticLifeManager.spawnForLevel6(player.position.x + 80, cfgA.distance - 200);
 
                 // Bubble-reef rescue friends feeding the final flotilla parade
                 const reefFriends = friendsManager.spawnTrappedFriendsAlong(
                     player.position.x + 150,
-                    cfg6.distance - 400,
+                    cfgA.distance - 400,
                     3
                 );
                 for (const reefFriend of reefFriends) {
@@ -3319,7 +3024,14 @@ function animate() {
     if (player) {
         const isFiringProxy = weaponSystem.getActiveProjectiles().length > 0;
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
-        discoveryManager.update(player.position, levelManager.levelObjects);
+        // Include geological objects for species scanning (they now carry speciesId)
+        const geoScannables = [
+            ...voidRootBalls,
+            ...magmaHearts,
+            ...iceNeedleClusters,
+            ...gravityAnchors,
+        ];
+        discoveryManager.update(player.position, [...levelManager.levelObjects, ...geoScannables]);
         if (debugSystem.isEnabled('butterflySwarm')) {
             butterflySwarmSystem.update(delta, camera.position.x, player.position);
         }

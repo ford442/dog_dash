@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { scene } from './scene_setup';
+import { scene } from './scene_context';
 import { player } from './player_loader';
 import { playerState } from './game_config';
 import {
@@ -25,64 +25,8 @@ import { createSubwooferLotus, createFiberOpticWillow, createGlowingFlower } fro
 import { particleSystem, weaponSystem, liquidMetalSystem } from './game_systems';
 
 // =============================================================================
-// SPACE ENVIRONMENT (Stars, Galaxies, Moon)
-// =============================================================================
-
-// Create distant galaxies/nebulae
-function createGalaxy(x: number, y: number, z: number, color: number) {
-    const group = new THREE.Group();
-    
-    // Main nebula cloud
-    const cloudGeo = new THREE.SphereGeometry(15, 16, 16);
-    const cloudMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.15,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide
-    });
-    const cloud = new THREE.Mesh(cloudGeo, cloudMat);
-    group.add(cloud);
-    
-    // Inner glow
-    const glowGeo = new THREE.SphereGeometry(8, 16, 16);
-    const glowMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.25,
-        blending: THREE.AdditiveBlending
-    });
-    const glow = new THREE.Mesh(glowGeo, glowMat);
-    group.add(glow);
-    
-    // Bright core
-    const coreGeo = new THREE.SphereGeometry(3, 12, 12);
-    const coreMat = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent: true,
-        opacity: 0.4,
-        blending: THREE.AdditiveBlending
-    });
-    const core = new THREE.Mesh(coreGeo, coreMat);
-    group.add(core);
-    
-    group.position.set(x, y, z);
-    group.userData.rotationSpeed = (Math.random() - 0.5) * 0.02;
-    return group;
-}
-
-// Create a few distant galaxies
-export const galaxy1 = createGalaxy(200, 30, -100, 0x8844ff);
-scene.add(galaxy1);
-
-export const galaxy2 = createGalaxy(-150, -20, -120, 0x4488ff);
-scene.add(galaxy2);
-
-export const galaxy3 = createGalaxy(300, 10, -90, 0xff4488);
-scene.add(galaxy3);
-
-// =============================================================================
-// GEOLOGICAL OBJECTS & ANOMALIES (from plan.md)
+// GEOLOGICAL OBJECTS & ANOMALIES (single copy — see scene_context + main.ts)
+// Galaxies / moon visuals live in visuals.ts (main.ts wires + adds to canonical scene).
 // =============================================================================
 
 // Spore Clouds - floating clouds of glowing spores
@@ -138,6 +82,7 @@ export const voidRootBalls: THREE.Group[] = [];
 export function createVoidRootBallAtPosition(x: number, y: number, z: number) {
     const rootBall = createVoidRootBall({ size: 2 + Math.random() * 2 });
     rootBall.position.set(x, y, z);
+    rootBall.userData.speciesId = 'voidRootBall';
     scene.add(rootBall);
     voidRootBalls.push(rootBall);
     return rootBall;
@@ -160,6 +105,7 @@ export const iceNeedleClusters: THREE.Group[] = [];
 export function createIceNeedleClusterAtPosition(x: number, y: number, z: number) {
     const cluster = createIceNeedleCluster({ count: 15 + Math.floor(Math.random() * 15) });
     cluster.position.set(x, y, z);
+    cluster.userData.speciesId = 'iceNeedleCluster';
     scene.add(cluster);
     iceNeedleClusters.push(cluster);
     return cluster;
@@ -177,6 +123,7 @@ export const gravityAnchors: THREE.Group[] = [];
 export function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
     const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
     anchor.position.set(x, y, z);
+    anchor.userData.speciesId = 'gravityAnchor';
     scene.add(anchor);
     gravityAnchors.push(anchor);
     return anchor;
@@ -188,15 +135,14 @@ export const magmaHearts: THREE.Group[] = [];
 export function createMagmaHeartAtPosition(x: number, y: number, z: number) {
     const heart = createMagmaHeart({ size: 3 + Math.random() * 2 });
     heart.position.set(x, y, z);
+    heart.userData.speciesId = 'magmaHeart';
     scene.add(heart);
     magmaHearts.push(heart);
     return heart;
 }
 
-// Store plants that live on the moon to animate them later
-export const moonPlants: THREE.Object3D[] = [];
-
 // Phase 1 FPS Fixes - Quick Wins: safely dispose geometry when removing objects
+// (moonPlants lives in visuals.ts; use the import from there)
 // Materials are intentionally skipped because foliage uses shared material pools
 export function disposeObject(obj: THREE.Object3D) {
     obj.traverse((child) => {
@@ -293,89 +239,8 @@ export function cleanupGeologicalObjects(cameraX: number) {
     }
 }
 
-// Create the distant moon (goal)
-function createMoon() {
-    const group = new THREE.Group();
-    
-    // 1. Moon Surface (alien palette)
-    const moonGeo = new THREE.SphereGeometry(8, 32, 32);
-    const moonMat = new THREE.MeshStandardMaterial({
-        color: 0x222244, // Darker, alien purple-grey
-        roughness: 0.8,
-        metalness: 0.2,
-        emissive: 0x111122,
-        emissiveIntensity: 0.2
-    });
-    const moon = new THREE.Mesh(moonGeo, moonMat);
-    moon.castShadow = true;
-    group.add(moon);
-    
-    // Add some craters
-    for (let i = 0; i < 8; i++) {
-        const craterGeo = new THREE.SphereGeometry(0.5 + Math.random() * 1.5, 8, 8);
-        const craterMat = new THREE.MeshStandardMaterial({
-            color: 0x888888,
-            roughness: 0.95
-        });
-        const crater = new THREE.Mesh(craterGeo, craterMat);
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.random() * Math.PI;
-        crater.position.set(
-            Math.sin(phi) * Math.cos(theta) * 7,
-            Math.sin(phi) * Math.sin(theta) * 7,
-            Math.cos(phi) * 7
-        );
-        group.add(crater);
-    }
-    
-    // Moon glow/atmosphere
-    // 2. Atmosphere
-    const atmosphereGeo = new THREE.SphereGeometry(9.5, 32, 32);
-    const atmosphereMat = new THREE.MeshBasicMaterial({
-        color: 0x8844ff,
-        transparent: true,
-        opacity: 0.15,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide
-    });
-    const atmosphere = new THREE.Mesh(atmosphereGeo, atmosphereMat);
-    group.add(atmosphere);
-    
-    group.userData.atmosphere = atmosphere;
-
-    // 3. Populate with Alien Plants
-    const plantCount = 15;
-    for (let i = 0; i < plantCount; i++) {
-        let plant;
-        const type = Math.random();
-        if (type < 0.3) {
-            plant = createSubwooferLotus({ color: 0x00ff88 });
-        } else if (type < 0.6) {
-            plant = createFiberOpticWillow({ color: 0xff00ff });
-        } else {
-            plant = createGlowingFlower({ color: 0x00ffff, intensity: 2.0 });
-        }
-
-        // Random position on the top hemisphere so plants are visible
-        const phi = Math.random() * Math.PI * 0.4; // 0..PI/2 mostly
-        const theta = Math.random() * Math.PI * 2;
-        const r = 7.8; // Slightly embedded in surface
-        plant.position.set(
-            r * Math.sin(phi) * Math.cos(theta),
-            r * Math.cos(phi),
-            r * Math.sin(phi) * Math.sin(theta)
-        );
-        plant.lookAt(0, 0, 0);
-        plant.rotateX(-Math.PI / 2);
-        group.add(plant);
-        moonPlants.push(plant);
-    }
-    return group;
-}
-
-export const moon = createMoon();
-moon.position.set(500, 5, -50); // Position far ahead
-scene.add(moon);
+// (createMoon + moon auto-add removed — canonical impl + add lives in visuals.ts + main.ts
+//  to guarantee single scene and no duplicate objects.)
 
 // =============================================================================
 // GEOLOGICAL OBJECT UPDATES (extracted from animate loop)

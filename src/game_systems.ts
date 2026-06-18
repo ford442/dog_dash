@@ -2,7 +2,7 @@ import { ChromaShiftSystem } from './chroma_shift';
 import { StormGeodeSystem } from './storm_geodes';
 import { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
-import { scene, camera } from './scene_setup';
+import { scene, camera } from './scene_context';
 import { player } from './player_loader';
 import { playerState } from './game_config';
 import { ParticleSystem, DebrisSystem } from './particles';
@@ -35,6 +35,7 @@ import { JuiceManager, ShakeType } from './juice_effects';
 import { ConstellationManager } from './flower_constellations';
 import { CandyBeltManager } from './candy_obstacles';
 import { CastleBackgroundManager } from './cloud_castles';
+import { ButterflySwarmSystem } from './butterfly_swarm';
 import { EffectManager, MagicalEffectType } from './magical_effects';
 import { VictorySystem } from './victory_system';
 import { TutorialSystem, shouldShowTutorial } from './tutorial_system';
@@ -171,8 +172,8 @@ export const powerUpManager = new PowerUpManager({
     }
 });
 
-// SPACE FRIENDS (cute companions for a 7-year-old girl)
-export const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
+// SPACE FRIENDS, dreamy env managers, and butterfly swarm are now created
+// via createGameManagers(scene) below — single source, correct scene passed from main.
 
 // Connect orb collection to power-ups
 orbManager.onPowerUpReady = () => {
@@ -262,9 +263,7 @@ export const rollSystem = new RollSystem({
 });
 
 // SWARM #3 - DREAMY ENVIRONMENTS
-export const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
-export const candyManager = new CandyBeltManager(scene, audioSystem, particleSystem);
-export const castleManager = new CastleBackgroundManager(scene);
+// (instantiated once via createGameManagers to ensure correct scene)
 
 // Effect manager - will set target when player loads
 const tempTarget = new THREE.Group();
@@ -289,3 +288,39 @@ export const stormGeodeSystem = new StormGeodeSystem(scene);
 
 // BLACK HOLE SYSTEM (Galactic Core)
 export const blackHoleSystem = new BlackHoleSystem(scene);
+
+// =============================================================================
+// SINGLE SOURCE OF TRUTH FOR MANAGERS THAT REQUIRE THE CORRECT SCENE
+// =============================================================================
+
+export interface GameManagers {
+  friendsManager: FriendsManager;
+  flowerManager: ConstellationManager;
+  candyManager: CandyBeltManager;
+  castleManager: CastleBackgroundManager;
+  butterflySwarmSystem: ButterflySwarmSystem;
+}
+
+/**
+ * Create the managers that must live on the caller's scene (not the
+ * scene_setup.ts scene). Call exactly once from main.ts and pass the
+ * instances down (LevelManager, animate loop, etc).
+ */
+export function createGameManagers(
+  scene: THREE.Scene,
+  audioSystem: any,
+  particleSystem: any
+): GameManagers {
+  const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
+  const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
+  const candyManager = new CandyBeltManager(scene, audioSystem, particleSystem);
+  const castleManager = new CastleBackgroundManager(scene);
+  const butterflySwarmSystem = new ButterflySwarmSystem(scene);
+  return {
+    friendsManager,
+    flowerManager,
+    candyManager,
+    castleManager,
+    butterflySwarmSystem,
+  };
+}
