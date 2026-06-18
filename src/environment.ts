@@ -51,6 +51,9 @@ export function createGeodeAtPosition(x: number, y: number, z: number) {
     return geode;
 }
 
+// Chroma-Shift Rocks - tracked for cleanup behind the camera
+export const chromaRocks: THREE.Group[] = [];
+
 // Nebula Jelly-Moss - floating gelatinous organisms with fractal moss
 export const jellyMosses: THREE.Group[] = [];
 
