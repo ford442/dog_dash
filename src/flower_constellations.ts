@@ -179,13 +179,15 @@ class HeartPollenSystem {
     }
 
     cleanup() {
-        this.hearts.forEach(heart => {
-            heart.geometry.dispose();
-            (heart.material as THREE.Material).dispose();
-            this.scene.remove(heart);
-        });
-        this.hearts = [];
-        this.heartData = [];
+        // Soft reset: deactivate all pooled hearts but keep the reusable pool intact.
+        // The pool is created once in the constructor and is never rebuilt, so destroying
+        // it here (as a per-level reset) would leave update()/emit() iterating over an
+        // empty array up to maxHearts and dereferencing undefined entries.
+        for (let i = 0; i < this.hearts.length; i++) {
+            this.hearts[i].visible = false;
+            this.heartData[i].life = 0;
+        }
+        this.poolIndex = 0;
     }
 }
 
@@ -707,13 +709,13 @@ class GoldenSparkleSystem {
     }
 
     cleanup() {
-        this.sparkles.forEach(sparkle => {
-            sparkle.geometry.dispose();
-            (sparkle.material as THREE.Material).dispose();
-            this.scene.remove(sparkle);
-        });
-        this.sparkles = [];
-        this.sparkleData = [];
+        // Soft reset: deactivate all pooled sparkles but keep the reusable pool intact.
+        // (See HeartPollenSystem.cleanup — the pool is only built once in the constructor.)
+        for (let i = 0; i < this.sparkles.length; i++) {
+            this.sparkles[i].visible = false;
+            this.sparkleData[i].life = 0;
+        }
+        this.poolIndex = 0;
     }
 }
 
