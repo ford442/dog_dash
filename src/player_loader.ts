@@ -11,6 +11,15 @@ export const gltfLoader = new GLTFLoader();
 
 export const playerLoadCallbacks: ((player: THREE.Group, rocketModel: THREE.Object3D) => void)[] = [];
 
+/** Register a callback; runs immediately if the rocket is already loaded. */
+export function onPlayerLoaded(cb: (player: THREE.Group, rocketModel: THREE.Object3D) => void): void {
+    playerLoadCallbacks.push(cb);
+    if (player) {
+        const rocketModel = (player.children[0] as THREE.Object3D | undefined) ?? player;
+        cb(player, rocketModel);
+    }
+}
+
 // Load the rocket GLB model
 gltfLoader.load(
     'rocket.glb',
