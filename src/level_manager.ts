@@ -9,32 +9,16 @@ import {
     createShrub,
     createVine,
     createPuffballFlower,
-    createFiberOpticWillow,
     createGlowingFlower,
     createStarDustFern,
     createNebulaRose,
     createFloweringTree,
     createFloatingOrb
 } from './foliage';
-import {
-    createSporeCloudAtPosition,
-    createVoidRootBallAtPosition,
-    createVacuumKelpAtPosition,
-    createIceNeedleClusterAtPosition,
-    createLiquidMetalBlobAtPosition,
-    createMagmaHeartAtPosition,
-    createGravityAnchorAtPosition,
-    sporeClouds,
-    voidRootBalls,
-    vacuumKelps,
-    iceNeedleClusters,
-    magmaHearts,
-    gravityAnchors
-} from './environment';
-import { scene, camera, butterflySwarmSystem } from './scene_setup';
+import { DEPTH_LAYERS, getLevelSpan, randomZInLayer, randomZInRange } from './depth_layers';
 import { playerState } from './game_config';
-import { player } from './player_loader';
-import { moonPlants, disposeObject } from './environment';
+import { moonPlants } from './visuals';
+import { disposeObject } from './utils';
 import {
     blackHoleSystem,
     waterfallSystem,
@@ -47,16 +31,18 @@ import {
     meteorShowerSystem,
     asteroidFieldSystem,
     planetaryHorizonSystem,
-    reEntrySystem,
-    flowerManager,
-    castleManager,
-    candyManager
+    reEntrySystem
 } from './game_systems';
 import { GodRaySystem } from './godrays';
 import { AuroraSystem } from './aurora';
 import { GhostDebrisSystem } from './ghost_debris';
 import { DebugSystem } from './debug_system';
 import { FriendsManager } from './space_friends';
+import { ButterflySwarmSystem } from './butterfly_swarm';
+import { WeaponLightManager } from './lighting';
+import type { ConstellationManager } from './flower_constellations';
+import type { CastleBackgroundManager } from './cloud_castles';
+import type { CandyBeltManager } from './candy_obstacles';
 
 // =============================================================================
 // LEVEL MANAGER
@@ -65,6 +51,49 @@ const DEFAULT_FOG_FAR = 80;
 const DEFAULT_FOG_NEAR = 20;
 const FOG_FAR_DENSITY_FACTOR = 5;
 const FOG_NEAR_DENSITY_FACTOR = 3;
+
+const STREAM_AHEAD_START = 80;
+const STREAM_AHEAD_END = 550;
+
+export type GeologicalSpawners = {
+    createSporeCloudAtPosition: (x: number, y: number, z: number) => unknown;
+    createVoidRootBallAtPosition: (x: number, y: number, z: number) => unknown;
+    createVacuumKelpAtPosition: (x: number, y: number, z: number) => unknown;
+    createIceNeedleClusterAtPosition: (x: number, y: number, z: number) => unknown;
+    createLiquidMetalBlobAtPosition: (x: number, y: number, z: number) => unknown;
+    createMagmaHeartAtPosition: (x: number, y: number, z: number) => unknown;
+    createGravityAnchorAtPosition: (x: number, y: number, z: number, biome?: number) => unknown;
+};
+
+export type GeologicalCounts = {
+    sporeClouds: () => number;
+    voidRootBalls: () => number;
+    vacuumKelps: () => number;
+    iceNeedleClusters: () => number;
+    magmaHearts: () => number;
+    gravityAnchors: () => number;
+};
+
+export type LevelManagerOptions = {
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    weaponLightManager: WeaponLightManager;
+    godRaySystem: GodRaySystem;
+    auroraSystem: AuroraSystem;
+    ghostDebrisSystem: GhostDebrisSystem;
+    debugSystem?: DebugSystem;
+    friendsManager?: FriendsManager;
+    industrialGeometryManager: IndustrialGeometryManager;
+    butterflySwarmSystem: ButterflySwarmSystem;
+    flowerManager: ConstellationManager;
+    castleManager: CastleBackgroundManager;
+    candyManager: CandyBeltManager;
+    getPlayer: () => THREE.Group | null;
+    spawners: GeologicalSpawners;
+    geologicalCounts: GeologicalCounts;
+    onLevelStart?: (cfg: LevelConfig) => void;
+    onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
+};
 
 export class LevelManager {
     currentLevel: number;
@@ -80,6 +109,17 @@ export class LevelManager {
     friendsManager?: FriendsManager;
     industrialGeometryManager: IndustrialGeometryManager;
     objectDensityMultiplier: number;
+    private readonly scene: THREE.Scene;
+    private readonly camera: THREE.PerspectiveCamera;
+    private readonly butterflySwarmSystem: ButterflySwarmSystem;
+    private readonly flowerManager: ConstellationManager;
+    private readonly castleManager: CastleBackgroundManager;
+    private readonly candyManager: CandyBeltManager;
+    private readonly getPlayer: () => THREE.Group | null;
+    private readonly spawners: GeologicalSpawners;
+    private readonly geologicalCounts: GeologicalCounts;
+    private readonly onLevelStart?: (cfg: LevelConfig) => void;
+    private readonly onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
     private baseAsteroidDensity = 0;
     /** True once this level's objective has been completed and the "fast lane"
      *  (reduced hazard density, bonus orbs) toward the level exit is active. */
@@ -96,11 +136,22 @@ export class LevelManager {
         gravityAnchor: 6
     } as const;
 
-    constructor(options: any) {
-        this.cloudSystem = new CloudSystem(scene, options.weaponLightManager);
-        this.atmosphereSystem = new AtmosphereSystem(scene);
+    constructor(options: LevelManagerOptions) {
+        this.scene = options.scene;
+        this.camera = options.camera;
+        this.butterflySwarmSystem = options.butterflySwarmSystem;
+        this.flowerManager = options.flowerManager;
+        this.castleManager = options.castleManager;
+        this.candyManager = options.candyManager;
+        this.getPlayer = options.getPlayer;
+        this.spawners = options.spawners;
+        this.geologicalCounts = options.geologicalCounts;
+        this.onLevelStart = options.onLevelStart;
+        this.onUpdateLevelDisplay = options.onUpdateLevelDisplay;
 
-        // Link LightningBoltSystem to CloudSystem for synchronized volumetric lighting
+        this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
+        this.atmosphereSystem = new AtmosphereSystem(this.scene);
+
         lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
             this.godRaySystem.triggerLightningFlash(1.0, color);
@@ -114,7 +165,6 @@ export class LevelManager {
         this.currentLevel = 1;
         this.config = LEVEL_CONFIG;
 
-        // Track planted objects to cleanup
         this.levelObjects = [];
         this.lastPopulatedEndX = -Infinity;
         this.objectDensityMultiplier = 1.0;
@@ -127,12 +177,6 @@ export class LevelManager {
         }
     }
 
-    /**
-     * Open the "fast lane" toward the level exit once the chapter objective
-     * is complete: thins out the background asteroid field as a reward for
-     * finishing the mission (called once per level via main.ts's
-     * hudManager.onObjectiveComplete hook).
-     */
     enterFastLane() {
         if (this.fastLaneActive) return;
         this.fastLaneActive = true;
@@ -149,10 +193,14 @@ export class LevelManager {
 
         this.fastLaneActive = false;
         this.fastLaneDensityFactor = 1.0;
+        this.lastPopulatedEndX = -Infinity;
 
         console.log(`Starting Level ${levelIndex}: ${cfg.name}`);
 
-        // Update Game State
+        const player = this.getPlayer();
+        const playerX = player ? player.position.x : 0;
+        const { startX: levelStartX, endX: levelEndX, length: levelLength } = getLevelSpan(levelIndex);
+
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
 
@@ -168,46 +216,34 @@ export class LevelManager {
             this.auroraSystem.deactivate();
         }
 
-        // --- ATMOSPHERE UPDATE ---
         let transitionDuration = 2.0;
         if (levelIndex === 3) {
-            // Level 3 "Orbital Descent" should take ~100s to fully transition to blue
-            // 1000m / 10m/s = 100s
             transitionDuration = 100.0;
         }
 
         this.atmosphereSystem.transitionTo(cfg.skyColors.top, cfg.skyColors.bottom, transitionDuration);
-        // Note: AtmosphereSystem handles fog color now.
 
-        if (scene.fog) {
-            // scene.fog.color is updated by AtmosphereSystem
-            // Apply custom fog density for Memory Fog effect (Level 5)
-            if (scene.fog instanceof THREE.Fog) {
+        if (this.scene.fog) {
+            if (this.scene.fog instanceof THREE.Fog) {
                 if (cfg.fogDensity) {
-                    // Adjust fog near/far based on density (higher density = closer fog)
-                    scene.fog.far = DEFAULT_FOG_FAR * (1 - cfg.fogDensity * FOG_FAR_DENSITY_FACTOR);
-                    scene.fog.near = DEFAULT_FOG_NEAR * (1 - cfg.fogDensity * FOG_NEAR_DENSITY_FACTOR);
+                    this.scene.fog.far = DEFAULT_FOG_FAR * (1 - cfg.fogDensity * FOG_FAR_DENSITY_FACTOR);
+                    this.scene.fog.near = DEFAULT_FOG_NEAR * (1 - cfg.fogDensity * FOG_NEAR_DENSITY_FACTOR);
                 } else {
-                    // Reset to default fog
-                    scene.fog.far = DEFAULT_FOG_FAR;
-                    scene.fog.near = DEFAULT_FOG_NEAR;
+                    this.scene.fog.far = DEFAULT_FOG_FAR;
+                    this.scene.fog.near = DEFAULT_FOG_NEAR;
                 }
             }
         }
 
-        // Update UI
         const levelDiv = document.getElementById('level-display');
         if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
+        this.onUpdateLevelDisplay?.(levelIndex, cfg.name);
+        this.onLevelStart?.(cfg);
 
-        // Populate new zone ahead of player
-        this.populateZone(player!.position.x + 50, player!.position.x + 600, cfg);
-
-        // Configure clouds based on level type/name
-        // Update cloud layers based on density and color
+        this.populateZone(playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
 
         this.cloudSystem.setLevel(cfg);
 
-        // Reset and activate systems based on level configuration
         chromaShiftSystem.clearRocks();
         if (cfg.chromaShiftDensity && cfg.chromaShiftDensity > 0) {
             chromaShiftSystem.activate();
@@ -227,33 +263,27 @@ export class LevelManager {
             lightningBoltSystem.deactivate();
         }
 
-
-        // Special Effects per Level
         if (levelIndex === 1) {
-            butterflySwarmSystem.activate();
+            this.butterflySwarmSystem.activate();
         } else {
-            butterflySwarmSystem.deactivate();
+            this.butterflySwarmSystem.deactivate();
         }
 
         if (levelIndex === 3) {
-            // Activate Planetary Horizon in Level 3
-            planetaryHorizonSystem.levelDistance = cfg.distance;
+            planetaryHorizonSystem.levelDistance = levelLength;
             planetaryHorizonSystem.activate();
-            // Activate Re-Entry Heat in Level 3 "Orbital Descent"
-            reEntrySystem.levelDistance = cfg.distance;
+            reEntrySystem.levelDistance = levelLength;
             reEntrySystem.activate();
 
-            // Seed the "Rescue" objective: scatter trapped friends along the descent
             if (this.friendsManager && cfg.objective?.type === 'rescue') {
                 this.friendsManager.spawnTrappedFriendsAlong(
-                    player!.position.x + 100,
-                    cfg.distance - 200,
+                    playerX + 100,
+                    levelLength - 200,
                     cfg.objective.target
                 );
             }
         } else {
             planetaryHorizonSystem.deactivate();
-            // Only deactivate reentry if not in level 3 (handled below generally, but explicit here for clarity)
             if (levelIndex !== 3) reEntrySystem.deactivate();
         }
 
@@ -264,7 +294,6 @@ export class LevelManager {
         }
 
         if (levelIndex === 4) {
-            // Industrial Tunnel
             industrialSystem.activate();
         } else {
             industrialSystem.deactivate();
@@ -276,13 +305,11 @@ export class LevelManager {
             waterfallSystem.deactivate();
         }
 
-        // Activate Asteroid Fields dynamically based on density
         if (cfg.asteroidRate && cfg.asteroidRate > 0) {
             asteroidFieldSystem.activate();
-            // Scale density relative to default levels
             this.baseAsteroidDensity = cfg.asteroidRate * 0.5;
             asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
-            asteroidFieldSystem.resetPositions(camera.position.x);
+            asteroidFieldSystem.resetPositions(this.camera.position.x);
         } else {
             this.baseAsteroidDensity = 0;
             asteroidFieldSystem.deactivate();
@@ -294,20 +321,15 @@ export class LevelManager {
             this.ghostDebrisSystem.deactivate();
         }
 
-
         if (levelIndex === 2) {
             blackHoleSystem.activate();
         } else {
             blackHoleSystem.deactivate();
         }
+
         if (levelIndex === 5) {
-            // Activate Biological System for Space Whale Interior
             biologicalSystem.activate();
-
-            // Level 5: Nebula Activation (fixed)
-            // Correct behavior - was previously deactivate() in old main.ts
             nebulaSystem.activate();
-
             cosmicDustSystem.activate();
             this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
         } else {
@@ -319,29 +341,42 @@ export class LevelManager {
             }
         }
 
-        // SWARM #3: Generate Magical Dreamy Environments (for levels 1-3 and 6-7)
-        const currentX = player ? player.position.x : 0;
+        // Dreamy side-scroller layers — span the actual level segment, not cfg.distance
+        const dreamyPadding = 80;
+        const dreamyStart = levelStartX + dreamyPadding;
+        const dreamyEnd = levelEndX - dreamyPadding;
+
         if (levelIndex <= 3 || levelIndex >= 6) {
-            // Flower Constellations - giant glowing space flowers
-            flowerManager.generateConstellation(15, currentX + 100, currentX + cfg.distance - 100, -40, 40);
-            
-            // Cloud Castles - dreamy floating castles in background
-            castleManager.generateCastleField(8, currentX + 200, currentX + cfg.distance - 200);
+            this.flowerManager.cleanup();
+            this.flowerManager.generateConstellation(
+                15,
+                dreamyStart,
+                dreamyEnd,
+                DEPTH_LAYERS.BACKGROUND.min,
+                DEPTH_LAYERS.BACKGROUND.max
+            );
+
+            this.castleManager.clear();
+            this.castleManager.generateCastleField(8, dreamyStart + 50, dreamyEnd - 50);
         }
-        
-        // Candy Belt - sweet treat obstacles (all levels except serious ones)
+
         if (levelIndex !== 4 && levelIndex !== 5) {
-            candyManager.generateCandyBelt(cfg.distance * 0.8, 0.25);
+            this.candyManager.clear();
+            this.candyManager.generateCandyBelt(
+                dreamyStart,
+                levelLength * 0.85,
+                0.22,
+                DEPTH_LAYERS.NEAR
+            );
         }
     }
 
-    // Phase 1 FPS Fixes - Quick Wins: object cleanup with geometry disposal
     cleanupBehind(cameraX: number) {
         const cutoff = cameraX - 100;
         for (let i = this.levelObjects.length - 1; i >= 0; i--) {
             const obj = this.levelObjects[i];
             if (obj.position.x < cutoff) {
-                scene.remove(obj);
+                this.scene.remove(obj);
                 const mpIdx = moonPlants.indexOf(obj);
                 if (mpIdx !== -1) moonPlants.splice(mpIdx, 1);
                 disposeObject(obj);
@@ -350,248 +385,251 @@ export class LevelManager {
         }
     }
 
+    /** Stream decorative foliage ahead as the player progresses. */
+    private maybeStreamFoliage(cameraX: number) {
+        const cfg = this.config[this.currentLevel];
+        if (!cfg) return;
+
+        const targetEnd = cameraX + STREAM_AHEAD_END;
+        if (targetEnd <= this.lastPopulatedEndX) return;
+
+        const startX = Math.max(this.lastPopulatedEndX, cameraX + STREAM_AHEAD_START);
+        this.populateZone(startX, targetEnd, cfg);
+    }
+
     update(delta: number, cameraX: number, speed: number, isFiring: boolean = false, fireDir?: THREE.Vector3) {
+        this.maybeStreamFoliage(cameraX);
         this.cleanupBehind(cameraX);
-        this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0)); // Only X matters for now
-        this.cloudSystem.update(delta, cameraX, speed, player ? player.position : undefined);
+        this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0));
+        this.cloudSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
         lightningBoltSystem.update(delta, cameraX, speed);
 
         const dbg = this.debugSystem;
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
+        const playerPos = this.getPlayer()?.position;
 
-        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, player ? player.position : undefined);
-        if (enabled('industrialBg')) industrialSystem.update(cameraX, delta, player ? player.position : undefined);
+        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, playerPos);
+        if (enabled('industrialBg')) industrialSystem.update(cameraX, delta, playerPos);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
-        // Pass player position to NebulaSystem for interactive lighting
-        if (enabled('nebula')) nebulaSystem.update(delta, cameraX, player ? player.position : undefined);
+        if (enabled('nebula')) nebulaSystem.update(delta, cameraX, playerPos);
         if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX);
-        if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, player ? player.position : undefined);
-        if (this.currentLevel === 5) {
-            // nebulaSystem.updateLights(weaponSystem.getActiveProjectiles());
-        }
+        if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, playerPos);
         if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (blackHoleSystem) blackHoleSystem.update(delta, cameraX);
-        if (enabled('chromaShift')) chromaShiftSystem.update(delta, player ? player.position : undefined);
-        if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, player ? player.position : undefined);
-        if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, player ? player.position : undefined, isFiring, fireDir);
-        if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, camera.position.y, player ? player : undefined);
+        if (enabled('chromaShift')) chromaShiftSystem.update(delta, playerPos);
+        if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, playerPos);
+        if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
+        if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
-        if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed, player ? player.position : undefined);
+        if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed, playerPos);
     }
 
     populateZone(startX: number, endX: number, config: LevelConfig) {
-        // Guard against re-populating the same zone
         if (endX <= this.lastPopulatedEndX) return;
         this.lastPopulatedEndX = endX;
 
         const width = endX - startX;
+        if (width <= 0) return;
+
         const density = config.foliageDensity;
         const levelType = config.levelType || 'open';
 
-        // For tunnel levels, spawn structural sections at fixed intervals
         if (levelType === 'tunnel') {
             const interval = config.obstacleInterval || 20;
             const sectionCount = Math.floor(width / interval);
-            
+
             for (let i = 0; i < sectionCount; i++) {
                 const xPos = startX + i * interval;
                 this.industrialGeometryManager.createIndustrialSection(xPos);
             }
-            
-            // Spawn minimal foliage inside tunnel bounds (constrained Y range)
+
             const tunnelHeight = config.tunnelHeight || 15;
             const yRange: [number, number] = [-tunnelHeight / 2 + 2, tunnelHeight / 2 - 2];
-            
-            this.spawnOpenFoliage(startX, width, density, yRange);
+            this.spawnOpenFoliage(startX, width, density, config, yRange);
             return;
         }
-        
+
         if (levelType === 'organic_tunnel') {
             const interval = config.obstacleInterval || 25;
             const sectionCount = Math.floor(width / interval);
-            
+
             for (let i = 0; i < sectionCount; i++) {
                 const xPos = startX + i * interval;
                 this.industrialGeometryManager.createWhaleRibSection(xPos);
             }
-            
-            // Spawn organic foliage inside whale bounds
+
             const tunnelHeight = config.tunnelHeight || 20;
             const yRange: [number, number] = [-tunnelHeight / 2 + 3, tunnelHeight / 2 - 3];
-            
-            this.spawnOpenFoliage(startX, width, density, yRange);
+            this.spawnOpenFoliage(startX, width, density, config, yRange);
             return;
         }
 
-        // Default 'open' level type - use existing random scatter logic
-        this.spawnOpenFoliage(startX, width, density);
+        this.spawnOpenFoliage(startX, width, density, config);
     }
 
-    // Helper method to spawn foliage with open scatter logic
-    spawnOpenFoliage(startX: number, width: number, density: LevelConfig['foliageDensity'], yRange: [number, number] = [-20, 20]) {
+    spawnOpenFoliage(
+        startX: number,
+        width: number,
+        density: LevelConfig['foliageDensity'],
+        levelConfig: LevelConfig,
+        yRange: [number, number] = [-20, 20]
+    ) {
         const scaledCount = (count: number) => Math.max(0, Math.floor(count * this.objectDensityMultiplier));
+        const foliageZ: [number, number] = [DEPTH_LAYERS.MIDGROUND.min, DEPTH_LAYERS.MIDGROUND.max];
+        const geoZ: [number, number] = [DEPTH_LAYERS.BACKGROUND.min + 5, DEPTH_LAYERS.MIDGROUND.max];
 
-        // Helper to spawn
-        const spawn = (count: number, creatorFn: () => THREE.Object3D, customYRange = yRange, zRange: [number, number] = [-30, 0], speciesId?: string) => {
+        const spawn = (
+            count: number,
+            creatorFn: () => THREE.Object3D,
+            customYRange = yRange,
+            zRange: [number, number] = foliageZ,
+            speciesId?: string
+        ) => {
             for (let i = 0; i < scaledCount(count); i++) {
                 const x = startX + Math.random() * width;
                 const y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
-                const z = zRange[0] + Math.random() * (zRange[1] - zRange[0]);
+                const z = randomZInRange(zRange);
 
                 const obj = creatorFn();
                 obj.position.set(x, y, z);
 
-                // Random scale
                 const s = 0.8 + Math.random() * 0.5;
                 obj.scale.set(s, s, s);
 
                 if (speciesId) obj.userData.speciesId = speciesId;
 
-                scene.add(obj);
+                this.scene.add(obj);
                 this.levelObjects.push(obj);
-
-                // Add to moonPlants for animation update loop
                 moonPlants.push(obj);
             }
         };
 
-        // Spawn all types
-        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }), yRange, [-30, 0], 'fern');
-        if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }), yRange, [-30, 0], 'rose');
-        if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }), yRange, [-30, 0], 'lotus');
-        if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }), yRange, [-30, 0], 'glowingFlower');
+        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }), yRange, foliageZ, 'fern');
+        if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }), yRange, foliageZ, 'rose');
+        if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }), yRange, foliageZ, 'lotus');
+        if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }), yRange, foliageZ, 'glowingFlower');
 
-        // Standard foliage (trees at lower positions)
         const treeYRange: [number, number] = [Math.max(yRange[0], -20), Math.min(yRange[1], -5)];
-        if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange, [-30, 0], 'tree');
-        if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange, [-30, 0], 'floweringTree');
+        if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange, foliageZ, 'tree');
+        if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange, foliageZ, 'floweringTree');
 
-        if (density.shrub) spawn(density.shrub, () => createShrub({ color: 0x32CD32 }), yRange, [-30, 0], 'shrub');
-        if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange, [-30, 0], 'vine');
-        if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange, [-30, 0], 'mushroom');
+        if (density.shrub) spawn(density.shrub, () => createShrub({ color: 0x32CD32 }), yRange, foliageZ, 'shrub');
+        if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange, foliageZ, 'vine');
+        if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange, foliageZ, 'mushroom');
+        if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange, foliageZ, 'orb');
 
-        // Floating items
-        if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange, [-30, 0], 'orb');
-
-        // Add clouds manually because they need the specific class wrapper
         if (density.cloud) {
             const targetCount = Math.min(
                 scaledCount(density.cloud),
-                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.cloud - sporeClouds.length)
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.cloud - this.geologicalCounts.sporeClouds())
             );
-            for(let i = 0; i < targetCount; i++) {
+            for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -40 + Math.random() * 30;
-                createSporeCloudAtPosition(x, y, z);
+                const z = randomZInLayer('BACKGROUND');
+                this.spawners.createSporeCloudAtPosition(x, y, z);
             }
         }
 
-        // Geological objects from plan.md
         if (density.voidRootBall) {
             const targetCount = Math.min(
                 scaledCount(density.voidRootBall),
-                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.voidRootBall - voidRootBalls.length)
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.voidRootBall - this.geologicalCounts.voidRootBalls())
             );
-            for(let i = 0; i < targetCount; i++) {
+            for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createVoidRootBallAtPosition(x, y, z);
+                const z = randomZInRange(geoZ);
+                this.spawners.createVoidRootBallAtPosition(x, y, z);
             }
         }
 
         if (density.vacuumKelp) {
             const targetCount = Math.min(
                 scaledCount(density.vacuumKelp),
-                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.vacuumKelp - vacuumKelps.length)
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.vacuumKelp - this.geologicalCounts.vacuumKelps())
             );
-            for(let i = 0; i < targetCount; i++) {
+            for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * 15;
-                const z = -35 + Math.random() * 25;
-                createVacuumKelpAtPosition(x, y, z);
+                const z = randomZInRange(geoZ);
+                this.spawners.createVacuumKelpAtPosition(x, y, z);
             }
         }
 
         if (density.iceNeedle) {
             const targetCount = Math.min(
                 scaledCount(density.iceNeedle),
-                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.iceNeedle - iceNeedleClusters.length)
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.iceNeedle - this.geologicalCounts.iceNeedleClusters())
             );
-            for(let i = 0; i < targetCount; i++) {
+            for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createIceNeedleClusterAtPosition(x, y, z);
+                const z = randomZInRange(geoZ);
+                this.spawners.createIceNeedleClusterAtPosition(x, y, z);
             }
         }
 
-        if (config.chromaShiftDensity && config.chromaShiftDensity > 0) {
-            const count = Math.min(scaledCount(config.chromaShiftDensity), this.GEOLOGICAL_SPAWN_CAPS.chromaShift || 200);
+        if (levelConfig.chromaShiftDensity && levelConfig.chromaShiftDensity > 0) {
+            const count = Math.min(scaledCount(levelConfig.chromaShiftDensity), 200);
             for (let i = 0; i < count; i++) {
                 const x = startX + Math.random() * width;
                 const y = Math.random() * (yRange[1] - yRange[0]) + yRange[0];
-                const z = -20 + Math.random() * 40; // Bring them closer so they react to the player (distance < 20)
+                const z = randomZInLayer('NEAR');
 
                 chromaShiftSystem.addRock(new THREE.Vector3(x, y, z), 2 + Math.random() * 2);
             }
         }
+
         if (density.liquidMetal) {
             const targetCount = Math.min(scaledCount(density.liquidMetal), this.GEOLOGICAL_SPAWN_CAPS.liquidMetal);
-            for(let i = 0; i < targetCount; i++) {
+            for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createLiquidMetalBlobAtPosition(x, y, z);
+                const z = randomZInRange(geoZ);
+                this.spawners.createLiquidMetalBlobAtPosition(x, y, z);
             }
         }
 
         if (density.magmaHeart) {
             const targetCount = Math.min(
                 scaledCount(density.magmaHeart),
-                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.magmaHeart - magmaHearts.length)
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.magmaHeart - this.geologicalCounts.magmaHearts())
             );
-            for(let i = 0; i < targetCount; i++) {
+            for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createMagmaHeartAtPosition(x, y, z);
+                const z = randomZInRange(geoZ);
+                this.spawners.createMagmaHeartAtPosition(x, y, z);
             }
         }
 
         if (density.gravityAnchor) {
             const targetCount = Math.min(
                 scaledCount(density.gravityAnchor),
-                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.gravityAnchor - gravityAnchors.length)
+                Math.max(0, this.GEOLOGICAL_SPAWN_CAPS.gravityAnchor - this.geologicalCounts.gravityAnchors())
             );
             for (let i = 0; i < targetCount; i++) {
                 const x = startX + Math.random() * width;
                 const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = -35 + Math.random() * 25;
-                createGravityAnchorAtPosition(x, y, z, this.currentLevel);
+                const z = randomZInRange(geoZ);
+                this.spawners.createGravityAnchorAtPosition(x, y, z, this.currentLevel);
             }
         }
     }
 
     checkProgress(playerX: number) {
-        // Transition to the next level once the player crosses its starting boundary
         const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
         if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
             this.startLevel(this.currentLevel + 1);
         }
     }
 
-    /**
-     * Overall progress toward the Moon (0-100%), for the HUD journey map.
-     */
     getJourneyProgress(playerX: number): { percent: number; level: number } {
         const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
         const percent = Math.min(100, Math.max(0, (playerX / total) * 100));
         return { percent, level: this.currentLevel };
     }
 }
-
-// levelManager is now instantiated in main.ts
