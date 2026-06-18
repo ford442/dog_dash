@@ -3302,20 +3302,23 @@ function animate() {
     }
 
     // BLACK HOLE SYSTEM (Level 2 environmental hazard)
-    if (player && debugSystem.isEnabled('blackHole')) {
-        blackHoleSystem.update(delta, camera.position.x, player.position);
+    if (player && blackHoleSystem.active) {
+        // Update is now handled inside levelManager.update
 
         // Gentle player gravity pull (very light bias on desired velocity)
         const yPull = blackHoleSystem.getPlayerPullForce(player.position);
-        if (yPull !== 0 && playerState.desiredVelocityY !== undefined) {
-            playerState.desiredVelocityY += yPull;
+        if (yPull !== 0 && (playerState as any).desiredVelocityY !== undefined) {
+            (playerState as any).desiredVelocityY += yPull;
+        } else if (yPull !== 0 && !(playerState as any).inSafeHarbor && !(playerState as any).invincible) {
+            // Apply yPull directly to targetY to gently drift the player if not using custom movement system
+            playerState.targetY += yPull;
         }
 
         // Projectile accretion-disk feedback (capped internally)
         const projectiles = weaponSystem.getActiveProjectiles();
         if (projectiles.length > 0) {
             blackHoleSystem.handleProjectileInteractions(projectiles, particleSystem, () => {
-                if (juiceManager) juiceManager.triggerScreenShake(0.6);
+                if (juiceManager) juiceManager.shakeScreen(ShakeType.LIGHT, 0.6); // 0.5 is ShakeType.LIGHT
             });
         }
     }
