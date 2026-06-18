@@ -88,7 +88,7 @@ import {
   initializeSceneAndRenderer,
   attachLightsAndEnv,
 } from './scene_context';
-import { player, playerLoadCallbacks } from './player_loader';
+import { player, onPlayerLoaded } from './player_loader';
 import { IndustrialGeometryManager } from './industrial_geometry';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
 import { ObstacleSystem } from './obstacle_system';
@@ -268,17 +268,7 @@ loadWasm();
 // =============================================================================
 // player_loader imports the shared scene from scene_context and does scene.add(player).
 // We removed the 100+ line duplication that used to live here (and in player_loader.ts).
-// Register post-load hooks for systems that depend on the player existing.
-playerLoadCallbacks.push((loadedPlayer: THREE.Group, rocketModelOrGroup: any) => {
-    effectManager.setTarget(loadedPlayer);
-    const dogTarget = rocketModelOrGroup || loadedPlayer;
-    try {
-        dogController.initialize(dogTarget);
-    } catch {
-        dogController.initialize(loadedPlayer);
-    }
-    console.log('🚀 Rocket loaded via player_loader onto canonical scene');
-});
+// Post-load hooks registered after effectManager/dogController init (see below).
 
 // `player` (imported from player_loader) is a live binding; code below uses the name directly.
 // (local `let player` + gltfLoader + load() body deleted to eliminate duplication + dual loads)
@@ -388,7 +378,6 @@ const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManage
 const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 const cosmicDustSystem = new CosmicDustSystem(scene);
 nebulaSystem.setCamera(camera);
-levelManager.cloudSystem.setCamera(camera);
 
 // === GHOST DEBRIS (new Cosmic Architect feature) ===
 const ghostDebrisSystem = new GhostDebrisSystem(scene);
@@ -794,6 +783,18 @@ slingableObjectSystem.onSpecialEffect = (effect) => {
 const tempTarget = new THREE.Group();
 const effectManager = new EffectManager(scene, audioSystem, tempTarget);
 
+// Register post-load hooks now that effectManager and dogController exist.
+onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: any) => {
+    effectManager.setTarget(loadedPlayer);
+    const dogTarget = rocketModelOrGroup || loadedPlayer;
+    try {
+        dogController.initialize(dogTarget);
+    } catch {
+        dogController.initialize(loadedPlayer);
+    }
+    console.log('🚀 Rocket loaded via player_loader onto canonical scene');
+});
+
 // SWARM #4: Victory and Tutorial Systems
 const victorySystem = new VictorySystem(scene, camera, audioSystem, hudManager, juiceManager);
 const tutorialSystem = new TutorialSystem(scene, hudManager, audioSystem, dogController);
@@ -1036,6 +1037,7 @@ const levelManager = new LevelManager({
         if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
     }
 });
+levelManager.cloudSystem.setCamera(camera);
 
 function handleGameOver() {
     if (player) {
