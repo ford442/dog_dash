@@ -16,7 +16,9 @@ import {
     smoothstep,
     positionLocal,
     positionWorld,
-    length
+    length,
+    distance,
+    Loop
 } from 'three/tsl';
 import { WeaponLightManager } from './lighting';
 
@@ -86,15 +88,20 @@ function createAuroraMaterial(weaponLights?: any, uPlayerPos?: any) {
 
     // Weapon Projectile Interactions
     if (weaponLights) {
-        for (let i = 0; i < 10; i++) {
-            const lightPos = weaponLights.positions[i];
-            const lightColor = weaponLights.colors[i];
-            const dist = length(positionWorld.sub(lightPos));
+        const uWeaponColor = uniform(new THREE.Color(0x00ffff));
+        const weaponGlow = float(0.0).toVar();
 
-            // Plasma storm reacts intensely to nearby projectiles
-            const lightFactor = smoothstep(80.0, 0.0, dist).mul(1.5);
-            finalColorWithInteraction = finalColorWithInteraction.add(lightColor.mul(lightFactor));
-        }
+        Loop({ start: 0, end: 20 }, ({ i }) => {
+            const lightData = weaponLights.element(i);
+            const lightPos = lightData.xyz;
+            const lightIntensity = lightData.w;
+
+            const distToLight = distance(positionWorld, lightPos);
+            const lightFactor = smoothstep(80.0, 0.0, distToLight).mul(lightIntensity).mul(1.5);
+            weaponGlow.addAssign(lightFactor);
+        });
+
+        finalColorWithInteraction = finalColorWithInteraction.add(uWeaponColor.mul(weaponGlow));
     }
 
     mat.colorNode = vec4(finalColorWithInteraction, finalAlpha);
@@ -137,7 +144,7 @@ export class AuroraSystem {
 
         // Long, curved ribbon base geometry
         const geo = new THREE.PlaneGeometry(800, 100, 64, 8);
-        const weaponLights = this.weaponLightManager ? this.weaponLightManager.getUniforms() : undefined;
+        const weaponLights = this.weaponLightManager ? this.weaponLightManager.storageNode : undefined;
         const mat = createAuroraMaterial(weaponLights, this.uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.maxCount);
