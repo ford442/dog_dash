@@ -1274,34 +1274,18 @@ const industrialGeometryManager = new IndustrialGeometryManager(scene);
 const levelManager = new LevelManager({
     weaponLightManager,
     scene,
-    camera: camera,
+    camera,
     getPlayer: () => player,
     friendsManager,
     industrialGeometryManager,
-    planetaryHorizonSystem,
     ghostDebrisSystem,
     godRaySystem,
     auroraSystem,
-    reEntrySystem,
-    industrialSystem,
-    waterfallSystem,
-    asteroidFieldSystem,
-    biologicalSystem,
-    nebulaSystem,
-    cosmicDustSystem,
     butterflySwarmSystem,
     flowerManager,
     castleManager,
     candyManager,
     debugSystem,
-    creators: {
-        createStarDustFern,
-        createNebulaRose,
-        createSubwooferLotus,
-        createGlowingFlower,
-        createFloweringTree,
-        createFloatingOrb
-    },
     spawners: {
         createSporeCloudAtPosition,
         createVoidRootBallAtPosition,
@@ -1310,6 +1294,14 @@ const levelManager = new LevelManager({
         createLiquidMetalBlobAtPosition,
         createMagmaHeartAtPosition,
         createGravityAnchorAtPosition
+    },
+    geologicalCounts: {
+        sporeClouds: () => sporeClouds.length,
+        voidRootBalls: () => voidRootBalls.length,
+        vacuumKelps: () => vacuumKelps.length,
+        iceNeedleClusters: () => iceNeedleClusters.length,
+        magmaHearts: () => magmaHearts.length,
+        gravityAnchors: () => gravityAnchors.length
     },
     onLevelStart: (cfg) => {
         playerState.autoScrollSpeed = cfg.speed;

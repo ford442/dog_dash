@@ -700,25 +700,29 @@ export class CandyBeltManager {
     // GENERATION
     // ========================================================================
 
-    generateCandyBelt(length: number, density: number): void {
+    generateCandyBelt(
+        startX: number,
+        length: number,
+        density: number,
+        zBand: { min: number; max: number } = { min: -7.5, max: 7.5 }
+    ): void {
         this.beltLength = length;
-        this.beltStartX = 0;
-        
+        this.beltStartX = startX;
+
         const count = Math.floor(length * density);
-        
+
         for (let i = 0; i < count; i++) {
-            const x = (Math.random() - 0.3) * length;
-            const y = (Math.random() - 0.5) * 30;
-            const z = (Math.random() - 0.5) * 15;
-            
-            // Weighted random type
+            const x = startX + Math.random() * length;
+            const y = (Math.random() - 0.5) * 28;
+            const z = zBand.min + Math.random() * (zBand.max - zBand.min);
+
             const type = this.getRandomCandyType();
             const flavor = this.getRandomFlavor();
-            
+
             this.spawnCandyAsteroid(x, y, z, type, flavor);
         }
-        
-        console.log(`🍭 Generated candy belt with ${count} sweet treats!`);
+
+        console.log(`🍭 Generated candy belt with ${count} sweet treats along x=${startX.toFixed(0)}..${(startX + length).toFixed(0)}`);
     }
 
     spawnCandyAsteroid(
