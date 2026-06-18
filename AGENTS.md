@@ -26,3 +26,13 @@ Useful URL flags:
 - `?collisionDebug`
 
 See `docs/RENDERER_FALLBACK.md` for the implementation details.
+
+## Cursor Cloud specific instructions
+
+Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, brace-check gate `node tools/check_braces.cjs`). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no lint or test suite.
+
+Non-obvious caveats for headless/cloud verification:
+
+- The cloud VM has no GPU and no WebGPU adapter, so the default WebGPU path renders nothing. Always open the app with `?renderer=webgl` to force the WebGL2 fallback.
+- Even with `?renderer=webgl`, a normally-launched headless/virtual Chrome shows a black canvas. Launch Chrome with software-GL flags so WebGL2 actually rasterizes: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Confirm via `window.usingWebGL === true`. Under SwiftShader, TSL/node-material shaders fall back to plain standard materials (per `docs/RENDERER_FALLBACK.md`), so visuals look flatter/grayer than on a real GPU — this is expected, not a regression.
+- Playwright is already a dev dependency; for screenshots/video point `executablePath` at the system Chrome (`/usr/local/bin/google-chrome`) and pass the flags above. Video capture additionally needs `npx playwright install ffmpeg` (one-off, not part of the update script).
