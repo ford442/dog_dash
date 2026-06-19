@@ -279,7 +279,7 @@ if (shouldShowTutorial(saveManager)) {
         console.log('Tutorial complete! Starting game...');
     });
 }
-export const lightningBoltSystem = new LightningBoltSystem(scene);
+export const lightningBoltSystem = new LightningBoltSystem(scene, weaponLightManager);
 
 export const chromaShiftSystem = new ChromaShiftSystem(scene);
 
