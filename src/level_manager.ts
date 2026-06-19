@@ -302,10 +302,11 @@ export class LevelManager {
             () => this.butterflySwarmSystem.deactivate()
         );
 
-        applyEnv('blackHole',
-            () => blackHoleSystem.activate(),
-            () => blackHoleSystem.deactivate()
-        );
+        if (cfg.blackHole && cfg.blackHole.enabled) {
+            blackHoleSystem.activate(cfg.blackHole);
+        } else {
+            blackHoleSystem.deactivate();
+        }
 
         applyEnv('industrial',
             () => industrialSystem.activate(),
