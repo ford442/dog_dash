@@ -13,13 +13,19 @@ import {
     float,
     step,
     abs,
-    normalView
+    normalView,
+    positionWorld,
+    length,
+    distance,
+    Loop,
+    smoothstep
 } from 'three/tsl';
+import { WeaponLightManager } from './lighting';
 
 /**
  * Creates a TSL material for jagged lightning bolts.
  */
-function createLightningMaterial(uColor: any) {
+function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -83,8 +89,32 @@ function createLightningMaterial(uColor: any) {
     const edgeColor = color(uColor);
 
     // Smooth step based on the view normal to create a soft tube look
-    const colorMix = mix(edgeColor, coreColor, viewDot.pow(4.0));
+
+    // Smooth step based on the view normal to create a soft tube look
+    let colorMix = mix(edgeColor, coreColor, viewDot.pow(4.0));
+
+    // Dynamic Lighting Interaction
+    if (uPlayerPos) {
+        const distToPlayer = length(positionWorld.sub(uPlayerPos));
+        const playerGlow = smoothstep(0.0, 100.0, distToPlayer).oneMinus().mul(0.5);
+        colorMix = colorMix.add(vec3(0.5, 0.8, 1.0).mul(playerGlow));
+    }
+
+    if (weaponLights) {
+        const weaponGlow = float(0.0).toVar();
+        Loop({ start: 0, end: 20 }, ({ i }) => {
+            const lightData = weaponLights.element(i);
+            const lightPos = lightData.xyz;
+            const lightIntensity = lightData.w;
+            const distToLight = distance(positionWorld, lightPos);
+            const lightFactor = smoothstep(0.0, 80.0, distToLight).oneMinus().mul(lightIntensity).mul(1.5);
+            weaponGlow.addAssign(lightFactor);
+        });
+        colorMix = colorMix.add(vec3(0.0, 1.0, 1.0).mul(weaponGlow));
+    }
+
     const alpha = viewDot.pow(2.0).mul(glowIntensity);
+
 
     mat.colorNode = vec4(colorMix, alpha);
 
@@ -92,6 +122,8 @@ function createLightningMaterial(uColor: any) {
 }
 
 export class LightningBoltSystem {
+    weaponLightManager?: WeaponLightManager;
+    uPlayerPos: any = uniform(new THREE.Vector3(0,0,0));
     scene: THREE.Scene;
     active: boolean = false;
     mesh: THREE.InstancedMesh;
@@ -103,13 +135,15 @@ export class LightningBoltSystem {
     onBoltStrike?: (position: THREE.Vector3, color: THREE.Color) => void;
     currentDensity: number = 1.0;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager?: WeaponLightManager) {
         this.scene = scene;
+        this.weaponLightManager = weaponLightManager;
 
         // Use a wide plane to allow the jagged line to draw within it
         const geo = new THREE.CylinderGeometry(0.5, 0.5, 40, 8, 32);
         const uColor = uniform(new THREE.Color(0x88bbff));
-        const mat = createLightningMaterial(uColor) as any;
+        const weaponLights = this.weaponLightManager ? this.weaponLightManager.storageNode : undefined;
+        const mat = createLightningMaterial(uColor, weaponLights, this.uPlayerPos) as any;
         mat.userData = mat.userData || {};
         mat.userData.uColor = uColor;
 
@@ -162,7 +196,8 @@ export class LightningBoltSystem {
         this.mesh.visible = false;
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number = 8.0) {
+    update(delta: number, cameraX: number, playerSpeed: number = 8.0, playerPos?: THREE.Vector3) {
+        if (playerPos) this.uPlayerPos.value.copy(playerPos);
         if (!this.active) return;
 
         let needsUpdate = false;

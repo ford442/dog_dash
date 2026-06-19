@@ -1,24 +1,24 @@
-## 🌌 Architect: Plasma Storm Aurora Enhancement
+## 🌌 Architect: Lightning Bolt Dynamic Interaction Enhancement
 
 ### Concept
-> "9. Dynamic Aurora Borealis / Plasma Storms... Shifting, colorful sky curtains implemented as wide procedural ribbons." We want to elevate this to Cosmic Architect standards by adding depth and dynamic lighting via TSL, turning it into a truly reactive plasma storm.
+> "Dynamic Volumetric Lightning" enhancement. Improve the existing lightning bolts by adding dynamic interactions where they react to the player's engine glow and nearby weapon projectiles, contributing to the "Depth is King" visual standards.
 
 ### Implementation
-- `src/aurora.ts` has been enhanced to react directly to player activity, elevating it to the 'Depth is King' standard.
-- The `AuroraSystem` now accepts `weaponLightManager` and `playerPos`, injecting them into the `createAuroraMaterial`.
-- `LevelManager.update()` passes the player's position into the aurora update loop.
-- The TSL `MeshBasicNodeMaterial` uses `length` and `smoothstep` to calculate proximity to the player and dynamic weapon projectiles.
+- `src/lightning_bolt.ts` was modified to update `createLightningMaterial` to receive the `WeaponLightManager` instances and player position, applying them dynamically.
+- `LightningBoltSystem` now accepts `weaponLightManager` in the constructor.
+- Uses `distance` and `smoothstep` in `three/tsl` over a dynamic `Loop` for proximity lighting from weapon projectiles, along with additive `smoothstep` fading for the `uPlayerPos` engine glow.
+- Updates the lightning color mixing directly on the GPU to give off brilliant cyan glows.
 
 ### Visuals
-- **Player Engine Glow:** A subtle brightening effect happens within the plasma ribbons whenever the player flies close to them.
-- **Weapon Lighting Interaction:** Projectiles passing near the ribbons trigger localized intense light bursts (Plasma Reactions), making the sky feel alive and reactive to combat.
+- **Player Engine Glow Interaction**: Lightning bolts slightly brighten up and tint cyan when the player flies close to them, showing engine light scattering.
+- **Weapon Glow**: Nearby projectiles illuminate the bolts procedurally inside the TSL shader.
 
 ### Integration
-- `src/aurora.ts`: Modified `AuroraSystem` constructor, `update` method, and `createAuroraMaterial` to handle TSL lighting logic.
-- `src/game_systems.ts`: Passed `weaponLightManager` into `new AuroraSystem()`.
-- `src/level_manager.ts`: Passed `player.position` into `auroraSystem.update()` for real-time tracking.
+- `src/lightning_bolt.ts`: Accepts TSL uniform injection of weapon lights and player pos.
+- `src/game_systems.ts`: Passed `weaponLightManager` into `lightningBoltSystem`'s constructor.
+- `src/level_manager.ts`: Calls `lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);` to keep the shader uniforms synced every frame.
 
 ### Testing
 - [x] `npm run build` passes
-- [x] Verified TSL uniform additions don't throw warnings
-- [x] Tested mathematically via static analysis to ensure smoothstep values don't clip
+- [x] Tested mathematically via static analysis to ensure TSL values match `aurora.ts` interactions
+- [x] Mobile/touch controls untouched and intact

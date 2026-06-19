@@ -423,7 +423,7 @@ export class LevelManager {
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0));
         this.cloudSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
-        lightningBoltSystem.update(delta, cameraX, speed);
+        lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
 
         const dbg = this.debugSystem;
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
