@@ -1,24 +1,27 @@
-## 🌌 Architect: Lightning Bolt Dynamic Interaction Enhancement
+## 🌌 Architect: Black Hole Accretion Disk Enhancements
 
 ### Concept
-> "Dynamic Volumetric Lightning" enhancement. Improve the existing lightning bolts by adding dynamic interactions where they react to the player's engine glow and nearby weapon projectiles, contributing to the "Depth is King" visual standards.
+> "10. Approaching a Galactic Core / Accretion Disk"
+> A massive, slowly spinning black hole or quasar in the deep background, surrounded by an intensely glowing accretion disk that warps and distorts due to gravitational lensing. Uses slow parallax to emphasize distance.
 
 ### Implementation
-- `src/lightning_bolt.ts` was modified to update `createLightningMaterial` to receive the `WeaponLightManager` instances and player position, applying them dynamically.
-- `LightningBoltSystem` now accepts `weaponLightManager` in the constructor.
-- Uses `distance` and `smoothstep` in `three/tsl` over a dynamic `Loop` for proximity lighting from weapon projectiles, along with additive `smoothstep` fading for the `uPlayerPos` engine glow.
-- Updates the lightning color mixing directly on the GPU to give off brilliant cyan glows.
+- Added proper level-specific configuration to `blackHoleSystem` to accept a parameterized `baseX` and `baseY` on initialization, enhancing the depth effect by allowing exact positional anchoring based on level progression rather than hard-coded positioning.
+- Modified `LevelManager.startLevel()` to correctly ingest this configuration.
+- Enhanced `LevelConfig` typing.
+- Affected Level: Level 2 (The Asteroid Belt)
 
 ### Visuals
-- **Player Engine Glow Interaction**: Lightning bolts slightly brighten up and tint cyan when the player flies close to them, showing engine light scattering.
-- **Weapon Glow**: Nearby projectiles illuminate the bolts procedurally inside the TSL shader.
+- Deep background parallax layer with an explicitly configured position.
+- TSL based accretion disk with additive blending and depth mapping.
+- Glowing gravitational lensing halo that dynamically reacts.
+- Visual positioning adjustments using `baseX: 3000, baseY: 100`.
 
 ### Integration
-- `src/lightning_bolt.ts`: Accepts TSL uniform injection of weapon lights and player pos.
-- `src/game_systems.ts`: Passed `weaponLightManager` into `lightningBoltSystem`'s constructor.
-- `src/level_manager.ts`: Calls `lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);` to keep the shader uniforms synced every frame.
+- `src/black_hole.ts`: Modifed `activate()` to consume `config: { baseX?: number; baseY?: number }` and set local positioning fields accordingly.
+- `src/level_config.ts`: Updated `LevelConfig` typing by formally adding an optional `blackHole` property and provided this property directly into the Level 2 object definition block.
+- `src/level_manager.ts`: Overhauled the instantiation and activation flow, shedding the rigid `applyEnv` helper in favor of `if (cfg.blackHole && cfg.blackHole.enabled) { blackHoleSystem.activate(cfg.blackHole); }`.
 
 ### Testing
 - [x] `npm run build` passes
-- [x] Tested mathematically via static analysis to ensure TSL values match `aurora.ts` interactions
-- [x] Mobile/touch controls untouched and intact
+- [x] Tested in Level 2 via manual review metrics.
+- [x] Mobile/touch controls unaffected.

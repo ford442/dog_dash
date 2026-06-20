@@ -162,7 +162,9 @@ export class BlackHoleSystem {
         this.deactivate();
     }
 
-    activate() {
+    activate(config?: { baseX?: number; baseY?: number }) {
+        if (config?.baseX !== undefined) this.baseX = config.baseX;
+        if (config?.baseY !== undefined) this.baseY = config.baseY;
         if (this.active) return;
         this.active = true;
         this.group.visible = true;

@@ -96,6 +96,11 @@ export type LevelConfig = {
      * Replaces scattered levelIndex checks. New levels declare what they need here.
      * Systems not listed (or false) are deactivated.
      */
+    blackHole?: {
+        enabled: boolean;
+        baseX: number;
+        baseY: number;
+    };
     environments?: {
         butterflySwarm?: boolean;
         blackHole?: boolean;
@@ -194,9 +199,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         crystalTarsierRate: 0.0006,
         geodeTitanRate: 0.0008,
         enemyTintColor: 0x8844ff,
-        environments: {
-            blackHole: true
-        }
+        environments: {},
+        blackHole: { enabled: true, baseX: 3000, baseY: 100 }
     },
     3: {
         name: "Orbital Descent",
