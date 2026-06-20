@@ -14,7 +14,8 @@ import {
     float,
     length,
     smoothstep,
-    fract
+    fract,
+    positionLocal
 } from 'three/tsl';
 
 // Interaction radii (tuned for gentle hazard feel)
@@ -34,9 +35,13 @@ function createAccretionDiskMaterial(flareUniform?: THREE.Uniform) {
         depthWrite: false
     });
 
-    const vUv = uv();
-    const centeredUv = vUv.sub(0.5);
-    const dist = length(centeredUv).mul(2.0);
+    const pos = positionLocal.xy;
+    const dist = length(pos);
+
+    // Normalize distance between inner (35) and outer (120) radius
+    const innerR = 35.0;
+    const outerR = 120.0;
+    const normalizedDist = dist.sub(innerR).div(outerR - innerR);
 
     const uTime = time;
     const speed = 0.5;
@@ -44,29 +49,29 @@ function createAccretionDiskMaterial(flareUniform?: THREE.Uniform) {
 
     const c = cos(angle);
     const s = sin(angle);
-    const rotX = centeredUv.x.mul(c).sub(centeredUv.y.mul(s));
-    const rotY = centeredUv.x.mul(s).add(centeredUv.y.mul(c));
-    const rotatedUv = vec2(rotX, rotY);
+    const rotX = pos.x.mul(c).sub(pos.y.mul(s));
+    const rotY = pos.x.mul(s).add(pos.y.mul(c));
+    const rotatedPos = vec2(rotX, rotY);
 
-    const ring1 = sin(dist.mul(20.0).sub(uTime.mul(3.0)));
-    const ring2 = sin(dist.mul(50.0).add(uTime.mul(5.0)));
+    const ring1 = sin(normalizedDist.mul(20.0).sub(uTime.mul(3.0)));
+    const ring2 = sin(normalizedDist.mul(50.0).add(uTime.mul(5.0)));
 
-    const angleVal = rotatedUv.y.atan2(rotatedUv.x);
-    const angNoise = sin(angleVal.mul(10.0).add(dist.mul(10.0)).sub(uTime.mul(2.0)));
-    const angNoise2 = cos(angleVal.mul(20.0).sub(dist.mul(5.0)).add(uTime.mul(4.0)));
+    const angleVal = rotatedPos.y.atan2(rotatedPos.x);
+    const angNoise = sin(angleVal.mul(10.0).add(normalizedDist.mul(10.0)).sub(uTime.mul(2.0)));
+    const angNoise2 = cos(angleVal.mul(20.0).sub(normalizedDist.mul(5.0)).add(uTime.mul(4.0)));
 
     const noise = ring1.add(ring2).add(angNoise).add(angNoise2).mul(0.25).add(0.5);
 
-    const innerFade = smoothstep(0.3, 0.4, dist);
-    const outerFade = float(1.0).sub(smoothstep(0.8, 1.0, dist));
+    const innerFade = smoothstep(0.0, 0.1, normalizedDist);
+    const outerFade = float(1.0).sub(smoothstep(0.8, 1.0, normalizedDist));
     const diskMask = innerFade.mul(outerFade);
 
     const coreColor = color(0xffffff);
     const midColor = color(0xff6600);
     const edgeColor = color(0x660033);
 
-    const colorMix1 = mix(coreColor, midColor, smoothstep(0.3, 0.6, dist));
-    const colorMix2 = mix(colorMix1, edgeColor, smoothstep(0.6, 0.9, dist));
+    const colorMix1 = mix(coreColor, midColor, smoothstep(0.0, 0.4, normalizedDist));
+    const colorMix2 = mix(colorMix1, edgeColor, smoothstep(0.4, 0.8, normalizedDist));
 
     // Flare boosts brightness & alpha temporarily when projectiles hit the disk
     const flare = flareUniform ? flareUniform : float(0.0);
@@ -91,13 +96,15 @@ function createHaloMaterial(intensityUniform?: THREE.Uniform) {
         depthWrite: false
     });
 
-    const vUv = uv();
-    const centeredUv = vUv.sub(0.5);
-    const dist = length(centeredUv).mul(2.0);
+    const pos = positionLocal.xy;
+    const dist = length(pos);
 
-    const innerFade = smoothstep(0.85, 0.9, dist);
-    const outerFade = float(1.0).sub(smoothstep(0.9, 1.0, dist));
-    const mask = innerFade.mul(outerFade);
+    // Halo sits right at the event horizon (radius 30) up to 35
+    const normalizedDist = dist.sub(30.0).div(35.0 - 30.0);
+
+    const innerFade = smoothstep(0.0, 0.1, normalizedDist);
+    const outerFade = float(1.0).sub(smoothstep(0.1, 1.0, normalizedDist));
+    const mask = innerFade.mul(outerFade).mul(float(1.0).sub(normalizedDist));
 
     const intensity = intensityUniform ? intensityUniform : float(1.0);
     const finalIntensity = mask.mul(0.8).mul(intensity);
@@ -141,14 +148,14 @@ export class BlackHoleSystem {
         const ehMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
         this.eventHorizon = new THREE.Mesh(ehGeo, ehMat);
 
-        const adGeo = new THREE.PlaneGeometry(240, 240);
+        const adGeo = new THREE.RingGeometry(35, 120, 64);
         const adMat = createAccretionDiskMaterial(this.flareUniform);
         this.accretionDisk = new THREE.Mesh(adGeo, adMat);
         this.accretionDisk.rotation.x = -Math.PI * 0.4;
         this.accretionDisk.rotation.y = Math.PI * 0.1;
         this.accretionDisk.position.z = -1;
 
-        const haloGeo = new THREE.PlaneGeometry(70, 70);
+        const haloGeo = new THREE.RingGeometry(30, 35, 64);
         const haloMat = createHaloMaterial(this.haloIntensity);
         this.halo = new THREE.Mesh(haloGeo, haloMat);
         this.halo.position.z = 1;
