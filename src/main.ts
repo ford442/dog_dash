@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GhostDebrisSystem } from './ghost_debris';
-import { godRaySystem, auroraSystem, blackHoleSystem, createGameManagers } from './game_systems';
+import { godRaySystem, auroraSystem, blackHoleSystem } from './game_systems';
+import { createGameManagers } from './game_managers';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
 import { 
@@ -35,7 +36,6 @@ import {
     createMagmaHeart,
     updateMagmaHeart,
     LiquidMetalSystem,
-    createGravityAnchor,
     updateGravityAnchor,
     GA_SLING_BONUS
 } from './geological';
@@ -62,6 +62,7 @@ import {
   iceNeedleClusters,
   magmaHearts,
   gravityAnchors,
+  liquidMetalBlobs,
   createSporeCloudAtPosition,
   createGeodeAtPosition,
   createVoidRootBallAtPosition,
@@ -69,6 +70,7 @@ import {
   createIceNeedleClusterAtPosition,
   createMagmaHeartAtPosition,
   createLiquidMetalBlobAtPosition,
+  createGravityAnchorAtPosition,
   cleanupGeologicalObjects,
 
 } from './environment';
@@ -470,9 +472,9 @@ const {
   butterflySwarmSystem,
 } = createGameManagers(scene, audioSystem, particleSystem);
 
-// AQUA EXPANSE (Level 6 finale): jellyfish, kelp forests, plankton, bubble reefs
+// Aquatic environments: jellyfish, kelp forests, plankton, bubble reefs
 const aquaticLifeManager = new AquaticLifeManager(scene);
-let aquaticLifeSpawnedL6 = false;
+let aquaticLifeSpawnedLevel: number | null = null;
 let level6BossDefeated = false;
 let whaleSongTimer = 30;
 let moonGateSequenceActive = false;
@@ -816,6 +818,7 @@ creatureManager.setDebugSystem(debugSystem);
 debugSystem.register('creature_tarsier_guardian', 'Crystal Tarsier', true);
 debugSystem.register('creature_geode_titan', 'Geode Titan', true);
 debugSystem.register('creature_moon_jelly', 'Moon Jelly', true);
+debugSystem.register('creature_aurora_ray', 'Aurora Ray', true);
 debugSystem.register('particles', 'Particles', true);
 debugSystem.register('debris', 'Debris', true);
 debugSystem.register('weaponLights', 'Weapon Lights', true);
@@ -866,20 +869,17 @@ let bestiaryUI: HTMLDivElement | null = null;
 
 // (liquid + magma removed)
 
-// Gravity Anchors (array from env; local wrapper preserves tarsier spawn logic)
-function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
-    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
-    anchor.position.set(x, y, z);
-    anchor.userData.speciesId = 'gravityAnchor';
-    scene.add(anchor);
-    gravityAnchors.push(anchor);
-
+function spawnTarsiersForGravityAnchor(anchor: THREE.Group) {
     // Spawn 2–4 Astro Tarsiers that cling and orbit this anchor
     if (debugSystem.isEnabled('spaceFriends')) {
         const count = 2 + Math.floor(Math.random() * 3);
         friendsManager.spawnTarsiersNearAnchor(anchor.position, count);
     }
+}
 
+function createGravityAnchorWithTarsiers(x: number, y: number, z: number, biome: number = 0) {
+    const anchor = createGravityAnchorAtPosition(x, y, z, biome);
+    spawnTarsiersForGravityAnchor(anchor);
     return anchor;
 }
 
@@ -906,9 +906,9 @@ scene.add(moon);
 
 // --- Phase 1 test constellation: 3 Gravity Anchors in Level 1 (Neon Garden) ---
 // Intentionally placed at different heights to encourage curved sling arcs.
-createGravityAnchorAtPosition(80,  5, -25, 1);
-createGravityAnchorAtPosition(180, -6, -20, 1);
-createGravityAnchorAtPosition(280,  8, -22, 1);
+createGravityAnchorWithTarsiers(80,  5, -25, 1);
+createGravityAnchorWithTarsiers(180, -6, -20, 1);
+createGravityAnchorWithTarsiers(280,  8, -22, 1);
 
 // --- Slingable debris prototype cluster (Phase 1 MVP test zone) ---
 createSlingableObjectAtPosition(96, 3, -14, {
@@ -998,7 +998,8 @@ const levelManager = new LevelManager({
         createIceNeedleClusterAtPosition,
         createLiquidMetalBlobAtPosition,
         createMagmaHeartAtPosition,
-        createGravityAnchorAtPosition
+        createGravityAnchorAtPosition: createGravityAnchorWithTarsiers,
+        createGeodeAtPosition
     },
     geologicalCounts: {
         sporeClouds: () => sporeClouds.length,
@@ -1006,11 +1007,13 @@ const levelManager = new LevelManager({
         vacuumKelps: () => vacuumKelps.length,
         iceNeedleClusters: () => iceNeedleClusters.length,
         magmaHearts: () => magmaHearts.length,
-        gravityAnchors: () => gravityAnchors.length
+        gravityAnchors: () => gravityAnchors.length,
+        geodes: () => geodes.length
     },
     onLevelStart: (cfg) => {
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
+        creatureManager.clear();
         discoveryManager.reset();
         // Mine Robot memory: recharge the wrench auto-bounce for the new level
         wrenchChargeAvailable = saveManager.hasMemory('mine_robot');
@@ -2764,16 +2767,18 @@ function animate() {
             friendsManager.cleanupFarFriends(player.position.x);
         }
 
-        // --- AQUA EXPANSE / aquatic environments (level 6 and any future level with environments.aquaticLife) ---
+        // --- Aquatic environments (enabled per level via environments.aquaticLife) ---
         const currentLevelCfg = levelManager.config[levelManager.currentLevel];
         const isAquaEnv = !!currentLevelCfg?.environments?.aquaticLife;
         if (isAquaEnv) {
-            if (!aquaticLifeSpawnedL6) {
-                aquaticLifeSpawnedL6 = true;
+            if (aquaticLifeSpawnedLevel !== levelManager.currentLevel) {
+                aquaticLifeManager.clear();
+                aquaticLifeSpawnedLevel = levelManager.currentLevel;
+                whaleSongTimer = 30;
                 const cfgA = currentLevelCfg;
-                aquaticLifeManager.spawnForLevel6(player.position.x + 80, cfgA.distance - 200);
+                aquaticLifeManager.spawnForLevel(player.position.x + 80, cfgA.distance - 200);
 
-                // Bubble-reef rescue friends feeding the final flotilla parade
+                // Bubble-reef rescue friends feeding the final flotilla parade.
                 const reefFriends = friendsManager.spawnTrappedFriendsAlong(
                     player.position.x + 150,
                     cfgA.distance - 400,
@@ -2808,6 +2813,9 @@ function animate() {
                 whaleSongTimer = 25 + Math.random() * 15;
                 audioSystem.playWhaleSong();
             }
+        } else if (aquaticLifeSpawnedLevel !== null) {
+            aquaticLifeManager.clear();
+            aquaticLifeSpawnedLevel = null;
         }
 
         // Update dog cockpit animation
@@ -3028,14 +3036,21 @@ function animate() {
     if (player) {
         const isFiringProxy = weaponSystem.getActiveProjectiles().length > 0;
         levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
-        // Include geological objects for species scanning (they now carry speciesId)
         const geoScannables = [
+            ...sporeClouds.map(cloud => cloud.spores),
+            ...vacuumKelps,
             ...voidRootBalls,
             ...magmaHearts,
             ...iceNeedleClusters,
             ...gravityAnchors,
+            ...liquidMetalBlobs,
         ];
-        discoveryManager.update(player.position, [...levelManager.levelObjects, ...geoScannables]);
+        discoveryManager.update(player.position, [
+            ...levelManager.levelObjects,
+            ...geoScannables,
+            ...friendsManager.getScannables(),
+            ...creatureManager.getScannables()
+        ]);
         if (debugSystem.isEnabled('butterflySwarm')) {
             butterflySwarmSystem.update(delta, camera.position.x, player.position);
         }

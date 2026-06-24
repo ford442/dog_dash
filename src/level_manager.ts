@@ -2,7 +2,7 @@ import { lightningBoltSystem } from './game_systems';
 import * as THREE from 'three';
 import { CloudSystem } from './clouds';
 import { AtmosphereSystem } from './sky';
-import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
+import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig, type LevelEnvironments } from './level_config';
 import { IndustrialGeometryManager } from './industrial_geometry';
 import {
     createSubwooferLotus,
@@ -55,6 +55,18 @@ const FOG_NEAR_DENSITY_FACTOR = 3;
 const STREAM_AHEAD_START = 80;
 const STREAM_AHEAD_END = 550;
 
+type EnvironmentPlugin<K extends keyof LevelEnvironments = keyof LevelEnvironments> = {
+    flag: K;
+    activate: (value: NonNullable<LevelEnvironments[K]>) => void;
+    deactivate: () => void;
+};
+
+function isEnvironmentEnabled(value: LevelEnvironments[keyof LevelEnvironments] | undefined): boolean {
+    if (!value) return false;
+    if (typeof value === 'boolean') return value;
+    return value.enabled;
+}
+
 export type GeologicalSpawners = {
     createSporeCloudAtPosition: (x: number, y: number, z: number) => unknown;
     createVoidRootBallAtPosition: (x: number, y: number, z: number) => unknown;
@@ -63,6 +75,7 @@ export type GeologicalSpawners = {
     createLiquidMetalBlobAtPosition: (x: number, y: number, z: number) => unknown;
     createMagmaHeartAtPosition: (x: number, y: number, z: number) => unknown;
     createGravityAnchorAtPosition: (x: number, y: number, z: number, biome?: number) => unknown;
+    createGeodeAtPosition: (x: number, y: number, z: number) => unknown;
 };
 
 export type GeologicalCounts = {
@@ -72,6 +85,7 @@ export type GeologicalCounts = {
     iceNeedleClusters: () => number;
     magmaHearts: () => number;
     gravityAnchors: () => number;
+    geodes: () => number;
 };
 
 export type LevelManagerOptions = {
@@ -133,7 +147,8 @@ export class LevelManager {
         iceNeedle: 6,
         liquidMetal: 6,
         magmaHeart: 6,
-        gravityAnchor: 6
+        gravityAnchor: 6,
+        geode: 4
     } as const;
 
     constructor(options: LevelManagerOptions) {
@@ -285,71 +300,77 @@ export class LevelManager {
             this.ghostDebrisSystem.deactivate();
         }
 
-        // Environment / background system toggles driven by LevelConfig.environments.
-        // Replaces previous `if (levelIndex === N)` blocks. Allows composition and
-        // new levels without code changes here.
         const environments = cfg.environments || {};
-        const applyEnv = (flag: string, activate: () => void, deactivate: () => void) => {
-            if (environments[flag as keyof typeof environments]) {
-                activate();
-            } else {
-                deactivate();
-            }
-        };
 
-        applyEnv('butterflySwarm',
-            () => this.butterflySwarmSystem.activate(),
-            () => this.butterflySwarmSystem.deactivate()
-        );
-
-        if (cfg.blackHole && cfg.blackHole.enabled) {
-            blackHoleSystem.activate(cfg.blackHole);
-        } else {
-            blackHoleSystem.deactivate();
-        }
-
-        applyEnv('industrial',
-            () => industrialSystem.activate(),
-            () => industrialSystem.deactivate()
-        );
-
-        applyEnv('waterfall',
-            () => waterfallSystem.activate(),
-            () => waterfallSystem.deactivate()
-        );
-
-        applyEnv('planetaryHorizon',
-            () => {
-                planetaryHorizonSystem.levelDistance = levelLength;
-                planetaryHorizonSystem.activate();
+        const environmentPlugins: EnvironmentPlugin[] = [
+            {
+                flag: 'butterflySwarm',
+                activate: () => this.butterflySwarmSystem.activate(),
+                deactivate: () => this.butterflySwarmSystem.deactivate()
             },
-            () => planetaryHorizonSystem.deactivate()
-        );
-
-        applyEnv('reEntry',
-            () => {
-                reEntrySystem.levelDistance = levelLength;
-                reEntrySystem.activate();
+            {
+                flag: 'blackHole',
+                activate: (blackHoleConfig) => blackHoleSystem.activate(blackHoleConfig),
+                deactivate: () => blackHoleSystem.deactivate()
             },
-            () => reEntrySystem.deactivate()
-        );
-
-        applyEnv('biological',
-            () => {
-                biologicalSystem.activate();
-                nebulaSystem.activate();
-                cosmicDustSystem.activate();
-                this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
+            {
+                flag: 'industrial',
+                activate: () => industrialSystem.activate(),
+                deactivate: () => industrialSystem.deactivate()
             },
-            () => {
-                biologicalSystem.deactivate();
-                nebulaSystem.deactivate();
-                cosmicDustSystem.deactivate();
-                if (levelIndex !== 4) {
-                    this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
+            {
+                flag: 'waterfall',
+                activate: () => waterfallSystem.activate(),
+                deactivate: () => waterfallSystem.deactivate()
+            },
+            {
+                flag: 'planetaryHorizon',
+                activate: () => {
+                    planetaryHorizonSystem.levelDistance = levelLength;
+                    planetaryHorizonSystem.activate();
+                },
+                deactivate: () => planetaryHorizonSystem.deactivate()
+            },
+            {
+                flag: 'reEntry',
+                activate: () => {
+                    reEntrySystem.levelDistance = levelLength;
+                    reEntrySystem.activate();
+                },
+                deactivate: () => reEntrySystem.deactivate()
+            },
+            {
+                flag: 'biological',
+                activate: () => {
+                    biologicalSystem.activate();
+                    this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
+                },
+                deactivate: () => {
+                    biologicalSystem.deactivate();
+                    const cloudsVisible = (cfg.foliageDensity.cloud ?? 20) > 0;
+                    this.cloudSystem.layers.forEach(l => l.mesh.visible = cloudsVisible);
                 }
+            },
+            {
+                flag: 'nebula',
+                activate: () => nebulaSystem.activate(),
+                deactivate: () => nebulaSystem.deactivate()
+            },
+            {
+                flag: 'cosmicDust',
+                activate: () => cosmicDustSystem.activate(),
+                deactivate: () => cosmicDustSystem.deactivate()
             }
-        );
+        ];
+
+        for (const plugin of environmentPlugins) {
+            const value = environments[plugin.flag];
+            if (isEnvironmentEnabled(value)) {
+                plugin.activate(value as never);
+            } else {
+                plugin.deactivate();
+            }
+        }
 
         // Level 3 rescue objective friends spawn (kept with level guard for exact prior behavior;
         // objective-driven but historically only on level 3).
@@ -502,16 +523,57 @@ export class LevelManager {
         const foliageZ: [number, number] = [DEPTH_LAYERS.MIDGROUND.min, DEPTH_LAYERS.MIDGROUND.max];
         const geoZ: [number, number] = [DEPTH_LAYERS.BACKGROUND.min + 5, DEPTH_LAYERS.MIDGROUND.max];
 
+        const vignettes = levelConfig.vignettes || {};
+        const vignetteCount = (base: number | undefined) =>
+            base ? Math.max(0, Math.floor(scaledCount(base * (width / 100)))) : 0;
+
+        // Geode clearings: plan centers first so base fern scatter thins near safe harbors
+        type ClearingCenter = { x: number; y: number; radius: number };
+        const geodeClearings: ClearingCenter[] = [];
+        if ((vignettes.geodeClearings || 0) > 0) {
+            const nClearings = vignetteCount(vignettes.geodeClearings);
+            const geodeCap = Math.max(
+                0,
+                this.GEOLOGICAL_SPAWN_CAPS.geode - this.geologicalCounts.geodes()
+            );
+            for (let c = 0; c < Math.min(nClearings, geodeCap); c++) {
+                geodeClearings.push({
+                    x: startX + Math.random() * width,
+                    y: yRange[0] + Math.random() * (yRange[1] - yRange[0]),
+                    radius: 12 + Math.random() * 5
+                });
+            }
+        }
+
+        const isInClearing = (x: number, y: number) =>
+            geodeClearings.some((c) => {
+                const dx = x - c.x;
+                const dy = y - c.y;
+                return dx * dx + dy * dy < c.radius * c.radius;
+            });
+
         const spawn = (
             count: number,
             creatorFn: () => THREE.Object3D,
             customYRange = yRange,
             zRange: [number, number] = foliageZ,
-            speciesId?: string
+            speciesId?: string,
+            rejectPosition?: (x: number, y: number) => boolean
         ) => {
             for (let i = 0; i < scaledCount(count); i++) {
-                const x = startX + Math.random() * width;
-                const y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
+                let x = 0;
+                let y = 0;
+                let placed = false;
+                for (let attempt = 0; attempt < 5; attempt++) {
+                    x = startX + Math.random() * width;
+                    y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
+                    if (!rejectPosition || !rejectPosition(x, y)) {
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed || (rejectPosition && rejectPosition(x, y))) continue;
+
                 const z = randomZInRange(zRange);
 
                 const obj = creatorFn();
@@ -528,12 +590,25 @@ export class LevelManager {
             }
         };
 
-        if (density.fern) spawn(density.fern, () => createStarDustFern({ color: 0x8A2BE2 }), yRange, foliageZ, 'fern');
+        if (density.fern) {
+            spawn(
+                density.fern,
+                () => createStarDustFern({ color: 0x8A2BE2 }),
+                yRange,
+                foliageZ,
+                'fern',
+                isInClearing
+            );
+        }
         if (density.rose) spawn(density.rose, () => createNebulaRose({ color: 0xFF1493 }), yRange, foliageZ, 'rose');
         if (density.lotus) spawn(density.lotus, () => createSubwooferLotus({ color: 0x00ff88 }), yRange, foliageZ, 'lotus');
         if (density.glowingFlower) spawn(density.glowingFlower, () => createGlowingFlower({ color: 0x00ffff, intensity: 2.0 }), yRange, foliageZ, 'glowingFlower');
 
-        const treeYRange: [number, number] = [Math.max(yRange[0], -20), Math.min(yRange[1], -5)];
+        const bandHeight = yRange[1] - yRange[0];
+        // Open levels: trees sit in the lower sky band. Tunnels: use lower third of flyable height.
+        const treeYRange: [number, number] = bandHeight < 16
+            ? [yRange[0] + bandHeight * 0.12, yRange[0] + bandHeight * 0.42]
+            : [Math.max(yRange[0], -20), Math.min(yRange[1], -5)];
         if (density.tree) spawn(density.tree, () => createFloweringTree({ color: 0x44ffaa }), treeYRange, foliageZ, 'tree');
         if (density.floweringTree) spawn(density.floweringTree, () => createFloweringTree({ color: 0xffaa44 }), treeYRange, foliageZ, 'floweringTree');
 
@@ -542,69 +617,7 @@ export class LevelManager {
         if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange, foliageZ, 'mushroom');
         if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange, foliageZ, 'orb');
 
-        // --- Vignette clusters for composed set dressing (after uniform scatter) ---
-        // At least tree groves + rose arches implemented. Cheap reuse of factories.
-        // Respects objectDensityMultiplier via vignetteCount. Uses passed yRange for tunnels.
-        const vignettes = levelConfig.vignettes || {};
-        const vignetteCount = (base: number | undefined) =>
-            base ? Math.max(0, Math.floor(scaledCount(base * (width / 100)))) : 0;
-
-        // Tree groves: 3-6 trees in ~14 unit X cluster, shared tight Y band
-        if ((vignettes.treeGroves || 0) > 0 && (density.tree || density.floweringTree)) {
-            const nGroves = vignetteCount(vignettes.treeGroves);
-            for (let g = 0; g < nGroves; g++) {
-                const gx = startX + Math.random() * width;
-                const gY = treeYRange[0] + Math.random() * (treeYRange[1] - treeYRange[0]);
-                const gSize = 3 + Math.floor(Math.random() * 4);
-                const gZ = randomZInRange(foliageZ);
-                const isFlowering = density.floweringTree && (Math.random() < 0.5 || !density.tree);
-                for (let t = 0; t < gSize; t++) {
-                    const tx = gx + (Math.random() - 0.5) * 14;
-                    const ty = gY + (Math.random() - 0.5) * 2.5;
-                    const tz = gZ + (Math.random() - 0.5) * 2;
-                    const creator = isFlowering
-                        ? () => createFloweringTree({ color: 0xffaa44 })
-                        : () => createFloweringTree({ color: 0x44ffaa });
-                    const obj = creator();
-                    obj.position.set(tx, ty, tz);
-                    const s = 0.75 + Math.random() * 0.35;
-                    obj.scale.set(s, s, s);
-                    obj.userData.speciesId = isFlowering ? 'floweringTree' : 'tree';
-                    this.scene.add(obj);
-                    this.levelObjects.push(obj);
-                    moonPlants.push(obj);
-                }
-            }
-        }
-
-        // Rose arches: pairs offset in X/Z framing a vertical gap (encourages diving)
-        if ((vignettes.roseArches || 0) > 0 && density.rose) {
-            const nArches = vignetteCount(vignettes.roseArches);
-            for (let a = 0; a < nArches; a++) {
-                const ax = startX + Math.random() * width;
-                const az = randomZInRange(foliageZ);
-                const gapY = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const sep = 5.5 + Math.random() * 3.5;
-                // lower of pair
-                const obj1 = createNebulaRose({ color: 0xFF1493 });
-                obj1.position.set(ax - 1.5, gapY - sep * 0.5, az - 0.8);
-                let s = 0.65 + Math.random() * 0.25;
-                obj1.scale.set(s, s, s);
-                obj1.userData.speciesId = 'rose';
-                this.scene.add(obj1);
-                this.levelObjects.push(obj1);
-                moonPlants.push(obj1);
-                // upper of pair
-                const obj2 = createNebulaRose({ color: 0xFF1493 });
-                obj2.position.set(ax + 1.5, gapY + sep * 0.5, az + 0.8);
-                s = 0.65 + Math.random() * 0.25;
-                obj2.scale.set(s, s, s);
-                obj2.userData.speciesId = 'rose';
-                this.scene.add(obj2);
-                this.levelObjects.push(obj2);
-                moonPlants.push(obj2);
-            }
-        }
+        this.spawnFoliageVignettes(startX, width, density, yRange, treeYRange, foliageZ, geoZ, vignettes, vignetteCount, geodeClearings);
 
         if (density.cloud) {
             const targetCount = Math.min(
@@ -703,6 +716,82 @@ export class LevelManager {
                 const z = randomZInRange(geoZ);
                 this.spawners.createGravityAnchorAtPosition(x, y, z, this.currentLevel);
             }
+        }
+    }
+
+    /** Composed cluster passes after uniform scatter — reuses existing foliage factories. */
+    private spawnFoliageVignettes(
+        startX: number,
+        width: number,
+        density: LevelConfig['foliageDensity'],
+        yRange: [number, number],
+        treeYRange: [number, number],
+        foliageZ: [number, number],
+        geoZ: [number, number],
+        vignettes: NonNullable<LevelConfig['vignettes']>,
+        vignetteCount: (base: number | undefined) => number,
+        geodeClearings: { x: number; y: number; radius: number }[]
+    ) {
+        // Tree groves: 3–6 trees in ~14 unit X cluster, shared tight Y band
+        if ((vignettes.treeGroves || 0) > 0 && (density.tree || density.floweringTree)) {
+            const nGroves = vignetteCount(vignettes.treeGroves);
+            for (let g = 0; g < nGroves; g++) {
+                const gx = startX + Math.random() * width;
+                const gY = treeYRange[0] + Math.random() * (treeYRange[1] - treeYRange[0]);
+                const gSize = 3 + Math.floor(Math.random() * 4);
+                const gZ = randomZInRange(foliageZ);
+                const isFlowering = density.floweringTree && (Math.random() < 0.5 || !density.tree);
+                for (let t = 0; t < gSize; t++) {
+                    const tx = gx + (Math.random() - 0.5) * 14;
+                    const ty = gY + (Math.random() - 0.5) * 2.5;
+                    const tz = gZ + (Math.random() - 0.5) * 2;
+                    const creator = isFlowering
+                        ? () => createFloweringTree({ color: 0xffaa44 })
+                        : () => createFloweringTree({ color: 0x44ffaa });
+                    const obj = creator();
+                    obj.position.set(tx, ty, tz);
+                    const s = 0.75 + Math.random() * 0.35;
+                    obj.scale.set(s, s, s);
+                    obj.userData.speciesId = isFlowering ? 'floweringTree' : 'tree';
+                    this.scene.add(obj);
+                    this.levelObjects.push(obj);
+                    moonPlants.push(obj);
+                }
+            }
+        }
+
+        // Rose arches: pairs offset in X/Z framing a vertical gap (encourages diving)
+        if ((vignettes.roseArches || 0) > 0 && density.rose) {
+            const nArches = vignetteCount(vignettes.roseArches);
+            for (let a = 0; a < nArches; a++) {
+                const ax = startX + Math.random() * width;
+                const az = randomZInRange(foliageZ);
+                const gapY = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+                const sep = 5.5 + Math.random() * 3.5;
+                const obj1 = createNebulaRose({ color: 0xFF1493 });
+                obj1.position.set(ax - 1.5, gapY - sep * 0.5, az - 0.8);
+                let s = 0.65 + Math.random() * 0.25;
+                obj1.scale.set(s, s, s);
+                obj1.userData.speciesId = 'rose';
+                this.scene.add(obj1);
+                this.levelObjects.push(obj1);
+                moonPlants.push(obj1);
+
+                const obj2 = createNebulaRose({ color: 0xFF1493 });
+                obj2.position.set(ax + 1.5, gapY + sep * 0.5, az + 0.8);
+                s = 0.65 + Math.random() * 0.25;
+                obj2.scale.set(s, s, s);
+                obj2.userData.speciesId = 'rose';
+                this.scene.add(obj2);
+                this.levelObjects.push(obj2);
+                moonPlants.push(obj2);
+            }
+        }
+
+        // Geode clearings: spawn FracturedGeode safe harbors at pre-planned centers
+        for (const clearing of geodeClearings) {
+            const z = randomZInRange(geoZ);
+            this.spawners.createGeodeAtPosition(clearing.x, clearing.y, z);
         }
     }
 

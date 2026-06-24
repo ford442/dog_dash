@@ -67,6 +67,7 @@ export class LivingGeodeTitan {
         this.position = new THREE.Vector3(x, y, z);
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'livingGeodeTitan';
         this.createMesh();
         scene.add(this.group);
     }

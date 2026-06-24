@@ -54,6 +54,7 @@ export class SpaceKitty {
         this.baseY = y;
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'spaceKitty';
         
         this.createMesh();
         scene.add(this.group);
@@ -414,6 +415,7 @@ export class SpaceBunny {
         this.baseY = y;
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'moonBunny';
         
         this.createMesh();
         scene.add(this.group);
@@ -830,6 +832,7 @@ export class WishLantern {
         this.baseY = y;
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'wishLantern';
         
         this.createMesh();
         scene.add(this.group);
@@ -1126,6 +1129,7 @@ export class AstroTarsier {
 
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'astroTarsier';
 
         this.createMesh();
         scene.add(this.group);
@@ -1414,6 +1418,9 @@ export class TrappedFriend {
         this.kind = kind;
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = kind === 'moonpup'
+            ? 'moonPup'
+            : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         // Occupant - the trapped friend, glowing softly inside the wreckage
         const occupantGeo = new THREE.SphereGeometry(0.35, 12, 12);
@@ -1510,6 +1517,9 @@ export class FlotillaMember {
         this.kind = kind;
         this.time = Math.random() * Math.PI * 2;
         this.group = new THREE.Group();
+        this.group.userData.speciesId = kind === 'moonpup'
+            ? 'rescuedMoonPup'
+            : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
         const bodyMat = new THREE.MeshStandardMaterial({
@@ -2091,6 +2101,17 @@ export class FriendsManager {
             tarsiers: this.tarsiers.length,
             total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length
         };
+    }
+
+    getScannables(): THREE.Object3D[] {
+        return [
+            ...this.kitties.map(friend => friend.group),
+            ...this.bunnies.map(friend => friend.group),
+            ...this.lanterns.map(friend => friend.group),
+            ...this.tarsiers.map(friend => friend.group),
+            ...this.trappedFriends.map(friend => friend.group),
+            ...this.flotilla.map(friend => friend.group)
+        ];
     }
 
     /**

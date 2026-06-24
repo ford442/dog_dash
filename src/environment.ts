@@ -34,6 +34,8 @@ export const sporeClouds: SporeCloud[] = [];
 
 export function createSporeCloudAtPosition(x: number, y: number, z: number) {
     const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(Math.random() * 500));
+    cloud.spores.userData.speciesId = 'sporeCloud';
+    cloud.spores.userData.scanPosition = cloud.position;
     sporeClouds.push(cloud);
     return cloud;
 }
@@ -97,6 +99,7 @@ export const vacuumKelps: THREE.Group[] = [];
 export function createVacuumKelpAtPosition(x: number, y: number, z: number) {
     const kelp = createVacuumKelp({ length: 20 + Math.random() * 20, nodes: 5 + Math.floor(Math.random() * 4) });
     kelp.position.set(x, y, z);
+    kelp.userData.speciesId = 'vacuumKelp';
     scene.add(kelp);
     vacuumKelps.push(kelp);
     return kelp;
@@ -115,8 +118,12 @@ export function createIceNeedleClusterAtPosition(x: number, y: number, z: number
 }
 
 // Liquid Metal Blobs - splitting and recombination
+export const liquidMetalBlobs: THREE.Object3D[] = [];
+
 export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
     const blob = liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
+    blob.group.userData.speciesId = 'liquidMetalBlob';
+    liquidMetalBlobs.push(blob.group);
     return blob;
 }
 

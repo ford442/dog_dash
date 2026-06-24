@@ -1104,19 +1104,10 @@ export class CastleBackgroundManager {
     }
 }
 
-// --- Helper Functions for Direct Use ---
-
-export function createDreamyCastleBackground(scene: THREE.Scene): CastleBackgroundManager {
-    const manager = new CastleBackgroundManager(scene);
-    manager.generateCastleField(15, -200, 500);
-    return manager;
-}
-
 // Default export
 export default {
     CloudCastle,
     CastleBackgroundManager,
-    createDreamyCastleBackground,
     PASTEL_COLORS,
     RAINBOW_COLORS
 };

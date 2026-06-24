@@ -28,14 +28,9 @@ import { getSaveManager } from './save_manager';
 import { StarfieldSystem } from './stars';
 import { OrbManager } from './collectibles';
 import { PowerUpManager, PowerUpType } from './powerup_manager';
-import { FriendsManager } from './space_friends';
 import { DogCockpitController, DogAnimationState } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType } from './juice_effects';
-import { ConstellationManager } from './flower_constellations';
-import { CandyBeltManager } from './candy_obstacles';
-import { CastleBackgroundManager } from './cloud_castles';
-import { ButterflySwarmSystem } from './butterfly_swarm';
 import { EffectManager, MagicalEffectType } from './magical_effects';
 import { VictorySystem } from './victory_system';
 import { TutorialSystem, shouldShowTutorial } from './tutorial_system';
@@ -172,8 +167,9 @@ export const powerUpManager = new PowerUpManager({
     }
 });
 
-// SPACE FRIENDS, dreamy env managers, and butterfly swarm are now created
-// via createGameManagers(scene) below — single source, correct scene passed from main.
+// Space friends, dreamy environment managers, and butterfly swarm are created
+// by main.ts through game_managers.ts so game_systems.ts never constructs
+// orphan manager instances at module load time.
 
 // Connect orb collection to power-ups
 orbManager.onPowerUpReady = () => {
@@ -262,9 +258,6 @@ export const rollSystem = new RollSystem({
     }
 });
 
-// SWARM #3 - DREAMY ENVIRONMENTS
-// (instantiated once via createGameManagers to ensure correct scene)
-
 // Effect manager - will set target when player loads
 const tempTarget = new THREE.Group();
 export const effectManager = new EffectManager(scene, audioSystem, tempTarget);
@@ -288,39 +281,3 @@ export const stormGeodeSystem = new StormGeodeSystem(scene);
 
 // BLACK HOLE SYSTEM (Galactic Core)
 export const blackHoleSystem = new BlackHoleSystem(scene);
-
-// =============================================================================
-// SINGLE SOURCE OF TRUTH FOR MANAGERS THAT REQUIRE THE CORRECT SCENE
-// =============================================================================
-
-export interface GameManagers {
-  friendsManager: FriendsManager;
-  flowerManager: ConstellationManager;
-  candyManager: CandyBeltManager;
-  castleManager: CastleBackgroundManager;
-  butterflySwarmSystem: ButterflySwarmSystem;
-}
-
-/**
- * Create the managers that must live on the caller's scene (not the
- * scene_setup.ts scene). Call exactly once from main.ts and pass the
- * instances down (LevelManager, animate loop, etc).
- */
-export function createGameManagers(
-  scene: THREE.Scene,
-  audioSystem: any,
-  particleSystem: any
-): GameManagers {
-  const friendsManager = new FriendsManager(scene, audioSystem, particleSystem);
-  const flowerManager = new ConstellationManager(scene, audioSystem, particleSystem);
-  const candyManager = new CandyBeltManager(scene, audioSystem, particleSystem);
-  const castleManager = new CastleBackgroundManager(scene);
-  const butterflySwarmSystem = new ButterflySwarmSystem(scene);
-  return {
-    friendsManager,
-    flowerManager,
-    candyManager,
-    castleManager,
-    butterflySwarmSystem,
-  };
-}

@@ -6,11 +6,13 @@
  * Currently implemented (via unified registry for spawn modes):
  *  - CrystalTarsierGuardian (L1/L2) - ...
  *  - LivingGeodeTitan (L2/L5) - ...
- *  - MoonJelly (demo new, L5/L6) - clustered background jellies, proof of registry pattern.
+ *  - MoonJelly (demo new, L5/L6) - streaming clustered background jellies, proof of registry pattern.
+ *  - AuroraRay (L6) - level-batch school, proof of one-shot batch pattern.
  *
  * The AmbientCreatureDef registry centralizes:
- *   spawnMode ('probabilistic' etc), depthLayer via depth_layers, levelRates or rateKey,
- *   clusterSize, tint from enemyTintColor, cleanup, debug toggles per family.
+ *   spawnMode, depthLayer via depth_layers, levelRates or rateKey, clusterSize,
+ *   spawn-ahead/interval/batch placement, tint from enemyTintColor, cleanup,
+ *   and debug toggles per family.
  * Existing wrapped via legacy:true to keep old arrays/loops/behavior 100% unchanged.
  *
  * Reserved slots... (same)
@@ -41,8 +43,10 @@ export interface AmbientCreatureDef {
   levelRates?: Partial<Record<number, number>>;
   maxActive?: number;
   spawnAhead?: number;
+  streamInterval?: number;
   spawnYRange?: [number, number];
   clusterSize?: number;
+  batchCount?: number;
   catalogId?: BestiaryEntryId;
   legacy?: boolean; // for wrapping existing without behavior change
   factory: (...args: any[]) => any;
@@ -74,6 +78,8 @@ export class CreatureManager {
 
     private registeredCreatures: AmbientCreatureDef[] = [];
     private genericActive: Map<string, any[]> = new Map();
+    private lastStreamingSpawnX: Map<string, number> = new Map();
+    private spawnedLevelBatches = new Set<string>();
     private debugSystem?: DebugSystem;
 
     constructor(options: CreatureManagerOptions) {
@@ -116,18 +122,34 @@ export class CreatureManager {
             }
         });
 
-        // Proof-of-pattern new creature using the registry (probabilistic + clusters + tint + depth)
+        // Proof-of-pattern new creature using the registry (streaming + clusters + tint + depth)
         this.registerAmbientCreature({
             id: 'moon_jelly',
-            spawnMode: 'probabilistic',
+            spawnMode: 'streaming',
             depthLayer: 'BACKGROUND',
-            levelRates: { 5: 0.0015, 6: 0.001 },
-            maxActive: 5,
-            spawnAhead: 55,
+            levelRates: { 5: 0.5, 6: 0.55 },
+            maxActive: 9,
+            spawnAhead: 65,
+            streamInterval: 140,
             spawnYRange: [-15, 15],
             clusterSize: 3,
             factory: (scene: THREE.Scene, x: number, y: number, z: number, tint?: number) => {
                 return new MoonJelly(scene, x, y, z, tint);
+            }
+        });
+
+        this.registerAmbientCreature({
+            id: 'aurora_ray',
+            spawnMode: 'level_batch',
+            depthLayer: 'BACKGROUND',
+            levelRates: { 6: 1 },
+            maxActive: 4,
+            spawnAhead: 120,
+            spawnYRange: [-12, 12],
+            clusterSize: 2,
+            batchCount: 2,
+            factory: (scene: THREE.Scene, x: number, y: number, z: number, tint?: number) => {
+                return new AuroraRay(scene, x, y, z, tint);
             }
         });
     }
@@ -140,6 +162,9 @@ export class CreatureManager {
         this.registeredCreatures.push(def);
         if (!def.legacy && !this.genericActive.has(def.id)) {
             this.genericActive.set(def.id, []);
+        }
+        if (def.spawnMode === 'streaming' && !this.lastStreamingSpawnX.has(def.id)) {
+            this.lastStreamingSpawnX.set(def.id, -Infinity);
         }
     }
 
@@ -231,59 +256,93 @@ export class CreatureManager {
 
     private spawnFromRegistry(levelConfig: LevelConfig | undefined, playerX: number, levelIndex: number) {
         for (const def of this.registeredCreatures) {
-            if (def.spawnMode !== 'probabilistic') continue;
+            if (!this.isCreatureDebugEnabled(def)) continue;
 
-            let actives: any[] | undefined = undefined;
-            if (!def.legacy) {
-                actives = this.genericActive.get(def.id);
-                if (!actives) {
-                    actives = [];
-                    this.genericActive.set(def.id, actives);
-                }
-            }
+            const rate = this.getSpawnRate(def, levelConfig, levelIndex);
+            if (rate <= 0) continue;
 
-            let rate = 0;
-            if (def.rateKey && levelConfig) {
-                rate = (levelConfig as any)[def.rateKey] || 0;
-            }
-            if ((!rate || rate === 0) && def.levelRates) {
-                rate = def.levelRates[levelIndex] || 0;
-            }
-
-            const currentCount = def.legacy
-                ? (def.id === 'tarsier_guardian' ? this.tarsierGuardians.length : this.geodeTitans.length)
-                : (actives ? actives.length : 0);
-
-            if (rate > 0 && currentCount < (def.maxActive || 1)) {
-                const debugOk = def.legacy || !this.debugSystem || this.debugSystem.isEnabled(`creature_${def.id}`);
-                if (!debugOk) continue;
+            if (def.spawnMode === 'probabilistic') {
+                if (this.getActiveCount(def) >= (def.maxActive || 1)) continue;
                 if (Math.random() < rate) {
-                    const spawnX = playerX + (def.spawnAhead || 60);
-                    let spawnY = (Math.random() - 0.5) * 14;
-                    let spawnZ = -10 - Math.random() * 6;
-                    if (def.depthLayer) {
-                        spawnZ = randomZInLayer(def.depthLayer);
-                    }
-                    if (def.spawnYRange) {
-                        const [lo, hi] = def.spawnYRange;
-                        spawnY = lo + Math.random() * (hi - lo);
-                    }
-                    const tint = levelConfig?.enemyTintColor;
-                    const creature = def.factory(this.scene, spawnX, spawnY, spawnZ, tint);
-                    if (!def.legacy && actives) {
-                        actives.push(creature);
-                        const cl = def.clusterSize || 1;
-                        for (let k = 1; k < cl; k++) {
-                            const cx = spawnX + (Math.random() - 0.5) * 10;
-                            const cy = spawnY + (Math.random() - 0.5) * 4;
-                            const cz = spawnZ + (Math.random() - 0.5) * 2;
-                            actives.push(def.factory(this.scene, cx, cy, cz, tint));
-                        }
-                    }
-                    // legacy factories do their own push to keep exact arrays/loops
+                    this.spawnCreatureCluster(def, playerX + (def.spawnAhead || 60), levelConfig);
+                }
+            } else if (def.spawnMode === 'streaming') {
+                const lastX = this.lastStreamingSpawnX.get(def.id) ?? -Infinity;
+                const interval = def.streamInterval ?? 120;
+                if (playerX - lastX < interval) continue;
+                if (this.getActiveCount(def) >= (def.maxActive || 1)) continue;
+                if (Math.random() < rate) {
+                    this.lastStreamingSpawnX.set(def.id, playerX);
+                    this.spawnCreatureCluster(def, playerX + (def.spawnAhead || 60), levelConfig);
+                }
+            } else if (def.spawnMode === 'level_batch') {
+                const batchKey = `${def.id}:${levelIndex}`;
+                if (this.spawnedLevelBatches.has(batchKey)) continue;
+                this.spawnedLevelBatches.add(batchKey);
+                const count = Math.max(1, def.batchCount ?? def.clusterSize ?? 1);
+                for (let i = 0; i < count; i++) {
+                    this.spawnCreatureCluster(def, playerX + (def.spawnAhead || 60) + i * 18, levelConfig);
                 }
             }
         }
+    }
+
+    private getSpawnRate(def: AmbientCreatureDef, levelConfig: LevelConfig | undefined, levelIndex: number): number {
+        if (def.rateKey && levelConfig) {
+            return (levelConfig as any)[def.rateKey] || 0;
+        }
+        return def.levelRates?.[levelIndex] || 0;
+    }
+
+    private isCreatureDebugEnabled(def: AmbientCreatureDef): boolean {
+        // Legacy wrappers keep original spawn behavior; debug toggles apply to new registry creatures only.
+        if (def.legacy) return true;
+        return !this.debugSystem || this.debugSystem.isEnabled(`creature_${def.id}`);
+    }
+
+    private getActiveCount(def: AmbientCreatureDef): number {
+        if (!def.legacy) {
+            return this.genericActive.get(def.id)?.length ?? 0;
+        }
+        if (def.id === 'tarsier_guardian') return this.tarsierGuardians.length;
+        if (def.id === 'geode_titan') return this.geodeTitans.length;
+        return 0;
+    }
+
+    private spawnCreatureCluster(def: AmbientCreatureDef, spawnX: number, levelConfig: LevelConfig | undefined): void {
+        const actives = def.legacy ? undefined : this.genericActive.get(def.id);
+        const remainingCapacity = Math.max(0, (def.maxActive || Infinity) - this.getActiveCount(def));
+        const clusterCount = Math.min(def.clusterSize || 1, remainingCapacity);
+        if (clusterCount <= 0) return;
+
+        const spawnY = this.randomSpawnY(def);
+        const spawnZ = this.randomSpawnZ(def);
+        const tint = levelConfig?.enemyTintColor;
+
+        for (let k = 0; k < clusterCount; k++) {
+            const cx = spawnX + (k === 0 ? 0 : (Math.random() - 0.5) * 10);
+            const cy = spawnY + (k === 0 ? 0 : (Math.random() - 0.5) * 4);
+            const cz = spawnZ + (k === 0 ? 0 : (Math.random() - 0.5) * 2);
+            const creature = def.factory(this.scene, cx, cy, cz, tint);
+            if (!def.legacy && actives) {
+                actives.push(creature);
+            }
+        }
+    }
+
+    private randomSpawnY(def: AmbientCreatureDef): number {
+        if (def.spawnYRange) {
+            const [lo, hi] = def.spawnYRange;
+            return lo + Math.random() * (hi - lo);
+        }
+        return (Math.random() - 0.5) * 14;
+    }
+
+    private randomSpawnZ(def: AmbientCreatureDef): number {
+        if (def.depthLayer) {
+            return randomZInLayer(def.depthLayer);
+        }
+        return -10 - Math.random() * 6;
     }
 
     /** Remove all active creatures (e.g. on level reset/game restart). */
@@ -298,6 +357,30 @@ export class CreatureManager {
             }
             list.length = 0;
         }
+        this.lastStreamingSpawnX.clear();
+        this.spawnedLevelBatches.clear();
+        for (const def of this.registeredCreatures) {
+            if (def.spawnMode === 'streaming') {
+                this.lastStreamingSpawnX.set(def.id, -Infinity);
+            }
+        }
+    }
+
+    getScannables(): THREE.Object3D[] {
+        const genericScannables: THREE.Object3D[] = [];
+        for (const list of this.genericActive.values()) {
+            for (const creature of list) {
+                if (creature.group instanceof THREE.Object3D) {
+                    genericScannables.push(creature.group);
+                }
+            }
+        }
+
+        return [
+            ...this.tarsierGuardians.map(creature => creature.group),
+            ...this.geodeTitans.map(creature => creature.group),
+            ...genericScannables
+        ];
     }
 }
 
@@ -316,6 +399,7 @@ class MoonJelly {
         this.position = new THREE.Vector3(x, y, z);
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'moonJelly';
 
         const color = tintColor ?? 0x88ffdd;
         const mat = new THREE.MeshPhysicalMaterial({
@@ -351,6 +435,70 @@ class MoonJelly {
 
     getPosition() {
         return this.position;
+    }
+
+    destroy(scene: THREE.Scene) {
+        scene.remove(this.group);
+        this.isDestroyed = true;
+    }
+}
+
+/**
+ * Registry-only Level 6 batch creature: a calm manta-like ray that glides in
+ * the Aqua Expanse background. It is non-hazardous and exists to prove the
+ * level_batch path without changing obstacle behavior.
+ */
+class AuroraRay {
+    group: THREE.Group;
+    position: THREE.Vector3;
+    isDestroyed = false;
+    private time = 0;
+    private baseY: number;
+
+    constructor(scene: THREE.Scene, x: number, y: number, z: number, tintColor?: number) {
+        this.position = new THREE.Vector3(x, y, z);
+        this.baseY = y;
+        this.group = new THREE.Group();
+        this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'auroraRay';
+
+        const color = tintColor ?? 0x66ffee;
+        const bodyMat = new THREE.MeshPhysicalMaterial({
+            color,
+            transparent: true,
+            opacity: 0.5,
+            emissive: color,
+            emissiveIntensity: 0.6,
+            roughness: 0.25,
+            metalness: 0.05,
+            side: THREE.DoubleSide
+        });
+
+        const wing = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32, 0, Math.PI), bodyMat);
+        wing.scale.set(1.8, 0.7, 1);
+        wing.rotation.x = Math.PI / 2;
+        this.group.add(wing);
+
+        const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.08, 3.2, 6), bodyMat);
+        tail.position.set(-2.1, -0.1, 0);
+        tail.rotation.z = Math.PI / 2;
+        this.group.add(tail);
+
+        scene.add(this.group);
+    }
+
+    update(delta: number) {
+        this.time += delta;
+        this.position.x -= delta * 2.5;
+        this.group.position.x = this.position.x;
+        this.group.position.y = this.baseY + Math.sin(this.time * 1.4) * 0.8;
+        this.group.rotation.z = Math.sin(this.time * 1.1) * 0.08;
+        const flap = 1 + Math.sin(this.time * 3.0) * 0.08;
+        this.group.scale.set(1, flap, 1);
+    }
+
+    getPosition() {
+        return this.group.position;
     }
 
     destroy(scene: THREE.Scene) {

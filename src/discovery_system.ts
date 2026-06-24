@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { SaveManager } from './save_manager';
 import { BESTIARY_ENTRIES, type BestiaryEntryId } from './bestiary';
 
-// Display names for catalogable flora species, keyed by the `userData.speciesId`
-// tag applied in level_manager.spawnOpenFoliage()
+// Display names for catalogable species, keyed by the `userData.speciesId`
+// tag applied by foliage, geological, friend, and rare creature spawners.
 export const SPECIES_NAMES: Record<string, string> = {
     fern: 'Star Dust Fern',
     rose: 'Nebula Rose',
@@ -20,6 +20,27 @@ export const SPECIES_NAMES: Record<string, string> = {
     magmaHeart: 'Magma Heart',
     iceNeedleCluster: 'Ice Needle Cluster',
     gravityAnchor: 'Gravity Anchor',
+    sporeCloud: 'Spore Cloud',
+    vacuumKelp: 'Vacuum Kelp',
+    liquidMetalBlob: 'Liquid Metal Blob',
+    // Space friends
+    spaceKitty: 'Space Kitty',
+    moonBunny: 'Moon Bunny',
+    wishLantern: 'Wish Lantern',
+    astroTarsier: 'Astro Tarsier',
+    trappedKitty: 'Trapped Space Kitty',
+    trappedBunny: 'Trapped Moon Bunny',
+    trappedTarsier: 'Trapped Astro Tarsier',
+    moonPup: 'Moon Pup',
+    rescuedKitty: 'Rescued Space Kitty',
+    rescuedBunny: 'Rescued Moon Bunny',
+    rescuedTarsier: 'Rescued Astro Tarsier',
+    rescuedMoonPup: 'Rescued Moon Pup',
+    // Rare creatures
+    tarsierGuardian: 'Crystal Tarsier Guardian',
+    livingGeodeTitan: 'Living Geode Titan',
+    moonJelly: 'Moon Jelly',
+    auroraRay: 'Aurora Ray',
 };
 
 const SCAN_RADIUS = 12;
@@ -43,12 +64,20 @@ export class DiscoveryManager {
         return this.discoveredThisRun.size;
     }
 
+    private getScanPosition(obj: THREE.Object3D): THREE.Vector3 {
+        const scanPosition = obj.userData?.scanPosition;
+        if (scanPosition instanceof THREE.Vector3) {
+            return scanPosition;
+        }
+        return obj.getWorldPosition(new THREE.Vector3());
+    }
+
     update(playerPosition: THREE.Vector3, levelObjects: THREE.Object3D[]) {
         for (const obj of levelObjects) {
             const speciesId = obj.userData?.speciesId as string | undefined;
             if (!speciesId || this.discoveredThisRun.has(speciesId)) continue;
 
-            if (obj.position.distanceTo(playerPosition) <= SCAN_RADIUS) {
+            if (this.getScanPosition(obj).distanceTo(playerPosition) <= SCAN_RADIUS) {
                 this.discoveredThisRun.add(speciesId);
                 const isNewEver = this.saveManager.discoverSpecies(speciesId);
                 const name = SPECIES_NAMES[speciesId] || speciesId;

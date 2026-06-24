@@ -56,6 +56,7 @@ export class CrystalTarsierGuardian {
 
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'tarsierGuardian';
 
         this.createMesh();
         scene.add(this.group);

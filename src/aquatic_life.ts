@@ -34,7 +34,7 @@ interface PlanktonSchool {
 }
 
 /**
- * Manages the Level 6 "Aqua Expanse" aquatic life: translucent jellyfish,
+ * Manages aquatic environments: translucent jellyfish,
  * swaying kelp forests, glowing plankton schools, and decorative bubble
  * reefs around rescued friends. Purely additive/cosmetic + soft "swim"
  * bonuses - never damages the player.
@@ -51,8 +51,8 @@ export class AquaticLifeManager {
         this.scene = scene;
     }
 
-    /** Seeds jellyfish, kelp forests and plankton schools across the Aqua Expanse. */
-    spawnForLevel6(startX: number, length: number) {
+    /** Seeds jellyfish, kelp forests and plankton schools across an aquatic level span. */
+    spawnForLevel(startX: number, length: number) {
         const jellyCount = Math.max(4, Math.floor(length / 220));
         for (let i = 0; i < jellyCount; i++) {
             const x = startX + 40 + Math.random() * length;
@@ -76,6 +76,11 @@ export class AquaticLifeManager {
             const z = (Math.random() - 0.5) * 14 - 8;
             this.spawnPlanktonSchool(x, y, z);
         }
+    }
+
+    /** Compatibility wrapper for existing Aqua Expanse tuning. */
+    spawnForLevel6(startX: number, length: number) {
+        this.spawnForLevel(startX, length);
     }
 
     spawnJellyfish(x: number, y: number, z: number) {
@@ -340,5 +345,26 @@ export class AquaticLifeManager {
             }
             return true;
         });
+    }
+
+    /** Removes all currently spawned aquatic life so another level can own the lifecycle. */
+    clear() {
+        for (const jelly of this.jellyfish) {
+            this.scene.remove(jelly.group);
+        }
+        for (const kelp of this.kelpForests) {
+            this.scene.remove(kelp.group);
+        }
+        for (const school of this.plankton) {
+            this.scene.remove(school.points);
+        }
+        for (const reef of this.bubbleReefs) {
+            this.scene.remove(reef);
+        }
+
+        this.jellyfish = [];
+        this.kelpForests = [];
+        this.plankton = [];
+        this.bubbleReefs = [];
     }
 }

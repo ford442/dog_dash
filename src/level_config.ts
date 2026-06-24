@@ -12,6 +12,25 @@ export type LevelObjective = {
     description: string;
 };
 
+export type BlackHoleEnvironmentConfig = {
+    enabled: boolean;
+    baseX: number;
+    baseY: number;
+};
+
+export type LevelEnvironments = {
+    butterflySwarm?: boolean;
+    blackHole?: BlackHoleEnvironmentConfig;
+    industrial?: boolean;
+    waterfall?: boolean;
+    biological?: boolean;
+    nebula?: boolean;
+    cosmicDust?: boolean;
+    planetaryHorizon?: boolean;
+    reEntry?: boolean;
+    aquaticLife?: boolean;
+};
+
 // Cumulative player-x thresholds for the journey toward the Moon.
 // Index i is the x position where level (i+1) begins; the final entry is the
 // Moon's position (the victory threshold). Shared by LevelManager.checkProgress
@@ -87,32 +106,16 @@ export type LevelConfig = {
      * Numbers are "base per ~100 units"; scaled by objectDensityMultiplier.
      */
     vignettes?: {
-        treeGroves?: number;   // 3-6 trees clustered in ~15 X units, tight Y band
-        roseArches?: number;   // pairs of roses creating a flyable vertical gap
-        // geodeClearings?: number; // could thin ferns near geode spawns
+        treeGroves?: number;      // 3–6 trees clustered in ~15 X units, shared Y band
+        roseArches?: number;      // pairs of roses framing a vertical gap (encourage diving)
+        geodeClearings?: number;  // FracturedGeode safe harbors with thinned fern ring
     };
     /**
      * Config-driven environment / background systems for this level.
      * Replaces scattered levelIndex checks. New levels declare what they need here.
      * Systems not listed (or false) are deactivated.
      */
-    blackHole?: {
-        enabled: boolean;
-        baseX: number;
-        baseY: number;
-    };
-    environments?: {
-        butterflySwarm?: boolean;
-        blackHole?: boolean;
-        industrial?: boolean;
-        waterfall?: boolean;
-        biological?: boolean;
-        nebula?: boolean;
-        cosmicDust?: boolean;
-        planetaryHorizon?: boolean;
-        reEntry?: boolean;
-        aquaticLife?: boolean;
-    };
+    environments?: LevelEnvironments;
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
@@ -199,8 +202,12 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         crystalTarsierRate: 0.0006,
         geodeTitanRate: 0.0008,
         enemyTintColor: 0x8844ff,
-        environments: {},
-        blackHole: { enabled: true, baseX: 3000, baseY: 100 }
+        environments: {
+            blackHole: { enabled: true, baseX: 3000, baseY: 100 }
+        },
+        vignettes: {
+            geodeClearings: 0.5
+        }
     },
     3: {
         name: "Orbital Descent",
@@ -284,6 +291,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         enemyTintColor: 0xcc6633,
         environments: {
             industrial: true
+        },
+        vignettes: {
+            treeGroves: 0.6,
+            roseArches: 0.5
         }
     },
     5: {
@@ -331,6 +342,11 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             biological: true,
             nebula: true,
             cosmicDust: true
+        },
+        vignettes: {
+            treeGroves: 0.8,
+            roseArches: 0.6,
+            geodeClearings: 0.4
         }
     },
     6: {

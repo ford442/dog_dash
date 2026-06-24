@@ -27,7 +27,7 @@ const z = randomZInLayer('MIDGROUND');
 `LevelManager.spawnOpenFoliage()` scatters decorative plants from `foliage.ts` ahead of the camera. Zones stream continuously as the player moves (not just once at level start).
 
 - Density keys live in `level_config.ts` → `foliageDensity`
-- Catalogable species need `userData.speciesId` and an entry in `discovery_system.ts` → `SPECIES_NAMES`
+- Catalogable species need `userData.speciesId` and an entry in `discovery_system.ts` → `SPECIES_NAMES`; instanced/proxy objects can also set `userData.scanPosition`.
 - Animated plants are tracked in `visuals.ts` → `moonPlants`
 
 **Add a new plant species**
@@ -36,6 +36,28 @@ const z = randomZInLayer('MIDGROUND');
 2. Add a density key to `LevelConfig.foliageDensity` and each level block in `level_config.ts`
 3. Add a `spawn()` line in `LevelManager.spawnOpenFoliage()`
 4. Register `speciesId` in `discovery_system.ts` if scannable
+
+The Level 1 scan objective uses proximity scans, not shooting. The discovery pass includes foliage, geological props, space friends, and active rare creatures, but counts each `speciesId` once per run so streamed respawns do not double-count.
+
+**Vignette clusters** (optional, after base scatter in `spawnOpenFoliage`):
+
+Configure per level in `level_config.ts` → `vignettes`. Counts are **base per ~100 world units** in the streamed chunk, scaled by `objectDensityMultiplier` (FPS auto-throttle in `main.ts`). Tunnel levels pass a narrowed `yRange` so groves and arches stay inside the flyable band.
+
+| Key | Effect |
+|-----|--------|
+| `treeGroves` | 3–6 trees clustered within ~14m X, shared Y band |
+| `roseArches` | Rose pairs framing a vertical gap (encourages diving) |
+| `geodeClearings` | `FracturedGeode` safe harbor + thinned fern ring |
+
+```ts
+vignettes: {
+    treeGroves: 1.5,      // Level 1 Neon Garden
+    roseArches: 0.8,
+    geodeClearings: 0.5,  // Level 2 Asteroid Belt
+}
+```
+
+Example level assignments: L1 groves + arches; L2 geode clearings; L3 arches; L4 tunnel groves + arches; L5 organic tunnel all three.
 
 ### 2. Dreamy layers (flowers, castles, candy)
 
@@ -55,13 +77,53 @@ Pattern: `activate()` on level start → `update(delta, cameraX)` each frame.
 
 ### 4. Rare bestiary & ambient creatures (`creature_manager.ts`)
 
-Unified registry of `AmbientCreatureDef` (spawnMode: 'probabilistic'|'streaming'|'level_batch', depthLayer, levelRates or rateKey from LevelConfig, clusterSize, factory, optional catalog).
+`CreatureManager` owns an `AmbientCreatureDef` registry. Each entry describes **how** to spawn; the manager handles spawn-ahead placement, depth via `depth_layers.ts`, cleanup behind the player, optional `enemyTintColor` passed to `factory`, and debug toggles (`creature_<id>` in the backquote panel).
 
-- Probabilistic (per-frame rate, maxActive): Crystal Tarsier, Geode Titan (legacy-wrapped), + new Moon Jelly demo (clusters on L5/6, biome tint, debug toggle).
-- Shared: spawn ahead, depth via `depth_layers.ts`, cleanup behind, generic update loop.
-- Existing wrapped (legacy:true) so old arrays/loops unchanged; new ones use generic.
-- Debug panel toggles per family (`creature_*`).
-- Nice: cluster spawns, enemyTintColor passed to factory.
+| `spawnMode` | When it fires | Example |
+|-------------|---------------|---------|
+| `probabilistic` | Each frame: `Math.random() < rate` while under `maxActive` | Crystal Tarsier, Geode Titan |
+| `streaming` | Every `streamInterval` world units: roll `levelRates[level]` then spawn | Moon Jelly schools (L5/6) |
+| `level_batch` | Once per level index on first update | Aurora Ray school (L6) |
+
+**Rate sources**
+
+- `rateKey` — reads a per-level float from `LevelConfig` (e.g. `crystalTarsierRate`)
+- `levelRates` — `{ [levelIndex]: probabilityOrGate }` when no config key exists
+
+**Legacy wrap:** Tarsier and Geode Titan use `legacy: true` so their dedicated update/projectile/cleanup loops stay byte-for-byte unchanged; the registry only drives spawn gating.
+
+**Add a new ambient creature**
+
+1. Implement the class (or factory) with `update`, `getPosition`, `destroy`, and optional `group.userData.speciesId`.
+2. Register in `CreatureManager` constructor (or call `registerAmbientCreature()` at startup):
+
+```ts
+creatureManager.registerAmbientCreature({
+    id: 'moon_jelly',
+    spawnMode: 'streaming',          // 'probabilistic' | 'streaming' | 'level_batch'
+    depthLayer: 'BACKGROUND',        // from depth_layers.ts
+    levelRates: { 6: 0.55 },         // or rateKey: 'myCreatureRate'
+    maxActive: 9,
+    spawnAhead: 65,
+    streamInterval: 140,             // streaming only
+    spawnYRange: [-15, 15],
+    clusterSize: 3,                  // 2–4 for schools
+    catalogId: 'moonJelly',          // optional bestiary id
+    factory: (scene, x, y, z, tint) => new MoonJelly(scene, x, y, z, tint),
+});
+```
+
+3. Register a debug toggle in `main.ts`: `debugSystem.register('creature_moon_jelly', 'Moon Jelly', true)`
+4. Add `speciesId` to `discovery_system.ts` → `SPECIES_NAMES` if scannable
+5. `creatureManager.clear()` runs on every level start (via `LevelManager.onLevelStart`) so level-batch entries can re-fire on replay
+
+**Proof creatures:** `MoonJelly` (streaming + clusters + tint) and `AuroraRay` (level batch) live at the bottom of `creature_manager.ts`.
+
+**Not in the registry (by design):**
+
+- `FriendsManager` (`space_friends.ts`) — kitty/bunny/lantern companions with heal/wave rewards and their own interaction loop
+- `AquaticLifeManager` (`aquatic_life.ts`) — L6 kelp/plankton/bubble-reef batch tied to `environments.aquaticLife` and HUD encounter events
+- `ObstacleSystem` — Nebula Krakens are hazards, not ambient decor
 
 ### 5. Streaming companions (`space_friends.ts`)
 
@@ -69,7 +131,7 @@ Unified registry of `AmbientCreatureDef` (spawnMode: 'probabilistic'|'streaming'
 
 ### 6. Level-specific batches
 
-Examples: Level 6 `AquaticLifeManager.spawnForLevel6()`, trapped friends for rescue objectives.
+Examples: aquatic levels using `AquaticLifeManager.spawnForLevel()`, trapped friends for rescue objectives.
 
 ## Level configuration
 
@@ -94,15 +156,15 @@ Supported flags (add only the ones a level needs; absent/false means deactivate)
 | Flag                | System                  | Typical level(s) | Notes |
 |---------------------|-------------------------|------------------|-------|
 | `butterflySwarm`    | ButterflySwarmSystem   | 1                | Active only on Neon Garden |
-| `blackHole`         | BlackHoleSystem        | 2                | Galactic core hazard |
+| `blackHole`         | BlackHoleSystem        | 2                | Use nested options: `{ enabled, baseX, baseY }` |
 | `planetaryHorizon`  | PlanetaryHorizonSystem | 3                | Sets levelDistance before activate |
 | `reEntry`           | ReEntrySystem          | 3                | Sets levelDistance; atmosphere heat |
 | `industrial`        | IndustrialBackgroundSystem | 4            | Rusty gauntlet megastructures |
-| `biological`        | BiologicalBackgroundSystem + nebula + cosmicDust + hide clouds | 5 | Astral Leviathan interior; clouds hidden |
-| `nebula`            | NebulaSystem           | 5                | (composed under biological usually) |
-| `cosmicDust`        | CosmicDustSystem       | 5                | |
+| `biological`        | BiologicalBackgroundSystem | 5           | Astral Leviathan interior; hides cloud layers while active |
+| `nebula`            | NebulaSystem           | 5                | Independent flag; Level 5 composes it with biological |
+| `cosmicDust`        | CosmicDustSystem       | 5                | Independent flag; Level 5 composes it with biological |
 | `waterfall`         | WaterfallSystem        | 6                | Aqua Expanse vertical effects |
-| `aquaticLife`       | AquaticLifeManager     | 6                | Jellyfish/kelp/plankton (spawn + update in main) |
+| `aquaticLife`       | AquaticLifeManager     | 6                | Jellyfish/kelp/plankton; spawns/clears from the current level flag |
 
 Example for a new level that mixes:
 
@@ -112,12 +174,13 @@ Example for a new level that mixes:
     environments: {
         butterflySwarm: true,
         waterfall: true,
+        blackHole: { enabled: true, baseX: 3000, baseY: 100 },
         // godRays already controlled by top-level godRays.enabled
     }
 }
 ```
 
-In `LevelManager` the table is iterated so enabling systems is just data. Special setup (levelDistance) happens inside the activate closures for the relevant plugins.
+In `LevelManager` the plugin table is iterated so enabling systems is just data. Special setup (levelDistance, black-hole placement, cloud hiding) happens inside the activate/deactivate closures for the relevant plugins. Aquatic life uses the same `environments.aquaticLife` flag from the main loop because it also emits HUD/audio encounter events.
 
 ## Wiring checklist (important)
 
@@ -126,7 +189,8 @@ In `LevelManager` the table is iterated so enabling systems is just data. Specia
 - `main.ts` imports from `scene_context`, calls `initializeSceneAndRenderer()` + `attachLightsAndEnv()`, and owns the render/animate loop.
 - `scene_setup.ts` is gutted (only re-exports for transitional imports); it no longer instantiates a parallel renderer or scene.
 - Player loading: canonical in `player_loader.ts` (migrated to context scene). `main.ts` no longer duplicates the GLTF load.
-- Geological spawners + cleanup: canonical in `environment.ts` (one copy). `main.ts` imports them.
+- Dreamy/friend/butterfly managers: canonical singleton factory in `game_managers.ts`. `main.ts` calls it once and passes the returned instances to `LevelManager` and the animate loop.
+- Geological spawners + cleanup: canonical in `environment.ts` (one copy). `main.ts` imports them and only wraps gravity-anchor creation to attach tarsier side effects.
 - Legacy code importing scene/camera from `scene_setup` will get the shared objects via re-exports.
 - `LevelManager` is already injected with the canonical scene/managers/spawners from `main.ts`.
 
@@ -142,7 +206,7 @@ Never `new THREE.Scene()` outside `scene_context.ts`. Never add to a scene that 
 | Domain | Files |
 |--------|-------|
 | Placement orchestration | `level_manager.ts`, `depth_layers.ts`, `level_config.ts` |
-| Core scene | `scene_context.ts` (single source), `main.ts` (render loop + init), `scene_setup.ts` (gutted compat) |
+| Core scene | `scene_context.ts` (single source), `main.ts` (render loop + init), `scene_setup.ts` (gutted compat), `game_managers.ts` (scene-owned manager factory) |
 | Plants & props | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `environment.ts`, `visuals.ts` |
 | Creatures | `space_friends.ts`, `creature_manager.ts` (registry + bestiary), `aquatic_life.ts`, `butterfly_swarm.ts`, `player_loader.ts`, `obstacle_system.ts` (krakens) |
 | Dreamy decor | `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts` |
