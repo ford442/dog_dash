@@ -64,7 +64,9 @@ type EnvironmentPlugin<K extends keyof LevelEnvironments = keyof LevelEnvironmen
 function isEnvironmentEnabled(value: LevelEnvironments[keyof LevelEnvironments] | undefined): boolean {
     if (!value) return false;
     if (typeof value === 'boolean') return value;
-    return value.enabled;
+    if ('enabled' in value) return value.enabled;
+    // For configs like asteroidField or ghostDebris that might not have an enabled flag but have a value
+    return true;
 }
 
 export type GeologicalSpawners = {
@@ -219,18 +221,6 @@ export class LevelManager {
         playerState.autoScrollSpeed = cfg.speed;
         playerState.distanceToMoon = cfg.distance;
 
-        if (cfg.godRays && cfg.godRays.enabled) {
-            this.godRaySystem.activate(cfg.godRays);
-        } else {
-            this.godRaySystem.deactivate();
-        }
-
-        if (cfg.aurora && cfg.aurora.enabled) {
-            this.auroraSystem.activate(cfg.aurora);
-        } else {
-            this.auroraSystem.deactivate();
-        }
-
         let transitionDuration = 2.0;
         if (levelIndex === 3) {
             transitionDuration = 100.0;
@@ -272,34 +262,6 @@ export class LevelManager {
             stormGeodeSystem.deactivate();
         }
 
-        if (cfg.lightning && cfg.lightning.enabled) {
-            lightningBoltSystem.activate(cfg.lightning);
-        } else {
-            lightningBoltSystem.deactivate();
-        }
-
-        if (cfg.meteorShower) {
-            meteorShowerSystem.activate();
-        } else {
-            meteorShowerSystem.deactivate();
-        }
-
-        if (cfg.asteroidRate && cfg.asteroidRate > 0) {
-            asteroidFieldSystem.activate();
-            this.baseAsteroidDensity = cfg.asteroidRate * 0.5;
-            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
-            asteroidFieldSystem.resetPositions(this.camera.position.x);
-        } else {
-            this.baseAsteroidDensity = 0;
-            asteroidFieldSystem.deactivate();
-        }
-
-        if (cfg.ghostDebrisDensity && cfg.ghostDebrisDensity > 0) {
-            this.ghostDebrisSystem.activate();
-        } else {
-            this.ghostDebrisSystem.deactivate();
-        }
-
         const environments = cfg.environments || {};
 
         const environmentPlugins: EnvironmentPlugin[] = [
@@ -310,7 +272,7 @@ export class LevelManager {
             },
             {
                 flag: 'blackHole',
-                activate: (blackHoleConfig) => blackHoleSystem.activate(blackHoleConfig),
+                activate: (blackHoleConfig: BlackHoleEnvironmentConfig) => blackHoleSystem.activate(blackHoleConfig),
                 deactivate: () => blackHoleSystem.deactivate()
             },
             {
@@ -361,7 +323,45 @@ export class LevelManager {
                 activate: () => cosmicDustSystem.activate(),
                 deactivate: () => cosmicDustSystem.deactivate()
             }
-        ];
+,
+            {
+                flag: 'godRays',
+                activate: (config: GodRaysEnvironmentConfig) => this.godRaySystem.activate(config),
+                deactivate: () => this.godRaySystem.deactivate()
+            },
+            {
+                flag: 'aurora',
+                activate: (config: AuroraEnvironmentConfig) => this.auroraSystem.activate(config),
+                deactivate: () => this.auroraSystem.deactivate()
+            },
+            {
+                flag: 'lightning',
+                activate: (config: LightningEnvironmentConfig) => lightningBoltSystem.activate(config),
+                deactivate: () => lightningBoltSystem.deactivate()
+            },
+            {
+                flag: 'asteroidField',
+                activate: (config: AsteroidFieldEnvironmentConfig) => {
+                    asteroidFieldSystem.activate();
+                    this.baseAsteroidDensity = config.rate * 0.5;
+                    asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
+                    asteroidFieldSystem.resetPositions(this.camera.position.x);
+                },
+                deactivate: () => {
+                    this.baseAsteroidDensity = 0;
+                    asteroidFieldSystem.deactivate();
+                }
+            },
+            {
+                flag: 'ghostDebris',
+                activate: () => this.ghostDebrisSystem.activate(),
+                deactivate: () => this.ghostDebrisSystem.deactivate()
+            },
+            {
+                flag: 'meteorShower',
+                activate: () => meteorShowerSystem.activate(),
+                deactivate: () => meteorShowerSystem.deactivate()
+            }        ];
 
         for (const plugin of environmentPlugins) {
             const value = environments[plugin.flag];

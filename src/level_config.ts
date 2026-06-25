@@ -18,6 +18,38 @@ export type BlackHoleEnvironmentConfig = {
     baseY: number;
 };
 
+export type GodRaysEnvironmentConfig = {
+    enabled: boolean;
+    density: number;
+    baseIntensity: number;
+    color: number;
+    speedMultiplier: number;
+};
+
+export type AuroraEnvironmentConfig = {
+    enabled: boolean;
+    density: number;
+    color1: number;
+    color2: number;
+    speed: number;
+};
+
+export type LightningEnvironmentConfig = {
+    enabled: boolean;
+    density: number;
+    color?: number;
+};
+
+export type AsteroidFieldEnvironmentConfig = {
+    rate: number;
+};
+
+export type GhostDebrisEnvironmentConfig = {
+    density: number;
+};
+
+export type MeteorShowerEnvironmentConfig = boolean;
+
 export type LevelEnvironments = {
     butterflySwarm?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
@@ -29,6 +61,12 @@ export type LevelEnvironments = {
     planetaryHorizon?: boolean;
     reEntry?: boolean;
     aquaticLife?: boolean;
+    godRays?: GodRaysEnvironmentConfig;
+    aurora?: AuroraEnvironmentConfig;
+    lightning?: LightningEnvironmentConfig;
+    asteroidField?: AsteroidFieldEnvironmentConfig;
+    ghostDebris?: GhostDebrisEnvironmentConfig;
+    meteorShower?: MeteorShowerEnvironmentConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -41,7 +79,6 @@ export type LevelConfig = {
     name: string;
     distance: number;
     objective?: LevelObjective;
-    asteroidRate: number;
     foliageDensity: {
         fern?: number;
         rose?: number;
@@ -61,7 +98,6 @@ export type LevelConfig = {
         magmaHeart?: number;
         gravityAnchor?: number;
     };
-    ghostDebrisDensity?: number;
     chromaShiftDensity?: number;
     stormGeodeDensity?: number;
     speed: number;
@@ -79,26 +115,6 @@ export type LevelConfig = {
     // Environmental hazards/rewards woven into the asteroid spawn cycle.
     mineRobotRate?: number;
     barnaclePodRate?: number;
-    meteorShower?: boolean;
-    godRays?: {
-        enabled: boolean;
-        density: number;
-        baseIntensity: number;
-        color: number;
-        speedMultiplier: number;
-    };
-    aurora?: {
-        enabled: boolean;
-        density: number;
-        color1: number;
-        color2: number;
-        speed: number;
-    };
-    lightning?: {
-        enabled: boolean;
-        density: number;
-        color?: number;
-    };
     enemyTintColor?: number;
     /**
      * Optional vignette clusters for more composed foliage placement
@@ -127,7 +143,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             target: 8,
             description: "Catalog 8 alien plants"
         },
-        asteroidRate: 2.5,
         foliageDensity: {
             fern: 80,
             rose: 50,
@@ -151,11 +166,12 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x1a1a2e,
         skyColors: { top: 0x000000, bottom: 0x1a1a2e },
         levelType: 'open',
-        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
-        lightning: { enabled: true, density: 1.0 },
         crystalTarsierRate: 0.0006,
         enemyTintColor: 0x66ff99,
         environments: {
+            asteroidField: { rate: 2.5 },
+            godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
+            lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true
         },
         vignettes: {
@@ -171,8 +187,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             target: 5,
             description: "Complete 5 clean gravity slings"
         },
-        asteroidRate: 0.8,
-        ghostDebrisDensity: 100,
         chromaShiftDensity: 150,
         stormGeodeDensity: 20,
         foliageDensity: {
@@ -197,12 +211,14 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bgColor: 0x2d1a1a,
         skyColors: { top: 0x000000, bottom: 0x2d1a1a },
         levelType: 'open',
-        godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
-        lightning: { enabled: true, density: 1.5 },
         crystalTarsierRate: 0.0006,
         geodeTitanRate: 0.0008,
         enemyTintColor: 0x8844ff,
         environments: {
+            asteroidField: { rate: 0.8 },
+            ghostDebris: { density: 100 },
+            godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
+            lightning: { enabled: true, density: 1.5 },
             blackHole: { enabled: true, baseX: 3000, baseY: 100 }
         },
         vignettes: {
@@ -217,7 +233,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             target: 4,
             description: "Rescue 4 space friends"
         },
-        asteroidRate: 1.8,
         foliageDensity: {
             fern: 5,
             rose: 4,
@@ -239,12 +254,13 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         speed: 10,
         bgColor: 0x000510,
         skyColors: { top: 0x000011, bottom: 0x001133 },
-        meteorShower: true,
         levelType: 'open',
         squidSpawnRate: 0.0012,
-        lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
         enemyTintColor: 0xff5500,
         environments: {
+            asteroidField: { rate: 1.8 },
+            meteorShower: true,
+            lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
             planetaryHorizon: true,
             reEntry: true
         },
@@ -260,7 +276,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             target: 1,
             description: "Survive the rusty gauntlet"
         },
-        asteroidRate: 2.0,
         stormGeodeDensity: 40,
         foliageDensity: {
             fern: 6,
@@ -290,6 +305,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         mineRobotRate: 0.12,
         enemyTintColor: 0xcc6633,
         environments: {
+            asteroidField: { rate: 2.0 },
             industrial: true
         },
         vignettes: {
@@ -305,7 +321,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             target: 7,
             description: "Reach an Arc Surge combo"
         },
-        asteroidRate: 2.5,
         stormGeodeDensity: 50,
         enemyTintColor: 0xff1493, // Nebula pink/purple tint
         foliageDensity: {
@@ -334,11 +349,12 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         obstacleInterval: 25,
         fogDensity: 0.02,
         squidSpawnRate: 0.0015,
-        godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
-        lightning: { enabled: true, density: 2.5, color: 0xff00ff },
         geodeTitanRate: 0.0008,
         barnaclePodRate: 0.18,
         environments: {
+            asteroidField: { rate: 2.5 },
+            godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
+            lightning: { enabled: true, density: 2.5, color: 0xff00ff },
             biological: true,
             nebula: true,
             cosmicDust: true
@@ -357,7 +373,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             target: 1,
             description: "Find the path to the Moon"
         },
-        asteroidRate: 1.5,
         foliageDensity: {
             fern: 20,
             rose: 0,
@@ -381,9 +396,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x001133, bottom: 0x002244 },
         levelType: 'open',
         squidSpawnRate: 0.0012,
-        aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 },
         enemyTintColor: 0x66ccff,
         environments: {
+            asteroidField: { rate: 1.5 },
+            aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 },
             waterfall: true,
             aquaticLife: true
         }

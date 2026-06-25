@@ -1066,9 +1066,13 @@ obstacleSystem = new ObstacleSystem({
         if (!cfg) return cfg;
         if (!levelManager.fastLaneActive) return cfg;
         // Fast lane: thin out asteroids/hazards on the run to the level exit
+        const overrideRate = (cfg.environments?.asteroidField?.rate ?? 0) * 2.5;
         return {
             ...cfg,
-            asteroidRate: cfg.asteroidRate * 2.5,
+            environments: {
+                ...cfg.environments,
+                asteroidField: overrideRate > 0 ? { rate: overrideRate } : undefined
+            },
             mineRobotRate: 0,
             barnaclePodRate: 0
         };

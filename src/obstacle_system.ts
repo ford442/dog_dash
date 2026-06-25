@@ -101,7 +101,7 @@ export class ObstacleSystem {
         const playerY = player.position.y;
         const currentCfg = this.options.getCurrentConfig();
         if (currentCfg) {
-            this.spawnInterval = currentCfg.asteroidRate;
+            this.spawnInterval = currentCfg.environments?.asteroidField?.rate ?? 0;
         }
 
         // --- PATTERN SPAWN SYSTEM ---
