@@ -26,7 +26,7 @@ import {
     max,
     distance,
     UniformNode
-} from 'three/tsl';
+, cameraPosition } from 'three/tsl';
 
 // --- TSL Noise Functions ---
 
@@ -142,8 +142,17 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
 
     // Fake normal based on UV from center for directional rim lighting
     const fakeNormal = vec3(centeredUv.x, centeredUv.y, 0.5).normalize();
-    const lightDir = positionWorld.sub(uLightningPos).normalize();
+    const lightDir = uLightningPos.sub(positionWorld).normalize(); // FROM fragment TO light
     const lightIntensity = dot(fakeNormal, lightDir).max(0.0).mul(0.5).add(0.5);
+
+    // Silver Lining Effect (Rim Lighting when light is behind the cloud)
+    const viewDir = cameraPosition.sub(positionWorld).normalize();
+    // dot(viewDir, lightDir) is -1 when light is directly behind cloud
+    const backlight = dot(viewDir, lightDir).negate().max(0.0);
+    const edgeFactor = smoothstep(0.2, 0.8, dist); // 1.0 at edge, 0.0 at center
+    const silverLining = backlight.mul(edgeFactor).mul(2.0); // Boost edge brightness
+
+    const totalLightIntensity = lightIntensity.add(silverLining);
 
     // Flash adds volumetric emissive boost based on attenuation, noise density and intensity
     const flashColor = color(uLightningColor);
@@ -152,7 +161,7 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
     const volumetricHighlight = noiseVal.add(0.5);
     // Include a height-based component (y-axis) so foreground/higher clouds flash more brightly
     const heightBoost = positionWorld.y.div(50.0).add(1.0).clamp(0.5, 2.0);
-    const flashFactor = uFlash.mul(attenuation).mul(volumetricHighlight).mul(lightIntensity).mul(heightBoost);
+    const flashFactor = uFlash.mul(attenuation).mul(volumetricHighlight).mul(totalLightIntensity).mul(heightBoost);
 
     // Make the flash additive rather than just a mix for a more powerful volumetric explosion
     const flashedColor = finalColor.add(flashColor.mul(flashFactor));
