@@ -83,6 +83,7 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
     const flashPulse = sin(uTime.mul(40.0)).mul(0.5).add(0.5);
     // Afterglow baseline
     const glowIntensity = flashPulse.mul(0.8).add(0.2);
+    const crackleNoise = sin(y.mul(80.0).add(uTime.mul(60.0))).mul(0.15).add(0.85);
 
     // Thin inner core vs thick outer glow
     const coreColor = color(0xffffff);
@@ -113,7 +114,7 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
         colorMix = colorMix.add(vec3(0.0, 1.0, 1.0).mul(weaponGlow));
     }
 
-    const alpha = viewDot.pow(2.0).mul(glowIntensity);
+    const alpha = viewDot.pow(2.0).mul(glowIntensity).mul(crackleNoise);
 
 
     mat.colorNode = vec4(colorMix, alpha);
