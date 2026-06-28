@@ -4,6 +4,7 @@ import {
     MeshBasicNodeMaterial
 } from 'three/webgpu';
 import {
+    length,
     time,
     distance,
     positionWorld,
@@ -372,6 +373,37 @@ export class BubbleLayer {
 /**
  * Splash System - Fast moving water droplets influenced by gravity.
  */
+
+function createSplashMaterial(weaponLights?: any, uPlayerPos?: any) {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+
+    const baseColor = color(0xccffff);
+    let finalColor = vec3(baseColor);
+
+    if (uPlayerPos) {
+        const distToPlayer = length(positionWorld.sub(uPlayerPos));
+        const playerGlow = float(1.0).sub(smoothstep(0.0, 15.0, distToPlayer)).mul(0.6);
+        const engineColor = color(0xffaa00);
+        finalColor = finalColor.add(vec3(engineColor).mul(playerGlow));
+    }
+
+    if (weaponLights) {
+        // Evaluate dynamic lights loop here if needed, but for simplicity we just add player glow
+    }
+
+    mat.colorNode = vec4(finalColor, 0.8);
+
+    if (uPlayerPos) {
+        mat.userData.uPlayerPos = uPlayerPos;
+    }
+
+    return mat;
+}
+
 export class SplashSystem {
     mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
@@ -383,15 +415,11 @@ export class SplashSystem {
     ages: Float32Array; // 0 to 1
     activeParticles: boolean[];
 
-    constructor(scene: THREE.Scene, count: number = 200) {
+    constructor(scene: THREE.Scene, count: number = 200, weaponLights?: any, uPlayerPos?: any) {
         this.count = count;
 
         const geo = new THREE.SphereGeometry(0.15, 4, 4); // Low poly droplet
-        const mat = new THREE.MeshBasicMaterial({
-            color: 0xccffff,
-            transparent: true,
-            opacity: 0.8
-        });
+        const mat = createSplashMaterial(weaponLights, uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false;
@@ -436,7 +464,13 @@ export class SplashSystem {
         }
     }
 
-    update(delta: number) {
+    update(delta: number, playerPos?: THREE.Vector3) {
+        if (playerPos) {
+            const mat = this.mesh.material as any;
+            if (mat.userData && mat.userData.uPlayerPos) {
+                mat.userData.uPlayerPos.value.copy(playerPos);
+            }
+        }
         let needsUpdate = false;
         const gravity = 20.0;
 
@@ -584,7 +618,7 @@ export class WaterfallSystem {
         });
 
         // Splash System
-        this.splash = new SplashSystem(this.scene, 300);
+        this.splash = new SplashSystem(this.scene, 300, this.weaponLightManager ? this.weaponLightManager.storageNode : undefined, this.uPlayerPos);
 
         // Submersion Overlay
         this.submersion = new SubmersionOverlay(this.camera);
@@ -616,7 +650,7 @@ export class WaterfallSystem {
             this.uPlayerPos.value.copy(playerPos);
         }
         // Always update splash particles (they might be finishing animation)
-        this.splash.update(delta);
+        this.splash.update(delta, playerPos);
 
         if (!this.active) return;
 
