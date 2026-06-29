@@ -272,7 +272,7 @@ export class LevelManager {
             },
             {
                 flag: 'blackHole',
-                activate: (blackHoleConfig: BlackHoleEnvironmentConfig) => blackHoleSystem.activate(blackHoleConfig),
+                activate: (blackHoleConfig: any) => blackHoleSystem.activate(blackHoleConfig),
                 deactivate: () => blackHoleSystem.deactivate()
             },
             {
@@ -460,7 +460,7 @@ export class LevelManager {
         if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
-        if (blackHoleSystem) blackHoleSystem.update(delta, cameraX);
+        if (blackHoleSystem) blackHoleSystem.update(delta, cameraX, playerPos);
         if (enabled('chromaShift')) chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
