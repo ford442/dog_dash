@@ -171,7 +171,7 @@ export class LevelManager {
 
         lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
-            this.godRaySystem.triggerLightningFlash(1.0, color);
+            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
         };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
