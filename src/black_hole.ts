@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { MeshBasicNodeMaterial, MeshPhysicalNodeMaterial } from 'three/webgpu';
 import {
     time,
+    normalLocal,
     uv,
     vec2,
     vec3,
@@ -27,6 +28,46 @@ const FLARE_DECAY = 3.2; // units per second back to baseline
 /**
  * Creates a TSL material for the accretion disk with optional flare uniform.
  */
+
+/**
+ * Creates a TSL material for gravitational lensing using transmission and normal bending.
+ */
+function createLensingMaterial() {
+    const mat = new MeshPhysicalNodeMaterial({
+        color: 0xffffff,
+        transmission: 1.0,
+        ior: 2.0,
+        thickness: 5.0,
+        roughness: 0.0,
+        metalness: 0.0,
+        transparent: true,
+        side: THREE.FrontSide,
+        depthWrite: false
+    });
+
+    const pos = positionLocal;
+    // Plane geometry: length of xy varies from center to edge.
+    const dist = length(pos.xy);
+
+    // Bend normal based on distance from center (Plane goes from -55 to 55)
+    // At center, dist is 0, at edge it is 55.
+    const normalizedDist = dist.div(55.0); // 0 at center, 1 at edge
+
+    // Create a bowl-like normal distortion that pulls towards the center
+    // normalLocal is (0,0,1) for plane. We bend it by adding a vector pointing towards the center.
+    // The inward vector on the plane is -pos.xy normalized.
+    const inwardDir = vec3(pos.xy.normalize().negate(), float(0.5)).normalize();
+
+    // We want the strongest pull just outside the event horizon (radius 30)
+    // We can use a bump or smoothstep. Let's make it strong near center and fade out.
+    const strength = float(1.0).sub(normalizedDist).pow(1.5).mul(0.6); // 0.6 max bending
+
+    mat.normalNode = mix(normalLocal, inwardDir, strength);
+
+    return mat;
+}
+
+
 function createAccretionDiskMaterial(flareUniform?: THREE.Uniform) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
@@ -122,6 +163,7 @@ export class BlackHoleSystem {
     eventHorizon: THREE.Mesh;
     accretionDisk: THREE.Mesh;
     halo: THREE.Mesh;
+    lensingMesh: THREE.Mesh;
 
     baseX: number = 2000;
     baseZ: number = -400;
@@ -160,9 +202,16 @@ export class BlackHoleSystem {
         this.halo = new THREE.Mesh(haloGeo, haloMat);
         this.halo.position.z = 1;
 
+
+        const lensingGeo = new THREE.PlaneGeometry(110, 110);
+        const lensingMat = createLensingMaterial();
+        this.lensingMesh = new THREE.Mesh(lensingGeo, lensingMat);
+        this.lensingMesh.position.z = 2; // slightly in front
+
         this.group.add(this.accretionDisk);
         this.group.add(this.eventHorizon);
         this.group.add(this.halo);
+        this.group.add(this.lensingMesh);
 
         this.group.renderOrder = -10;
         scene.add(this.group);
@@ -289,7 +338,10 @@ export class BlackHoleSystem {
         (this.eventHorizon.material as any).dispose();
         this.accretionDisk.geometry.dispose();
         (this.accretionDisk.material as any).dispose?.();
+
         this.halo.geometry.dispose();
         (this.halo.material as any).dispose?.();
+        this.lensingMesh.geometry.dispose();
+        (this.lensingMesh.material as any).dispose?.();
     }
 }
