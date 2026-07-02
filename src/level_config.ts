@@ -53,7 +53,7 @@ export type MeteorShowerEnvironmentConfig = boolean;
 export type LevelEnvironments = {
     butterflySwarm?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
-    industrial?: boolean;
+    industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
     waterfall?: boolean;
     biological?: boolean;
     nebula?: boolean;
@@ -306,7 +306,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         enemyTintColor: 0xcc6633,
         environments: {
             asteroidField: { rate: 2.0 },
-            industrial: true
+            industrial: { intensity: 1.0, tunnelSpeed: 1.2 }
         },
         vignettes: {
             treeGroves: 0.6,
