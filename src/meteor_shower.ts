@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { time, vec4, color, mix, sin, positionLocal } from 'three/tsl';
 
-function createMeteorMaterial() {
+function createMeteorMaterial(opacityMultiplier: number = 1.0) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -29,71 +29,96 @@ function createMeteorMaterial() {
     const finalColor = mix(colorMix1, coreColor, normalizedZ.mul(2.0).sub(1.0).clamp(0.0, 1.0));
 
     // Opacity fades out towards the tail
-    const alpha = normalizedZ.mul(flicker);
+    const alpha = normalizedZ.mul(flicker).mul(opacityMultiplier);
 
     mat.colorNode = vec4(finalColor, alpha);
 
     return mat;
 }
 
+interface MeteorLayer {
+    mesh: THREE.InstancedMesh;
+    count: number;
+    positions: Float32Array;
+    velocities: Float32Array;
+    zMin: number;
+    zMax: number;
+    speedMult: number;
+    scale: number;
+}
+
 export class MeteorShowerSystem {
     scene: THREE.Scene;
     active: boolean = false;
-    mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
-    count: number = 40;
 
-    positions: Float32Array;
-    velocities: Float32Array;
+    layers: MeteorLayer[] = [];
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
-
-        // A long stretched box for the meteor streak
-        const geo = new THREE.BoxGeometry(0.5, 0.5, 20);
-        const mat = createMeteorMaterial();
-
-        this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
-        this.mesh.frustumCulled = false; // Wrap manually
-
         this.dummy = new THREE.Object3D();
-        this.positions = new Float32Array(this.count * 3);
-        this.velocities = new Float32Array(this.count * 3);
 
-        for (let i = 0; i < this.count; i++) {
-            this.resetMeteor(i, 0, true);
+        const layerConfigs = [
+            { count: 15, zMin: -30, zMax: -80, speedMult: 1.5, scale: 1.2, opacity: 1.0 }, // Foreground
+            { count: 30, zMin: -80, zMax: -150, speedMult: 1.0, scale: 0.8, opacity: 0.8 }, // Midground
+            { count: 50, zMin: -150, zMax: -300, speedMult: 0.5, scale: 0.5, opacity: 0.5 } // Background
+        ];
+
+        for (const config of layerConfigs) {
+            const geo = new THREE.BoxGeometry(0.5 * config.scale, 0.5 * config.scale, 20 * config.scale);
+            const mat = createMeteorMaterial(config.opacity);
+
+            const mesh = new THREE.InstancedMesh(geo, mat, config.count);
+            mesh.frustumCulled = false; // Wrap manually
+
+            const layer: MeteorLayer = {
+                mesh,
+                count: config.count,
+                positions: new Float32Array(config.count * 3),
+                velocities: new Float32Array(config.count * 3),
+                zMin: config.zMin,
+                zMax: config.zMax,
+                speedMult: config.speedMult,
+                scale: config.scale
+            };
+
+            for (let i = 0; i < layer.count; i++) {
+                this.resetMeteor(layer, i, 0, true);
+            }
+
+            this.scene.add(layer.mesh);
+            this.layers.push(layer);
         }
 
-        this.scene.add(this.mesh);
         this.deactivate();
     }
 
-    resetMeteor(index: number, cameraX: number, initial: boolean = false) {
+    resetMeteor(layer: MeteorLayer, index: number, cameraX: number, initial: boolean = false) {
         // Spawn ahead of the camera, or randomly around if initial
         const xOffset = initial ? (Math.random() * 400 - 100) : (100 + Math.random() * 200);
-        this.positions[index * 3] = cameraX + xOffset;
-        this.positions[index * 3 + 1] = (Math.random() - 0.5) * 150; // Y range
-        this.positions[index * 3 + 2] = -50 - Math.random() * 100;   // Deep background Z range
+        layer.positions[index * 3] = cameraX + xOffset;
+        layer.positions[index * 3 + 1] = (Math.random() - 0.5) * 150; // Y range
+        layer.positions[index * 3 + 2] = layer.zMax + Math.random() * (layer.zMin - layer.zMax); // Deep background Z range
 
         // Fast speeds moving leftwards (negative X), downwards (negative Y)
-        this.velocities[index * 3] = -150 - Math.random() * 100;     // X velocity
-        this.velocities[index * 3 + 1] = -50 - Math.random() * 50;   // Y velocity
-        this.velocities[index * 3 + 2] = 0;                          // Z velocity
+        layer.velocities[index * 3] = (-150 - Math.random() * 100) * layer.speedMult;     // X velocity
+        layer.velocities[index * 3 + 1] = (-50 - Math.random() * 50) * layer.speedMult;   // Y velocity
+        layer.velocities[index * 3 + 2] = 0;                          // Z velocity
 
-        this.updateInstance(index);
+        this.updateInstance(layer, index);
     }
 
-    updateInstance(index: number) {
+    updateInstance(layer: MeteorLayer, index: number) {
         this.dummy.position.set(
-            this.positions[index * 3],
-            this.positions[index * 3 + 1],
-            this.positions[index * 3 + 2]
+            layer.positions[index * 3],
+            layer.positions[index * 3 + 1],
+            layer.positions[index * 3 + 2]
         );
 
         // Orient the meteor to face its velocity
-        const vx = this.velocities[index * 3];
-        const vy = this.velocities[index * 3 + 1];
-        const vz = this.velocities[index * 3 + 2];
+        const vx = layer.velocities[index * 3];
+        const vy = layer.velocities[index * 3 + 1];
+        const vz = layer.velocities[index * 3 + 2];
 
         const target = new THREE.Vector3(
             this.dummy.position.x + vx,
@@ -103,44 +128,51 @@ export class MeteorShowerSystem {
         this.dummy.lookAt(target);
 
         this.dummy.updateMatrix();
-        this.mesh.setMatrixAt(index, this.dummy.matrix);
+        layer.mesh.setMatrixAt(index, this.dummy.matrix);
     }
 
     activate() {
         if (this.active) return;
         this.active = true;
-        this.mesh.visible = true;
+        for (const layer of this.layers) {
+            layer.mesh.visible = true;
+        }
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
-        this.mesh.visible = false;
+        for (const layer of this.layers) {
+            layer.mesh.visible = false;
+        }
     }
 
     update(delta: number, cameraX: number) {
         if (!this.active) return;
 
-        for (let i = 0; i < this.count; i++) {
-            this.positions[i * 3] += this.velocities[i * 3] * delta;
-            this.positions[i * 3 + 1] += this.velocities[i * 3 + 1] * delta;
+        for (const layer of this.layers) {
+            for (let i = 0; i < layer.count; i++) {
+                layer.positions[i * 3] += layer.velocities[i * 3] * delta;
+                layer.positions[i * 3 + 1] += layer.velocities[i * 3 + 1] * delta;
 
-            // If it falls behind camera or too low, reset
-            if (this.positions[i * 3] < cameraX - 100 || this.positions[i * 3 + 1] < -100) {
-                this.resetMeteor(i, cameraX);
-            } else {
-                this.updateInstance(i);
+                // If it falls behind camera or too low, reset
+                if (layer.positions[i * 3] < cameraX - 100 || layer.positions[i * 3 + 1] < -100) {
+                    this.resetMeteor(layer, i, cameraX);
+                } else {
+                    this.updateInstance(layer, i);
+                }
             }
+            layer.mesh.instanceMatrix.needsUpdate = true;
         }
-
-        this.mesh.instanceMatrix.needsUpdate = true;
     }
 
     cleanup() {
-        this.scene.remove(this.mesh);
-        this.mesh.geometry.dispose();
-        if (this.mesh.material && (this.mesh.material as any).dispose) {
-            (this.mesh.material as any).dispose();
+        for (const layer of this.layers) {
+            this.scene.remove(layer.mesh);
+            layer.mesh.geometry.dispose();
+            if (layer.mesh.material && (layer.mesh.material as any).dispose) {
+                (layer.mesh.material as any).dispose();
+            }
         }
     }
 }
