@@ -452,7 +452,7 @@ export class LevelManager {
         const playerPos = this.getPlayer()?.position;
 
         if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, playerPos);
-        if (enabled('industrialBg')) industrialSystem.update(cameraX, delta, playerPos);
+        if (enabled('industrial')) industrialSystem.update(cameraX, delta, playerPos);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
         if (enabled('nebula')) nebulaSystem.update(delta, cameraX, playerPos);
         if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX);

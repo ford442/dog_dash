@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { GhostDebrisSystem } from './ghost_debris';
-import { godRaySystem, auroraSystem, blackHoleSystem } from './game_systems';
+import { godRaySystem, auroraSystem, blackHoleSystem, industrialSystem } from './game_systems';
 import { createGameManagers } from './game_managers';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
@@ -376,7 +376,6 @@ const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
 const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
 
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
-const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
