@@ -295,7 +295,8 @@ const playerState = {
     bossActive: false, // Boss fight in progress
     cores: 0, // Cores collected this run
     slingCombo: 0, // Current sling chain counter
-    slingAssistTimer: 0 // Seconds remaining on Sling Assist boost
+    slingAssistTimer: 0, // Seconds remaining on Sling Assist boost
+    penguinSlideAssistTimer: 0 // Seconds remaining on Astro Penguin slide assist
 };
 
 // =============================================================================
@@ -638,6 +639,36 @@ friendsManager.onFriendRescued = (count, position, kind) => {
         }
     }
 };
+
+// Cosmic Otter flyby: gentle orb gift + Weird Life Log catalog entry
+friendsManager.onOtterGift = (position, cores) => {
+    const otterMemory = saveManager.hasMemory('cosmic_otter');
+    const totalCores = cores + (otterMemory && Math.random() < 0.35 ? 1 : 0);
+    playerState.cores += totalCores;
+    saveManager.addCores(totalCores);
+    creatureCatalogManager.catalog('cosmic_otter');
+    if (player) {
+        juiceManager.showFloatingText(`+${totalCores} Core${totalCores > 1 ? 's' : ''}!`, position.clone(), '#66ccff', 24);
+        juiceManager.burstMagic(position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+};
+
+// Astro Penguin belly slide: slide assist + Weird Life Log catalog entry
+friendsManager.onPenguinSlide = (position, cores, slideAssistDuration) => {
+    const penguinMemory = saveManager.hasMemory('astro_penguin');
+    const assistDuration = slideAssistDuration + (penguinMemory ? 1.5 : 0);
+    playerState.cores += cores;
+    saveManager.addCores(cores);
+    playerState.penguinSlideAssistTimer = Math.max(playerState.penguinSlideAssistTimer, assistDuration);
+    creatureCatalogManager.catalog('astro_penguin');
+    if (player) {
+        juiceManager.showFloatingText('Slide Assist!', position.clone(), '#aaddff', 24);
+        juiceManager.burstMagic(position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
+};
+
 const juiceManager = new JuiceManager(camera, scene, particleSystem);
 
 // Level 5 "Arc Surge" objective: report the sling combo chain as progress
@@ -818,6 +849,7 @@ debugSystem.register('creature_tarsier_guardian', 'Crystal Tarsier', true);
 debugSystem.register('creature_geode_titan', 'Geode Titan', true);
 debugSystem.register('creature_moon_jelly', 'Moon Jelly', true);
 debugSystem.register('creature_aurora_ray', 'Aurora Ray', true);
+debugSystem.register('creature_nebula_puffer', 'Nebula Puffer', true);
 debugSystem.register('particles', 'Particles', true);
 debugSystem.register('debris', 'Debris', true);
 debugSystem.register('weaponLights', 'Weapon Lights', true);
@@ -1737,6 +1769,9 @@ function updatePlayer(delta: number) {
         targetSpeed = -CONFIG.player.maxDescentSpeed;
     } else {
         targetSpeed = -CONFIG.player.gravity;
+        if (playerState.penguinSlideAssistTimer > 0) {
+            targetSpeed *= 0.45;
+        }
     }
     
     const accel = (targetSpeed !== -CONFIG.player.gravity && targetSpeed !== 0)
@@ -1747,6 +1782,12 @@ function updatePlayer(delta: number) {
     if (playerState.slingAssistTimer > 0) {
         playerState.slingAssistTimer = Math.max(0, playerState.slingAssistTimer - delta);
         playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * 0.3 * delta;
+    }
+
+    // Astro Penguin slide assist: lighter gravity + gentle forward nudge
+    if (playerState.penguinSlideAssistTimer > 0) {
+        playerState.penguinSlideAssistTimer = Math.max(0, playerState.penguinSlideAssistTimer - delta);
+        playerState.autoScrollSpeed = Math.min(playerState.autoScrollSpeed + 2.2 * delta, 20);
     }
     
     playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * delta;
@@ -2480,10 +2521,24 @@ function animate() {
                 creatureCatalogManager.catalog('tarsier');
             } else if (result.type === 'geode_titan_flythrough') {
                 creatureCatalogManager.catalog('geode_titan');
+            } else if (result.type === 'puff_puffer_catalog') {
+                creatureCatalogManager.catalog('nebula_puffer');
+                const pufferMemory = saveManager.hasMemory('nebula_puffer');
+                const grazeDuration = (result.grazeWindowDuration ?? 8) + (pufferMemory ? 4 : 0);
+                const grazeBonus = (result.grazeWindowBonus ?? 0.55) + (pufferMemory ? 0.25 : 0);
+                obstacleSystem.applyGrazeWindowBonus(grazeDuration, grazeBonus);
             }
-            if (result.type === 'tarsier_guardian_blessing' || result.type === 'geode_titan_flythrough') {
+            if (result.score) {
+                hudManager.addScore(result.score);
+                if (result.label && result.type === 'puff_puffer_bubble_pop') {
+                    juiceManager.showFloatingText(result.label, result.position.clone(), '#aaddff', 18);
+                }
+            }
+            if (result.type === 'tarsier_guardian_blessing' || result.type === 'geode_titan_flythrough' || result.type === 'puff_puffer_catalog') {
                 juiceManager.burstMagic(result.position.clone());
                 dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+            } else if (result.type === 'puff_puffer_bubble_pop') {
+                juiceManager.shakeScreen(ShakeType.LIGHT, 0.08);
             } else {
                 juiceManager.shakeScreen(ShakeType.LIGHT, 0.15);
             }
@@ -2765,8 +2820,11 @@ function animate() {
         
         // Update space friends and spawn new ones
         if (debugSystem.isEnabled('spaceFriends')) {
-            friendsManager.update(delta, player.position);
-            friendsManager.maybeSpawnFriends(player.position.x);
+            friendsManager.update(delta, player.position, weaponSystem.getActiveProjectiles());
+            friendsManager.maybeSpawnFriends(
+                player.position.x,
+                levelManager.config[levelManager.currentLevel]
+            );
             friendsManager.cleanupFarFriends(player.position.x);
         }
 

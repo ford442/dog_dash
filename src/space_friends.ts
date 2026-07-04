@@ -4,6 +4,8 @@
  * 🐱 Space Kitty - Astronaut kitten in bubble helmet
  * 🐰 Space Bunny - Fluffy bunny in rocket pack
  * 🏮 Wish Lantern - Floating pink paper lantern
+ * 🦦 Cosmic Otter - Playful juggler of glowing orbs
+ * 🐧 Astro Penguin - Tuxedoed waddler with an excited belly slide
  */
 
 import * as THREE from 'three';
@@ -15,10 +17,12 @@ import { ParticleSystem } from './particles';
 // =============================================================================
 
 export interface InteractionResult {
-    type: 'kitty_wave' | 'bunny_heal' | 'lantern_pop' | 'tarsier_cheer' | 'tarsier_panic';
+    type: 'kitty_wave' | 'bunny_heal' | 'lantern_pop' | 'tarsier_cheer' | 'tarsier_panic' | 'otter_gift' | 'otter_sploosh' | 'penguin_slide' | 'penguin_ice_trail';
     position: THREE.Vector3;
     bonus?: number;
     healthRestore?: number;
+    /** Seconds of slide-assist buff for the player (penguin belly slide). */
+    slideAssistDuration?: number;
 }
 
 // =============================================================================
@@ -1389,16 +1393,716 @@ export class AstroTarsier {
 }
 
 // =============================================================================
+// ASTRO PENGUIN - Tuxedoed space penguin with waddle + belly slide
+// =============================================================================
+
+type PenguinState = 'waddling' | 'excited' | 'sliding' | 'recovering';
+
+export class SpacePenguin {
+    group: THREE.Group;
+    position: THREE.Vector3;
+    baseY: number;
+
+    time: number = 0;
+    state: PenguinState = 'waddling';
+    stateTimer: number = 0;
+    hasSlid: boolean = false;
+    iceTrailTimer: number = 0;
+    slideOffset: number = 0;
+
+    private animGroup: THREE.Group | null = null;
+    private bodyGroup: THREE.Group | null = null;
+    private headGroup: THREE.Group | null = null;
+    private leftFlipper: THREE.Group | null = null;
+    private rightFlipper: THREE.Group | null = null;
+    private leftLeg: THREE.Group | null = null;
+    private rightLeg: THREE.Group | null = null;
+    private leftEye: THREE.Mesh | null = null;
+    private rightEye: THREE.Mesh | null = null;
+    private leftBrow: THREE.Mesh | null = null;
+    private rightBrow: THREE.Mesh | null = null;
+
+    readonly INTERACTION_DISTANCE = 9;
+    readonly SLIDE_DISTANCE = 2.4;
+    readonly SLIDE_DURATION = 1.1;
+    readonly SLIDE_ASSIST_SECONDS = 3;
+    readonly GIFT_CORES = 1;
+
+    constructor(scene: THREE.Scene, x: number, y: number) {
+        this.position = new THREE.Vector3(x, y, 0);
+        this.baseY = y;
+        this.group = new THREE.Group();
+        this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'astroPenguin';
+
+        this.createMesh();
+        scene.add(this.group);
+    }
+
+    private createMesh(): void {
+        this.animGroup = new THREE.Group();
+        this.bodyGroup = new THREE.Group();
+
+        const blackMat = new THREE.MeshStandardMaterial({ color: 0x1a1a22, roughness: 0.85 });
+        const whiteMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.9 });
+        const orangeMat = new THREE.MeshStandardMaterial({ color: 0xff7722, roughness: 0.55 });
+
+        // Torso — black back, white belly
+        const torso = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 14), blackMat);
+        torso.scale.set(0.95, 1.05, 0.85);
+        this.bodyGroup.add(torso);
+
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12), whiteMat);
+        belly.position.set(0, -0.05, 0.14);
+        belly.scale.set(0.85, 0.9, 0.45);
+        this.bodyGroup.add(belly);
+
+        // Head
+        this.headGroup = new THREE.Group();
+        this.headGroup.position.set(0, 0.38, 0.12);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 14), blackMat);
+        this.headGroup.add(head);
+
+        const facePatch = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), whiteMat);
+        facePatch.position.set(0, -0.04, 0.12);
+        facePatch.scale.set(0.9, 0.75, 0.5);
+        this.headGroup.add(facePatch);
+
+        // Dot eyes + happy brows (hidden until excited)
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.2 });
+        const browMat = new THREE.MeshStandardMaterial({ color: 0x111122, roughness: 0.3 });
+
+        this.leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), eyeMat);
+        this.leftEye.position.set(-0.1, 0.02, 0.24);
+        this.headGroup.add(this.leftEye);
+
+        this.rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), eyeMat);
+        this.rightEye.position.set(0.1, 0.02, 0.24);
+        this.headGroup.add(this.rightEye);
+
+        this.leftBrow = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.02), browMat);
+        this.leftBrow.position.set(-0.1, 0.1, 0.23);
+        this.leftBrow.rotation.z = 0.55;
+        this.leftBrow.visible = false;
+        this.headGroup.add(this.leftBrow);
+
+        this.rightBrow = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.02, 0.02), browMat);
+        this.rightBrow.position.set(0.1, 0.1, 0.23);
+        this.rightBrow.rotation.z = -0.55;
+        this.rightBrow.visible = false;
+        this.headGroup.add(this.rightBrow);
+
+        // Orange beak
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.14, 8), orangeMat);
+        beak.position.set(0, -0.06, 0.3);
+        beak.rotation.x = Math.PI / 2;
+        this.headGroup.add(beak);
+
+        // Tiny fishbowl helmet
+        const helmet = new THREE.Mesh(
+            new THREE.SphereGeometry(0.38, 14, 14),
+            new THREE.MeshPhysicalMaterial({
+                color: 0xaaddff,
+                transmission: 0.88,
+                roughness: 0.05,
+                transparent: true,
+                opacity: 0.3
+            })
+        );
+        helmet.position.y = 0.06;
+        this.headGroup.add(helmet);
+
+        // Cozy space scarf
+        const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.05, 6, 16), orangeMat);
+        scarf.position.set(0, 0.12, 0.02);
+        scarf.rotation.x = Math.PI / 2;
+        this.headGroup.add(scarf);
+
+        this.bodyGroup.add(this.headGroup);
+
+        // Flippers
+        this.leftFlipper = new THREE.Group();
+        this.leftFlipper.position.set(-0.42, 0.05, 0.05);
+        const leftFlipMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), blackMat);
+        leftFlipMesh.scale.set(0.5, 1.2, 0.7);
+        this.leftFlipper.add(leftFlipMesh);
+        this.bodyGroup.add(this.leftFlipper);
+
+        this.rightFlipper = new THREE.Group();
+        this.rightFlipper.position.set(0.42, 0.05, 0.05);
+        const rightFlipMesh = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 10), blackMat);
+        rightFlipMesh.scale.set(0.5, 1.2, 0.7);
+        this.rightFlipper.add(rightFlipMesh);
+        this.bodyGroup.add(this.rightFlipper);
+
+        // Feet
+        this.leftLeg = new THREE.Group();
+        this.leftLeg.position.set(-0.16, -0.38, 0.1);
+        const leftFoot = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), orangeMat);
+        leftFoot.scale.set(1.2, 0.5, 1.4);
+        this.leftLeg.add(leftFoot);
+        this.bodyGroup.add(this.leftLeg);
+
+        this.rightLeg = new THREE.Group();
+        this.rightLeg.position.set(0.16, -0.38, 0.1);
+        const rightFoot = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), orangeMat);
+        rightFoot.scale.set(1.2, 0.5, 1.4);
+        this.rightLeg.add(rightFoot);
+        this.bodyGroup.add(this.rightLeg);
+
+        this.animGroup.add(this.bodyGroup);
+
+        const glow = new THREE.PointLight(0xaaddff, 0.3, 4);
+        glow.position.set(0, 0.3, 0.4);
+        this.animGroup.add(glow);
+
+        this.group.add(this.animGroup);
+        this.group.userData.penguin = this;
+    }
+
+    private setHappyFace(happy: boolean): void {
+        const eyeScale = happy ? 1.35 : 1.0;
+        if (this.leftEye) this.leftEye.scale.setScalar(eyeScale);
+        if (this.rightEye) this.rightEye.scale.setScalar(eyeScale);
+        if (this.leftBrow) this.leftBrow.visible = happy;
+        if (this.rightBrow) this.rightBrow.visible = happy;
+    }
+
+    private animateWaddle(): void {
+        const waddleT = this.time * 5.5;
+        const legSwing = Math.sin(waddleT) * 0.28;
+        if (this.leftLeg) this.leftLeg.rotation.x = legSwing;
+        if (this.rightLeg) this.rightLeg.rotation.x = -legSwing;
+        if (this.bodyGroup) {
+            this.bodyGroup.position.y = Math.abs(Math.sin(waddleT)) * 0.05;
+            this.bodyGroup.rotation.z = Math.sin(waddleT) * 0.06;
+        }
+        if (this.headGroup) {
+            this.headGroup.rotation.z = -Math.sin(waddleT) * 0.08;
+            this.headGroup.position.y = 0.38 + Math.sin(waddleT * 2) * 0.02;
+        }
+        if (this.leftFlipper) this.leftFlipper.rotation.z = 0.2 + Math.sin(waddleT) * 0.1;
+        if (this.rightFlipper) this.rightFlipper.rotation.z = -0.2 - Math.sin(waddleT) * 0.1;
+    }
+
+    update(dt: number, playerPos: THREE.Vector3, disturbed: boolean = false): InteractionResult | null {
+        this.time += dt;
+        this.stateTimer += dt;
+        let result: InteractionResult | null = null;
+
+        const dist = this.position.distanceTo(playerPos);
+        const floatY = Math.sin(this.time * 1.2) * 0.12;
+        this.group.position.y = this.baseY + floatY;
+
+        switch (this.state) {
+            case 'waddling': {
+                if (this.animGroup) {
+                    this.animGroup.rotation.z = THREE.MathUtils.lerp(this.animGroup.rotation.z, 0, dt * 6);
+                    this.animGroup.position.x = THREE.MathUtils.lerp(this.animGroup.position.x, 0, dt * 4);
+                }
+                this.slideOffset = 0;
+                this.setHappyFace(false);
+                this.animateWaddle();
+
+                if (!this.hasSlid && !disturbed && dist < this.INTERACTION_DISTANCE) {
+                    this.state = 'excited';
+                    this.stateTimer = 0;
+                    this.setHappyFace(true);
+                }
+                if (dist > this.INTERACTION_DISTANCE + 5) {
+                    this.hasSlid = false;
+                }
+                break;
+            }
+            case 'excited': {
+                this.setHappyFace(true);
+                if (this.leftFlipper) this.leftFlipper.rotation.z = Math.sin(this.time * 18) * 0.5;
+                if (this.rightFlipper) this.rightFlipper.rotation.z = -Math.sin(this.time * 18 + 0.5) * 0.5;
+                if (this.headGroup) this.headGroup.rotation.y = Math.sin(this.time * 12) * 0.15;
+
+                if (disturbed || dist > this.INTERACTION_DISTANCE + 2) {
+                    this.state = 'waddling';
+                    this.stateTimer = 0;
+                    break;
+                }
+                if (this.stateTimer >= 0.35) {
+                    this.state = 'sliding';
+                    this.stateTimer = 0;
+                    this.slideOffset = 0;
+                    this.iceTrailTimer = 0;
+                }
+                break;
+            }
+            case 'sliding': {
+                const slideT = Math.min(1, this.stateTimer / this.SLIDE_DURATION);
+                if (this.animGroup) {
+                    this.animGroup.rotation.z = THREE.MathUtils.lerp(0, 1.22, slideT);
+                    this.slideOffset = slideT * this.SLIDE_DISTANCE;
+                    this.animGroup.position.x = this.slideOffset;
+                }
+                if (this.leftFlipper) this.leftFlipper.rotation.z = 0.6 + Math.sin(this.time * 20) * 0.3;
+                if (this.rightFlipper) this.rightFlipper.rotation.z = -0.6 - Math.sin(this.time * 20) * 0.3;
+                this.setHappyFace(true);
+
+                this.iceTrailTimer += dt;
+                if (this.iceTrailTimer >= 0.12) {
+                    this.iceTrailTimer = 0;
+                    const bellyPos = this.position.clone();
+                    bellyPos.x += this.slideOffset;
+                    bellyPos.y -= 0.2;
+                    result = { type: 'penguin_ice_trail', position: bellyPos };
+                }
+
+                if (slideT >= 1) {
+                    this.state = 'recovering';
+                    this.stateTimer = 0;
+                    this.hasSlid = true;
+                    result = {
+                        type: 'penguin_slide',
+                        position: playerPos.clone(),
+                        bonus: this.GIFT_CORES,
+                        slideAssistDuration: this.SLIDE_ASSIST_SECONDS
+                    };
+                }
+                break;
+            }
+            case 'recovering': {
+                const recoverT = Math.min(1, this.stateTimer / 0.8);
+                if (this.animGroup) {
+                    this.animGroup.rotation.z = THREE.MathUtils.lerp(1.22, 0, recoverT);
+                    this.animGroup.position.x = THREE.MathUtils.lerp(this.slideOffset, 0, recoverT);
+                }
+                this.animateWaddle();
+                this.setHappyFace(recoverT < 0.5);
+
+                if (recoverT >= 1) {
+                    this.state = 'waddling';
+                    this.stateTimer = 0;
+                    this.position.x += this.SLIDE_DISTANCE * 0.35;
+                    this.group.position.x = this.position.x;
+                }
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    destroy(scene: THREE.Scene): void {
+        scene.remove(this.group);
+        this.group.traverse((child) => {
+            if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+        });
+    }
+
+    getDistanceToPlayer(playerPos: THREE.Vector3): number {
+        return this.position.distanceTo(playerPos);
+    }
+}
+
+// =============================================================================
+// COSMIC OTTER - Playful juggler of glowing orbs in zero gravity
+// =============================================================================
+
+type OtterGiftState = 'juggling' | 'preparing' | 'orb_flying' | 'waving' | 'done';
+
+interface JuggleOrb {
+    mesh: THREE.Mesh;
+    light: THREE.PointLight;
+    phase: number;
+    color: number;
+    /** World offset from otter centre while juggling. */
+    localPos: THREE.Vector3;
+    /** True while this orb is the gift flying toward the player. */
+    isGift?: boolean;
+}
+
+export class SpaceOtter {
+    group: THREE.Group;
+    position: THREE.Vector3;
+    baseY: number;
+
+    time: number = 0;
+    giftState: OtterGiftState = 'juggling';
+    giftTimer: number = 0;
+    calmTimer: number = 0;
+    hasGifted: boolean = false;
+    splooshTimer: number = 0;
+
+    private bodyGroup: THREE.Group | null = null;
+    private headGroup: THREE.Group | null = null;
+    private tailGroup: THREE.Group | null = null;
+    private leftArm: THREE.Group | null = null;
+    private rightArm: THREE.Group | null = null;
+    private leftPaw: THREE.Group | null = null;
+    private rightPaw: THREE.Group | null = null;
+    private orbsGroup: THREE.Group | null = null;
+    private orbs: JuggleOrb[] = [];
+    private giftOrb: JuggleOrb | null = null;
+    private giftStart = new THREE.Vector3();
+    private giftTarget = new THREE.Vector3();
+
+    readonly INTERACTION_DISTANCE = 9;
+    readonly GIFT_CORES = 1;
+    readonly JUGGLE_SPEED = 2.8;
+    readonly FLOAT_AMPLITUDE = 0.45;
+    readonly FLOAT_SPEED = 1.4;
+
+    constructor(scene: THREE.Scene, x: number, y: number) {
+        this.position = new THREE.Vector3(x, y, 0);
+        this.baseY = y;
+        this.group = new THREE.Group();
+        this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'cosmicOtter';
+
+        this.createMesh();
+        scene.add(this.group);
+    }
+
+    private createMesh(): void {
+        const otterGroup = new THREE.Group();
+        this.bodyGroup = otterGroup;
+
+        const furMat = new THREE.MeshStandardMaterial({
+            color: 0x8b6914,
+            roughness: 0.85,
+            metalness: 0.05
+        });
+        const bellyMat = new THREE.MeshStandardMaterial({
+            color: 0xf5e6c8,
+            roughness: 0.9
+        });
+
+        // Streamlined body
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.48, 16, 16), furMat);
+        body.scale.set(1.15, 0.75, 0.85);
+        otterGroup.add(body);
+
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.38, 14, 14), bellyMat);
+        belly.position.set(0, -0.08, 0.12);
+        belly.scale.set(0.9, 0.7, 0.5);
+        otterGroup.add(belly);
+
+        // Head
+        this.headGroup = new THREE.Group();
+        this.headGroup.position.set(0, 0.22, 0.28);
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 14, 14), furMat);
+        this.headGroup.add(head);
+
+        // Tiny rounded ears
+        const earGeo = new THREE.SphereGeometry(0.09, 8, 8);
+        for (const side of [-1, 1]) {
+            const ear = new THREE.Mesh(earGeo, furMat);
+            ear.position.set(0.2 * side, 0.22, 0.02);
+            ear.scale.set(0.8, 1.0, 0.5);
+            this.headGroup.add(ear);
+        }
+
+        // Big friendly eyes
+        const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+        const pupilMat = new THREE.MeshStandardMaterial({ color: 0x223344, roughness: 0.2 });
+        for (const side of [-1, 1]) {
+            const eyeGroup = new THREE.Group();
+            eyeGroup.position.set(0.11 * side, 0.04, 0.26);
+            eyeGroup.add(new THREE.Mesh(new THREE.SphereGeometry(0.09, 10, 10), eyeWhiteMat));
+            const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), pupilMat);
+            pupil.position.z = 0.06;
+            eyeGroup.add(pupil);
+            const shine = new THREE.Mesh(
+                new THREE.SphereGeometry(0.02, 6, 6),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            shine.position.set(0.02, 0.02, 0.08);
+            eyeGroup.add(shine);
+            this.headGroup.add(eyeGroup);
+        }
+
+        // Small nose
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0x554433, roughness: 0.5 })
+        );
+        nose.position.set(0, -0.04, 0.3);
+        this.headGroup.add(nose);
+
+        otterGroup.add(this.headGroup);
+
+        // Arms (for juggling reach)
+        this.leftArm = new THREE.Group();
+        this.leftArm.position.set(-0.38, 0.05, 0.1);
+        this.leftPaw = new THREE.Group();
+        this.leftPaw.add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10), furMat));
+        this.leftPaw.position.set(-0.12, 0.15, 0.05);
+        this.leftArm.add(this.leftPaw);
+        otterGroup.add(this.leftArm);
+
+        this.rightArm = new THREE.Group();
+        this.rightArm.position.set(0.38, 0.05, 0.1);
+        this.rightPaw = new THREE.Group();
+        this.rightPaw.add(new THREE.Mesh(new THREE.SphereGeometry(0.1, 10, 10), furMat));
+        this.rightPaw.position.set(0.12, 0.15, 0.05);
+        this.rightArm.add(this.rightPaw);
+        otterGroup.add(this.rightArm);
+
+        // Fluffy tail for balance
+        this.tailGroup = new THREE.Group();
+        this.tailGroup.position.set(0, -0.05, -0.42);
+        const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.55, 4, 8), furMat);
+        tail.rotation.x = 0.6;
+        this.tailGroup.add(tail);
+        otterGroup.add(this.tailGroup);
+
+        // Juggling orbs
+        this.orbsGroup = new THREE.Group();
+        this.orbsGroup.position.y = 0.35;
+        const orbColors = [0x44ddff, 0xff66cc, 0xffdd44, 0x66ffee];
+        for (let i = 0; i < 4; i++) {
+            const orbColor = orbColors[i];
+            const orbMat = new THREE.MeshStandardMaterial({
+                color: orbColor,
+                emissive: orbColor,
+                emissiveIntensity: 1.2,
+                roughness: 0.15,
+                metalness: 0.3
+            });
+            const orbMesh = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 10), orbMat);
+            const light = new THREE.PointLight(orbColor, 0.6, 3);
+            orbMesh.add(light);
+            this.orbsGroup.add(orbMesh);
+            this.orbs.push({
+                mesh: orbMesh,
+                light,
+                phase: (i / 4) * Math.PI * 2,
+                color: orbColor,
+                localPos: new THREE.Vector3()
+            });
+        }
+        otterGroup.add(this.orbsGroup);
+
+        const ambientLight = new THREE.PointLight(0xaaddff, 0.35, 5);
+        ambientLight.position.set(0, 0.4, 0.3);
+        otterGroup.add(ambientLight);
+
+        this.group.add(otterGroup);
+        this.group.userData.otter = this;
+    }
+
+    private updateJugglePositions(speedMul: number = 1): void {
+        if (!this.orbsGroup) return;
+        const t = this.time * this.JUGGLE_SPEED * speedMul;
+        for (const orb of this.orbs) {
+            if (orb.isGift) continue;
+            const phase = t + orb.phase;
+            // Figure-8 toss path in local space
+            orb.localPos.set(
+                Math.sin(phase) * 0.55,
+                Math.sin(phase * 2) * 0.28 + 0.15,
+                Math.cos(phase) * 0.35
+            );
+            orb.mesh.position.copy(orb.localPos);
+            orb.mesh.rotation.y += 0.04;
+        }
+    }
+
+    private aimArmsAtOrbs(): void {
+        if (!this.leftPaw || !this.rightPaw || this.orbs.length < 2) return;
+        const t = this.time * this.JUGGLE_SPEED;
+        const leftIdx = Math.floor(t / Math.PI) % this.orbs.length;
+        const rightIdx = (leftIdx + 2) % this.orbs.length;
+        const leftOrb = this.orbs[leftIdx];
+        const rightOrb = this.orbs[rightIdx];
+        if (!leftOrb.isGift) {
+            this.leftPaw.position.set(
+                leftOrb.localPos.x - 0.25,
+                leftOrb.localPos.y - 0.05,
+                leftOrb.localPos.z
+            );
+        }
+        if (!rightOrb.isGift) {
+            this.rightPaw.position.set(
+                rightOrb.localPos.x + 0.25,
+                rightOrb.localPos.y - 0.05,
+                rightOrb.localPos.z
+            );
+        }
+    }
+
+    update(dt: number, playerPos: THREE.Vector3, disturbed: boolean = false): InteractionResult | null {
+        this.time += dt;
+        let result: InteractionResult | null = null;
+
+        const dist = this.position.distanceTo(playerPos);
+        const floatY = Math.sin(this.time * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
+        this.group.position.y = this.baseY + floatY;
+        this.group.rotation.z = Math.sin(this.time * 0.9) * 0.08;
+
+        if (this.tailGroup) {
+            const tailSwish = this.giftState === 'waving' ? 0.35 : 0.18;
+            this.tailGroup.rotation.y = Math.sin(this.time * 4) * tailSwish;
+            this.tailGroup.rotation.x = 0.6 + Math.sin(this.time * 3) * 0.1;
+        }
+
+        // Periodic water-splash sparkle while juggling
+        this.splooshTimer += dt;
+        if (this.giftState === 'juggling' && this.splooshTimer >= 2.2) {
+            this.splooshTimer = 0;
+            result = { type: 'otter_sploosh', position: this.position.clone() };
+        }
+
+        switch (this.giftState) {
+            case 'juggling': {
+                this.updateJugglePositions(1);
+                this.aimArmsAtOrbs();
+
+                if (!this.hasGifted && !disturbed && dist < this.INTERACTION_DISTANCE) {
+                    this.calmTimer += dt;
+                    if (this.calmTimer >= 0.9) {
+                        this.giftState = 'preparing';
+                        this.giftTimer = 0;
+                    }
+                } else if (disturbed || dist >= this.INTERACTION_DISTANCE) {
+                    this.calmTimer = 0;
+                }
+                break;
+            }
+            case 'preparing': {
+                // Slow the juggle while deciding to share
+                this.updateJugglePositions(0.35);
+                this.aimArmsAtOrbs();
+                this.giftTimer += dt;
+                if (disturbed || dist > this.INTERACTION_DISTANCE + 1) {
+                    this.giftState = 'juggling';
+                    this.giftTimer = 0;
+                    this.calmTimer = 0;
+                    break;
+                }
+                if (this.giftTimer >= 0.6) {
+                    this.giftOrb = this.orbs[0];
+                    this.giftOrb.isGift = true;
+                    this.giftStart.copy(this.giftOrb.mesh.getWorldPosition(new THREE.Vector3()));
+                    this.giftTarget.copy(playerPos);
+                    this.giftState = 'orb_flying';
+                    this.giftTimer = 0;
+                }
+                break;
+            }
+            case 'orb_flying': {
+                this.updateJugglePositions(0.5);
+                // Celebratory toss on remaining orbs
+                for (let i = 1; i < this.orbs.length; i++) {
+                    const orb = this.orbs[i];
+                    const phase = this.time * this.JUGGLE_SPEED * 1.4 + orb.phase;
+                    orb.localPos.set(
+                        Math.sin(phase) * 0.7,
+                        Math.sin(phase * 2) * 0.38 + 0.2,
+                        Math.cos(phase) * 0.4
+                    );
+                    orb.mesh.position.copy(orb.localPos);
+                }
+                this.giftTimer += dt;
+                const flyT = Math.min(1, this.giftTimer / 1.4);
+                if (this.giftOrb) {
+                    const arcY = Math.sin(flyT * Math.PI) * 2.5;
+                    const pos = new THREE.Vector3().lerpVectors(this.giftStart, this.giftTarget, flyT);
+                    pos.y += arcY;
+                    this.giftOrb.mesh.position.copy(this.orbsGroup!.worldToLocal(pos));
+                    this.giftOrb.mesh.scale.setScalar(1 + flyT * 0.3);
+                }
+                if (flyT >= 1) {
+                    this.giftState = 'waving';
+                    this.giftTimer = 0;
+                    this.hasGifted = true;
+                    if (this.giftOrb) {
+                        this.giftOrb.mesh.visible = false;
+                        this.giftOrb.light.intensity = 0;
+                    }
+                    result = {
+                        type: 'otter_gift',
+                        position: playerPos.clone(),
+                        bonus: this.GIFT_CORES
+                    };
+                }
+                break;
+            }
+            case 'waving': {
+                this.updateJugglePositions(0.6);
+                this.giftTimer += dt;
+                if (this.leftPaw && this.rightPaw) {
+                    const wave = Math.sin(this.giftTimer * 10) * 0.4;
+                    this.leftPaw.rotation.z = wave - 0.3;
+                    this.rightPaw.rotation.z = -wave + 0.3;
+                    this.leftPaw.position.y = 0.35 + Math.sin(this.giftTimer * 10) * 0.12;
+                    this.rightPaw.position.y = 0.35 + Math.sin(this.giftTimer * 10 + 0.5) * 0.12;
+                }
+                if (this.headGroup) {
+                    this.headGroup.rotation.z = Math.sin(this.giftTimer * 6) * 0.1;
+                }
+                if (this.giftTimer >= 1.8) {
+                    this.giftState = 'done';
+                    if (this.giftOrb) {
+                        this.giftOrb.isGift = false;
+                        this.giftOrb.mesh.visible = true;
+                        this.giftOrb.mesh.scale.setScalar(1);
+                        this.giftOrb.light.intensity = 0.6;
+                    }
+                }
+                break;
+            }
+            case 'done': {
+                this.updateJugglePositions(1);
+                this.aimArmsAtOrbs();
+                if (dist > this.INTERACTION_DISTANCE + 4) {
+                    this.hasGifted = false;
+                    this.giftState = 'juggling';
+                    this.calmTimer = 0;
+                }
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    destroy(scene: THREE.Scene): void {
+        scene.remove(this.group);
+        this.group.traverse((child) => {
+            if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+        });
+    }
+
+    getDistanceToPlayer(playerPos: THREE.Vector3): number {
+        return this.position.distanceTo(playerPos);
+    }
+}
+
+// =============================================================================
 // TRAPPED FRIEND - A space friend stuck in wreckage, waiting to be rescued
 // =============================================================================
 
-export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup';
+export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup' | 'otter' | 'penguin';
 
 const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
     kitty: 0xfff0f5,
     bunny: 0xffd9a0,
     tarsier: 0xb088ff,
-    moonpup: 0xffe4b5
+    moonpup: 0xffe4b5,
+    otter: 0xc9a86c,
+    penguin: 0xe8e8f0
 };
 
 export class TrappedFriend {
@@ -1420,7 +2124,9 @@ export class TrappedFriend {
         this.group.position.copy(this.position);
         this.group.userData.speciesId = kind === 'moonpup'
             ? 'moonPup'
-            : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+            : kind === 'otter'
+                ? 'trappedOtter'
+                : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         // Occupant - the trapped friend, glowing softly inside the wreckage
         const occupantGeo = new THREE.SphereGeometry(0.35, 12, 12);
@@ -1519,7 +2225,9 @@ export class FlotillaMember {
         this.group = new THREE.Group();
         this.group.userData.speciesId = kind === 'moonpup'
             ? 'rescuedMoonPup'
-            : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+            : kind === 'otter'
+                ? 'rescuedOtter'
+                : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
         const bodyMat = new THREE.MeshStandardMaterial({
@@ -1588,6 +2296,38 @@ export class FlotillaMember {
                 this.propeller = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.08), propMat);
                 this.propeller.position.set(0, 0.42, 0);
                 this.group.add(this.propeller);
+                break;
+            }
+            case 'otter': {
+                const tailMat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+                const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.06, 0.35, 4, 6), tailMat);
+                tail.position.set(0, -0.1, -0.28);
+                tail.rotation.x = 0.5;
+                this.group.add(tail);
+                const orbMat = new THREE.MeshStandardMaterial({
+                    color: 0x44ddff,
+                    emissive: 0x44ddff,
+                    emissiveIntensity: 0.8,
+                    roughness: 0.2
+                });
+                const miniOrb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), orbMat);
+                miniOrb.position.set(0.2, 0.25, 0.15);
+                this.group.add(miniOrb);
+                break;
+            }
+            case 'penguin': {
+                const bellyMat = new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.7 });
+                const belly = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), bellyMat);
+                belly.position.set(0, -0.05, 0.12);
+                belly.scale.set(0.8, 0.7, 0.4);
+                this.group.add(belly);
+                const beak = new THREE.Mesh(
+                    new THREE.ConeGeometry(0.05, 0.1, 6),
+                    new THREE.MeshStandardMaterial({ color: 0xff7722, roughness: 0.5 })
+                );
+                beak.position.set(0.22, 0.05, 0.1);
+                beak.rotation.z = -Math.PI / 2;
+                this.group.add(beak);
                 break;
             }
         }
@@ -1687,6 +2427,8 @@ export class FriendsManager {
     bunnies: SpaceBunny[] = [];
     lanterns: WishLantern[] = [];
     tarsiers: AstroTarsier[] = [];
+    otters: SpaceOtter[] = [];
+    penguins: SpacePenguin[] = [];
     trappedFriends: TrappedFriend[] = [];
     flotilla: FlotillaMember[] = [];
 
@@ -1696,11 +2438,19 @@ export class FriendsManager {
     /** Fired the moment a trapped friend is freed. count = running total rescued. */
     onFriendRescued?: (count: number, position: THREE.Vector3, kind: TrappedFriendKind) => void;
 
+    /** Fired when a Cosmic Otter shares an orb (+cores). */
+    onOtterGift?: (position: THREE.Vector3, cores: number) => void;
+
+    /** Fired when an Astro Penguin completes a belly slide (+slide assist). */
+    onPenguinSlide?: (position: THREE.Vector3, cores: number, slideAssistDuration: number) => void;
+
     // Cooldowns for audio (prevent spam)
     private lastKittySound: number = 0;
     private lastBunnySound: number = 0;
     private lastLanternSound: number = 0;
     private lastTarsierSound: number = 0;
+    private lastOtterSound: number = 0;
+    private lastPenguinSound: number = 0;
     
     // Spawn tracking
     private lastSpawnX: number = 0;
@@ -1722,6 +2472,18 @@ export class FriendsManager {
         const bunny = new SpaceBunny(this.scene, x, y);
         this.bunnies.push(bunny);
         return bunny;
+    }
+
+    spawnOtter(x: number, y: number): SpaceOtter {
+        const otter = new SpaceOtter(this.scene, x, y);
+        this.otters.push(otter);
+        return otter;
+    }
+
+    spawnPenguin(x: number, y: number): SpacePenguin {
+        const penguin = new SpacePenguin(this.scene, x, y);
+        this.penguins.push(penguin);
+        return penguin;
     }
     
     spawnLantern(x: number, y: number): WishLantern {
@@ -1769,7 +2531,7 @@ export class FriendsManager {
             if (r < 0.08) {
                 chosen = 'moonpup';
             } else {
-                chosen = (['kitty', 'bunny', 'tarsier'] as TrappedFriendKind[])[Math.floor(Math.random() * 3)];
+                chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin'] as TrappedFriendKind[])[Math.floor(Math.random() * 5)];
             }
         }
         const friend = new TrappedFriend(this.scene, x, y, chosen);
@@ -1806,24 +2568,31 @@ export class FriendsManager {
     /**
      * Spawn friends randomly as player progresses
      */
-    maybeSpawnFriends(playerX: number, levelConfig?: any): void {
+    maybeSpawnFriends(playerX: number, levelConfig?: { cosmicOtterRate?: number; astroPenguinRate?: number }): void {
         if (playerX - this.lastSpawnX > this.spawnInterval) {
             this.lastSpawnX = playerX;
             
             // Spawn 1-3 friends near this area
             const count = 1 + Math.floor(Math.random() * 3);
+            const otterWeight = levelConfig?.cosmicOtterRate ?? 0;
+            const penguinWeight = levelConfig?.astroPenguinRate ?? 0;
+            const remaining = Math.max(0, 1 - otterWeight - penguinWeight);
             
             for (let i = 0; i < count; i++) {
                 const spawnX = playerX + 30 + Math.random() * 40;
                 const spawnY = (Math.random() - 0.5) * 15;
                 
                 const type = Math.random();
-                if (type < 0.4) {
+                if (type < otterWeight) {
+                    this.spawnOtter(spawnX, spawnY);
+                } else if (type < otterWeight + penguinWeight) {
+                    this.spawnPenguin(spawnX, spawnY);
+                } else if (type < otterWeight + penguinWeight + 0.35 * remaining) {
                     this.spawnKitty(spawnX, spawnY);
-                } else if (type < 0.7) {
+                } else if (type < otterWeight + penguinWeight + 0.7 * remaining) {
                     this.spawnBunny(spawnX, spawnY);
                 } else {
-                    this.spawnLantern(spawnX, spawnY + 2); // Lanterns float higher
+                    this.spawnLantern(spawnX, spawnY + 2);
                 }
             }
         }
@@ -1835,12 +2604,20 @@ export class FriendsManager {
     spawnNearInterestArea(x: number, y: number, type: 'cluster' | 'gap' | 'tunnel'): void {
         switch (type) {
             case 'cluster':
-                // Spawn a bunny near asteroid clusters (comfort in danger)
-                this.spawnBunny(x, y + 3);
+                // Otters or bunnies near asteroid clusters
+                if (Math.random() < 0.35) {
+                    this.spawnOtter(x, y + 2);
+                } else {
+                    this.spawnBunny(x, y + 3);
+                }
                 break;
             case 'gap':
-                // Spawn a lantern in gaps (guiding light)
-                this.spawnLantern(x, y);
+                // Penguins or lanterns in open gaps
+                if (Math.random() < 0.4) {
+                    this.spawnPenguin(x, y);
+                } else {
+                    this.spawnLantern(x, y);
+                }
                 break;
             case 'tunnel':
                 // Spawn a kitty in tunnels (cute companion)
@@ -1848,8 +2625,18 @@ export class FriendsManager {
                 break;
         }
     }
+
+    private isFriendDisturbed(friendPos: THREE.Vector3, projectiles: { active: boolean; mesh: THREE.Mesh }[], radius: number = 14): boolean {
+        for (const proj of projectiles) {
+            if (!proj.active) continue;
+            if (proj.mesh.position.distanceTo(friendPos) < radius) {
+                return true;
+            }
+        }
+        return false;
+    }
     
-    update(dt: number, playerPos: THREE.Vector3): void {
+    update(dt: number, playerPos: THREE.Vector3, projectiles: { active: boolean; mesh: THREE.Mesh }[] = []): void {
         const now = Date.now();
         
         // Update all kitties
@@ -1883,6 +2670,24 @@ export class FriendsManager {
         // Update all tarsiers
         for (const tarsier of this.tarsiers) {
             const result = tarsier.update(dt, playerPos);
+            if (result) {
+                this.handleInteraction(result, now);
+            }
+        }
+
+        // Update all otters
+        for (const otter of this.otters) {
+            const disturbed = this.isFriendDisturbed(otter.position, projectiles);
+            const result = otter.update(dt, playerPos, disturbed);
+            if (result) {
+                this.handleInteraction(result, now);
+            }
+        }
+
+        // Update all penguins
+        for (const penguin of this.penguins) {
+            const disturbed = this.isFriendDisturbed(penguin.position, projectiles);
+            const result = penguin.update(dt, playerPos, disturbed);
             if (result) {
                 this.handleInteraction(result, now);
             }
@@ -1962,6 +2767,45 @@ export class FriendsManager {
                 }
                 // Small puff of dust/spores
                 this.particles.emit(result.position, 0xaaddcc, 6, 2.0, 0.3, 0.8);
+                break;
+
+            case 'otter_gift':
+                if (now - this.lastOtterSound > 2500) {
+                    this.audio.playSequence([
+                        { sound: 'twinkle', delay: 0, volume: 0.75 },
+                        { sound: 'sparkle', delay: 0.08, volume: 0.55 }
+                    ]);
+                    this.lastOtterSound = now;
+                }
+                this.particles.emit(result.position, 0xffdd44, 14, 4.5, 0.6, 1.4);
+                this.particles.emit(result.position, 0x44ccff, 10, 3.0, 0.5, 1.0);
+                this.onOtterGift?.(result.position, result.bonus ?? 1);
+                break;
+
+            case 'otter_sploosh':
+                this.particles.emit(result.position, 0x44ccff, 5, 2.2, 0.35, 0.7);
+                break;
+
+            case 'penguin_slide':
+                if (now - this.lastPenguinSound > 2800) {
+                    this.audio.playSequence([
+                        { sound: 'heart_pop', delay: 0, volume: 0.65 },
+                        { sound: 'sparkle', delay: 0.12, volume: 0.5 }
+                    ]);
+                    this.lastPenguinSound = now;
+                }
+                this.particles.emit(result.position, 0xffffff, 12, 4.0, 0.5, 1.2);
+                this.particles.emit(result.position, 0x88ccff, 10, 3.5, 0.4, 1.0);
+                this.onPenguinSlide?.(
+                    result.position,
+                    result.bonus ?? 1,
+                    result.slideAssistDuration ?? 3
+                );
+                break;
+
+            case 'penguin_ice_trail':
+                this.particles.emit(result.position, 0xddeeff, 4, 1.8, 0.25, 0.5);
+                this.particles.emit(result.position, 0xaaddff, 3, 1.2, 0.2, 0.4);
                 break;
         }
     }
@@ -2043,6 +2887,24 @@ export class FriendsManager {
             }
         }
 
+        // Remove otters that are far behind
+        for (let i = this.otters.length - 1; i >= 0; i--) {
+            const otter = this.otters[i];
+            if (otter.position.x < playerX - buffer) {
+                otter.destroy(this.scene);
+                this.otters.splice(i, 1);
+            }
+        }
+
+        // Remove penguins that are far behind
+        for (let i = this.penguins.length - 1; i >= 0; i--) {
+            const penguin = this.penguins[i];
+            if (penguin.position.x < playerX - buffer) {
+                penguin.destroy(this.scene);
+                this.penguins.splice(i, 1);
+            }
+        }
+
         // Remove trapped friends the player has flown past without rescuing
         for (let i = this.trappedFriends.length - 1; i >= 0; i--) {
             const trapped = this.trappedFriends[i];
@@ -2093,13 +2955,15 @@ export class FriendsManager {
     /**
      * Get total friend count
      */
-    getFriendCount(): { kitties: number; bunnies: number; lanterns: number; tarsiers: number; total: number } {
+    getFriendCount(): { kitties: number; bunnies: number; lanterns: number; tarsiers: number; otters: number; penguins: number; total: number } {
         return {
             kitties: this.kitties.length,
             bunnies: this.bunnies.length,
             lanterns: this.lanterns.length,
             tarsiers: this.tarsiers.length,
-            total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length
+            otters: this.otters.length,
+            penguins: this.penguins.length,
+            total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length + this.otters.length + this.penguins.length
         };
     }
 
@@ -2109,6 +2973,8 @@ export class FriendsManager {
             ...this.bunnies.map(friend => friend.group),
             ...this.lanterns.map(friend => friend.group),
             ...this.tarsiers.map(friend => friend.group),
+            ...this.otters.map(friend => friend.group),
+            ...this.penguins.map(friend => friend.group),
             ...this.trappedFriends.map(friend => friend.group),
             ...this.flotilla.map(friend => friend.group)
         ];
@@ -2137,6 +3003,16 @@ export class FriendsManager {
             tarsier.destroy(this.scene);
         }
         this.tarsiers = [];
+
+        for (const otter of this.otters) {
+            otter.destroy(this.scene);
+        }
+        this.otters = [];
+
+        for (const penguin of this.penguins) {
+            penguin.destroy(this.scene);
+        }
+        this.penguins = [];
 
         for (const trapped of this.trappedFriends) {
             trapped.destroy(this.scene);

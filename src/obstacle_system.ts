@@ -72,6 +72,8 @@ export class ObstacleSystem {
     private readonly GRAZE_MAX_DIST = 1.8;
     private readonly GRAZE_COMBO_TIMEOUT = 2.5;
     private readonly GRAZE_COOLDOWN = 0.4;
+    private grazeWindowBonusDist = 0;
+    private grazeWindowBonusTimer = 0;
 
     // Level 6 capstone: a wounded Nebula Kraken guards the path to the Moon
     private level6KrakenSpawned = false;
@@ -90,6 +92,12 @@ export class ObstacleSystem {
             return 0;
         }
         return this.grazeCombo;
+    }
+
+    /** Temporary wider graze near-miss window (e.g. Nebula Puffer memory bonus). */
+    applyGrazeWindowBonus(duration: number, extraDist: number): void {
+        this.grazeWindowBonusTimer = Math.max(this.grazeWindowBonusTimer, duration);
+        this.grazeWindowBonusDist = Math.max(this.grazeWindowBonusDist, extraDist);
     }
 
     update(delta: number) {
@@ -276,8 +284,15 @@ export class ObstacleSystem {
         }
 
         this.bounceCooldown = Math.max(0, this.bounceCooldown - delta);
+        if (this.grazeWindowBonusTimer > 0) {
+            this.grazeWindowBonusTimer = Math.max(0, this.grazeWindowBonusTimer - delta);
+            if (this.grazeWindowBonusTimer <= 0) {
+                this.grazeWindowBonusDist = 0;
+            }
+        }
 
         // --- GRAZE / NEAR-MISS DETECTION ---
+        const grazeMaxDist = this.GRAZE_MAX_DIST + this.grazeWindowBonusDist;
         for (const obs of activeObstacles) {
             const dx = obs.position.x - playerX;
             const dy = obs.position.y - playerY;
@@ -289,7 +304,7 @@ export class ObstacleSystem {
             // Skip if colliding (handled by collision system)
             if (edgeDist <= 0) continue;
             // Skip if too far or too close
-            if (edgeDist < this.GRAZE_MIN_DIST || edgeDist > this.GRAZE_MAX_DIST) continue;
+            if (edgeDist < this.GRAZE_MIN_DIST || edgeDist > grazeMaxDist) continue;
 
             // Per-asteroid cooldown
             const cd = this.grazeCooldowns.get(obs) || 0;

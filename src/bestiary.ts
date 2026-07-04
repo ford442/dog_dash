@@ -12,7 +12,10 @@ export type BestiaryEntryId =
     | 'kraken'
     | 'star_eater'
     | 'mine_robot'
-    | 'moon_pup';
+    | 'moon_pup'
+    | 'cosmic_otter'
+    | 'astro_penguin'
+    | 'nebula_puffer';
 
 export interface BestiaryEntry {
     id: BestiaryEntryId;
@@ -73,6 +76,30 @@ export const BESTIARY_ENTRIES: Record<BestiaryEntryId, BestiaryEntry> = {
         flavor: 'A rare "good dog" in a tiny fishbowl helmet, rescued from drifting wreckage.',
         howTo: 'Rescue one from a trapped-friend cage.',
         memoryDesc: 'Memory: "Good Dog!" score multipliers last longer.'
+    },
+    cosmic_otter: {
+        id: 'cosmic_otter',
+        name: 'Cosmic Otter',
+        icon: '\u{1F9A6}', // otter
+        flavor: 'A playful space otter who juggles glowing orbs in zero gravity, balancing with its fluffy tail.',
+        howTo: 'Fly close without shooting and let it share an orb with you.',
+        memoryDesc: 'Memory: Otter orb gifts sometimes grant an extra core.'
+    },
+    astro_penguin: {
+        id: 'astro_penguin',
+        name: 'Astro Penguin',
+        icon: '\u{1F427}', // penguin
+        flavor: 'A tuxedoed explorer in a fishbowl helmet who belly-slides across the void, leaving glittering ice crystals.',
+        howTo: 'Approach calmly and watch its excited belly slide without shooting.',
+        memoryDesc: 'Memory: Penguin slide assists last longer.'
+    },
+    nebula_puffer: {
+        id: 'nebula_puffer',
+        name: 'Nebula Puffer',
+        icon: '\u{1F41F}', // fish
+        flavor: 'A round, spiky-but-cute drifter that puffs up like a living balloon when curious pilots glide by slowly.',
+        howTo: 'Fly a gentle, slow pass nearby and watch it inflate without ramming it.',
+        memoryDesc: 'Memory: Graze near-miss windows stay wider for longer.'
     }
 };
 

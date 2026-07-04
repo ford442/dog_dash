@@ -112,6 +112,12 @@ export type LevelConfig = {
     // probability while the level has none of that creature active.
     crystalTarsierRate?: number;
     geodeTitanRate?: number;
+    /** Weight for Cosmic Otter spawns in the space-friends roulette (levels 2–4). */
+    cosmicOtterRate?: number;
+    /** Weight for Astro Penguin spawns in the space-friends roulette (levels 4–6). */
+    astroPenguinRate?: number;
+    /** Gummy ring hoops per ~100 units along the candy belt (levels 1–3). */
+    gummyRingDensity?: number;
     // Environmental hazards/rewards woven into the asteroid spawn cycle.
     mineRobotRate?: number;
     barnaclePodRate?: number;
@@ -167,6 +173,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x000000, bottom: 0x1a1a2e },
         levelType: 'open',
         crystalTarsierRate: 0.0006,
+        gummyRingDensity: 0.09,
         enemyTintColor: 0x66ff99,
         environments: {
             asteroidField: { rate: 2.5 },
@@ -213,6 +220,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'open',
         crystalTarsierRate: 0.0006,
         geodeTitanRate: 0.0008,
+        cosmicOtterRate: 0.22,
+        gummyRingDensity: 0.07,
         enemyTintColor: 0x8844ff,
         environments: {
             asteroidField: { rate: 0.8 },
@@ -256,6 +265,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x000011, bottom: 0x001133 },
         levelType: 'open',
         squidSpawnRate: 0.0012,
+        cosmicOtterRate: 0.25,
+        gummyRingDensity: 0.05,
         enemyTintColor: 0xff5500,
         environments: {
             asteroidField: { rate: 1.8 },
@@ -303,6 +314,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         obstacleInterval: 20,
         squidSpawnRate: 0.001,
         mineRobotRate: 0.12,
+        cosmicOtterRate: 0.2,
+        astroPenguinRate: 0.18,
         enemyTintColor: 0xcc6633,
         environments: {
             asteroidField: { rate: 2.0 },
@@ -351,6 +364,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         squidSpawnRate: 0.0015,
         geodeTitanRate: 0.0008,
         barnaclePodRate: 0.18,
+        astroPenguinRate: 0.22,
         environments: {
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
@@ -396,6 +410,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         skyColors: { top: 0x001133, bottom: 0x002244 },
         levelType: 'open',
         squidSpawnRate: 0.0012,
+        astroPenguinRate: 0.2,
         enemyTintColor: 0x66ccff,
         environments: {
             asteroidField: { rate: 1.5 },

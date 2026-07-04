@@ -8,6 +8,7 @@
  *  - LivingGeodeTitan (L2/L5) - ...
  *  - MoonJelly (demo new, L5/L6) - streaming clustered background jellies, proof of registry pattern.
  *  - AuroraRay (L6) - level-batch school, proof of one-shot batch pattern.
+ *  - NebulaPuffer (L3-L6) - slow drifter with inflate/deflate + bubble rewards.
  *
  * The AmbientCreatureDef registry centralizes:
  *   spawnMode, depthLayer via depth_layers, levelRates or rateKey, clusterSize,
@@ -28,6 +29,7 @@ import type { LevelConfig } from './level_config';
 import { randomZInLayer, type DepthLayer } from './depth_layers';
 import type { BestiaryEntryId } from './bestiary';
 import type { DebugSystem } from './debug_system';
+import { PuffPuffer } from './puff_puffer';
 
 interface ProjectileLike {
     mesh: THREE.Object3D;
@@ -150,6 +152,22 @@ export class CreatureManager {
             batchCount: 2,
             factory: (scene: THREE.Scene, x: number, y: number, z: number, tint?: number) => {
                 return new AuroraRay(scene, x, y, z, tint);
+            }
+        });
+
+        this.registerAmbientCreature({
+            id: 'nebula_puffer',
+            spawnMode: 'streaming',
+            depthLayer: 'MIDGROUND',
+            catalogId: 'nebula_puffer',
+            levelRates: { 3: 0.32, 4: 0.38, 5: 0.42, 6: 0.4 },
+            maxActive: 4,
+            spawnAhead: 72,
+            streamInterval: 175,
+            spawnYRange: [-12, 14],
+            clusterSize: 1,
+            factory: (scene: THREE.Scene, x: number, y: number, z: number, tint?: number) => {
+                return new PuffPuffer(scene, x, y, z, tint);
             }
         });
     }

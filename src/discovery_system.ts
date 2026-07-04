@@ -28,19 +28,26 @@ export const SPECIES_NAMES: Record<string, string> = {
     moonBunny: 'Moon Bunny',
     wishLantern: 'Wish Lantern',
     astroTarsier: 'Astro Tarsier',
+    cosmicOtter: 'Cosmic Otter',
+    astroPenguin: 'Astro Penguin',
     trappedKitty: 'Trapped Space Kitty',
     trappedBunny: 'Trapped Moon Bunny',
     trappedTarsier: 'Trapped Astro Tarsier',
+    trappedOtter: 'Trapped Cosmic Otter',
+    trappedPenguin: 'Trapped Astro Penguin',
     moonPup: 'Moon Pup',
     rescuedKitty: 'Rescued Space Kitty',
     rescuedBunny: 'Rescued Moon Bunny',
     rescuedTarsier: 'Rescued Astro Tarsier',
+    rescuedOtter: 'Rescued Cosmic Otter',
+    rescuedPenguin: 'Rescued Astro Penguin',
     rescuedMoonPup: 'Rescued Moon Pup',
     // Rare creatures
     tarsierGuardian: 'Crystal Tarsier Guardian',
     livingGeodeTitan: 'Living Geode Titan',
     moonJelly: 'Moon Jelly',
     auroraRay: 'Aurora Ray',
+    nebulaPuffer: 'Nebula Puffer',
 };
 
 const SCAN_RADIUS = 12;
