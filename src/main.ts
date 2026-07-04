@@ -44,7 +44,7 @@ import { WaterfallSystem } from './waterfall';
 import { AsteroidFieldSystem } from './asteroid_field';
 import { PlanetaryHorizonSystem } from './planetary_horizon';
 import { IndustrialBackgroundSystem } from './industrial_background';
-import { NebulaSystem } from './nebula';
+
 import { CosmicDustSystem } from './cosmic_dust';
 import { BiologicalBackgroundSystem } from './biological_background';
 import { AtmosphereSystem } from './sky';
@@ -379,9 +379,9 @@ const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
-const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
+
 const cosmicDustSystem = new CosmicDustSystem(scene);
-nebulaSystem.setCamera(camera);
+
 
 // === GHOST DEBRIS (new Cosmic Architect feature) ===
 const ghostDebrisSystem = new GhostDebrisSystem(scene);
@@ -2805,7 +2805,7 @@ function animate() {
         // Pass magic state to Nebula
         const isMagicActive = effectManager.hasEffect(MagicalEffectType.RAINBOW_TRAIL) ||
                               effectManager.hasEffect(MagicalEffectType.HEART_BUBBLE);
-        nebulaSystem.setMagicActive(isMagicActive);
+        levelManager.setMagicActive(isMagicActive);
 
         // SWARM #4: Update victory and tutorial systems
         victorySystem.update(delta);
