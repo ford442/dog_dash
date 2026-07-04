@@ -203,6 +203,10 @@ export class LevelManager {
         }
     }
 
+    setMagicActive(active: boolean) {
+        nebulaSystem.setMagicActive(active);
+    }
+
     startLevel(levelIndex: number) {
         this.currentLevel = levelIndex;
         const cfg = this.config[levelIndex];
