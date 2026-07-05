@@ -133,6 +133,14 @@ function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacit
     const shadowFactor = noiseVal.mul(0.5).add(0.5);
     const finalColor = baseColor.mul(shadowFactor);
 
+
+    // --- Dynamic Physical Deform (Jitter) ---
+    // When lightning hits (uFlash > 0), the cloud physically bulges/pulses
+    // We use noiseVal and positionLocal to calculate an offset.
+    const jitterFactor = uFlash.mul(noiseVal).mul(1.5);
+    // Expand the cloud outward slightly when flashing
+    mat.positionNode = vec3(positionLocal.x.add(positionLocal.x.mul(jitterFactor)), positionLocal.y.add(positionLocal.y.mul(jitterFactor)), positionLocal.z);
+
     // 5. Volumetric Lightning Flash
     // Calculate distance from this fragment (in world space) to the lightning strike
     const distToStrike = distance(positionWorld, uLightningPos);
@@ -513,6 +521,16 @@ export class CloudSystem {
         this.layers.forEach(layer => layer.mesh.visible = visible);
     }
 
+
+    pendingFlashes: {
+        layerIdx: number;
+        position: THREE.Vector3;
+        radius: number;
+        intensity: number;
+        color?: THREE.Color;
+        delay: number;
+    }[] = [];
+
     initLayers() {
         // "Thunder Force IV" Style - 5 Layers
 
@@ -609,6 +627,16 @@ export class CloudSystem {
         // Lightning Logic
         // (Lightning logic moved to external trigger)
 
+        // Process pending flashes
+        for (let i = this.pendingFlashes.length - 1; i >= 0; i--) {
+            const flash = this.pendingFlashes[i];
+            flash.delay -= delta;
+            if (flash.delay <= 0) {
+                this.layers[flash.layerIdx].flash(flash.position, flash.radius, flash.intensity, flash.color);
+                this.pendingFlashes.splice(i, 1);
+            }
+        }
+
         // Update full screen flash
         if (this.flashOverlay) {
             this.flashOverlay.update(delta);
@@ -675,7 +703,14 @@ export class CloudSystem {
             const nextPos = strikePos.clone();
             nextPos.z = nextLayer.baseZ;
 
-            setTimeout(() => nextLayer.flash(nextPos, radius * 0.8, intensity * 0.5, lightningColor), 100);
+            this.pendingFlashes.push({
+                layerIdx: closestLayerIdx + 1,
+                position: nextPos,
+                radius: radius * 0.8,
+                intensity: intensity * 0.5,
+                color: lightningColor,
+                delay: 0.1
+            });
         }
     }
 }
