@@ -99,7 +99,9 @@ function createWaterMaterial(baseColorHex: number, opacity: number, speed: numbe
         const distToPlayer = distance(positionWorld, uPlayerPos);
         const glowIntensity = smoothstep(50.0, 0.0, distToPlayer);
         const playerGlowColor = color(0x00ffff);
-        mat.colorNode = mat.colorNode.add(playerGlowColor.mul(glowIntensity.mul(0.5)));
+        const pulse = sin(uTime.mul(10.0)).mul(0.5).add(0.5);
+        const subsurfaceGlow = playerGlowColor.mul(glowIntensity).mul(pulse.mul(0.4).add(0.8));
+        mat.colorNode = mat.colorNode.add(subsurfaceGlow);
     }
 
     // 2. Weapon Light Interaction
