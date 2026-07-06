@@ -143,7 +143,8 @@ function createWebGLCompatibleMaterial(source: THREE.Material): THREE.Material {
             opacity: source.opacity,
             side: source.side,
             blending: source.blending,
-            depthWrite: source.depthWrite
+            depthWrite: source.depthWrite,
+            clippingPlanes: null
         });
         copyCommonMaterialProps(source, material);
         return material;
@@ -162,7 +163,8 @@ function createWebGLCompatibleMaterial(source: THREE.Material): THREE.Material {
         opacity: source.opacity,
         side: source.side,
         blending: source.blending,
-        depthWrite: source.depthWrite
+        depthWrite: source.depthWrite,
+        clippingPlanes: null
     });
     copyCommonMaterialProps(source, material);
     return material;
