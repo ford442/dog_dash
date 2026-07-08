@@ -12,6 +12,7 @@ import { ParticleSystem } from './particles';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import { createIridescentCrystal, createCandyGloss } from './candy_materials';
 import type { AudioSystem } from './audio_system';
+import { decorationBudget } from './decoration_budget';
 
 const MAX_CHIMES = 8;
 const MAX_PENDANTS = 6;
@@ -291,6 +292,8 @@ export class WindChimeManager {
 
     spawnChime(x: number, y: number, z: number): WindChimeMobile | null {
         if (this.chimes.length >= MAX_CHIMES) return null;
+        if (!decorationBudget.canSpawn('wind_chimes')) return null;
+        if (!decorationBudget.reportSpawn('wind_chimes')) return null;
         const chime = new WindChimeMobile(x, y, z);
         this.scene.add(chime.group);
         this.chimes.push(chime);
@@ -323,15 +326,18 @@ export class WindChimeManager {
             if (this.chimes[i].position.x < playerX - buffer) {
                 this.chimes[i].destroy(this.scene);
                 this.chimes.splice(i, 1);
+                decorationBudget.reportDestroy('wind_chimes');
             }
         }
     }
 
     clear(): void {
+        const removed = this.chimes.length;
         for (const chime of this.chimes) {
             chime.destroy(this.scene);
         }
         this.chimes = [];
+        if (removed > 0) decorationBudget.reportDestroy('wind_chimes', removed);
     }
 
     getCount(): number {

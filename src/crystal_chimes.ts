@@ -22,6 +22,7 @@ import { ParticleSystem } from './particles';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import { createIridescentCrystal } from './candy_materials';
 import type { AudioSystem } from './audio_system';
+import { decorationBudget } from './decoration_budget';
 
 const MAX_CLUSTERS = 12;
 const MAX_RODS_PER_CLUSTER = 7;
@@ -199,9 +200,11 @@ export class CrystalChimeManager {
 
     spawnCluster(x: number, y: number, z: number): boolean {
         if (this.clusters.length >= MAX_CLUSTERS) return false;
+        if (!decorationBudget.canSpawn('crystal_chimes')) return false;
 
         const rodCount = 3 + Math.floor(Math.random() * 5);
         if (this.activeRods + rodCount > MAX_ROD_INSTANCES) return false;
+        if (!decorationBudget.reportSpawn('crystal_chimes')) return false;
 
         const rodStart = this.activeRods;
         const colorHex = CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)];
@@ -392,6 +395,7 @@ export class CrystalChimeManager {
         for (let i = this.clusters.length - 1; i >= 0; i--) {
             if (this.clusters[i].x < playerX - buffer) {
                 this.clusters.splice(i, 1);
+                decorationBudget.reportDestroy('crystal_chimes');
             }
         }
         this._compactRodIndices();
@@ -425,10 +429,12 @@ export class CrystalChimeManager {
     }
 
     clear(): void {
+        const removed = this.clusters.length;
         this.clusters = [];
         this.activeRods = 0;
         this.rodMesh.count = 0;
         this.nodeMesh.count = 0;
+        if (removed > 0) decorationBudget.reportDestroy('crystal_chimes', removed);
     }
 
     getCount(): number {

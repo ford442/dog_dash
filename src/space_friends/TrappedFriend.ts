@@ -1,19 +1,6 @@
 import * as THREE from 'three';
 import { TRAPPED_FRIEND_COLORS, type TrappedFriendKind } from './types';
 
-export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup' | 'otter' | 'penguin' | 'sealpup' | 'astrobunny';
-
-const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
-    kitty: 0xfff0f5,
-    bunny: 0xffd9a0,
-    tarsier: 0xb088ff,
-    moonpup: 0xffe4b5,
-    otter: 0xc9a86c,
-    penguin: 0xe8e8f0,
-    sealpup: 0xd4c4b0,
-    astrobunny: 0xfff0f5
-};
-
 export class TrappedFriend {
     group: THREE.Group;
     position: THREE.Vector3;

@@ -23,8 +23,10 @@ export class DebugSystem {
     private panel: HTMLDivElement | null = null;
     private panelVisible = false;
     private systemsContainer: HTMLDivElement | null = null;
+    private customSectionContainer: HTMLDivElement | null = null;
     private rendererInfo: string = '';
     private rendererInfoElement: HTMLDivElement | null = null;
+    private visibilityListeners: Array<(visible: boolean) => void> = [];
 
     constructor() {
         this.createOverlay();
@@ -60,6 +62,21 @@ export class DebugSystem {
             sys.enabled = value;
             this.updatePanelCheckbox(name, value);
         }
+    }
+
+    isVisible(): boolean {
+        return this.panelVisible;
+    }
+
+    onVisibilityChange(listener: (visible: boolean) => void): void {
+        this.visibilityListeners.push(listener);
+    }
+
+    getCustomSectionContainer(): HTMLDivElement {
+        if (!this.customSectionContainer) {
+            throw new Error('DebugSystem panel not initialized');
+        }
+        return this.customSectionContainer;
     }
 
     setRendererInfo(backend: string, requestedBackend: string, fallbackReason?: string): void {
@@ -225,6 +242,9 @@ export class DebugSystem {
         bulkRow.appendChild(enableAll);
         this.panel.appendChild(bulkRow);
 
+        this.customSectionContainer = document.createElement('div');
+        this.panel.appendChild(this.customSectionContainer);
+
         document.body.appendChild(this.panel);
     }
 
@@ -302,12 +322,18 @@ export class DebugSystem {
         this.panelVisible = true;
         if (this.overlay) this.overlay.style.display = 'block';
         if (this.panel) this.panel.style.display = 'flex';
+        this._notifyVisibility(true);
     }
 
     hide(): void {
         this.panelVisible = false;
         if (this.overlay) this.overlay.style.display = 'none';
         if (this.panel) this.panel.style.display = 'none';
+        this._notifyVisibility(false);
+    }
+
+    private _notifyVisibility(visible: boolean): void {
+        for (const listener of this.visibilityListeners) listener(visible);
     }
 
     toggleVisibility(): void {

@@ -29,6 +29,7 @@ import {
 } from 'three/tsl';
 import { Projectile } from './weapons';
 import { WeaponLightManager } from './lighting';
+import { decorationBudget } from './decoration_budget';
 
 /**
  * Creates a TSL material for a nebula cloud puff.
@@ -801,6 +802,7 @@ export class NebulaSystem {
             this.ribbonLayers.push(new NebulaRibbonLayer(this.scene, cfg));
         }
 
+        decorationBudget.syncCount('nebula_ribbons', 24);
         this.deactivateRibbons();
     }
 
@@ -867,6 +869,10 @@ export class NebulaSystem {
 
         this.layers.push(new EnergyParticleLayer(this.scene, 30, -30, 200, this.uGlobalPulse));
         this.layers.push(new ButterflyEnergyMoteLayer(this.scene, 20, -25, 200, this.uGlobalPulse, this.uMagicIntensity));
+
+        decorationBudget.syncCount('nebula_cloud_puffs', 45);
+        decorationBudget.syncCount('nebula_energy_motes', 50);
+        decorationBudget.syncCount('nebula_ribbons', 24);
 
         this.deactivate();
     }

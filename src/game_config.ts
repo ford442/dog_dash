@@ -43,7 +43,10 @@ export const playerState = {
     hasWon: false, // Track if player has won
     level: 1, // Current level
     bossActive: false, // Boss fight in progress
-    cores: 0 // Cores collected this run
+    cores: 0, // Cores collected this run
+    slingCombo: 0,
+    slingAssistTimer: 0,
+    penguinSlideAssistTimer: 0
 };
 
 export let isGamePaused = false;

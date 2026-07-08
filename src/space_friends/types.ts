@@ -11,7 +11,7 @@ export interface InteractionResult {
 
 export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup' | 'otter' | 'penguin' | 'sealpup' | 'astrobunny';
 
-const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
+export const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
     kitty: 0xfff0f5,
     bunny: 0xffd9a0,
     tarsier: 0xb088ff,

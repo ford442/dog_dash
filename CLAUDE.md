@@ -56,6 +56,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Gameplay & obstacles | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
 | Visual effects | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
 | UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
+| Performance guardrails | `decoration_budget.ts`, `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit.ts`, `space_friends.ts`, `player_loader.ts` |
 | Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `assembly/index.ts` |
@@ -69,6 +70,10 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 - Prefer named exports; only a few modules (`dog_cockpit.ts`, `magical_effects.ts`, `powerup_manager.ts`, `space_friends.ts`, `cloud_castles.ts`) use `export default`
 - Global config objects use `ALL_CAPS` (e.g. `LEVEL_CONFIG`, `UPGRADE_CONFIGS`)
 - 4-space indentation; no Prettier/ESLint configured — match surrounding file style
+
+## Decorative object budgets
+
+New 3D props (flowers, creatures, ribbons, background layers) **must** register with `decoration_budget.ts` before spawning. See `docs/PERFORMANCE_BUDGETS.md` for categories, level-config wiring, and perf rules (InstancedMesh, hero vs background caps, measure with debug FPS + wireframe). Press **\`** in dev or `?debug` to view live counts in the debug panel.
 
 ## Deployment
 

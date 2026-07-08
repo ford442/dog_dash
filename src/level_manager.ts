@@ -49,6 +49,10 @@ import type { WindChimeManager } from './wind_chimes';
 import type { SolarSailFernManager } from './solar_sail_ferns';
 import type { CastleBackgroundManager } from './cloud_castles';
 import type { CandyBeltManager } from './candy_obstacles';
+import {
+    applyLevelDecorationBudgets,
+    decorationBudget
+} from './decoration_budget';
 
 // =============================================================================
 // LEVEL MANAGER
@@ -214,6 +218,8 @@ export class LevelManager {
         if (this.baseAsteroidDensity > 0) {
             asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
         }
+        const cfg = this.config[this.currentLevel];
+        if (cfg) applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
     }
 
     enterFastLane() {
@@ -271,6 +277,7 @@ export class LevelManager {
         if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
         this.onUpdateLevelDisplay?.(levelIndex, cfg.name);
         this.onLevelStart?.(cfg);
+        applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
 
         this.populateZone(playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
 
@@ -493,6 +500,7 @@ export class LevelManager {
                 if (mpIdx !== -1) moonPlants.splice(mpIdx, 1);
                 disposeObject(obj);
                 this.levelObjects.splice(i, 1);
+                decorationBudget.reportDestroy('foliage_scatter');
             }
         }
     }
@@ -646,6 +654,15 @@ export class LevelManager {
                 return dx * dx + dy * dy < c.radius * c.radius;
             });
 
+        const trackFoliageSpawn = (obj: THREE.Object3D): boolean => {
+            if (!decorationBudget.canSpawn('foliage_scatter')) return false;
+            if (!decorationBudget.reportSpawn('foliage_scatter')) return false;
+            this.scene.add(obj);
+            this.levelObjects.push(obj);
+            moonPlants.push(obj);
+            return true;
+        };
+
         const spawn = (
             count: number,
             creatorFn: () => THREE.Object3D,
@@ -678,9 +695,7 @@ export class LevelManager {
 
                 if (speciesId) obj.userData.speciesId = speciesId;
 
-                this.scene.add(obj);
-                this.levelObjects.push(obj);
-                moonPlants.push(obj);
+                if (!trackFoliageSpawn(obj)) continue;
             }
         };
 
@@ -855,9 +870,7 @@ export class LevelManager {
                     const s = 0.75 + Math.random() * 0.35;
                     obj.scale.set(s, s, s);
                     obj.userData.speciesId = isFlowering ? 'floweringTree' : 'tree';
-                    this.scene.add(obj);
-                    this.levelObjects.push(obj);
-                    moonPlants.push(obj);
+                    trackFoliageSpawn(obj);
                 }
             }
         }
@@ -875,18 +888,14 @@ export class LevelManager {
                 let s = 0.65 + Math.random() * 0.25;
                 obj1.scale.set(s, s, s);
                 obj1.userData.speciesId = 'rose';
-                this.scene.add(obj1);
-                this.levelObjects.push(obj1);
-                moonPlants.push(obj1);
+                trackFoliageSpawn(obj1);
 
                 const obj2 = createNebulaRose({ color: 0xFF1493 });
                 obj2.position.set(ax + 1.5, gapY + sep * 0.5, az + 0.8);
                 s = 0.65 + Math.random() * 0.25;
                 obj2.scale.set(s, s, s);
                 obj2.userData.speciesId = 'rose';
-                this.scene.add(obj2);
-                this.levelObjects.push(obj2);
-                moonPlants.push(obj2);
+                trackFoliageSpawn(obj2);
             }
         }
 

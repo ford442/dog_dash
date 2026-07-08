@@ -139,6 +139,10 @@ import { RollSystem } from './roll_system';
 import { TetherSystem } from './tether_system';
 import { LevelManager } from './level_manager';
 import { DebugSystem } from './debug_system';
+import {
+    decorationBudget,
+    registerDefaultDecorationBudgets
+} from './decoration_budget';
 import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
 import { VideoTumblingStar } from './video_tumbling_star';
@@ -946,6 +950,8 @@ if (shouldShowTutorial(saveManager)) {
 
 // DEBUG SYSTEM
 const debugSystem = new DebugSystem();
+registerDefaultDecorationBudgets();
+decorationBudget.attachToDebugSystem(debugSystem);
 debugSystem.setRendererInfo(rendererBackend, requestedRendererBackend, rendererFallbackReason);
 creatureManager.setDebugSystem(debugSystem);
 debugSystem.register('creature_tarsier_guardian', 'Crystal Tarsier', true);

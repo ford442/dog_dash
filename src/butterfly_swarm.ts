@@ -14,6 +14,7 @@ import {
 } from 'three/tsl';
 import type { ParticleSystem } from './particles';
 import type { AudioSystem } from './audio_system';
+import { decorationBudget } from './decoration_budget';
 
 /**
  * Butterfly Swarm System for Dog Dash
@@ -212,6 +213,7 @@ export class ButterflySwarmSystem {
         this.escortMesh.instanceMatrix.needsUpdate = true;
 
         this.scene.add(this.escortMesh);
+        decorationBudget.syncCount('butterfly_swarm', this.count);
         this.deactivate();
     }
 
@@ -345,6 +347,7 @@ export class ButterflySwarmSystem {
         if (this.escortGroups.length >= MAX_ESCORT_GROUPS) return;
         if (this.escortSpawnCooldown > 0) return;
         if (this._allocatedEscortSlots() >= MAX_ESCORT_INSTANCES) return;
+        if (!decorationBudget.canSpawn('butterfly_escort', MAX_ESCORT_PER_GROUP)) return;
 
         const grazeCombo = context.grazeCombo ?? 0;
         const slingCombo = context.slingCombo ?? 0;
@@ -385,6 +388,7 @@ export class ButterflySwarmSystem {
     private _spawnEscortGroup(playerPos: THREE.Vector3, count: number): void {
         const start = this._allocatedEscortSlots();
         if (start + count > MAX_ESCORT_INSTANCES) return;
+        if (!decorationBudget.reportSpawn('butterfly_escort', count)) return;
 
         const palette = [this.baseColor1, this.baseColor2, this.baseColor3];
         const slots: EscortSlot[] = [];
@@ -451,6 +455,7 @@ export class ButterflySwarmSystem {
                 for (let i = 0; i < group.count; i++) {
                     this._hideEscortInstance(group.instanceStart + i);
                 }
+                decorationBudget.reportDestroy('butterfly_escort', group.count);
                 this.escortGroups.splice(g, 1);
                 continue;
             }
