@@ -312,7 +312,7 @@ function createPlanetaryRingMaterial(ringColorHex: number) {
     // Fade edges (inner and outer)
     // Assuming inner radius ~ 500, outer radius ~ 800
     const innerFade = smoothstep(500.0, 520.0, radius);
-    const outerFade = float(1.0).sub(smoothstep(780.0, 800.0, radius));
+    const outerFade = smoothstep(780.0, 800.0, radius).oneMinus();
     density = density.mul(innerFade).mul(outerFade);
 
     // Color

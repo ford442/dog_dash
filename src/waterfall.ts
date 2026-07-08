@@ -388,7 +388,7 @@ function createSplashMaterial(weaponLights?: any, uPlayerPos?: any) {
 
     if (uPlayerPos) {
         const distToPlayer = length(positionWorld.sub(uPlayerPos));
-        const playerGlow = float(1.0).sub(smoothstep(0.0, 15.0, distToPlayer)).mul(0.6);
+        const playerGlow = smoothstep(0.0, 15.0, distToPlayer).oneMinus().mul(0.6);
         const engineColor = color(0xffaa00);
         finalColor = finalColor.add(vec3(engineColor).mul(playerGlow));
     }

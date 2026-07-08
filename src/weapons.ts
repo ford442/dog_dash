@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { color, time, sin, float, vec4, mix, uniform, UniformNode } from 'three/tsl';
+import { color, time, sin, float, vec4, mix, uniform } from 'three/tsl';
 
 /**
  * Creates a TSL material for the plasma bolt.
  * Visuals: Glowing core, pulsing intensity.
  */
-function createPlasmaBoltMaterial(uColor: UniformNode<THREE.Color>) {
+function createPlasmaBoltMaterial(uColor: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -88,7 +88,7 @@ export class WeaponSystem {
     poolSize: number = 20;
 
     // Uniform for shared material color
-    uProjectileColor: UniformNode<THREE.Color>;
+    uProjectileColor: any;
 
     // Cooldown logic
     lastFireTime: number = 0;

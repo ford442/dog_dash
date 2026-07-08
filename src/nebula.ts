@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import {
     MeshBasicNodeMaterial,
     MeshStandardNodeMaterial,
-    StorageBufferAttribute
 } from 'three/webgpu';
+import { InstancedBufferAttribute as StorageBufferAttribute } from 'three';
 import {
     time,
     positionLocal,
@@ -25,8 +25,7 @@ import {
     smoothstep,
     distance,
     Loop,
-    storage,
-    UniformNode
+    storage
 } from 'three/tsl';
 import { Projectile } from './weapons';
 import { WeaponLightManager } from './lighting';
@@ -38,9 +37,9 @@ function createNebulaMaterial(
     baseColorHex: number,
     secondaryColorHex: number,
     opacity: number,
-    uGlobalPulse: UniformNode<number>,
+    uGlobalPulse: any,
     weaponLights: any, // storage node
-    uMagicIntensity: UniformNode<number>
+    uMagicIntensity: any
 ) {
     const mat = new MeshStandardNodeMaterial({
         transparent: true,
@@ -91,7 +90,7 @@ function createNebulaMaterial(
 
     // Pulse between colors
     const pulse = sin(uTime.mul(uPulseSpeed)).add(1.0).mul(0.5);
-    let finalColor = mix(magicColor1, magicColor2, pulse.mul(combinedNoise));
+    let finalColor: any = mix(magicColor1, magicColor2, pulse.mul(combinedNoise));
 
     // 3. Dynamic Player Interaction
     const distToPlayer = length(positionWorld.sub(uPlayerPos));
@@ -136,7 +135,7 @@ function createNebulaMaterial(
 /**
  * Creates a TSL material for energy particles (sparkles).
  */
-function createEnergyParticleMaterial(colorHex: number, uGlobalPulse: UniformNode<number>) {
+function createEnergyParticleMaterial(colorHex: number, uGlobalPulse: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         side: THREE.FrontSide,
@@ -160,7 +159,7 @@ function createEnergyParticleMaterial(colorHex: number, uGlobalPulse: UniformNod
 /**
  * Creates a TSL material for the Pulse Overlay (Screen Breathing).
  */
-function createPulseOverlayMaterial(uPulse: UniformNode<number>) {
+function createPulseOverlayMaterial(uPulse: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         opacity: 1.0,
@@ -191,7 +190,7 @@ export class PulseOverlay {
         this.mesh.position.set(0, 0, -1.01);
     }
 
-    init(uPulse: UniformNode<number>, camera: THREE.Camera) {
+    init(uPulse: any, camera: THREE.Camera) {
         this.camera = camera;
         this.mesh.material = createPulseOverlayMaterial(uPulse);
         camera.add(this.mesh);
@@ -221,9 +220,9 @@ export class NebulaCloudLayer {
             zRange: number,
             width: number,
             height: number,
-            uGlobalPulse: UniformNode<number>,
+            uGlobalPulse: any,
             weaponLights: any,
-            uMagicIntensity: UniformNode<number>
+            uMagicIntensity: any
         }
     ) {
         this.count = config.count;
@@ -332,7 +331,7 @@ export class NebulaCloudLayer {
 /**
  * Creates a TSL material for a whimsical butterfly mote.
  */
-function createButterflyMaterial(colorHex: number, uGlobalPulse: UniformNode<number>, uMagicIntensity: UniformNode<number>) {
+function createButterflyMaterial(colorHex: number, uGlobalPulse: any, uMagicIntensity: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         side: THREE.DoubleSide,
@@ -376,7 +375,7 @@ export class EnergyParticleLayer {
     baseZ: number;
     positions: Float32Array;
 
-    constructor(scene: THREE.Scene, count: number, z: number, width: number, uGlobalPulse: UniformNode<number>) {
+    constructor(scene: THREE.Scene, count: number, z: number, width: number, uGlobalPulse: any) {
         this.count = count;
         this.width = width;
         this.baseZ = z;
@@ -450,7 +449,7 @@ export class ButterflyEnergyMoteLayer {
     baseZ: number;
     positions: Float32Array;
 
-    constructor(scene: THREE.Scene, count: number, z: number, width: number, uGlobalPulse: UniformNode<number>, uMagicIntensity: UniformNode<number>) {
+    constructor(scene: THREE.Scene, count: number, z: number, width: number, uGlobalPulse: any, uMagicIntensity: any) {
         this.count = count;
         this.width = width;
         this.baseZ = z;
@@ -532,8 +531,8 @@ export class NebulaSystem {
     scene: THREE.Scene;
     active: boolean = false;
     layers: (NebulaCloudLayer | EnergyParticleLayer | ButterflyEnergyMoteLayer)[] = [];
-    uGlobalPulse: UniformNode<number>;
-    uMagicIntensity: UniformNode<number>;
+    uGlobalPulse: any;
+    uMagicIntensity: any;
     targetMagicIntensity: number = 0.0;
     pulseOverlay: PulseOverlay;
     elapsedTime: number = 0;
