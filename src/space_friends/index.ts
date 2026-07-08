@@ -1,0 +1,14 @@
+export type { InteractionResult, TrappedFriendKind } from './types';
+export { TRAPPED_FRIEND_COLORS } from './types';
+export { SpaceKitty } from './SpaceKitty';
+export { SpaceBunny } from './SpaceBunny';
+export { WishLantern } from './WishLantern';
+export { AstroTarsier } from './AstroTarsier';
+export { SpacePenguin } from './SpacePenguin';
+export { SpaceAstroBunny } from './SpaceAstroBunny';
+export { SpaceSealPup } from './SpaceSealPup';
+export { SpaceOtter } from './SpaceOtter';
+export { TrappedFriend } from './TrappedFriend';
+export { FlotillaMember } from './FlotillaMember';
+export { FriendsManager } from './FriendsManager';
+export { FriendsManager as default } from './FriendsManager';
