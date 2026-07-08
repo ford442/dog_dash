@@ -54,6 +54,8 @@ export interface SlingComboManagerOptions {
     onSlingAssist?: (duration: number) => void;
     /** Overrides the default Sling Assist duration (e.g. Tarsier memory bonus) */
     slingAssistDuration?: number;
+    /** Overrides combo timeout seconds (e.g. Astro Bunny memory bonus) */
+    comboTimeout?: number;
 }
 
 /**
@@ -163,7 +165,8 @@ export class SlingComboManager {
 
         // Combo timeout
         this.comboTimer += delta;
-        if (this.comboTimer >= COMBO_TIMEOUT) {
+        const timeout = this.options.comboTimeout ?? COMBO_TIMEOUT;
+        if (this.comboTimer >= timeout) {
             this.resetCombo();
             return;
         }
@@ -190,6 +193,11 @@ export class SlingComboManager {
     /** True if Arc Surge mode is currently active. */
     isArcSurge(): boolean {
         return this.inArcSurge;
+    }
+
+    /** Refresh the combo grace window (e.g. Astro Bunny lucky hop). */
+    refreshComboTimer(): void {
+        this.comboTimer = 0;
     }
 
     // -------------------------------------------------------------------------

@@ -1370,6 +1370,62 @@ export class AudioSystem {
         }
     }
 
+    /**
+     * Soft harmonious crystal chime — arpeggiated bell tones with optional pitch shift.
+     * Used by crystal chime clusters when the player flies nearby.
+     */
+    playCrystalChime(notes: number[], volume = 0.32, pitchShift = 1.0): void {
+        this.init();
+        if (!this.ctx || !this.sfxGain || notes.length === 0) return;
+
+        notes.forEach((freq, i) => {
+            const delay = i * 0.065;
+            const noteVol = volume * (1 - i * 0.07);
+
+            setTimeout(() => {
+                if (!this.ctx || !this.sfxGain) return;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                const noteFreq = Math.max(80, freq * pitchShift);
+
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(noteFreq, this.ctx.currentTime);
+
+                const harm = this.ctx.createOscillator();
+                const harmGain = this.ctx.createGain();
+                harm.type = 'sine';
+                harm.frequency.setValueAtTime(noteFreq * 2.01, this.ctx.currentTime);
+                harmGain.gain.setValueAtTime(0, this.ctx.currentTime);
+                harmGain.gain.linearRampToValueAtTime(noteVol * 0.12, this.ctx.currentTime + 0.02);
+                harmGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 1.4);
+
+                const duration = 1.1 + i * 0.08;
+                gain.gain.setValueAtTime(0, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(noteVol, this.ctx.currentTime + 0.015);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+
+                osc.connect(gain);
+                harm.connect(harmGain);
+                gain.connect(this.sfxGain);
+                harmGain.connect(this.sfxGain);
+
+                if (this.reverbSend) {
+                    const rev = this.ctx.createGain();
+                    rev.gain.value = 0.22;
+                    gain.connect(rev);
+                    rev.connect(this.reverbSend);
+                    harmGain.connect(rev);
+                }
+
+                osc.start(this.ctx.currentTime);
+                harm.start(this.ctx.currentTime);
+                osc.stop(this.ctx.currentTime + duration);
+                harm.stop(this.ctx.currentTime + duration);
+            }, delay * 1000);
+        });
+    }
+
     // ============================================================
     // MIXING CONTROLS
     // ============================================================
@@ -2798,6 +2854,55 @@ export class AudioSystem {
             overtone.start(now + 0.02);
             overtone.stop(now + 0.1);
         }
+    }
+
+    /**
+     * Soft flipper clap + tiny "arf" — Stellar Seal Pup cheer.
+     */
+    playSealClap() {
+        this.init();
+        if (!this.ctx || !this.sfxGain) return;
+
+        if (this.activeVoices >= this.maxVoices) return;
+        this.activeVoices++;
+        setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 300);
+
+        const now = this.ctx.currentTime;
+
+        // Two quick padded taps
+        for (let i = 0; i < 2; i++) {
+            const tap = this.ctx.createOscillator();
+            tap.type = 'triangle';
+            const t = now + i * 0.07;
+            tap.frequency.setValueAtTime(320 - i * 40, t);
+            tap.frequency.exponentialRampToValueAtTime(180, t + 0.05);
+
+            const tapGain = this.ctx.createGain();
+            tapGain.gain.setValueAtTime(0, t);
+            tapGain.gain.linearRampToValueAtTime(0.18, t + 0.008);
+            tapGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+
+            tap.connect(tapGain);
+            tapGain.connect(this.sfxGain);
+            tap.start(t);
+            tap.stop(t + 0.07);
+        }
+
+        // Cute arf overtone
+        const arf = this.ctx.createOscillator();
+        arf.type = 'sine';
+        arf.frequency.setValueAtTime(420, now + 0.1);
+        arf.frequency.exponentialRampToValueAtTime(280, now + 0.22);
+
+        const arfGain = this.ctx.createGain();
+        arfGain.gain.setValueAtTime(0, now + 0.1);
+        arfGain.gain.linearRampToValueAtTime(0.12, now + 0.11);
+        arfGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+
+        arf.connect(arfGain);
+        arfGain.connect(this.sfxGain);
+        arf.start(now + 0.1);
+        arf.stop(now + 0.25);
     }
 
     /**

@@ -32,16 +32,21 @@ import {
     meteorShowerSystem,
     asteroidFieldSystem,
     planetaryHorizonSystem,
-    reEntrySystem
+    reEntrySystem,
+    crystalChimeManager
 } from './game_systems';
 import { GodRaySystem } from './godrays';
 import { AuroraSystem } from './aurora';
 import { GhostDebrisSystem } from './ghost_debris';
+import { VoidJellyfishSystem } from './void_jellyfish';
 import { DebugSystem } from './debug_system';
 import { FriendsManager } from './space_friends';
 import { ButterflySwarmSystem } from './butterfly_swarm';
 import { WeaponLightManager } from './lighting';
 import type { ConstellationManager } from './flower_constellations';
+import type { PinwheelFloraManager } from './pinwheel_flora';
+import type { WindChimeManager } from './wind_chimes';
+import type { SolarSailFernManager } from './solar_sail_ferns';
 import type { CastleBackgroundManager } from './cloud_castles';
 import type { CandyBeltManager } from './candy_obstacles';
 
@@ -98,11 +103,15 @@ export type LevelManagerOptions = {
     godRaySystem: GodRaySystem;
     auroraSystem: AuroraSystem;
     ghostDebrisSystem: GhostDebrisSystem;
+    voidJellyfishSystem: VoidJellyfishSystem;
     debugSystem?: DebugSystem;
     friendsManager?: FriendsManager;
     industrialGeometryManager: IndustrialGeometryManager;
     butterflySwarmSystem: ButterflySwarmSystem;
     flowerManager: ConstellationManager;
+    pinwheelManager: PinwheelFloraManager;
+    windChimeManager: WindChimeManager;
+    solarSailFernManager: SolarSailFernManager;
     castleManager: CastleBackgroundManager;
     candyManager: CandyBeltManager;
     getPlayer: () => THREE.Group | null;
@@ -122,6 +131,7 @@ export class LevelManager {
     godRaySystem: GodRaySystem;
     auroraSystem: AuroraSystem;
     ghostDebrisSystem: GhostDebrisSystem;
+    voidJellyfishSystem: VoidJellyfishSystem;
     debugSystem?: DebugSystem;
     friendsManager?: FriendsManager;
     industrialGeometryManager: IndustrialGeometryManager;
@@ -130,6 +140,9 @@ export class LevelManager {
     private readonly camera: THREE.PerspectiveCamera;
     private readonly butterflySwarmSystem: ButterflySwarmSystem;
     private readonly flowerManager: ConstellationManager;
+    private readonly pinwheelManager: PinwheelFloraManager;
+    private readonly windChimeManager: WindChimeManager;
+    private readonly solarSailFernManager: SolarSailFernManager;
     private readonly castleManager: CastleBackgroundManager;
     private readonly candyManager: CandyBeltManager;
     private readonly getPlayer: () => THREE.Group | null;
@@ -159,6 +172,9 @@ export class LevelManager {
         this.camera = options.camera;
         this.butterflySwarmSystem = options.butterflySwarmSystem;
         this.flowerManager = options.flowerManager;
+        this.pinwheelManager = options.pinwheelManager;
+        this.windChimeManager = options.windChimeManager;
+        this.solarSailFernManager = options.solarSailFernManager;
         this.castleManager = options.castleManager;
         this.candyManager = options.candyManager;
         this.getPlayer = options.getPlayer;
@@ -181,6 +197,7 @@ export class LevelManager {
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
         this.ghostDebrisSystem = options.ghostDebrisSystem;
+        this.voidJellyfishSystem = options.voidJellyfishSystem;
         this.debugSystem = options.debugSystem;
         this.friendsManager = options.friendsManager;
         this.industrialGeometryManager = options.industrialGeometryManager;
@@ -236,6 +253,7 @@ export class LevelManager {
         }
 
         this.atmosphereSystem.transitionTo(cfg.skyColors.top, cfg.skyColors.bottom, transitionDuration);
+        nebulaSystem.setSkyColors(cfg.skyColors.top, cfg.skyColors.bottom);
 
         if (this.scene.fog) {
             if (this.scene.fog instanceof THREE.Fog) {
@@ -324,13 +342,27 @@ export class LevelManager {
             },
             {
                 flag: 'nebula',
-                activate: () => nebulaSystem.activate(),
+                activate: () => {
+                    nebulaSystem.activate();
+                    nebulaSystem.activateRibbons();
+                },
                 deactivate: () => nebulaSystem.deactivate()
             },
             {
+                flag: 'nebulaRibbons',
+                activate: () => nebulaSystem.activateRibbons(),
+                deactivate: () => nebulaSystem.deactivateRibbons()
+            },
+            {
                 flag: 'cosmicDust',
-                activate: () => cosmicDustSystem.activate(),
-                deactivate: () => cosmicDustSystem.deactivate()
+                activate: () => {
+                    cosmicDustSystem.activate();
+                    nebulaSystem.activateRibbons();
+                },
+                deactivate: () => {
+                    cosmicDustSystem.deactivate();
+                    nebulaSystem.deactivateRibbons();
+                }
             }
 ,
             {
@@ -354,6 +386,7 @@ export class LevelManager {
                     asteroidFieldSystem.activate();
                     this.baseAsteroidDensity = config.rate * 0.5;
                     asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier);
+                    asteroidFieldSystem.setCandyChance(cfg.candyAsteroidChance ?? 0);
                     asteroidFieldSystem.resetPositions(this.camera.position.x);
                 },
                 deactivate: () => {
@@ -365,6 +398,11 @@ export class LevelManager {
                 flag: 'ghostDebris',
                 activate: () => this.ghostDebrisSystem.activate(),
                 deactivate: () => this.ghostDebrisSystem.deactivate()
+            },
+            {
+                flag: 'voidJellyfish',
+                activate: (config) => this.voidJellyfishSystem.activate(config),
+                deactivate: () => this.voidJellyfishSystem.deactivate()
             },
             {
                 flag: 'meteorShower',
@@ -421,6 +459,28 @@ export class LevelManager {
                 DEPTH_LAYERS.NEAR
             );
         }
+
+        this.pinwheelManager.clear();
+        this.windChimeManager.clear();
+        this.solarSailFernManager.clear();
+        crystalChimeManager.clear();
+        if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
+            this.pinwheelManager.spawnField(
+                dreamyStart,
+                levelLength,
+                cfg.pinwheelDensity,
+                [-18, 18],
+                [DEPTH_LAYERS.BACKGROUND.min, DEPTH_LAYERS.NEAR.max]
+            );
+        }
+        if (cfg.windChimeDensity && cfg.windChimeDensity > 0) {
+            this.windChimeManager.spawnField(
+                dreamyStart,
+                levelLength,
+                cfg.windChimeDensity,
+                [6, 24]
+            );
+        }
     }
 
     cleanupBehind(cameraX: number) {
@@ -453,6 +513,10 @@ export class LevelManager {
         this.maybeStreamFoliage(cameraX);
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0));
+        nebulaSystem.setSkyColors(
+            this.atmosphereSystem.getTopColor().getHex(),
+            this.atmosphereSystem.getBottomColor().getHex()
+        );
         this.cloudSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
         lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
 
@@ -463,12 +527,15 @@ export class LevelManager {
         if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, playerPos);
         if (enabled('industrial')) industrialSystem.update(cameraX, delta, playerPos);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
-        if (enabled('nebula')) nebulaSystem.update(delta, cameraX, playerPos);
+        if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
+            nebulaSystem.update(delta, cameraX, playerPos, speed);
+        }
         if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX);
         if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, playerPos);
         if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
+        if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
         if (blackHoleSystem) blackHoleSystem.update(delta, cameraX, playerPos);
         if (enabled('chromaShift')) chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, playerPos);
@@ -488,6 +555,18 @@ export class LevelManager {
         const density = config.foliageDensity;
         const levelType = config.levelType || 'open';
 
+        const streamPinwheels = (yRange: [number, number]) => {
+            if (config.pinwheelDensity && config.pinwheelDensity > 0) {
+                this.pinwheelManager.streamChunk(startX, width, config.pinwheelDensity, yRange);
+            }
+        };
+
+        const streamWindChimes = () => {
+            if (config.windChimeDensity && config.windChimeDensity > 0) {
+                this.windChimeManager.streamChunk(startX, width, config.windChimeDensity, [6, 24]);
+            }
+        };
+
         if (levelType === 'tunnel') {
             const interval = config.obstacleInterval || 20;
             const sectionCount = Math.floor(width / interval);
@@ -500,6 +579,8 @@ export class LevelManager {
             const tunnelHeight = config.tunnelHeight || 15;
             const yRange: [number, number] = [-tunnelHeight / 2 + 2, tunnelHeight / 2 - 2];
             this.spawnOpenFoliage(startX, width, density, config, yRange);
+            streamPinwheels(yRange);
+            streamWindChimes();
             return;
         }
 
@@ -515,10 +596,14 @@ export class LevelManager {
             const tunnelHeight = config.tunnelHeight || 20;
             const yRange: [number, number] = [-tunnelHeight / 2 + 3, tunnelHeight / 2 - 3];
             this.spawnOpenFoliage(startX, width, density, config, yRange);
+            streamPinwheels(yRange);
+            streamWindChimes();
             return;
         }
 
         this.spawnOpenFoliage(startX, width, density, config);
+        streamPinwheels([-18, 18]);
+        streamWindChimes();
     }
 
     spawnOpenFoliage(
@@ -625,6 +710,14 @@ export class LevelManager {
         if (density.vine) spawn(density.vine, () => createVine({ color: 0x228B22 }), yRange, foliageZ, 'vine');
         if (density.mushroom) spawn(density.mushroom, () => createPuffballFlower({ color: 0xFF4500 }), yRange, foliageZ, 'mushroom');
         if (density.orb) spawn(density.orb, () => createFloatingOrb({ color: 0x88ccff }), yRange, foliageZ, 'orb');
+
+        if (density.solarSail && density.solarSail > 0) {
+            this.solarSailFernManager.streamChunk(startX, width, density.solarSail, yRange);
+        }
+
+        if (levelConfig.chimeDensity && levelConfig.chimeDensity > 0) {
+            crystalChimeManager.streamChunk(startX, width, levelConfig.chimeDensity, yRange);
+        }
 
         this.spawnFoliageVignettes(startX, width, density, yRange, treeYRange, foliageZ, geoZ, vignettes, vignetteCount, geodeClearings);
 

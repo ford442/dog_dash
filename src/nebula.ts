@@ -527,10 +527,195 @@ export class ButterflyEnergyMoteLayer {
     }
 }
 
+// =============================================================================
+// NEBULA RIBBON / VEIL LAYERS (background-only parallax sheets)
+// =============================================================================
+//
+// Performance contract:
+// - 3 InstancedMesh layers = 3 draw calls (≤4 total in densest views).
+// - Quad / 2-segment plane geo only; MeshBasicNodeMaterial (no per-light calcs).
+// - Background only — ignore for collision and interaction systems.
+
+/**
+ * Cheap ribbon/veil material: sky tint + one global time uniform (swirl + opacity pulse).
+ */
+function createRibbonVeilMaterial(
+    topColorHex: number,
+    bottomColorHex: number,
+    opacity: number,
+    uvPhase: number
+) {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        side: THREE.DoubleSide,
+        depthWrite: false,
+        blending: THREE.NormalBlending
+    });
+
+    const uTop = uniform(new THREE.Color(topColorHex));
+    const uBottom = uniform(new THREE.Color(bottomColorHex));
+    const uOpacity = uniform(opacity);
+    const uPhase = uniform(uvPhase);
+    const vUv = uv();
+
+    const swirl = sin(vUv.x.mul(4.0).add(time.mul(0.1).add(uPhase)))
+        .mul(cos(vUv.y.mul(3.0).sub(time.mul(0.07).add(uPhase.mul(0.5)))));
+    const pulse = sin(time.mul(0.32).add(uPhase)).mul(0.5).add(0.5);
+
+    const skyTint = mix(uBottom, uTop, vUv.y);
+    const edgeFade = smoothstep(float(0.0), float(0.28), vUv.y)
+        .mul(smoothstep(float(1.0), float(0.42), vUv.y));
+    const alpha = edgeFade
+        .mul(uOpacity)
+        .mul(pulse.mul(0.12).add(0.88))
+        .mul(swirl.mul(0.22).add(0.78));
+
+    mat.colorNode = vec4(skyTint, alpha);
+    mat.userData.uTop = uTop;
+    mat.userData.uBottom = uBottom;
+
+    return mat;
+}
+
+export interface NebulaRibbonLayerConfig {
+    count: number;
+    width: number;
+    height: number;
+    baseZ: number;
+    zSpread: number;
+    ribbonWidth: number;
+    ribbonHeight: number;
+    opacity: number;
+    parallaxFactor: number;
+    driftSpeed: number;
+    topColor: number;
+    bottomColor: number;
+    uvPhase: number;
+}
+
+/**
+ * One instanced ribbon layer — long semi-transparent sheets at a fixed depth band.
+ * Background only — ignore for collision and interaction systems.
+ */
+export class NebulaRibbonLayer {
+    mesh: THREE.InstancedMesh;
+    dummy: THREE.Object3D;
+    readonly count: number;
+    readonly width: number;
+    readonly baseZ: number;
+    readonly parallaxFactor: number;
+    readonly driftSpeed: number;
+    private positions: Float32Array;
+    private phases: Float32Array;
+    private scales: Float32Array;
+
+    constructor(scene: THREE.Scene, config: NebulaRibbonLayerConfig) {
+        this.count = config.count;
+        this.width = config.width;
+        this.baseZ = config.baseZ;
+        this.parallaxFactor = config.parallaxFactor;
+        this.driftSpeed = config.driftSpeed;
+
+        const geo = new THREE.PlaneGeometry(1, 1, 1, 2);
+        const mat = createRibbonVeilMaterial(
+            config.topColor,
+            config.bottomColor,
+            config.opacity,
+            config.uvPhase
+        );
+
+        this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
+        this.mesh.frustumCulled = false;
+        this.mesh.renderOrder = -6;
+        this.mesh.userData.backgroundOnly = true;
+        this.mesh.userData.skipCollision = true;
+
+        this.dummy = new THREE.Object3D();
+        this.positions = new Float32Array(this.count * 3);
+        this.phases = new Float32Array(this.count);
+        this.scales = new Float32Array(this.count * 2);
+
+        for (let i = 0; i < this.count; i++) {
+            const x = (Math.random() - 0.5) * this.width;
+            const y = (Math.random() - 0.5) * config.height;
+            const z = config.baseZ + (Math.random() - 0.5) * config.zSpread;
+            const w = config.ribbonWidth * (0.75 + Math.random() * 0.5);
+            const h = config.ribbonHeight * (0.7 + Math.random() * 0.6);
+
+            this.positions[i * 3] = x;
+            this.positions[i * 3 + 1] = y;
+            this.positions[i * 3 + 2] = z;
+            this.phases[i] = Math.random() * Math.PI * 2;
+            this.scales[i * 2] = w;
+            this.scales[i * 2 + 1] = h;
+
+            this.dummy.position.set(x, y, z);
+            this.dummy.scale.set(w, h, 1);
+            this.dummy.rotation.set(
+                (Math.random() - 0.5) * 0.35,
+                (Math.random() - 0.5) * 0.5,
+                (Math.random() - 0.5) * 0.25
+            );
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+        }
+
+        this.mesh.instanceMatrix.needsUpdate = true;
+        scene.add(this.mesh);
+    }
+
+    setSkyColors(topHex: number, bottomHex: number): void {
+        const mat = this.mesh.material as MeshBasicNodeMaterial & { userData: Record<string, unknown> };
+        (mat.userData.uTop as { value: THREE.Color }).value.setHex(topHex);
+        (mat.userData.uBottom as { value: THREE.Color }).value.setHex(bottomHex);
+    }
+
+    update(delta: number, cameraX: number, playerSpeed: number = 8): void {
+        const margin = 60;
+        const limitBack = cameraX - this.width / 2 - margin;
+        const limitFront = cameraX + this.width / 2 + margin;
+        const scroll = delta * (this.driftSpeed + playerSpeed * this.parallaxFactor * 0.06);
+        let needsUpdate = false;
+
+        for (let i = 0; i < this.count; i++) {
+            const idx = i * 3;
+            let x = this.positions[idx] - scroll;
+            const phase = this.phases[i];
+
+            if (x < limitBack) {
+                x += this.width + margin * 2;
+                this.positions[idx + 1] = (Math.random() - 0.5) * 50;
+                needsUpdate = true;
+            } else if (x > limitFront) {
+                x -= this.width + margin * 2;
+                this.positions[idx + 1] = (Math.random() - 0.5) * 50;
+                needsUpdate = true;
+            }
+
+            this.positions[idx] = x;
+            const y = this.positions[idx + 1] + Math.sin(phase + cameraX * 0.004) * 1.8;
+            const z = this.positions[idx + 2];
+
+            this.dummy.position.set(x, y, z);
+            this.dummy.scale.set(this.scales[i * 2], this.scales[i * 2 + 1], 1);
+            this.dummy.rotation.z = Math.sin(phase + cameraX * 0.002) * 0.08;
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+            needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+            this.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+}
+
 export class NebulaSystem {
     scene: THREE.Scene;
     active: boolean = false;
+    ribbonsActive: boolean = false;
     layers: (NebulaCloudLayer | EnergyParticleLayer | ButterflyEnergyMoteLayer)[] = [];
+    ribbonLayers: NebulaRibbonLayer[] = [];
     uGlobalPulse: any;
     uMagicIntensity: any;
     targetMagicIntensity: number = 0.0;
@@ -544,11 +729,89 @@ export class NebulaSystem {
         this.uMagicIntensity = uniform(0.0);
         this.pulseOverlay = new PulseOverlay();
         this.weaponLightManager = weaponLightManager;
+        this.initRibbonLayers();
         this.initLayers();
     }
 
     setCamera(camera: THREE.Camera) {
         this.pulseOverlay.init(this.uGlobalPulse, camera);
+    }
+
+    /** Tint ribbons from LEVEL_CONFIG skyColors (call on level start / sky transition). */
+    setSkyColors(topHex: number, bottomHex: number): void {
+        this.ribbonLayers.forEach((layer) => layer.setSkyColors(topHex, bottomHex));
+    }
+
+    /**
+     * Parallax ribbon/veil sheets only (3 draw calls).
+     * Background only — ignore for collision and interaction systems.
+     */
+    initRibbonLayers(topColor: number = 0x0a001a, bottomColor: number = 0x1a0033): void {
+        if (this.ribbonLayers.length > 0) return;
+
+        const configs: NebulaRibbonLayerConfig[] = [
+            {
+                count: 8,
+                width: 420,
+                height: 55,
+                baseZ: -145,
+                zSpread: 18,
+                ribbonWidth: 72,
+                ribbonHeight: 28,
+                opacity: 0.11,
+                parallaxFactor: 0.07,
+                driftSpeed: 0.35,
+                topColor,
+                bottomColor,
+                uvPhase: 0.0
+            },
+            {
+                count: 10,
+                width: 380,
+                height: 48,
+                baseZ: -98,
+                zSpread: 14,
+                ribbonWidth: 52,
+                ribbonHeight: 16,
+                opacity: 0.16,
+                parallaxFactor: 0.14,
+                driftSpeed: 0.55,
+                topColor,
+                bottomColor,
+                uvPhase: 1.7
+            },
+            {
+                count: 6,
+                width: 340,
+                height: 42,
+                baseZ: -72,
+                zSpread: 10,
+                ribbonWidth: 44,
+                ribbonHeight: 20,
+                opacity: 0.1,
+                parallaxFactor: 0.22,
+                driftSpeed: 0.75,
+                topColor,
+                bottomColor,
+                uvPhase: 3.1
+            }
+        ];
+
+        for (const cfg of configs) {
+            this.ribbonLayers.push(new NebulaRibbonLayer(this.scene, cfg));
+        }
+
+        this.deactivateRibbons();
+    }
+
+    activateRibbons(): void {
+        this.ribbonsActive = true;
+        this.ribbonLayers.forEach((layer) => { layer.mesh.visible = true; });
+    }
+
+    deactivateRibbons(): void {
+        this.ribbonsActive = false;
+        this.ribbonLayers.forEach((layer) => { layer.mesh.visible = false; });
     }
 
     initLayers() {
@@ -628,7 +891,11 @@ export class NebulaSystem {
     }
 
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3, playerSpeed: number = 8) {
+        if (this.ribbonsActive) {
+            this.ribbonLayers.forEach((layer) => layer.update(delta, cameraX, playerSpeed));
+        }
+
         if (!this.active) return;
 
         // Lerp magic intensity

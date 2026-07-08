@@ -3,6 +3,7 @@ import {
     MeshStandardNodeMaterial,
     MeshBasicNodeMaterial
 } from 'three/webgpu';
+import { createIridescentCrystal } from './candy_materials';
 import {
     time,
     positionLocal,
@@ -116,16 +117,10 @@ export function createFracturedGeode(config: { size: number }) {
     group.add(shell);
 
     // Inner Core (Multiple Glowing Crystals)
-    const coreMat = new MeshStandardNodeMaterial({
-        emissive: new THREE.Color(0x8844ff),
-        roughness: 0.2,
-        metalness: 0.5
+    const coreMat = createIridescentCrystal(0x8844ff, 0.9, {
+        emissiveIntensity: 0.35,
+        cacheKey: 'geode_core'
     });
-
-    const uTime = time;
-    const pulse = sin(uTime.mul(2.0)).add(1.0).mul(0.5); // 0 to 1
-    const baseEmit = color(0x8844ff);
-    coreMat.emissiveNode = baseEmit.mul(pulse.add(0.5));
 
     const coreGroup = new THREE.Group();
     const crystalCount = 5;

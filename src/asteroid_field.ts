@@ -1,77 +1,11 @@
 import * as THREE from 'three';
-import { MeshStandardNodeMaterial } from 'three/webgpu';
-import {
-    time,
-    positionWorld,
-    color,
-    uniform,
-    mix,
-    sin,
-    cos,
-    float,
-    smoothstep,
-    distance,
-    Loop,
-    normalView,
-    vec4
-} from 'three/tsl';
 import { WeaponLightManager } from './lighting';
-
-/**
- * Creates a TSL material for asteroids with Rim Light and Weapon Light interaction.
- */
-function createAsteroidMaterial(baseColorHex: number, opacity: number, weaponLights: any) {
-    const mat = new MeshStandardNodeMaterial({
-        color: baseColorHex,
-        roughness: 0.9,
-        metalness: 0.1,
-        flatShading: true,
-        transparent: opacity < 1.0,
-        opacity: opacity
-    });
-
-    const vNormalView = normalView; // View space normal
-
-    // Rim Lighting
-    // Intensity increases as normal faces away from camera (z approaches 0)
-    // normalView.z is 1.0 when facing camera, 0.0 at edge.
-    const rim = float(1.0).sub(vNormalView.z.abs());
-    const rimGlow = rim.pow(3.0).mul(0.5); // Subtle rim
-
-    // Weapon Light Interaction
-    const weaponGlow = float(0.0).toVar();
-    const uWeaponColor = uniform(new THREE.Color(0x00ffff)); // Cyan
-
-    Loop({ start: 0, end: 20 }, ({ i }) => {
-        const lightData = weaponLights.element(i);
-        const lightPos = lightData.xyz;
-        const lightIntensity = lightData.w; // 2.0 or 0.0
-
-        // distance from world pos of fragment to light
-        const distToLight = distance(positionWorld, lightPos);
-
-        // Range 20.0 (slightly less than full projectile range to keep it tight)
-        const lightRadius = float(20.0);
-
-        const falloff = smoothstep(lightRadius, 0.0, distToLight);
-
-        weaponGlow.addAssign(falloff.mul(lightIntensity));
-    });
-
-    // Emissive Output
-    // Combine Rim Light (White/Base) + Weapon Glow (Cyan)
-    const baseColor = color(new THREE.Color(baseColorHex));
-    // Rim light is just boosted base color
-    // Weapon light adds color
-    const finalEmissive = baseColor.mul(rimGlow).add(uWeaponColor.mul(weaponGlow));
-
-    mat.emissiveNode = finalEmissive;
-
-    return mat;
-}
+import { createAsteroidFieldMaterial } from './candy_materials';
 
 /**
  * Manages a single layer of parallax asteroids using InstancedMesh.
+ *
+ * Candy/gummy variants replace a fraction of instances (same total count).
  */
 export class AsteroidLayer {
     mesh: THREE.InstancedMesh;
@@ -89,6 +23,9 @@ export class AsteroidLayer {
     rotationSpeeds: Float32Array;
     scales: Float32Array;
     velocities: Float32Array;
+    candyMix: Float32Array;
+    candyHue: Float32Array;
+    candyChance: number;
 
     constructor(
         scene: THREE.Scene,
@@ -101,7 +38,8 @@ export class AsteroidLayer {
             zRange: number,
             width: number,
             opacity?: number,
-            weaponLights: any
+            weaponLights: any,
+            candyChance?: number
         }
     ) {
         this.maxCount = config.count;
@@ -110,12 +48,18 @@ export class AsteroidLayer {
         this.depth = config.zRange;
         this.sizeMin = config.sizeMin;
         this.sizeMax = config.sizeMax;
+        this.candyChance = config.candyChance ?? 0;
 
         // Geometry: Icosahedron for jagged rock look
         const geometry = new THREE.IcosahedronGeometry(1, 0);
 
-        // Material: TSL Node Material
-        const material = createAsteroidMaterial(config.color, config.opacity ?? 1.0, config.weaponLights);
+        // Material: TSL Node Material (rock + optional candy mix per instance)
+        const material = createAsteroidFieldMaterial(
+            config.color,
+            config.opacity ?? 1.0,
+            config.weaponLights,
+            this.candyChance
+        );
 
         this.mesh = new THREE.InstancedMesh(geometry, material, this.maxCount);
         this.mesh.castShadow = true;
@@ -130,8 +74,11 @@ export class AsteroidLayer {
         this.rotationSpeeds = new Float32Array(this.maxCount * 3); // Speed per axis
         this.scales = new Float32Array(this.maxCount * 3);
         this.velocities = new Float32Array(this.maxCount * 3);
+        this.candyMix = new Float32Array(this.maxCount);
+        this.candyHue = new Float32Array(this.maxCount);
 
         for (let i = 0; i < this.maxCount; i++) {
+            this._rollCandyVariant(i);
             // Random Position
             const x = (Math.random() - 0.5) * this.width;
             const y = (Math.random() - 0.5) * 40; // Vertical spread
@@ -173,7 +120,28 @@ export class AsteroidLayer {
             this.mesh.setMatrixAt(i, this.dummy.matrix);
         }
 
+        geometry.setAttribute('aCandyMix', new THREE.InstancedBufferAttribute(this.candyMix, 1));
+        geometry.setAttribute('aCandyHue', new THREE.InstancedBufferAttribute(this.candyHue, 1));
+
         scene.add(this.mesh);
+    }
+
+    private _rollCandyVariant(index: number) {
+        const isCandy = this.candyChance > 0 && Math.random() < this.candyChance;
+        this.candyMix[index] = isCandy ? 1 : 0;
+        this.candyHue[index] = Math.random();
+    }
+
+    setCandyChance(chance: number) {
+        this.candyChance = Math.max(0, Math.min(1, chance));
+        for (let i = 0; i < this.maxCount; i++) {
+            this._rollCandyVariant(i);
+        }
+        const geo = this.mesh.geometry;
+        const mixAttr = geo.getAttribute('aCandyMix') as THREE.InstancedBufferAttribute;
+        const hueAttr = geo.getAttribute('aCandyHue') as THREE.InstancedBufferAttribute;
+        if (mixAttr) mixAttr.needsUpdate = true;
+        if (hueAttr) hueAttr.needsUpdate = true;
     }
 
     setDensity(multiplier: number) {
@@ -403,6 +371,8 @@ export class AsteroidLayer {
                 this.rotationSpeeds[idx+1] = (Math.random() - 0.5) * 1.0;
                 this.rotationSpeeds[idx+2] = (Math.random() - 0.5) * 1.0;
 
+                this._rollCandyVariant(i);
+
                 needsUpdate = true;
             }
 
@@ -435,6 +405,7 @@ export class AsteroidFieldSystem {
     layers: AsteroidLayer[] = [];
     active: boolean = false;
     weaponLightManager: WeaponLightManager;
+    private candyChance = 0;
 
     constructor(scene: THREE.Scene, weaponLightManager: WeaponLightManager) {
         this.scene = scene;
@@ -444,46 +415,28 @@ export class AsteroidFieldSystem {
 
     initLayers() {
         const weaponLights = this.weaponLightManager.storageNode;
+        const layerConfigs = [
+            { count: 15, color: 0x333333, sizeMin: 1.5, sizeMax: 3.0, z: 12, zRange: 6, width: 150 },
+            { count: 40, color: 0x555566, sizeMin: 1.0, sizeMax: 2.0, z: -15, zRange: 10, width: 200 },
+            { count: 80, color: 0x222233, sizeMin: 0.5, sizeMax: 1.2, z: -40, zRange: 10, width: 300, opacity: 0.8 }
+        ] as const;
 
-        // Layer 1: Foreground (Close, Large, Darker/Threatening)
-        this.layers.push(new AsteroidLayer(this.scene, {
-            count: 15,
-            color: 0x333333, // Dark grey
-            sizeMin: 1.5,
-            sizeMax: 3.0,
-            z: 12,
-            zRange: 6,
-            width: 150,
-            weaponLights: weaponLights
-        }));
-
-        // Layer 2: Background Mid
-        this.layers.push(new AsteroidLayer(this.scene, {
-            count: 40,
-            color: 0x555566,
-            sizeMin: 1.0,
-            sizeMax: 2.0,
-            z: -15,
-            zRange: 10,
-            width: 200,
-            weaponLights: weaponLights
-        }));
-
-        // Layer 3: Deep Background
-        this.layers.push(new AsteroidLayer(this.scene, {
-            count: 80,
-            color: 0x222233,
-            sizeMin: 0.5,
-            sizeMax: 1.2,
-            z: -40,
-            zRange: 10,
-            width: 300,
-            opacity: 0.8,
-            weaponLights: weaponLights
-        }));
+        for (const cfg of layerConfigs) {
+            this.layers.push(new AsteroidLayer(this.scene, {
+                ...cfg,
+                weaponLights,
+                candyChance: this.candyChance
+            }));
+        }
 
         // Start hidden
         this.setVisible(false);
+    }
+
+    /** Fraction of parallax instances that render as candy (replaces rock, same count). */
+    setCandyChance(chance: number) {
+        this.candyChance = Math.max(0, Math.min(1, chance));
+        this.layers.forEach(l => l.setCandyChance(this.candyChance));
     }
 
     setVisible(visible: boolean) {
