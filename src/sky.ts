@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { color, mix, positionLocal, float, uniform, UniformNode, vec3 } from 'three/tsl';
+import { color, mix, positionLocal, float, uniform, vec3 } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { uStarOpacity } from './stars';
 
@@ -8,8 +8,8 @@ export class AtmosphereSystem {
     skyMesh: THREE.Mesh;
 
     // TSL Uniforms (Hold the "Live" color objects)
-    uTopColor: UniformNode<THREE.Color>;
-    uBottomColor: UniformNode<THREE.Color>;
+    uTopColor: any;
+    uBottomColor: any;
 
     // State for transition
     private startColorTop = new THREE.Color();

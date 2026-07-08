@@ -1,4 +1,4 @@
-import { StorageBufferAttribute } from 'three/webgpu';
+import { InstancedBufferAttribute as StorageBufferAttribute } from 'three';
 import { storage } from 'three/tsl';
 import { Projectile } from './weapons';
 

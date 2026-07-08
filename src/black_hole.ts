@@ -68,7 +68,7 @@ function createLensingMaterial() {
 }
 
 
-function createAccretionDiskMaterial(flareUniform?: THREE.Uniform) {
+function createAccretionDiskMaterial(flareUniform?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -104,7 +104,7 @@ function createAccretionDiskMaterial(flareUniform?: THREE.Uniform) {
     const noise = ring1.add(ring2).add(angNoise).add(angNoise2).mul(0.25).add(0.5);
 
     const innerFade = smoothstep(0.0, 0.1, normalizedDist);
-    const outerFade = float(1.0).sub(smoothstep(0.8, 1.0, normalizedDist));
+    const outerFade = smoothstep(0.8, 1.0, normalizedDist).oneMinus();
     const diskMask = innerFade.mul(outerFade);
 
     const coreColor = color(0xffffff);
@@ -129,7 +129,7 @@ function createAccretionDiskMaterial(flareUniform?: THREE.Uniform) {
 /**
  * Creates a TSL material for the gravitational lensing halo with dynamic intensity.
  */
-function createHaloMaterial(intensityUniform?: THREE.Uniform) {
+function createHaloMaterial(intensityUniform?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -144,7 +144,7 @@ function createHaloMaterial(intensityUniform?: THREE.Uniform) {
     const normalizedDist = dist.sub(30.0).div(35.0 - 30.0);
 
     const innerFade = smoothstep(0.0, 0.1, normalizedDist);
-    const outerFade = float(1.0).sub(smoothstep(0.1, 1.0, normalizedDist));
+    const outerFade = smoothstep(0.1, 1.0, normalizedDist).oneMinus();
     const mask = innerFade.mul(outerFade).mul(float(1.0).sub(normalizedDist));
 
     const intensity = intensityUniform ? intensityUniform : float(1.0);

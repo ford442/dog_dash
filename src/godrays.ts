@@ -77,7 +77,7 @@ function createGodRayMaterial() {
 
     // Dynamic Player Interaction
     const distToPlayer = length(positionWorld.sub(uPlayerPos));
-    const playerGlow = float(1.0).sub(smoothstep(0.0, 20.0, distToPlayer)).mul(0.5);
+    const playerGlow = smoothstep(0.0, 20.0, distToPlayer).oneMinus().mul(0.5);
 
     // Final color + alpha
     const rayColor = vec3(uColor).mul(float(0.6).add(fireBurst.mul(0.8)));

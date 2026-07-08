@@ -24,8 +24,7 @@ import {
     dot,
     fract,
     max,
-    distance,
-    UniformNode
+    distance
 , cameraPosition } from 'three/tsl';
 
 // --- TSL Noise Functions ---
@@ -80,7 +79,7 @@ const fbm = (v: any) => {
  * - Internal lighting/shading simulation via noise density
  * - Volumetric Lightning Flash (Distance-based)
  */
-function createCloudSpriteMaterial(uBaseColor: UniformNode<THREE.Color>, uOpacity: UniformNode<number>, detail: number = 1.0, weaponLights?: any, uPlayerPos?: any) {
+function createCloudSpriteMaterial(uBaseColor: any, uOpacity: any, detail: number = 1.0, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         side: THREE.FrontSide, // Sprites face camera
@@ -228,8 +227,8 @@ export class CloudLayer {
     positions: Float32Array;
     scales: Float32Array;
 
-    uColor: UniformNode<THREE.Color>;
-    uOpacity: UniformNode<number>;
+    uColor: any;
+    uOpacity: any;
 
     constructor(
         scene: THREE.Scene,
@@ -237,8 +236,8 @@ export class CloudLayer {
             count: number,
             z: number,
             zRange: number,
-            uColor: UniformNode<THREE.Color>,
-            uOpacity: UniformNode<number>,
+            uColor: any,
+            uOpacity: any,
             scaleMin: number,
             scaleMax: number,
             windSpeed: number, // Speed relative to world (crawling)
@@ -423,7 +422,7 @@ export class GodRayOverlay {
 export class LightningFlashOverlay {
     mesh: THREE.Mesh;
     camera: THREE.Camera | null = null;
-    uIntensity: UniformNode<number>;
+    uIntensity: any;
 
     constructor() {
         const geo = new THREE.PlaneGeometry(2, 2);
