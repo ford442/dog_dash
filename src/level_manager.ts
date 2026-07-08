@@ -1,4 +1,5 @@
-import { lightningBoltSystem } from './game_systems';
+import { ShakeType } from './juice_effects';
+import { lightningBoltSystem, particleSystem, juiceManager } from './game_systems';
 import * as THREE from 'three';
 import { CloudSystem } from './clouds';
 import { AtmosphereSystem } from './sky';
@@ -172,6 +173,10 @@ export class LevelManager {
         lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
             this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
+
+            // Add impact effects: subtle screen shake and spark particles
+            juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
+            particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
         };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;

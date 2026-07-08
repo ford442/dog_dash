@@ -13,6 +13,7 @@ import {
     cos,
     float,
     step,
+    fract,
     abs,
     normalView,
     positionWorld,
@@ -42,27 +43,36 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
 
     const uTime = time;
 
-    // Advanced procedural jagged offset for volumetric core
-    const wave1 = sin(y.mul(20.0).add(uTime.mul(50.0))).mul(2.0);
-    const wave2 = sin(y.mul(45.0).sub(uTime.mul(35.0))).mul(1.5);
-    const wave3 = sin(y.mul(120.0).add(uTime.mul(90.0))).mul(0.6);
-    const totalOffsetX = wave1.add(wave2).add(wave3);
+    // Advanced procedural jagged offset for volumetric core using fract
+    // We use a pseudo-random stepped approach to create sharp turns
+    const timeSpeed = uTime.mul(30.0);
+    const stepY = fract(y.mul(5.0).add(timeSpeed)).mul(2.0).sub(1.0);
+    const sharpNoise1 = sin(y.mul(20.0).add(timeSpeed)).mul(stepY).mul(1.5);
+    const sharpNoise2 = cos(y.mul(45.0).sub(timeSpeed)).mul(fract(y.mul(12.0))).mul(1.0);
+    const sharpNoise3 = sin(y.mul(100.0).add(timeSpeed)).mul(0.5);
 
-    const waveZ1 = sin(y.mul(25.0).add(uTime.mul(45.0))).mul(2.0);
-    const waveZ2 = sin(y.mul(35.0).sub(uTime.mul(25.0))).mul(1.2);
-    const waveZ3 = sin(y.mul(110.0).sub(uTime.mul(85.0))).mul(0.5);
-    const totalOffsetZ = waveZ1.add(waveZ2).add(waveZ3);
+    // Main branch displacement
+    const totalOffsetX = sharpNoise1.add(sharpNoise2).add(sharpNoise3);
 
-    // Chaotic branching
-    const branchWave1 = abs(sin(y.mul(30.0).add(uTime.mul(40.0)))).mul(3.5).mul(y);
-    const branchWave2 = abs(sin(y.mul(65.0).sub(uTime.mul(70.0)))).mul(2.0).mul(y);
-    const branchWave3 = abs(cos(y.mul(90.0).add(uTime.mul(100.0)))).mul(1.0).mul(y);
+    const stepZ = fract(y.mul(7.0).add(timeSpeed)).mul(2.0).sub(1.0);
+    const sharpZ1 = sin(y.mul(15.0).add(timeSpeed)).mul(stepZ).mul(1.5);
+    const sharpZ2 = cos(y.mul(35.0).sub(timeSpeed)).mul(fract(y.mul(9.0))).mul(1.2);
+    const sharpZ3 = sin(y.mul(90.0).sub(timeSpeed)).mul(0.5);
+    const totalOffsetZ = sharpZ1.add(sharpZ2).add(sharpZ3);
+
+    // Chaotic secondary forks branching out
+    // Fork activates strongly towards the bottom (higher y if y goes 0 to 1, or lower if 1 to 0, let's use y)
+    const forkTrigger = sin(y.mul(10.0).add(timeSpeed)).add(sin(y.mul(33.0).sub(timeSpeed)));
+    const isFork = smoothstep(0.5, 1.5, forkTrigger);
+
+    const forkOffsetX = cos(y.mul(40.0).add(timeSpeed)).mul(4.0).mul(y).mul(isFork);
+    const forkOffsetZ = sin(y.mul(50.0).sub(timeSpeed)).mul(3.0).mul(y).mul(isFork);
 
     const sideFactorX = sin(x.mul(Math.PI * 2.0));
-    const sideFactorZ = sin(x.mul(Math.PI * 2.0).add(Math.PI * 0.5));
+    const sideFactorZ = cos(x.mul(Math.PI * 2.0));
 
-    const branchX = branchWave1.add(branchWave3).mul(sideFactorX);
-    const branchZ = branchWave2.add(branchWave3).mul(sideFactorZ);
+    const branchX = forkOffsetX.mul(sideFactorX);
+    const branchZ = forkOffsetZ.mul(sideFactorZ);
 
     mat.positionNode = vec3(
         positionLocal.x.add(totalOffsetX).add(branchX),
@@ -78,16 +88,22 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
     // Combine view normal and center distance for volumetric falloff
     const volumetricFalloff = coreDensity.mul(viewDot);
 
-    // High-frequency energy crackle
-    const flashPulse = sin(uTime.mul(60.0)).mul(0.4).add(0.6);
-    const crackleNoise = sin(y.mul(150.0).add(uTime.mul(120.0))).mul(0.2).add(0.8);
-    const glowIntensity = flashPulse.mul(crackleNoise);
+    // High-frequency energy crackle with sharp flickers
+    // A rapid flicker that occasionally spikes to 1.5, creating a violent flash
+    const flickerPulse = fract(uTime.mul(45.0)).mul(sin(uTime.mul(120.0))).clamp(0.0, 1.0);
+    const sharpFlash = smoothstep(0.7, 1.0, flickerPulse).mul(1.5);
+    const basePulse = sin(uTime.mul(50.0)).mul(0.3).add(0.7);
+
+    const crackleNoise = sin(y.mul(200.0).add(uTime.mul(150.0))).mul(0.2).add(0.8);
+    const glowIntensity = basePulse.add(sharpFlash).mul(crackleNoise);
 
     const coreColor = color(0xffffff);
-    const edgeColor = color(uColor);
+    // Increase edge color saturation
+    const edgeColor = color(uColor).mul(1.5);
 
     // Color gradient based on volumetric density
-    let colorMix: any = mix(edgeColor, coreColor, volumetricFalloff.pow(2.0));
+    // A tighter core to make the lightning look thinner and hotter inside
+    let colorMix: any = mix(edgeColor, coreColor, volumetricFalloff.pow(4.0));
 
     // Dynamic Lighting Interaction
     if (uPlayerPos) {
@@ -110,8 +126,12 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
     }
 
     // Advanced alpha blending for volumetric scattering
-    // Soft core fading exponentially, combined with energy fluctuations
-    const alpha = volumetricFalloff.pow(1.5).mul(glowIntensity).mul(1.2).clamp(0.0, 1.0);
+    // Use a sharp falloff for the glowing core and softer for the edges
+    const coreAlpha = volumetricFalloff.pow(1.5);
+    const edgeAlpha = volumetricFalloff.pow(0.5).mul(0.5);
+
+    // Combine core and edge with the intense flickering glow
+    const alpha = coreAlpha.add(edgeAlpha).mul(glowIntensity).clamp(0.0, 1.0);
 
     mat.colorNode = vec4(colorMix, alpha);
 
