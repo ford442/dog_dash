@@ -48,6 +48,7 @@ export const SPECIES_NAMES: Record<string, string> = {
     moonJelly: 'Moon Jelly',
     auroraRay: 'Aurora Ray',
     nebulaPuffer: 'Nebula Puffer',
+    toyRocketWreck: 'Toy Rocket Wreck',
 };
 
 const SCAN_RADIUS = 12;

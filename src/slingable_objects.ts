@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 import { DebrisSystem, ParticleSystem } from './particles';
 import { disposeObject } from './utils';
+import {
+    buildToyRocketGroup,
+    TOY_ROCKET_MATERIALS,
+    TOY_ROCKET_SPECIES_ID,
+    type ToyRocketVariant
+} from './toy_rockets';
 
 const _collisionNormal = new THREE.Vector3();
 const _impactVelocity = new THREE.Vector3();
@@ -8,7 +14,7 @@ const _trailColor = new THREE.Color();
 const _hueColor = new THREE.Color();
 
 /** Personality archetypes for slingable targets. */
-export type SlingableKind = 'rock' | 'puffball' | 'chromaRock' | 'tetherSprite' | 'wreckingBall';
+export type SlingableKind = 'rock' | 'puffball' | 'chromaRock' | 'tetherSprite' | 'wreckingBall' | 'toyRocket';
 
 /** Seconds the puffball spends inflating before it pops into spore confetti. */
 const PUFFBALL_INFLATE_DURATION = 0.45;
@@ -28,6 +34,7 @@ export interface SlingableObjectConfig {
     color?: number;
     emissive?: number;
     kind?: SlingableKind;
+    toyVariant?: ToyRocketVariant;
 }
 
 export interface SlingableObjectInstance {
@@ -48,6 +55,9 @@ export interface SlingableObjectInstance {
     inflateTimer?: number;
     /** Rolling hue (0-1) used by chroma rocks to cycle their shell color. */
     chromaHue?: number;
+    toyVariant?: ToyRocketVariant;
+    /** Gentle idle wobble timer for toy rockets when player is near. */
+    idlePhase?: number;
 }
 
 /** A temporary rainbow trail left behind by a slung chroma rock. */
@@ -59,7 +69,8 @@ export interface ChromaSlipstreamZone {
 
 export type SlingableSpecialEffect =
     | { type: 'puffballPop'; position: THREE.Vector3; liftAmount: number }
-    | { type: 'chromaSlipstream'; position: THREE.Vector3; radius: number };
+    | { type: 'chromaSlipstream'; position: THREE.Vector3; radius: number }
+    | { type: 'toyRocketResolved'; position: THREE.Vector3; viaSling: boolean };
 
 export class SlingableObjectSystem {
     readonly objects: SlingableObjectInstance[] = [];
@@ -90,7 +101,8 @@ export class SlingableObjectSystem {
             puffball: { color: 0xffd9f0, emissive: 0x99ffaa },
             chromaRock: { color: 0xbb88ff, emissive: 0xff66cc },
             tetherSprite: { color: 0xfff0cc, emissive: 0xffaaee },
-            wreckingBall: { color: 0x554433, emissive: 0xff8844 }
+            wreckingBall: { color: 0x554433, emissive: 0xff8844 },
+            toyRocket: { color: 0xff6b8a, emissive: 0xff4466 }
         };
         const palette = KIND_COLORS[kind];
         const bodyColor = config.color ?? palette.color;
@@ -99,39 +111,53 @@ export class SlingableObjectSystem {
         const group = new THREE.Group();
         group.position.copy(position);
 
-        // --- Body geometry: shape varies by personality ---
-        let bodyGeometry: THREE.BufferGeometry;
-        switch (kind) {
-            case 'puffball':
-                bodyGeometry = new THREE.SphereGeometry(radius, 12, 10);
-                break;
-            case 'tetherSprite':
-                bodyGeometry = new THREE.ConeGeometry(radius * 0.8, radius * 1.6, 5);
-                break;
-            case 'wreckingBall':
-                bodyGeometry = new THREE.DodecahedronGeometry(radius * 1.15, 0);
-                break;
-            case 'chromaRock':
-            case 'rock':
-            default:
-                bodyGeometry = new THREE.IcosahedronGeometry(radius, 0);
-                break;
-        }
+        let bodyMaterial: THREE.MeshPhysicalMaterial;
+        let body: THREE.Mesh;
 
-        const bodyMaterial = new THREE.MeshPhysicalMaterial({
-            color: bodyColor,
-            emissive,
-            emissiveIntensity: 0.55,
-            roughness: 0.28,
-            metalness: kind === 'wreckingBall' ? 0.6 : 0.25,
-            clearcoat: 0.8,
-            clearcoatRoughness: 0.15,
-            flatShading: true
-        });
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        body.castShadow = true;
-        body.receiveShadow = true;
-        group.add(body);
+        if (kind === 'toyRocket') {
+            bodyMaterial = TOY_ROCKET_MATERIALS.hull.clone();
+            bodyMaterial.color.setHex(bodyColor);
+            bodyMaterial.emissive.setHex(emissive);
+
+            const toyVariant = config.toyVariant ?? 'bentFin';
+            const toyGroup = buildToyRocketGroup(radius, toyVariant, bodyMaterial);
+            group.add(toyGroup);
+            body = toyGroup.children[1] as THREE.Mesh;
+        } else {
+            // --- Body geometry: shape varies by personality ---
+            let bodyGeometry: THREE.BufferGeometry;
+            switch (kind) {
+                case 'puffball':
+                    bodyGeometry = new THREE.SphereGeometry(radius, 12, 10);
+                    break;
+                case 'tetherSprite':
+                    bodyGeometry = new THREE.ConeGeometry(radius * 0.8, radius * 1.6, 5);
+                    break;
+                case 'wreckingBall':
+                    bodyGeometry = new THREE.DodecahedronGeometry(radius * 1.15, 0);
+                    break;
+                case 'chromaRock':
+                case 'rock':
+                default:
+                    bodyGeometry = new THREE.IcosahedronGeometry(radius, 0);
+                    break;
+            }
+
+            bodyMaterial = new THREE.MeshPhysicalMaterial({
+                color: bodyColor,
+                emissive,
+                emissiveIntensity: 0.55,
+                roughness: 0.28,
+                metalness: kind === 'wreckingBall' ? 0.6 : 0.25,
+                clearcoat: 0.8,
+                clearcoatRoughness: 0.15,
+                flatShading: true
+            });
+            body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+            body.castShadow = true;
+            body.receiveShadow = true;
+            group.add(body);
+        }
 
         // --- Kind-specific decorations ---
         if (kind === 'puffball') {
@@ -233,7 +259,11 @@ export class SlingableObjectSystem {
             mass,
             radius,
             active: true,
-            health: kind === 'wreckingBall' ? Math.max(3, Math.round(radius * 3)) : Math.max(1, Math.round(radius * 1.5)),
+            health: kind === 'wreckingBall'
+                ? Math.max(3, Math.round(radius * 3))
+                : kind === 'toyRocket'
+                    ? Math.max(2, Math.round(radius * 2))
+                    : Math.max(1, Math.round(radius * 1.5)),
             trailTimer: Math.random() * 0.08,
             spin: new THREE.Vector3(
                 (Math.random() - 0.5) * 1.4,
@@ -245,7 +275,9 @@ export class SlingableObjectSystem {
             kind,
             highlightGroup,
             highlightMaterial,
-            chromaHue: kind === 'chromaRock' ? Math.random() : undefined
+            chromaHue: kind === 'chromaRock' ? Math.random() : undefined,
+            toyVariant: kind === 'toyRocket' ? (config.toyVariant ?? 'bentFin') : undefined,
+            idlePhase: kind === 'toyRocket' ? Math.random() * Math.PI * 2 : undefined
         };
 
         group.userData = {
@@ -256,7 +288,9 @@ export class SlingableObjectSystem {
             kind,
             mass,
             radius,
-            velocity
+            velocity,
+            speciesId: kind === 'toyRocket' ? TOY_ROCKET_SPECIES_ID : undefined,
+            scanPosition: kind === 'toyRocket' ? position.clone() : undefined
         };
 
         this.scene.add(group);
@@ -268,6 +302,21 @@ export class SlingableObjectSystem {
         return this.objects
             .filter(obj => obj.active)
             .map(obj => obj.group);
+    }
+
+    /** Scannable toy wrecks for the discovery log. */
+    getScannables(): THREE.Object3D[] {
+        return this.objects
+            .filter(obj => obj.active && obj.kind === 'toyRocket')
+            .map(obj => obj.group);
+    }
+
+    clearByKind(kind: SlingableKind): void {
+        for (let i = this.objects.length - 1; i >= 0; i--) {
+            if (this.objects[i].kind === kind) {
+                this.removeObjectAtIndex(i);
+            }
+        }
     }
 
     setLatchedTarget(target: THREE.Object3D | null): void {
@@ -326,7 +375,31 @@ export class SlingableObjectSystem {
             this.particleSystem.emit(zone.position.clone(), 0xff66cc, 18, 5.0, 1.2, zone.radius * 0.5);
         }
 
+        if (slingable.kind === 'toyRocket') {
+            this._resolveToyRocket(slingable, true);
+        }
+
         return true;
+    }
+
+    private _resolveToyRocket(obj: SlingableObjectInstance, viaSling: boolean): void {
+        const pos = obj.group.position.clone();
+        this._emitCandyHeartBurst(pos);
+        this.onSpecialEffect?.({ type: 'toyRocketResolved', position: pos, viaSling });
+    }
+
+    private _emitCandyHeartBurst(position: THREE.Vector3): void {
+        const heartColors = [0xffb6c1, 0xff69b4, 0xffc0cb, 0xff8fab, 0xffffff];
+        for (let i = 0; i < heartColors.length; i++) {
+            this.particleSystem.emit(
+                position.clone(),
+                heartColors[i],
+                3,
+                3.5 + Math.random() * 2,
+                0.75,
+                0.35 + Math.random() * 0.2
+            );
+        }
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3): void {
@@ -375,6 +448,29 @@ export class SlingableObjectSystem {
                     this.debrisSystem.emit(obj.group.position.clone(), 6, 3.5, obj.radius * 0.7);
                     this.removeObjectAtIndex(i);
                     continue;
+                }
+            }
+
+            // Toy rocket: gentle idle wobble only when the player is nearby
+            if (obj.kind === 'toyRocket' && obj.idlePhase !== undefined) {
+                const near = playerPos && obj.group.position.distanceTo(playerPos) < GRAB_HINT_RANGE * 1.4;
+                if (near) {
+                    obj.idlePhase += delta * 1.6;
+                    obj.group.rotation.z = Math.sin(obj.idlePhase) * 0.06;
+                    obj.group.rotation.y = Math.sin(obj.idlePhase * 0.7) * 0.04;
+                    for (const child of obj.group.children) {
+                        child.traverse((sub) => {
+                            if (sub.userData.isFlag) {
+                                sub.rotation.y = Math.sin(obj.idlePhase! * 2.2) * 0.35;
+                            }
+                        });
+                    }
+                } else if (obj.group.rotation.z !== 0 || obj.group.rotation.y !== 0) {
+                    obj.group.rotation.z *= 0.92;
+                    obj.group.rotation.y *= 0.92;
+                }
+                if (playerPos) {
+                    obj.group.userData.scanPosition = obj.group.position.clone();
                 }
             }
 
@@ -483,7 +579,9 @@ export class SlingableObjectSystem {
                 // they're meant to be thrown down a cluttered corridor to clear a path.
                 const destroysAsteroid = obj.kind === 'wreckingBall'
                     ? (impactSpeed > 3 || asteroidRadius <= obj.radius * 1.6)
-                    : (impactSpeed > 7 || asteroidRadius <= obj.radius * 1.2);
+                    : obj.kind === 'toyRocket'
+                        ? (impactSpeed > 5 || asteroidRadius <= obj.radius * 1.35)
+                        : (impactSpeed > 7 || asteroidRadius <= obj.radius * 1.2);
 
                 this.particleSystem.emit(asteroid.position.clone(), 0x9fe7ff, 10, 5.0, 0.9, obj.radius);
 
@@ -516,8 +614,12 @@ export class SlingableObjectSystem {
 
     private destroyObjectAtIndex(index: number): void {
         const obj = this.objects[index];
-        this.debrisSystem.emit(obj.group.position.clone(), 8, 5.5, obj.radius * 0.8);
-        this.particleSystem.emit(obj.group.position.clone(), 0xffffff, 14, 6.0, 1.0, obj.radius);
+        if (obj.kind === 'toyRocket') {
+            this._resolveToyRocket(obj, false);
+        } else {
+            this.debrisSystem.emit(obj.group.position.clone(), 8, 5.5, obj.radius * 0.8);
+            this.particleSystem.emit(obj.group.position.clone(), 0xffffff, 14, 6.0, 1.0, obj.radius);
+        }
         this.removeObjectAtIndex(index);
     }
 

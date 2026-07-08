@@ -1,5 +1,6 @@
 import { ChromaShiftSystem } from './chroma_shift';
 import { StormGeodeSystem } from './storm_geodes';
+import { CrystalChimeManager } from './crystal_chimes';
 import { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
 import { scene, camera } from './scene_context';
@@ -278,6 +279,7 @@ export const chromaShiftSystem = new ChromaShiftSystem(scene);
 
 // STORM GEODE SYSTEM
 export const stormGeodeSystem = new StormGeodeSystem(scene);
+export const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
 
 // BLACK HOLE SYSTEM (Galactic Core)
 export const blackHoleSystem = new BlackHoleSystem(scene);

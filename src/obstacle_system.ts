@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { LevelConfig } from './level_config';
 import type { SporeCloud } from './geological';
-import { 
+import {
     type PatternConfig, 
     type EnemyInstance,
     generatePatternPositions, 
@@ -11,6 +11,20 @@ import {
 } from './enemy_patterns';
 import { NebulaKraken } from './space_robot_squid';
 import { applyLevelVariant } from './enemy_variants';
+import {
+    createCandyObstacleMaterial,
+    emitSugarCrystalBurst,
+    getCandyScoreBonus,
+    pickCandyFlavor,
+    pickCandyVariant,
+    CANDY_FLAVOR_COLORS,
+    type CandyAsteroidVariant,
+    type CandyFlavor
+} from './candy_materials';
+
+/** Shared unit geometry — scaled per instance (pooled, not reallocated). */
+const SHARED_ASTEROID_GEOMETRY = new THREE.IcosahedronGeometry(1, 0);
+const SHARED_CANDY_GEOMETRY = new THREE.IcosahedronGeometry(1, 1);
 
 type GameplayModifiers = {
     shieldActive: boolean;
@@ -44,6 +58,13 @@ type ObstacleSystemOptions = {
      */
     tryConsumeWrenchCharge?: () => boolean;
     onWrenchSave?: (asteroid: THREE.Mesh) => void;
+    /** Swarm escort butterflies absorb one small asteroid bump. */
+    tryConsumeSwarmEscort?: (hitPos: THREE.Vector3, hitRadius: number) => boolean;
+    /** Power-up butterfly escort charge (if active). */
+    tryConsumeButterflyCharge?: () => boolean;
+    onButterflySave?: (hitPos: THREE.Vector3) => void;
+    /** Bonus score + juice when a candy/gummy asteroid is destroyed. */
+    onCandyAsteroidSplit?: (asteroid: THREE.Mesh, bonusScore: number) => void;
     /** Fired when a Grumpy Mine Robot's eyes go wide at the player (for bestiary cataloging). */
     onMineRobotProximity?: () => void;
 };
@@ -136,7 +157,12 @@ export class ObstacleSystem {
             } else if (barnacleRate > 0 && Math.random() < barnacleRate) {
                 this.createBarnaclePod(spawnX, spawnY, 0);
             } else {
-                this.createAsteroid(spawnX, spawnY, 0);
+                const candyChance = currentCfg?.candyAsteroidChance ?? 0;
+                if (candyChance > 0 && Math.random() < candyChance) {
+                    this.createCandyAsteroid(spawnX, spawnY, 0);
+                } else {
+                    this.createAsteroid(spawnX, spawnY, 0);
+                }
             }
         }
         
@@ -160,6 +186,10 @@ export class ObstacleSystem {
                 obs.position.addScaledVector(obs.userData.velocity, delta);
             }
 
+            if (obs.userData.isCandyAsteroid) {
+                this._updateCandyAsteroid(obs, delta);
+            }
+
             // Grumpy mine robots: pupils glow brighter and widen when the player gets close
             if (obs.userData.isMineRobot && obs.userData.pupils) {
                 const distToPlayer = Math.hypot(obs.position.x - playerX, obs.position.y - playerY);
@@ -176,7 +206,9 @@ export class ObstacleSystem {
             }
 
             const zDepth = Math.abs(obs.position.z);
-            if (zDepth > 1.0) {
+            if (obs.userData.isCandyAsteroid) {
+                // Candy keeps its glossy palette — no depth greying
+            } else if (zDepth > 1.0) {
                 const mat = obs.material as THREE.MeshStandardMaterial;
                 const depthFactor = Math.min(1.0, zDepth / 25.0);
                 const brightness = 1.0 - depthFactor * 0.9;
@@ -269,15 +301,22 @@ export class ObstacleSystem {
 
             const hitIndex = wasm.exports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
             if (hitIndex !== -1) {
+                const hitObs = activeObstacles[hitIndex];
+                const hitRadius = hitObs.userData.radius || 1.0;
                 const modifiers = this.options.getPowerUpModifiers ? this.options.getPowerUpModifiers() : { shieldActive: false, shieldBouncesAsteroids: false };
                 if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
-                    this.handleBounce(activeObstacles[hitIndex]);
+                    this.handleBounce(hitObs);
                 } else if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
-                    if (this.bounceCooldown <= 0 && this.options.tryConsumeWrenchCharge?.()) {
-                        this.handleBounce(activeObstacles[hitIndex]);
-                        this.options.onWrenchSave?.(activeObstacles[hitIndex]);
+                    if (this.bounceCooldown <= 0 && this.options.tryConsumeButterflyCharge?.()) {
+                        this.options.onButterflySave?.(hitObs.position);
+                    } else if (this.options.tryConsumeSwarmEscort?.(hitObs.position.clone(), hitRadius)) {
+                        this.bounceCooldown = 0.35;
+                        this.options.particleSystem.emit(hitObs.position.clone(), 0xffb6c1, 8, 4.0, 0.4, 0.45);
+                    } else if (this.bounceCooldown <= 0 && this.options.tryConsumeWrenchCharge?.()) {
+                        this.handleBounce(hitObs);
+                        this.options.onWrenchSave?.(hitObs);
                     } else {
-                        this.handleCollision(activeObstacles[hitIndex]);
+                        this.handleCollision(hitObs);
                     }
                 }
             }
@@ -319,9 +358,12 @@ export class ObstacleSystem {
             this.lastGrazeTime = this.time;
             this.grazeCount++;
 
-            // Score: base 25, +50 during power-ups, combo multiplier
+            // Score: base 25, +50 during power-ups, combo multiplier; candy bonus
             const modifiers = this.options.getPowerUpModifiers ? this.options.getPowerUpModifiers() : { shieldActive: false, shieldBouncesAsteroids: false };
             let score = modifiers.shieldActive || modifiers.shieldBouncesAsteroids ? 50 : 25;
+            if (obs.userData.isCandyAsteroid) {
+                score += getCandyScoreBonus(obs.userData.candyVariant as CandyAsteroidVariant);
+            }
             score = Math.floor(score * (1 + (this.grazeCombo - 1) * 0.2));
 
             // Visual streak between player and asteroid
@@ -381,7 +423,17 @@ export class ObstacleSystem {
     }
 
     splitAsteroid(asteroid: THREE.Mesh) {
-        this.options.debrisSystem.emit(asteroid.position, 8, 5.0, asteroid.userData.radius);
+        const wasCandy = !!asteroid.userData.isCandyAsteroid;
+        const candyFlavor = asteroid.userData.candyFlavor as CandyFlavor | undefined;
+        const candyVariant = asteroid.userData.candyVariant as CandyAsteroidVariant | undefined;
+
+        if (wasCandy && candyFlavor) {
+            emitSugarCrystalBurst(this.options.particleSystem as any, asteroid.position, candyFlavor, 1.2);
+            const bonus = getCandyScoreBonus(candyVariant ?? 'gummy');
+            this.options.onCandyAsteroidSplit?.(asteroid, bonus);
+        } else {
+            this.options.debrisSystem.emit(asteroid.position, 8, 5.0, asteroid.userData.radius);
+        }
 
         const r = asteroid.userData.radius;
 
@@ -406,7 +458,14 @@ export class ObstacleSystem {
                 const speed = 3.0 + Math.random() * 3.0;
                 const zSpeed = (Math.random() - 0.5) * 8.0;
                 const vel = new THREE.Vector3(Math.cos(angle) * speed, Math.sin(angle) * speed, zSpeed);
-                this.createAsteroid(asteroid.position.x, asteroid.position.y, asteroid.position.z, r * 0.5, vel);
+                if (wasCandy && Math.random() < 0.35) {
+                    this.createCandyAsteroid(
+                        asteroid.position.x, asteroid.position.y, asteroid.position.z,
+                        r * 0.5, vel, candyFlavor, candyVariant
+                    );
+                } else {
+                    this.createAsteroid(asteroid.position.x, asteroid.position.y, asteroid.position.z, r * 0.5, vel);
+                }
             }
         }
 
@@ -514,18 +573,9 @@ export class ObstacleSystem {
         };
     }
 
-    private createAsteroid(x: number, y: number, z = 0, size = 0, velocity: THREE.Vector3 | null = null) {
+    createAsteroid(x: number, y: number, z = 0, size = 0, velocity: THREE.Vector3 | null = null) {
         const finalSize = (size > 0) ? size : (0.5 + Math.random() * 1.5);
-        const geo = new THREE.IcosahedronGeometry(finalSize, 1);
-        const positions = geo.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-            const px = positions.getX(i);
-            const py = positions.getY(i);
-            const pz = positions.getZ(i);
-            const noise = (Math.random() - 0.5) * 0.4;
-            positions.setXYZ(i, px * (1 + noise), py * (1 + noise), pz * (1 + noise));
-        }
-        geo.computeVertexNormals();
+        const scale = finalSize;
 
         const colorVariation = Math.random() * 0.2;
         const baseColor = 0x666666 + Math.floor(colorVariation * 0x222222);
@@ -535,8 +585,9 @@ export class ObstacleSystem {
             metalness: 0.05,
             flatShading: true
         });
-        const asteroid = new THREE.Mesh(geo, mat);
+        const asteroid = new THREE.Mesh(SHARED_ASTEROID_GEOMETRY.clone(), mat);
         asteroid.position.set(x, y, z);
+        asteroid.scale.setScalar(scale);
         asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
         asteroid.castShadow = true;
         asteroid.receiveShadow = true;
@@ -545,13 +596,101 @@ export class ObstacleSystem {
             rotationSpeedY: (Math.random() - 0.5) * 1.5,
             rotationSpeedZ: (Math.random() - 0.5) * 1.8,
             radius: finalSize,
-            velocity: velocity || new THREE.Vector3(0, 0, 0)
+            baseScale: finalSize,
+            velocity: velocity || new THREE.Vector3(0, 0, 0),
+            squashTimer: 0,
+            sparkleTimer: 1 + Math.random() * 3
         };
         applyLevelVariant(asteroid, this.options.getCurrentLevel(), finalSize);
 
         this.scene.add(asteroid);
         this.obstacles.push(asteroid);
         return asteroid;
+    }
+
+    createCandyAsteroid(
+        x: number,
+        y: number,
+        z = 0,
+        size = 0,
+        velocity: THREE.Vector3 | null = null,
+        flavor?: CandyFlavor,
+        variant?: CandyAsteroidVariant
+    ) {
+        const finalSize = (size > 0) ? size : (0.5 + Math.random() * 1.5);
+        const candyFlavor = flavor ?? pickCandyFlavor();
+        const candyVariant = variant ?? pickCandyVariant();
+        const isComet = candyVariant === 'comet';
+        const scale = finalSize * (isComet ? 0.92 : 1.0);
+
+        const mat = createCandyObstacleMaterial(candyFlavor, candyVariant);
+        const asteroid = new THREE.Mesh(SHARED_CANDY_GEOMETRY, mat);
+        asteroid.position.set(x, y, z);
+        asteroid.scale.setScalar(scale);
+        asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        asteroid.castShadow = true;
+        asteroid.receiveShadow = true;
+        asteroid.userData = {
+            rotationSpeed: (Math.random() - 0.5) * 1.6,
+            rotationSpeedY: (Math.random() - 0.5) * 1.2,
+            rotationSpeedZ: (Math.random() - 0.5) * 1.4,
+            radius: finalSize,
+            baseScale: scale,
+            velocity: velocity || new THREE.Vector3(0, 0, 0),
+            isCandyAsteroid: true,
+            candyFlavor,
+            candyVariant,
+            squashTimer: 0,
+            sparkleTimer: 0.5 + Math.random() * 2
+        };
+
+        this.scene.add(asteroid);
+        this.obstacles.push(asteroid);
+        return asteroid;
+    }
+
+    triggerCandySquash(asteroid: THREE.Mesh, intensity = 1) {
+        if (!asteroid.userData.isCandyAsteroid) return;
+        asteroid.userData.squashTimer = 0.35 * intensity;
+        asteroid.userData.squashIntensity = intensity;
+        const flavor = asteroid.userData.candyFlavor as CandyFlavor;
+        emitSugarCrystalBurst(this.options.particleSystem as any, asteroid.position, flavor, intensity * 0.6);
+    }
+
+    private _updateCandyAsteroid(obs: THREE.Mesh, delta: number) {
+        const base = obs.userData.baseScale ?? obs.userData.radius ?? 1;
+
+        if (obs.userData.squashTimer > 0) {
+            obs.userData.squashTimer -= delta;
+            const t = Math.max(0, obs.userData.squashTimer / 0.35);
+            const wave = Math.sin((1 - t) * Math.PI);
+            const intensity = obs.userData.squashIntensity ?? 1;
+            const squash = 1 + wave * 0.35 * intensity;
+            const stretch = 1 - wave * 0.18 * intensity;
+            obs.scale.set(base * stretch, base * squash, base * squash);
+        } else {
+            const wobble = 1 + Math.sin(this.time * 3.5 + obs.id) * 0.03;
+            obs.scale.setScalar(base * wobble);
+        }
+
+        obs.userData.sparkleTimer = (obs.userData.sparkleTimer ?? 2) - delta;
+        if (obs.userData.sparkleTimer <= 0) {
+            obs.userData.sparkleTimer = 1.5 + Math.random() * 3;
+            const flavor = obs.userData.candyFlavor as CandyFlavor;
+            const sparkleColor = (CANDY_FLAVOR_COLORS as Record<CandyFlavor, { sparkle: number }>)[flavor]?.sparkle ?? 0xffffff;
+            this.options.particleSystem.emit(
+                obs.position.clone().add(new THREE.Vector3(
+                    (Math.random() - 0.5) * obs.userData.radius,
+                    (Math.random() - 0.5) * obs.userData.radius,
+                    (Math.random() - 0.5) * obs.userData.radius * 0.5
+                )),
+                sparkleColor,
+                obs.userData.candyVariant === 'comet' ? 3 : 2,
+                1.5,
+                0.35,
+                0.2
+            );
+        }
     }
 
     /** L4 "Rusty Gauntlet": a small grumpy mine robot with glowing eyes. */
@@ -781,6 +920,9 @@ export class ObstacleSystem {
             0.8,
             0.8
         );
+        if (asteroid.userData.isCandyAsteroid) {
+            this.triggerCandySquash(asteroid, 1.4);
+        }
         // Secondary white sparkle
         this.options.particleSystem.emit(
             asteroid.position.clone(),

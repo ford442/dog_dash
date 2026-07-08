@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GhostDebrisSystem } from './ghost_debris';
-import { godRaySystem, auroraSystem, blackHoleSystem, industrialSystem } from './game_systems';
+import { VoidJellyfishSystem } from './void_jellyfish';
+import { godRaySystem, auroraSystem, blackHoleSystem, industrialSystem, crystalChimeManager } from './game_systems';
 import { createGameManagers } from './game_managers';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { createStars, uStarOpacity } from './stars';
@@ -111,6 +112,16 @@ import { OrbManager, OrbType } from './collectibles';
 import { PowerUpManager, PowerUpType } from './powerup_manager';
 import { FlotillaMember } from './space_friends';
 import { AquaticLifeManager } from './aquatic_life';
+import { StarlightKoiManager, shouldSpawnStarlightKoi } from './starlight_koi';
+import {
+    RainbowBubbleCoralManager,
+    shouldSpawnBubbleCoral,
+    getBubbleCoralPlacement,
+    resolveBubbleCoralClusterCount
+} from './bubble_coral';
+import { getLevelSpan } from './depth_layers';
+import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from './candy_materials';
+import type { CandyAsteroidVariant, CandyFlavor } from './candy_materials';
 import { DogCockpitController, DogAnimationState, DogAccessory } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType, BurstType } from './juice_effects';
@@ -132,6 +143,7 @@ import { createGalaxy, createMoon, moonPlants } from './visuals';
 import { disposeObject } from './utils';
 import { VideoTumblingStar } from './video_tumbling_star';
 import { SlingableObjectSystem, type SlingableObjectConfig } from './slingable_objects';
+import { ToyRocketSpawnManager } from './toy_rockets';
 import { SlingComboManager } from './sling_combo';
 import {
     hasDebugUrlFlag,
@@ -334,6 +346,7 @@ scene.add(galaxy3);
 const particleSystem = new ParticleSystem(scene);
 const debrisSystem = new DebrisSystem(scene);
 const slingableObjectSystem = new SlingableObjectSystem(scene, particleSystem, debrisSystem);
+const toyRocketSpawnManager = new ToyRocketSpawnManager(slingableObjectSystem);
 
 // WEAPON SYSTEM (Dynamic Lighting Projectiles)
 const weaponSystem = new WeaponSystem(scene);
@@ -385,6 +398,7 @@ const cosmicDustSystem = new CosmicDustSystem(scene);
 
 // === GHOST DEBRIS (new Cosmic Architect feature) ===
 const ghostDebrisSystem = new GhostDebrisSystem(scene);
+const voidJellyfishSystem = new VoidJellyfishSystem(scene);
 
 // BIOLOGICAL BACKGROUND SYSTEM (Space Whale Interior)
 const biologicalSystem = new BiologicalBackgroundSystem(scene);
@@ -467,14 +481,25 @@ const powerUpManager = new PowerUpManager({
 const {
   friendsManager,
   flowerManager,
+  pinwheelManager,
+  windChimeManager,
+  solarSailFernManager,
   candyManager,
   castleManager,
   butterflySwarmSystem,
 } = createGameManagers(scene, audioSystem, particleSystem);
 
+butterflySwarmSystem.bindEffects(particleSystem, juiceManager, audioSystem);
+
+let lastPlayerDamageTime = -999;
+
 // Aquatic environments: jellyfish, kelp forests, plankton, bubble reefs
 const aquaticLifeManager = new AquaticLifeManager(scene);
 let aquaticLifeSpawnedLevel: number | null = null;
+const starlightKoiManager = new StarlightKoiManager(scene, particleSystem);
+let koiSpawnedLevel: number | null = null;
+const bubbleCoralManager = new RainbowBubbleCoralManager(scene, particleSystem);
+let coralSpawnedLevel: number | null = null;
 let level6BossDefeated = false;
 let whaleSongTimer = 30;
 let moonGateSequenceActive = false;
@@ -624,6 +649,14 @@ friendsManager.onFriendRescued = (count, position, kind) => {
         creatureCatalogManager.catalog('moon_pup');
     }
 
+    if (kind === 'sealpup') {
+        creatureCatalogManager.catalog('stellar_seal_pup');
+    }
+
+    if (kind === 'astrobunny') {
+        creatureCatalogManager.catalog('astro_bunny');
+    }
+
     if (objective?.type === 'rescue') {
         hudManager.updateObjectiveProgress(count, objective.target);
         if (player) {
@@ -664,6 +697,55 @@ friendsManager.onPenguinSlide = (position, cores, slideAssistDuration) => {
     creatureCatalogManager.catalog('astro_penguin');
     if (player) {
         juiceManager.showFloatingText('Slide Assist!', position.clone(), '#aaddff', 24);
+        juiceManager.burstMagic(position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
+};
+
+// Stellar Seal Pup clap cheer: brighten nearby orbs + tiny heal + Weird Life Log
+friendsManager.onSealClap = (position, healthRestore) => {
+    const sealMemory = saveManager.hasMemory('stellar_seal_pup');
+    const glowDuration = sealMemory ? 5.5 : 3.5;
+    const glowMultiplier = sealMemory ? 2.2 : 1.7;
+    const boosted = orbManager.boostGlowNearby(
+        position,
+        14,
+        glowMultiplier,
+        glowDuration,
+        clock.getElapsedTime()
+    );
+
+    creatureCatalogManager.catalog('stellar_seal_pup');
+
+    if (healthRestore && healthRestore > 0) {
+        playerState.health = Math.min(playerState.health + healthRestore, playerState.maxHealth);
+    }
+
+    if (player) {
+        if (boosted > 0) {
+            juiceManager.showFloatingText(
+                boosted > 1 ? `${boosted} stars cheering!` : 'Star cheer!',
+                position.clone(),
+                '#aaddff',
+                20
+            );
+        } else if (healthRestore) {
+            juiceManager.showFloatingText('Happy clap!', position.clone(), '#ffccdd', 18);
+        }
+        juiceManager.burstMagic(position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 0.8);
+};
+
+// Astro Bunny lucky hop: star bonus + combo grace + Weird Life Log
+friendsManager.onAstroBunnyLucky = (position, bonus) => {
+    const bunnyMemory = saveManager.hasMemory('astro_bunny');
+    const totalBonus = bonus + (bunnyMemory ? 4 : 0);
+    hudManager.addScore(totalBonus);
+    creatureCatalogManager.catalog('astro_bunny');
+    slingComboManager.refreshComboTimer();
+    if (player) {
+        juiceManager.showFloatingText('Lucky Star!', position.clone(), '#ffd700', 22);
         juiceManager.burstMagic(position.clone());
     }
     dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
@@ -782,7 +864,9 @@ const slingComboManager = new SlingComboManager({
         playerState.slingAssistTimer = duration;
     },
     // Tarsier memory: longer Sling Assist window on Arc Surge
-    slingAssistDuration: saveManager.hasMemory('tarsier') ? 6.0 : 4.0
+    slingAssistDuration: saveManager.hasMemory('tarsier') ? 6.0 : 4.0,
+    // Astro Bunny memory: wider combo grace between sling arcs
+    comboTimeout: saveManager.hasMemory('astro_bunny') ? 5.5 : 4.0
 });
 
 // Slingable personality payoffs: puffball lift-offs & chroma slipstreams
@@ -806,6 +890,25 @@ slingableObjectSystem.onSpecialEffect = (effect) => {
     } else if (effect.type === 'chromaSlipstream') {
         if (player) {
             juiceManager.showFloatingText('Rainbow Slipstream!', effect.position.clone(), '#ff66cc', 20);
+        }
+    } else if (effect.type === 'toyRocketResolved') {
+        const isNewLore = saveManager.discoverSpecies('toyRocketWreck_lore');
+        if (isNewLore) {
+            juiceManager.showFloatingText(
+                "Someone else's adventure...",
+                effect.position.clone(),
+                '#ffb6c1',
+                22
+            );
+            juiceManager.burstMagic(effect.position.clone());
+            audioSystem.playMagicSequence('star_collect');
+        }
+        creatureCatalogManager.catalog('toy_wreck');
+        if (effect.viaSling && player) {
+            hudManager.addScore(140);
+            juiceManager.showFloatingText('Wreck Rally!', effect.position.clone(), '#ff8fab', 24);
+            dogController.triggerAnimation(DogAnimationState.CURIOUS, 1.0);
+            friendsManager.cheerFlotilla(effect.position.clone());
         }
     }
 };
@@ -850,6 +953,7 @@ debugSystem.register('creature_geode_titan', 'Geode Titan', true);
 debugSystem.register('creature_moon_jelly', 'Moon Jelly', true);
 debugSystem.register('creature_aurora_ray', 'Aurora Ray', true);
 debugSystem.register('creature_nebula_puffer', 'Nebula Puffer', true);
+debugSystem.register('creature_moon_snail', 'Moon Snail', true);
 debugSystem.register('particles', 'Particles', true);
 debugSystem.register('debris', 'Debris', true);
 debugSystem.register('weaponLights', 'Weapon Lights', true);
@@ -863,10 +967,15 @@ debugSystem.register('industrialGeo', 'Industrial Geometry', true);
 debugSystem.register('moonEffects', 'Moon / Galaxy Effects', true);
 debugSystem.register('pilotAnim', 'Pilot Animation', true);
 debugSystem.register('flowerConstellations', 'Flower Constellations', true);
+debugSystem.register('pinwheelFlora', 'Pinwheel Flowers', true);
+debugSystem.register('solarSailFerns', 'Solar Sail Ferns', true);
+debugSystem.register('crystalChimes', 'Crystal Chimes', true);
+debugSystem.register('windChimes', 'Wind Chime Mobiles', true);
 debugSystem.register('candyBelt', 'Candy Belt', true);
 debugSystem.register('cloudCastles', 'Cloud Castles', true);
 debugSystem.register('shadows', 'Shadows', true);
 debugSystem.register('nebula', 'Nebula', true);
+debugSystem.register('nebulaRibbons', 'Nebula Ribbons', true);
 debugSystem.register('cosmicDust', 'Cosmic Dust', true);
 debugSystem.register('biological', 'Biological Background', true);
 debugSystem.register('industrialBg', 'Industrial Background', true);
@@ -874,6 +983,9 @@ debugSystem.register('waterfall', 'Waterfall', true);
 debugSystem.register('asteroidField', 'Asteroid Field', true);
 debugSystem.register('planetaryHorizon', 'Planetary Horizon', true);
 debugSystem.register('ghostDebris', 'Ghost Debris', true);
+debugSystem.register('voidJellyfish', 'Void Jellyfish', rendererBackend !== 'webgl');
+debugSystem.register('starlightKoi', 'Starlight Koi', true);
+debugSystem.register('bubbleCoral', 'Rainbow Bubble Coral', true);
 debugSystem.register('chromaShift', 'Chroma Rocks', true);
 debugSystem.register('godRays', 'God Rays', true);
 debugSystem.register('aurora', 'Aurora Borealis', true);
@@ -1015,10 +1127,14 @@ const levelManager = new LevelManager({
     friendsManager,
     industrialGeometryManager,
     ghostDebrisSystem,
+    voidJellyfishSystem,
     godRaySystem,
     auroraSystem,
     butterflySwarmSystem,
     flowerManager,
+    pinwheelManager,
+    windChimeManager,
+    solarSailFernManager,
     castleManager,
     candyManager,
     debugSystem,
@@ -1046,6 +1162,7 @@ const levelManager = new LevelManager({
         playerState.distanceToMoon = cfg.distance;
         creatureManager.clear();
         discoveryManager.reset();
+        toyRocketSpawnManager.spawnForLevel(levelManager.currentLevel, cfg);
         // Mine Robot memory: recharge the wrench auto-bounce for the new level
         wrenchChargeAvailable = saveManager.hasMemory('mine_robot');
         slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
@@ -1121,6 +1238,7 @@ obstacleSystem = new ObstacleSystem({
     updateHealthDisplay: () => updateHealthDisplay(playerState),
     gameOver: handleGameOver,
     onPlayerHit: () => {
+        lastPlayerDamageTime = performance.now() * 0.001;
         if (player) {
             dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
             juiceManager.shakeScreen(ShakeType.HEAVY);
@@ -1155,12 +1273,29 @@ obstacleSystem = new ObstacleSystem({
         }
         return false;
     },
+    tryConsumeButterflyCharge: () => powerUpManager.consumeButterflyCharge(),
+    onButterflySave: (hitPos) => {
+        juiceManager.showFloatingText('Butterfly shield!', hitPos.clone(), '#ffb6e6', 22);
+        juiceManager.spawnSparkles(hitPos.clone(), new THREE.Color(0xffb6c1), 8);
+        audioSystem.play('twinkle', 0.5);
+    },
+    tryConsumeSwarmEscort: (hitPos, hitRadius) =>
+        butterflySwarmSystem.tryAbsorbHit(hitPos, hitRadius),
     onWrenchSave: (asteroid) => {
         juiceManager.showFloatingText("Wrench Save!", asteroid.position.clone(), '#ffaa66', 24);
         audioSystem.playBoing();
     },
     onMineRobotProximity: () => {
         creatureCatalogManager.catalog('mine_robot');
+    },
+    onCandyAsteroidSplit: (asteroid, bonusScore) => {
+        hudManager.addScore(bonusScore);
+        const flavor = asteroid.userData.candyFlavor as CandyFlavor;
+        const variant = asteroid.userData.candyVariant as CandyAsteroidVariant;
+        const label = variant === 'comet' ? 'Candy Comet!' : 'Gummy Pop!';
+        const colorHex = CANDY_FLAVOR_COLORS[flavor]?.base ?? 0xff69b4;
+        juiceManager.showFloatingText(`${label} +${bonusScore}`, asteroid.position.clone(), `#${colorHex.toString(16).padStart(6, '0')}`, 24);
+        audioSystem.playCollect();
     }
 });
 
@@ -2092,7 +2227,8 @@ function updatePlayer(delta: number) {
                     30
                 );
                 particleSystem.emit(player.position.clone(), 0x8dffda, 10, 4.5, 0.7, 0.35);
-                juiceManager.showFloatingText('Comet Toss!', player.position.clone(), '#8dffda', 20);
+                const tossLabel = latchedTarget?.userData.kind === 'toyRocket' ? 'Wreck Toss!' : 'Comet Toss!';
+                juiceManager.showFloatingText(tossLabel, player.position.clone(), '#8dffda', 20);
             } else {
                 // Apply sling impulse to vertical speed
                 playerState.currentSpeedY = THREE.MathUtils.clamp(
@@ -2115,9 +2251,13 @@ function updatePlayer(delta: number) {
 
             // ── Sling Combo: classify quality by impulse magnitude ──────────
             const impulseMag = impulse.length();
-            const slingQuality = impulseMag >= 26 ? 'perfect' : impulseMag >= 14 ? 'good' : 'messy';
+            const slungKind = latchedTarget?.userData.kind as string | undefined;
+            const slingQuality = slungKind === 'toyRocket' && impulseMag >= 8
+                ? 'perfect'
+                : impulseMag >= 26 ? 'perfect' : impulseMag >= 14 ? 'good' : 'messy';
             const slipstreamBonus = slingableObjectSystem.isInSlipstream(player.position) ? 2 : 1;
-            slingComboManager.recordSlingAction(slingQuality, player.position.clone(), slipstreamBonus);
+            const toyRocketBonus = slungKind === 'toyRocket' ? 2.2 : 1;
+            slingComboManager.recordSlingAction(slingQuality, player.position.clone(), slipstreamBonus * toyRocketBonus);
             slingObjectiveManager.recordSling(slingQuality);
             reportComboObjectiveProgress();
             if (slingQuality === 'perfect') {
@@ -2510,6 +2650,9 @@ function animate() {
             if (result.type === 'geode_titan_flythrough' && cores > 0 && saveManager.hasMemory('geode_titan')) {
                 cores = Math.round(cores * 1.5);
             }
+            if (result.type === 'moon_snail_blessing' && cores > 0 && saveManager.hasMemory('moon_snail')) {
+                cores += 8;
+            }
             if (cores) {
                 saveManager.addCores(cores);
             }
@@ -2521,6 +2664,11 @@ function animate() {
                 creatureCatalogManager.catalog('tarsier');
             } else if (result.type === 'geode_titan_flythrough') {
                 creatureCatalogManager.catalog('geode_titan');
+            } else if (result.type === 'moon_snail_blessing') {
+                creatureCatalogManager.catalog('moon_snail');
+                if (result.blessingPowerUp) {
+                    powerUpManager.activatePowerUp(result.blessingPowerUp);
+                }
             } else if (result.type === 'puff_puffer_catalog') {
                 creatureCatalogManager.catalog('nebula_puffer');
                 const pufferMemory = saveManager.hasMemory('nebula_puffer');
@@ -2534,9 +2682,15 @@ function animate() {
                     juiceManager.showFloatingText(result.label, result.position.clone(), '#aaddff', 18);
                 }
             }
-            if (result.type === 'tarsier_guardian_blessing' || result.type === 'geode_titan_flythrough' || result.type === 'puff_puffer_catalog') {
+            if (result.type === 'tarsier_guardian_blessing' || result.type === 'geode_titan_flythrough' || result.type === 'puff_puffer_catalog' || result.type === 'moon_snail_blessing') {
                 juiceManager.burstMagic(result.position.clone());
                 dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
+            } else if (result.type === 'moon_snail_bump') {
+                if (result.playerNudge) {
+                    playerState.currentSpeedY += result.playerNudge.y ?? 0;
+                    playerState.autoScrollSpeed = Math.max(6, playerState.autoScrollSpeed + (result.playerNudge.x ?? 0) * 0.15);
+                }
+                juiceManager.shakeScreen(ShakeType.LIGHT, 0.06);
             } else if (result.type === 'puff_puffer_bubble_pop') {
                 juiceManager.shakeScreen(ShakeType.LIGHT, 0.08);
             } else {
@@ -2549,6 +2703,15 @@ function animate() {
     slingableObjectSystem.handleAsteroidCollisions(
         obstacleSystem.getObstacles(),
         (asteroid) => {
+            if (asteroid.userData.isCandyAsteroid) {
+                obstacleSystem.triggerCandySquash(asteroid, 1.5);
+                const variant = asteroid.userData.candyVariant as CandyAsteroidVariant;
+                slingComboManager.recordSlingAction(
+                    'good',
+                    asteroid.position.clone(),
+                    getCandySlingComboBonus(variant)
+                );
+            }
             audioSystem.play('explode');
             pickupManager.trySpawn(asteroid.position.clone());
             obstacleSystem.splitAsteroid(asteroid);
@@ -2601,6 +2764,7 @@ function animate() {
                     },
                     onPlayerHit: () => {
                         // Boss hit player
+                        lastPlayerDamageTime = performance.now() * 0.001;
                         if (!playerState.invincible && !playerState.inSafeHarbor) {
                             playerState.health--;
                             audioSystem.play('hit');
@@ -2848,6 +3012,13 @@ function animate() {
                 for (const reefFriend of reefFriends) {
                     aquaticLifeManager.spawnBubbleReef(reefFriend.position);
                 }
+
+                // Scatter seal pups through the aqua expanse
+                for (let s = 0; s < 5; s++) {
+                    const sx = player.position.x + 100 + Math.random() * (cfgA.distance - 300);
+                    const sy = (Math.random() - 0.5) * 16;
+                    friendsManager.spawnSealPup(sx, sy);
+                }
             }
 
             const aquaEvents = aquaticLifeManager.update(delta, player.position);
@@ -2877,6 +3048,55 @@ function animate() {
         } else if (aquaticLifeSpawnedLevel !== null) {
             aquaticLifeManager.clear();
             aquaticLifeSpawnedLevel = null;
+        }
+
+        // --- Starlight koi schools (biological / aquatic / nebula biomes) ---
+        const koiCfg = levelManager.config[levelManager.currentLevel];
+        if (shouldSpawnStarlightKoi(koiCfg?.environments, koiCfg?.koiSchoolDensity)) {
+            if (koiSpawnedLevel !== levelManager.currentLevel) {
+                koiSpawnedLevel = levelManager.currentLevel;
+                starlightKoiManager.activate();
+                const koiSpan = getLevelSpan(levelManager.currentLevel);
+                starlightKoiManager.spawnForLevel(
+                    koiSpan.startX + 60,
+                    koiSpan.length - 120,
+                    koiCfg!.koiSchoolDensity!
+                );
+            }
+            if (debugSystem.isEnabled('starlightKoi')) {
+                starlightKoiManager.update(delta, camera.position.x, player.position);
+                starlightKoiManager.cleanupFarBehind(player.position.x);
+            }
+        } else if (koiSpawnedLevel !== null) {
+            starlightKoiManager.deactivate();
+            koiSpawnedLevel = null;
+        }
+
+        // --- Rainbow bubble coral (waterfall / aquatic / biological reefs) ---
+        const coralCfg = levelManager.config[levelManager.currentLevel];
+        if (shouldSpawnBubbleCoral(coralCfg?.environments, coralCfg?.bubbleCoralDensity)) {
+            if (coralSpawnedLevel !== levelManager.currentLevel) {
+                coralSpawnedLevel = levelManager.currentLevel;
+                bubbleCoralManager.activate();
+                const coralSpan = getLevelSpan(levelManager.currentLevel);
+                const clusterCount = resolveBubbleCoralClusterCount(
+                    coralCfg!.bubbleCoralDensity!,
+                    coralCfg!.environments?.bubbleCoral
+                );
+                bubbleCoralManager.spawnForLevel(
+                    coralSpan.startX + 50,
+                    coralSpan.length - 100,
+                    clusterCount,
+                    getBubbleCoralPlacement(coralCfg!.environments, coralCfg!.levelType)
+                );
+            }
+            if (debugSystem.isEnabled('bubbleCoral')) {
+                bubbleCoralManager.update(delta, camera.position.x);
+                bubbleCoralManager.cleanupFarBehind(player.position.x);
+            }
+        } else if (coralSpawnedLevel !== null) {
+            bubbleCoralManager.deactivate();
+            coralSpawnedLevel = null;
         }
 
         // Update dog cockpit animation
@@ -2912,9 +3132,8 @@ function animate() {
     // Update Weapon System
     if (player) {
         weaponSystem.update(delta, camera.position.x);
-        if (debugSystem.isEnabled('weaponLights')) {
-            weaponLightManager.update(weaponSystem.getActiveProjectiles());
-        }
+        weaponLightManager.update(weaponSystem.getActiveProjectiles());
+        updateCandyMaterialGlobals({ weaponLights: weaponLightManager.storageNode });
 
         // Projectile Collisions
         const projectiles = weaponSystem.getActiveProjectiles();
@@ -2933,7 +3152,14 @@ function animate() {
                         // Hit!
 
                         // 1. Visuals
-                        particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0); // Cyan splash
+                        if (obs.userData.isCandyAsteroid) {
+                            const flavor = obs.userData.candyFlavor as CandyFlavor;
+                            const sparkle = CANDY_FLAVOR_COLORS[flavor]?.sparkle ?? 0xffffff;
+                            particleSystem.emit(obs.position, sparkle, 14, 5.5, 0.9, 1.2);
+                            obstacleSystem.triggerCandySquash(obs as THREE.Mesh, 1.2);
+                        } else {
+                            particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0); // Cyan splash
+                        }
 
                         // 2. Destroy Asteroid
                         audioSystem.play('explode');
@@ -3110,10 +3336,16 @@ function animate() {
             ...levelManager.levelObjects,
             ...geoScannables,
             ...friendsManager.getScannables(),
-            ...creatureManager.getScannables()
+            ...creatureManager.getScannables(),
+            ...slingableObjectSystem.getScannables()
         ]);
         if (debugSystem.isEnabled('butterflySwarm')) {
-            butterflySwarmSystem.update(delta, camera.position.x, player.position);
+            const nowSec = performance.now() * 0.001;
+            butterflySwarmSystem.update(delta, camera.position.x, player.position, {
+                grazeCombo: obstacleSystem.getGrazeCombo(),
+                slingCombo: slingComboManager.getCombo(),
+                cleanFlightTime: nowSec - lastPlayerDamageTime
+            });
         }
         videoTumblingStars.forEach(star => star.update(delta, camera));
     }
@@ -3467,6 +3699,70 @@ function animate() {
         if (debugSystem.isEnabled('flowerConstellations')) {
             flowerManager.update(delta, player.position);
             flowerManager.checkPlayerProximity(player.position);
+        }
+
+        // Twirling pinwheel flowers — spin, wind gusts, blade clips
+        if (debugSystem.isEnabled('pinwheelFlora')) {
+            const pinwheelHits = pinwheelManager.update(delta, time, player.position);
+            for (const hit of pinwheelHits) {
+                playerState.velocity.add(hit.force);
+                if (hit.type === 'hub_collect' && hit.scoreBonus) {
+                    hudManager.addScore(hit.scoreBonus);
+                    juiceManager.showFloatingText(`+${hit.scoreBonus}`, hit.position.clone(), '#ff69b4', 20);
+                    audioSystem.play('twinkle', 0.65);
+                } else if (hit.type === 'blade_clip') {
+                    juiceManager.showFloatingText('Whoosh!', hit.position.clone(), '#ffd9ec', 16);
+                    audioSystem.play('sparkle', 0.35);
+                }
+            }
+            pinwheelManager.cleanupFarBehind(player.position.x);
+        }
+
+        // Solar sail ferns — tilt, boost zones, soft clips
+        if (debugSystem.isEnabled('solarSailFerns')) {
+            const sailHits = solarSailFernManager.update(
+                delta,
+                time,
+                player.position,
+                playerState.velocity
+            );
+            for (const hit of sailHits) {
+                playerState.velocity.add(hit.force);
+                if (hit.type === 'boost') {
+                    juiceManager.showFloatingText('Solar wind!', hit.position.clone(), '#88eeff', 16);
+                    audioSystem.play('sparkle', 0.4);
+                } else if (hit.type === 'clip') {
+                    juiceManager.showFloatingText('Rustle', hit.position.clone(), '#ffddaa', 14);
+                    audioSystem.play('sparkle', 0.2);
+                }
+            }
+            solarSailFernManager.cleanupFarBehind(player.position.x);
+        }
+
+        // Crystal chime clusters — proximity rings, sparkles, micro stars
+        if (debugSystem.isEnabled('crystalChimes')) {
+            const chimeHits = crystalChimeManager.update(
+                delta,
+                time,
+                player.position,
+                playerState.velocity
+            );
+            for (const hit of chimeHits) {
+                if (hit.type === 'soft_push' && hit.force) {
+                    playerState.velocity.add(hit.force);
+                } else if (hit.type === 'star_bonus' && hit.scoreBonus) {
+                    hudManager.addScore(hit.scoreBonus);
+                    juiceManager.showFloatingText(`+${hit.scoreBonus}`, hit.position.clone(), '#aaddff', 18);
+                    audioSystem.play('twinkle', 0.5);
+                }
+            }
+            crystalChimeManager.cleanupFarBehind(player.position.x);
+        }
+
+        // Crystal wind-chime mobiles — slow spin, tinkle + sparkles when flown near
+        if (debugSystem.isEnabled('windChimes')) {
+            windChimeManager.update(delta, time, player.position, playerState.velocity);
+            windChimeManager.cleanupFarBehind(player.position.x);
         }
         
         // Update candy belt (wobble, dissolve, shatter)

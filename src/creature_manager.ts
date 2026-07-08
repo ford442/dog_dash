@@ -9,6 +9,7 @@
  *  - MoonJelly (demo new, L5/L6) - streaming clustered background jellies, proof of registry pattern.
  *  - AuroraRay (L6) - level-batch school, proof of one-shot batch pattern.
  *  - NebulaPuffer (L3-L6) - slow drifter with inflate/deflate + bubble rewards.
+ *  - MoonSnail (L5-L6) - house-sized set-piece drifter, calm blessing, glitter trail.
  *
  * The AmbientCreatureDef registry centralizes:
  *   spawnMode, depthLayer via depth_layers, levelRates or rateKey, clusterSize,
@@ -30,6 +31,7 @@ import { randomZInLayer, type DepthLayer } from './depth_layers';
 import type { BestiaryEntryId } from './bestiary';
 import type { DebugSystem } from './debug_system';
 import { PuffPuffer } from './puff_puffer';
+import { MoonSnail } from './moon_snail';
 
 interface ProjectileLike {
     mesh: THREE.Object3D;
@@ -170,6 +172,22 @@ export class CreatureManager {
                 return new PuffPuffer(scene, x, y, z, tint);
             }
         });
+
+        this.registerAmbientCreature({
+            id: 'moon_snail',
+            spawnMode: 'streaming',
+            depthLayer: 'MIDGROUND',
+            rateKey: 'moonSnailRate',
+            catalogId: 'moon_snail',
+            maxActive: 2,
+            spawnAhead: 110,
+            streamInterval: 300,
+            spawnYRange: [-8, 10],
+            clusterSize: 1,
+            factory: (scene: THREE.Scene, x: number, y: number, z: number, tint?: number) => {
+                return new MoonSnail(scene, x, y, z, tint);
+            }
+        });
     }
 
     setDebugSystem(ds: DebugSystem) {
@@ -257,12 +275,20 @@ export class CreatureManager {
             for (let i = list.length - 1; i >= 0; i--) {
                 const c: any = list[i];
                 if (typeof c.update === 'function') {
-                    const result = c.update(delta, playerPos, this.particleSystem, this.debrisSystem, this.audioSystem);
+                    const result = c.update(
+                        delta,
+                        playerPos,
+                        this.particleSystem,
+                        this.debrisSystem,
+                        this.audioSystem,
+                        projectiles
+                    );
                     if (result) results.push(result);
                 }
                 const pos = typeof c.getPosition === 'function' ? c.getPosition() : (c.position || { x: 0 });
                 const px = pos.x || 0;
-                if (c.isDestroyed || px < playerX - 80) {
+                const cleanupBehind = id === 'moon_snail' ? 130 : 80;
+                if (c.isDestroyed || px < playerX - cleanupBehind) {
                     if (typeof c.destroy === 'function') c.destroy(this.scene);
                     list.splice(i, 1);
                 }

@@ -68,6 +68,14 @@ export class AtmosphereSystem {
         this.scene.add(this.skyMesh);
     }
 
+    getTopColor(): THREE.Color {
+        return this.uTopColor.value;
+    }
+
+    getBottomColor(): THREE.Color {
+        return this.uBottomColor.value;
+    }
+
     /**
      * Start a smooth transition to new sky colors.
      * @param topHex Color at the zenith

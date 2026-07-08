@@ -15,7 +15,11 @@ export type BestiaryEntryId =
     | 'moon_pup'
     | 'cosmic_otter'
     | 'astro_penguin'
-    | 'nebula_puffer';
+    | 'nebula_puffer'
+    | 'stellar_seal_pup'
+    | 'astro_bunny'
+    | 'moon_snail'
+    | 'toy_wreck';
 
 export interface BestiaryEntry {
     id: BestiaryEntryId;
@@ -100,6 +104,38 @@ export const BESTIARY_ENTRIES: Record<BestiaryEntryId, BestiaryEntry> = {
         flavor: 'A round, spiky-but-cute drifter that puffs up like a living balloon when curious pilots glide by slowly.',
         howTo: 'Fly a gentle, slow pass nearby and watch it inflate without ramming it.',
         memoryDesc: 'Memory: Graze near-miss windows stay wider for longer.'
+    },
+    stellar_seal_pup: {
+        id: 'stellar_seal_pup',
+        name: 'Stellar Seal Pup',
+        icon: '\u{1F9AD}', // seal
+        flavor: 'A chubby seal pup in a tiny space bubble who claps its flippers to cheer you on through the void.',
+        howTo: 'Fly close without shooting and let it clap for you.',
+        memoryDesc: 'Memory: Seal claps brighten nearby stars longer and grant bonus score.'
+    },
+    astro_bunny: {
+        id: 'astro_bunny',
+        name: 'Astro Bunny',
+        icon: '\u{1F430}', // rabbit
+        flavor: 'A round little bunny in a clear bubble helmet whose lucky hops sprinkle wishing stars when you fly by.',
+        howTo: 'Approach calmly and watch its excited double-hop without shooting.',
+        memoryDesc: 'Memory: Sling combo chains stay alive longer between arcs.'
+    },
+    moon_snail: {
+        id: 'moon_snail',
+        name: 'Moon Snail',
+        icon: '\u{1F41A}', // snail
+        flavor: 'A house-sized spiral shell drifting through the late levels, trailing stardust and watching with gentle eye-stalks.',
+        howTo: 'Glide close slowly without firing — let it bless you with a soft drift or star whisper.',
+        memoryDesc: 'Memory: Snail blessings linger a little longer on future runs.'
+    },
+    toy_wreck: {
+        id: 'toy_wreck',
+        name: 'Drifted Toy Rocket',
+        icon: '\u{1F680}', // rocket
+        flavor: 'A tiny pastel rocket from someone else\'s voyage — bent fins, missing pieces, maybe a brave little flag.',
+        howTo: 'Scan floating wreckage, or sling it in a spectacular arc.',
+        memoryDesc: 'Memory: A story fragment, not a power — "Someone else\'s adventure..."'
     }
 };
 

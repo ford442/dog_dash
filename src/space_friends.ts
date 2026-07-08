@@ -6,6 +6,8 @@
  * 🏮 Wish Lantern - Floating pink paper lantern
  * 🦦 Cosmic Otter - Playful juggler of glowing orbs
  * 🐧 Astro Penguin - Tuxedoed waddler with an excited belly slide
+ * 🐰 Astro Bunny - Round hopper in a bubble helmet with lucky ear rockets
+ * 🦭 Stellar Seal Pup - Chubby flipper-clapping cheerleader in a space bubble
  */
 
 import * as THREE from 'three';
@@ -17,7 +19,7 @@ import { ParticleSystem } from './particles';
 // =============================================================================
 
 export interface InteractionResult {
-    type: 'kitty_wave' | 'bunny_heal' | 'lantern_pop' | 'tarsier_cheer' | 'tarsier_panic' | 'otter_gift' | 'otter_sploosh' | 'penguin_slide' | 'penguin_ice_trail';
+    type: 'kitty_wave' | 'bunny_heal' | 'lantern_pop' | 'tarsier_cheer' | 'tarsier_panic' | 'otter_gift' | 'otter_sploosh' | 'penguin_slide' | 'penguin_ice_trail' | 'seal_clap' | 'seal_bubble_puff' | 'astro_bunny_lucky' | 'astro_bunny_sparkle';
     position: THREE.Vector3;
     bonus?: number;
     healthRestore?: number;
@@ -1709,6 +1711,591 @@ export class SpacePenguin {
 }
 
 // =============================================================================
+// ASTRO BUNNY - Round hopper in a bubble helmet with lucky ear rockets
+// =============================================================================
+
+type AstroBunnyState = 'idle' | 'excited' | 'celebrating';
+
+const BUBBLE_HELMET_MAT = new THREE.MeshPhysicalMaterial({
+    color: 0xaaddff,
+    transmission: 0.9,
+    roughness: 0.05,
+    transparent: true,
+    opacity: 0.28,
+    thickness: 0.08
+});
+
+export class SpaceAstroBunny {
+    group: THREE.Group;
+    position: THREE.Vector3;
+    baseY: number;
+
+    time = 0;
+    state: AstroBunnyState = 'idle';
+    stateTimer = 0;
+    hopPhase = 0;
+    earTwitchTimer = 0;
+    hasGreeted = false;
+    sparkleCooldown = 0;
+
+    private animGroup: THREE.Group | null = null;
+    private bodyGroup: THREE.Group | null = null;
+    private leftEar: THREE.Group | null = null;
+    private rightEar: THREE.Group | null = null;
+    private leftRocket: THREE.Mesh | null = null;
+    private rightRocket: THREE.Mesh | null = null;
+
+    readonly INTERACTION_DISTANCE = 9;
+    readonly LUCKY_STAR_BONUS = 8;
+
+    constructor(scene: THREE.Scene, x: number, y: number) {
+        this.position = new THREE.Vector3(x, y, 0);
+        this.baseY = y;
+        this.hopPhase = Math.random() * Math.PI * 2;
+        this.group = new THREE.Group();
+        this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'astroBunny';
+
+        this.createMesh();
+        scene.add(this.group);
+    }
+
+    private createMesh(): void {
+        this.animGroup = new THREE.Group();
+        this.bodyGroup = new THREE.Group();
+
+        const furMat = new THREE.MeshStandardMaterial({
+            color: 0xfff0f5,
+            roughness: 0.88,
+            metalness: 0.04
+        });
+        const innerEarMat = new THREE.MeshStandardMaterial({
+            color: 0xffb6c1,
+            roughness: 0.9
+        });
+        const rocketMat = new THREE.MeshStandardMaterial({
+            color: 0xff8844,
+            emissive: 0xff6622,
+            emissiveIntensity: 0.45,
+            roughness: 0.45
+        });
+
+        const body = new THREE.Mesh(new THREE.SphereGeometry(0.42, 12, 12), furMat);
+        body.scale.set(1, 0.92, 0.88);
+        this.bodyGroup.add(body);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12), furMat);
+        head.position.set(0, 0.28, 0.1);
+        this.bodyGroup.add(head);
+
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x443355, roughness: 0.2 });
+        for (const side of [-1, 1]) {
+            const eye = new THREE.Mesh(new THREE.SphereGeometry(0.055, 8, 8), eyeMat);
+            eye.position.set(0.1 * side, 0.32, 0.28);
+            this.bodyGroup.add(eye);
+            const shine = new THREE.Mesh(
+                new THREE.SphereGeometry(0.02, 6, 6),
+                new THREE.MeshBasicMaterial({ color: 0xffffff })
+            );
+            shine.position.set(0.12 * side, 0.35, 0.31);
+            this.bodyGroup.add(shine);
+        }
+
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.035, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xff99aa, roughness: 0.5 })
+        );
+        nose.position.set(0, 0.22, 0.36);
+        this.bodyGroup.add(nose);
+
+        this.leftEar = new THREE.Group();
+        this.leftEar.position.set(-0.18, 0.48, 0.05);
+        const leftEarMesh = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.38, 8), furMat);
+        leftEarMesh.position.y = 0.18;
+        this.leftEar.add(leftEarMesh);
+        const leftInner = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.24, 8), innerEarMat);
+        leftInner.position.set(0, 0.18, 0.03);
+        this.leftEar.add(leftInner);
+        this.leftRocket = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 6), rocketMat);
+        this.leftRocket.position.set(0, 0.42, 0);
+        this.leftRocket.rotation.x = Math.PI;
+        this.leftEar.add(this.leftRocket);
+        this.bodyGroup.add(this.leftEar);
+
+        this.rightEar = new THREE.Group();
+        this.rightEar.position.set(0.18, 0.48, 0.05);
+        const rightEarMesh = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.38, 8), furMat);
+        rightEarMesh.position.y = 0.18;
+        this.rightEar.add(rightEarMesh);
+        const rightInner = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.24, 8), innerEarMat);
+        rightInner.position.set(0, 0.18, 0.03);
+        this.rightEar.add(rightInner);
+        this.rightRocket = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.14, 6), rocketMat);
+        this.rightRocket.position.set(0, 0.42, 0);
+        this.rightRocket.rotation.x = Math.PI;
+        this.rightEar.add(this.rightRocket);
+        this.bodyGroup.add(this.rightEar);
+
+        const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.62, 14, 14), BUBBLE_HELMET_MAT);
+        bubble.position.set(0, 0.22, 0.05);
+        this.bodyGroup.add(bubble);
+
+        const rim = new THREE.Mesh(
+            new THREE.TorusGeometry(0.62, 0.025, 6, 18),
+            new THREE.MeshStandardMaterial({ color: 0x88ccff, metalness: 0.45, roughness: 0.35 })
+        );
+        rim.position.set(0, 0.22, 0.05);
+        rim.rotation.y = Math.PI / 2;
+        this.bodyGroup.add(rim);
+
+        this.animGroup.add(this.bodyGroup);
+        this.group.add(this.animGroup);
+        this.group.userData.astroBunny = this;
+    }
+
+    private animateIdle(dt: number): void {
+        this.hopPhase += dt * 2.4;
+        const hop = Math.abs(Math.sin(this.hopPhase)) * 0.28;
+        if (this.animGroup) {
+            this.animGroup.position.y = hop;
+            this.animGroup.rotation.z = Math.sin(this.time * 0.8) * 0.04;
+        }
+
+        this.earTwitchTimer += dt;
+        if (this.earTwitchTimer >= 2.8 + Math.sin(this.time) * 0.5) {
+            this.earTwitchTimer = 0;
+        }
+        const twitch = this.earTwitchTimer < 0.18 ? 0.35 : 0;
+        if (this.leftEar) this.leftEar.rotation.z = 0.12 + twitch;
+        if (this.rightEar) this.rightEar.rotation.z = -0.12 - twitch;
+        if (this.leftRocket) this.leftRocket.scale.y = 1;
+        if (this.rightRocket) this.rightRocket.scale.y = 1;
+    }
+
+    private animateExcited(): void {
+        const t = this.stateTimer;
+        const hop1 = Math.max(0, Math.sin(t * 14) * Math.exp(-t * 2.5));
+        const hop2 = Math.max(0, Math.sin((t - 0.35) * 14) * Math.exp(-(t - 0.35) * 2.8));
+        const hopY = (hop1 + hop2) * 0.55;
+
+        if (this.animGroup) {
+            this.animGroup.position.y = hopY;
+            this.animGroup.scale.setScalar(1 + hopY * 0.08);
+        }
+
+        const flare = 0.55 + Math.sin(t * 22) * 0.25;
+        if (this.leftEar) {
+            this.leftEar.rotation.z = flare;
+            this.leftEar.rotation.x = -0.15;
+        }
+        if (this.rightEar) {
+            this.rightEar.rotation.z = -flare;
+            this.rightEar.rotation.x = -0.15;
+        }
+        if (this.leftRocket) this.leftRocket.scale.y = 1.2 + hopY * 2;
+        if (this.rightRocket) this.rightRocket.scale.y = 1.2 + hopY * 2;
+    }
+
+    update(dt: number, playerPos: THREE.Vector3, disturbed = false): InteractionResult | null {
+        this.time += dt;
+        this.stateTimer += dt;
+        this.sparkleCooldown = Math.max(0, this.sparkleCooldown - dt);
+
+        const dist = this.position.distanceTo(playerPos);
+        let result: InteractionResult | null = null;
+
+        if (!disturbed && dist < this.INTERACTION_DISTANCE) {
+            if (this.state === 'idle') {
+                this.state = 'excited';
+                this.stateTimer = 0;
+            }
+
+            if (this.state === 'excited') {
+                this.animateExcited();
+                if (this.sparkleCooldown <= 0 && this.stateTimer > 0.15 && this.stateTimer < 0.9) {
+                    this.sparkleCooldown = 0.25;
+                    const puff = this.position.clone();
+                    puff.y += 0.4;
+                    result = { type: 'astro_bunny_sparkle', position: puff };
+                }
+                if (this.stateTimer >= 0.85 && !this.hasGreeted) {
+                    this.state = 'celebrating';
+                    this.stateTimer = 0;
+                    this.hasGreeted = true;
+                    result = {
+                        type: 'astro_bunny_lucky',
+                        position: this.position.clone(),
+                        bonus: this.LUCKY_STAR_BONUS
+                    };
+                }
+            } else if (this.state === 'celebrating') {
+                this.animateExcited();
+                if (this.stateTimer >= 1.2) {
+                    this.state = 'idle';
+                    this.stateTimer = 0;
+                }
+            }
+        } else {
+            this.state = 'idle';
+            this.stateTimer = 0;
+            if (dist > this.INTERACTION_DISTANCE + 5) {
+                this.hasGreeted = false;
+            }
+        }
+
+        if (this.state === 'idle') {
+            this.animateIdle(dt);
+        }
+
+        this.group.position.y = this.baseY + Math.sin(this.time * 1.1) * 0.06;
+
+        return result;
+    }
+
+    destroy(scene: THREE.Scene): void {
+        scene.remove(this.group);
+        this.group.traverse((child) => {
+            if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
+                child.geometry?.dispose();
+                if (child.material && child.material !== BUBBLE_HELMET_MAT) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+        });
+    }
+
+    getDistanceToPlayer(playerPos: THREE.Vector3): number {
+        return this.position.distanceTo(playerPos);
+    }
+}
+
+// =============================================================================
+// STELLAR SEAL PUP - Chubby flipper-clapping cheerleader in a space bubble
+// =============================================================================
+
+type SealState = 'idle' | 'clapping';
+
+export class SpaceSealPup {
+    group: THREE.Group;
+    position: THREE.Vector3;
+    baseY: number;
+
+    time: number = 0;
+    state: SealState = 'idle';
+    clapPhase: number = 0;
+    hasCheered: boolean = false;
+    healCooldown: number = 0;
+    cheerCooldown: number = 0;
+
+    private animGroup: THREE.Group | null = null;
+    private bodyGroup: THREE.Group | null = null;
+    private headGroup: THREE.Group | null = null;
+    private leftFlipper: THREE.Group | null = null;
+    private rightFlipper: THREE.Group | null = null;
+    private tailFin: THREE.Group | null = null;
+    private leftEye: THREE.Mesh | null = null;
+    private rightEye: THREE.Mesh | null = null;
+    private leftEyeShine: THREE.Mesh | null = null;
+    private rightEyeShine: THREE.Mesh | null = null;
+    private tongue: THREE.Mesh | null = null;
+    private whiskers: THREE.Group | null = null;
+
+    readonly INTERACTION_DISTANCE = 8.5;
+    readonly HEAL_AMOUNT = 1;
+    readonly HEAL_COOLDOWN = 3.5;
+    readonly CLAP_SPEED = 4.2;
+    readonly FLOAT_AMPLITUDE = 0.35;
+    readonly FLOAT_SPEED = 1.3;
+
+    constructor(scene: THREE.Scene, x: number, y: number) {
+        this.position = new THREE.Vector3(x, y, 0);
+        this.baseY = y;
+        this.group = new THREE.Group();
+        this.group.position.copy(this.position);
+        this.group.userData.speciesId = 'stellarSealPup';
+
+        this.createMesh();
+        scene.add(this.group);
+    }
+
+    private createMesh(): void {
+        this.animGroup = new THREE.Group();
+        this.bodyGroup = new THREE.Group();
+
+        const furMat = new THREE.MeshStandardMaterial({
+            color: 0xd4c4b0,
+            roughness: 0.82,
+            metalness: 0.05
+        });
+        const bellyMat = new THREE.MeshStandardMaterial({
+            color: 0xf0e8dc,
+            roughness: 0.88
+        });
+
+        // Rounded sausage body
+        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.32, 0.55, 8, 12), furMat);
+        body.rotation.z = Math.PI / 2;
+        body.scale.set(1.1, 1, 0.95);
+        this.bodyGroup.add(body);
+
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), bellyMat);
+        belly.position.set(0, -0.06, 0.14);
+        belly.scale.set(0.95, 0.75, 0.45);
+        this.bodyGroup.add(belly);
+
+        // Big round head
+        this.headGroup = new THREE.Group();
+        this.headGroup.position.set(0.42, 0.12, 0);
+
+        const head = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 14), furMat);
+        this.headGroup.add(head);
+
+        const snout = new THREE.Mesh(new THREE.SphereGeometry(0.18, 10, 10), furMat);
+        snout.position.set(0.14, -0.04, 0);
+        snout.scale.set(1.1, 0.75, 0.85);
+        this.headGroup.add(snout);
+
+        // Shiny eyes
+        const eyeMat = new THREE.MeshStandardMaterial({ color: 0x223355, roughness: 0.15, metalness: 0.2 });
+        const shineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+        this.leftEye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 10), eyeMat);
+        this.leftEye.position.set(0.08, 0.08, 0.2);
+        this.headGroup.add(this.leftEye);
+
+        this.rightEye = new THREE.Mesh(new THREE.SphereGeometry(0.075, 10, 10), eyeMat);
+        this.rightEye.position.set(0.08, 0.08, -0.2);
+        this.headGroup.add(this.rightEye);
+
+        this.leftEyeShine = new THREE.Mesh(new THREE.SphereGeometry(0.028, 6, 6), shineMat);
+        this.leftEyeShine.position.set(0.1, 0.11, 0.24);
+        this.headGroup.add(this.leftEyeShine);
+
+        this.rightEyeShine = new THREE.Mesh(new THREE.SphereGeometry(0.028, 6, 6), shineMat);
+        this.rightEyeShine.position.set(0.1, 0.11, -0.24);
+        this.headGroup.add(this.rightEyeShine);
+
+        // Whiskers
+        this.whiskers = new THREE.Group();
+        const whiskerMat = new THREE.MeshStandardMaterial({ color: 0x998877, roughness: 0.9 });
+        for (const side of [-1, 1]) {
+            for (let i = 0; i < 3; i++) {
+                const whisker = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.004, 0.22, 4), whiskerMat);
+                whisker.position.set(0.2, -0.02 + i * 0.05, side * 0.12);
+                whisker.rotation.z = side * (0.4 + i * 0.12);
+                whisker.rotation.y = side * 0.15;
+                this.whiskers.add(whisker);
+            }
+        }
+        this.headGroup.add(this.whiskers);
+
+        // Happy pink tongue (shown while clapping)
+        this.tongue = new THREE.Mesh(
+            new THREE.SphereGeometry(0.05, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xff8899, roughness: 0.6 })
+        );
+        this.tongue.position.set(0.22, -0.1, 0);
+        this.tongue.scale.set(1.2, 0.6, 0.8);
+        this.tongue.visible = false;
+        this.headGroup.add(this.tongue);
+
+        // Tiny nose
+        const nose = new THREE.Mesh(
+            new THREE.SphereGeometry(0.04, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0x554433, roughness: 0.5 })
+        );
+        nose.position.set(0.24, -0.02, 0);
+        this.headGroup.add(nose);
+
+        this.bodyGroup.add(this.headGroup);
+
+        // Flippers (hinged at shoulders)
+        this.leftFlipper = new THREE.Group();
+        this.leftFlipper.position.set(0.05, -0.02, 0.34);
+        const leftFlipMesh = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), furMat);
+        leftFlipMesh.scale.set(0.55, 1.15, 0.75);
+        leftFlipMesh.position.set(0, -0.12, 0);
+        this.leftFlipper.add(leftFlipMesh);
+        this.bodyGroup.add(this.leftFlipper);
+
+        this.rightFlipper = new THREE.Group();
+        this.rightFlipper.position.set(0.05, -0.02, -0.34);
+        const rightFlipMesh = new THREE.Mesh(new THREE.SphereGeometry(0.13, 10, 10), furMat);
+        rightFlipMesh.scale.set(0.55, 1.15, 0.75);
+        rightFlipMesh.position.set(0, -0.12, 0);
+        this.rightFlipper.add(rightFlipMesh);
+        this.bodyGroup.add(this.rightFlipper);
+
+        // Tail fin
+        this.tailFin = new THREE.Group();
+        this.tailFin.position.set(-0.48, -0.02, 0);
+        const tail = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 8), furMat);
+        tail.scale.set(0.5, 1.1, 0.35);
+        this.tailFin.add(tail);
+        this.bodyGroup.add(this.tailFin);
+
+        // Space bubble helmet
+        const bubble = new THREE.Mesh(
+            new THREE.SphereGeometry(0.78, 16, 16),
+            new THREE.MeshPhysicalMaterial({
+                color: 0xaaddff,
+                transmission: 0.88,
+                roughness: 0.05,
+                transparent: true,
+                opacity: 0.28,
+                thickness: 0.08
+            })
+        );
+        bubble.position.set(0.15, 0.08, 0);
+        this.bodyGroup.add(bubble);
+
+        const bubbleRim = new THREE.Mesh(
+            new THREE.TorusGeometry(0.78, 0.03, 6, 20),
+            new THREE.MeshStandardMaterial({ color: 0x88ccff, metalness: 0.5, roughness: 0.3 })
+        );
+        bubbleRim.position.set(0.15, 0.08, 0);
+        bubbleRim.rotation.y = Math.PI / 2;
+        this.bodyGroup.add(bubbleRim);
+
+        this.animGroup.add(this.bodyGroup);
+
+        const glow = new THREE.PointLight(0xaaddff, 0.28, 4);
+        glow.position.set(0.2, 0.2, 0);
+        this.animGroup.add(glow);
+
+        this.group.add(this.animGroup);
+        this.group.userData.sealPup = this;
+    }
+
+    private setClapFace(clapping: boolean): void {
+        if (this.tongue) this.tongue.visible = clapping;
+        const eyeScaleY = clapping ? 0.25 : 1.0;
+        const eyeScaleX = clapping ? 1.3 : 1.0;
+        if (this.leftEye) this.leftEye.scale.set(eyeScaleX, eyeScaleY, 1);
+        if (this.rightEye) this.rightEye.scale.set(eyeScaleX, eyeScaleY, 1);
+        if (this.leftEyeShine) this.leftEyeShine.visible = !clapping;
+        if (this.rightEyeShine) this.rightEyeShine.visible = !clapping;
+    }
+
+    private animateIdle(): void {
+        const bob = Math.sin(this.time * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
+        this.group.position.y = this.baseY + bob;
+
+        if (this.headGroup) {
+            this.headGroup.rotation.y = Math.sin(this.time * 0.9) * 0.12;
+            this.headGroup.rotation.z = Math.sin(this.time * 0.7) * 0.06;
+        }
+        if (this.leftFlipper) this.leftFlipper.rotation.x = 0.15 + Math.sin(this.time * 1.5) * 0.08;
+        if (this.rightFlipper) this.rightFlipper.rotation.x = 0.15 - Math.sin(this.time * 1.5) * 0.08;
+        if (this.tailFin) this.tailFin.rotation.y = Math.sin(this.time * 2) * 0.15;
+        if (this.bodyGroup) {
+            this.bodyGroup.scale.set(1, 1, 1);
+            this.bodyGroup.position.y = 0;
+        }
+        this.setClapFace(false);
+    }
+
+    private animateClap(): void {
+        const bob = Math.sin(this.time * this.FLOAT_SPEED * 1.4) * this.FLOAT_AMPLITUDE * 0.6;
+        this.group.position.y = this.baseY + bob;
+
+        const leftSwing = Math.max(0, Math.sin(this.clapPhase - 0.15));
+        const rightSwing = Math.max(0, Math.sin(this.clapPhase));
+        if (this.leftFlipper) {
+            this.leftFlipper.rotation.x = 0.15 + leftSwing * 1.35;
+            this.leftFlipper.rotation.z = leftSwing * 0.2;
+        }
+        if (this.rightFlipper) {
+            this.rightFlipper.rotation.x = 0.15 + rightSwing * 1.35;
+            this.rightFlipper.rotation.z = -rightSwing * 0.2;
+        }
+
+        // Body squash on flipper contact
+        const squash = 1 - Math.pow(Math.sin(this.clapPhase * 2), 2) * 0.12;
+        const stretch = 1 + Math.pow(Math.sin(this.clapPhase * 2), 2) * 0.06;
+        if (this.bodyGroup) {
+            this.bodyGroup.scale.set(stretch, squash, squash);
+            this.bodyGroup.position.y = -Math.pow(Math.sin(this.clapPhase * 2), 2) * 0.04;
+        }
+
+        if (this.headGroup) {
+            this.headGroup.rotation.y = Math.sin(this.time * 3) * 0.08;
+            this.headGroup.rotation.x = Math.sin(this.clapPhase * 2) * 0.05;
+        }
+        if (this.tailFin) {
+            this.tailFin.rotation.y = Math.sin(this.clapPhase * 2) * 0.35;
+        }
+        this.setClapFace(true);
+    }
+
+    update(dt: number, playerPos: THREE.Vector3, disturbed: boolean = false): InteractionResult | null {
+        this.time += dt;
+        this.healCooldown = Math.max(0, this.healCooldown - dt);
+        this.cheerCooldown = Math.max(0, this.cheerCooldown - dt);
+
+        const dist = this.position.distanceTo(playerPos);
+        let result: InteractionResult | null = null;
+
+        if (!disturbed && dist < this.INTERACTION_DISTANCE) {
+            if (this.state !== 'clapping') {
+                this.state = 'clapping';
+                this.clapPhase = 0;
+            }
+            this.clapPhase += dt * this.CLAP_SPEED;
+            this.animateClap();
+
+            // Cheer pulse on each clap contact: glow + optional tiny heal
+            if (this.cheerCooldown <= 0 && Math.sin(this.clapPhase * 2) > 0.92) {
+                this.cheerCooldown = 0.38;
+                const cheerPos = this.position.clone();
+                cheerPos.x += 0.55;
+                cheerPos.y += 0.1;
+                const canHeal = this.healCooldown <= 0;
+                result = {
+                    type: 'seal_clap',
+                    position: cheerPos,
+                    healthRestore: canHeal ? this.HEAL_AMOUNT : undefined
+                };
+                if (canHeal) {
+                    this.healCooldown = this.HEAL_COOLDOWN;
+                }
+                this.hasCheered = true;
+            }
+        } else {
+            this.state = 'idle';
+            this.animateIdle();
+            if (dist > this.INTERACTION_DISTANCE + 4) {
+                this.hasCheered = false;
+            }
+        }
+
+        return result;
+    }
+
+    destroy(scene: THREE.Scene): void {
+        scene.remove(this.group);
+        this.group.traverse((child) => {
+            if (child instanceof THREE.Mesh || child instanceof THREE.Points) {
+                child.geometry?.dispose();
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material?.dispose();
+                }
+            }
+        });
+    }
+
+    getDistanceToPlayer(playerPos: THREE.Vector3): number {
+        return this.position.distanceTo(playerPos);
+    }
+}
+
+// =============================================================================
 // COSMIC OTTER - Playful juggler of glowing orbs in zero gravity
 // =============================================================================
 
@@ -2094,7 +2681,7 @@ export class SpaceOtter {
 // TRAPPED FRIEND - A space friend stuck in wreckage, waiting to be rescued
 // =============================================================================
 
-export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup' | 'otter' | 'penguin';
+export type TrappedFriendKind = 'kitty' | 'bunny' | 'tarsier' | 'moonpup' | 'otter' | 'penguin' | 'sealpup' | 'astrobunny';
 
 const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
     kitty: 0xfff0f5,
@@ -2102,7 +2689,9 @@ const TRAPPED_FRIEND_COLORS: Record<TrappedFriendKind, number> = {
     tarsier: 0xb088ff,
     moonpup: 0xffe4b5,
     otter: 0xc9a86c,
-    penguin: 0xe8e8f0
+    penguin: 0xe8e8f0,
+    sealpup: 0xd4c4b0,
+    astrobunny: 0xfff0f5
 };
 
 export class TrappedFriend {
@@ -2126,7 +2715,11 @@ export class TrappedFriend {
             ? 'moonPup'
             : kind === 'otter'
                 ? 'trappedOtter'
-                : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+                : kind === 'sealpup'
+                    ? 'trappedSealPup'
+                    : kind === 'astrobunny'
+                        ? 'trappedAstroBunny'
+                        : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         // Occupant - the trapped friend, glowing softly inside the wreckage
         const occupantGeo = new THREE.SphereGeometry(0.35, 12, 12);
@@ -2227,7 +2820,11 @@ export class FlotillaMember {
             ? 'rescuedMoonPup'
             : kind === 'otter'
                 ? 'rescuedOtter'
-                : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+                : kind === 'sealpup'
+                    ? 'rescuedSealPup'
+                    : kind === 'astrobunny'
+                        ? 'rescuedAstroBunny'
+                        : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
         const bodyMat = new THREE.MeshStandardMaterial({
@@ -2330,6 +2927,48 @@ export class FlotillaMember {
                 this.group.add(beak);
                 break;
             }
+            case 'sealpup': {
+                for (const side of [-1, 1]) {
+                    const flipper = new THREE.Mesh(
+                        new THREE.SphereGeometry(0.1, 8, 8),
+                        new THREE.MeshStandardMaterial({ color, roughness: 0.7 })
+                    );
+                    flipper.scale.set(0.5, 1.1, 0.7);
+                    flipper.position.set(0.05, -0.05, side * 0.22);
+                    this.group.add(flipper);
+                }
+                const bubbleMat = new THREE.MeshPhysicalMaterial({
+                    color: 0xaaddff,
+                    transmission: 0.85,
+                    roughness: 0.05,
+                    transparent: true,
+                    opacity: 0.3
+                });
+                const miniBubble = new THREE.Mesh(new THREE.SphereGeometry(0.42, 10, 10), bubbleMat);
+                this.group.add(miniBubble);
+                break;
+            }
+            case 'astrobunny': {
+                const earMat = new THREE.MeshStandardMaterial({ color, roughness: 0.7 });
+                for (const side of [-1, 1]) {
+                    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.22, 6), earMat);
+                    ear.position.set(0.12, 0.28, side * 0.14);
+                    ear.rotation.z = side * 0.2;
+                    this.group.add(ear);
+                }
+                const miniHelmet = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.38, 10, 10),
+                    new THREE.MeshPhysicalMaterial({
+                        color: 0xaaddff,
+                        transmission: 0.88,
+                        roughness: 0.05,
+                        transparent: true,
+                        opacity: 0.28
+                    })
+                );
+                this.group.add(miniHelmet);
+                break;
+            }
         }
 
         // Tiny thruster glow trailing behind the rescued friend
@@ -2429,6 +3068,8 @@ export class FriendsManager {
     tarsiers: AstroTarsier[] = [];
     otters: SpaceOtter[] = [];
     penguins: SpacePenguin[] = [];
+    sealPups: SpaceSealPup[] = [];
+    astroBunnies: SpaceAstroBunny[] = [];
     trappedFriends: TrappedFriend[] = [];
     flotilla: FlotillaMember[] = [];
 
@@ -2444,6 +3085,12 @@ export class FriendsManager {
     /** Fired when an Astro Penguin completes a belly slide (+slide assist). */
     onPenguinSlide?: (position: THREE.Vector3, cores: number, slideAssistDuration: number) => void;
 
+    /** Fired when a Stellar Seal Pup claps to cheer the player on (+glow / heal). */
+    onSealClap?: (position: THREE.Vector3, healthRestore?: number) => void;
+
+    /** Fired when an Astro Bunny finishes its lucky double-hop greet. */
+    onAstroBunnyLucky?: (position: THREE.Vector3, bonus: number) => void;
+
     // Cooldowns for audio (prevent spam)
     private lastKittySound: number = 0;
     private lastBunnySound: number = 0;
@@ -2451,10 +3098,14 @@ export class FriendsManager {
     private lastTarsierSound: number = 0;
     private lastOtterSound: number = 0;
     private lastPenguinSound: number = 0;
+    private lastSealSound: number = 0;
+    private lastAstroBunnySound: number = 0;
     
     // Spawn tracking
     private lastSpawnX: number = 0;
     private spawnInterval: number = 100; // Spawn friends every ~100 units
+    private astroBunniesThisSegment: number = 0;
+    private readonly MAX_ASTRO_BUNNIES_PER_SEGMENT = 4;
     
     constructor(scene: THREE.Scene, audio: AudioSystem, particles: ParticleSystem) {
         this.scene = scene;
@@ -2484,6 +3135,22 @@ export class FriendsManager {
         const penguin = new SpacePenguin(this.scene, x, y);
         this.penguins.push(penguin);
         return penguin;
+    }
+
+    spawnSealPup(x: number, y: number): SpaceSealPup {
+        const seal = new SpaceSealPup(this.scene, x, y);
+        this.sealPups.push(seal);
+        return seal;
+    }
+
+    spawnAstroBunny(x: number, y: number): SpaceAstroBunny | null {
+        if (this.astroBunniesThisSegment >= this.MAX_ASTRO_BUNNIES_PER_SEGMENT) {
+            return null;
+        }
+        const bunny = new SpaceAstroBunny(this.scene, x, y);
+        this.astroBunnies.push(bunny);
+        this.astroBunniesThisSegment++;
+        return bunny;
     }
     
     spawnLantern(x: number, y: number): WishLantern {
@@ -2531,7 +3198,7 @@ export class FriendsManager {
             if (r < 0.08) {
                 chosen = 'moonpup';
             } else {
-                chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin'] as TrappedFriendKind[])[Math.floor(Math.random() * 5)];
+                chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin', 'sealpup', 'astrobunny'] as TrappedFriendKind[])[Math.floor(Math.random() * 7)];
             }
         }
         const friend = new TrappedFriend(this.scene, x, y, chosen);
@@ -2568,15 +3235,23 @@ export class FriendsManager {
     /**
      * Spawn friends randomly as player progresses
      */
-    maybeSpawnFriends(playerX: number, levelConfig?: { cosmicOtterRate?: number; astroPenguinRate?: number }): void {
+    maybeSpawnFriends(playerX: number, levelConfig?: {
+        cosmicOtterRate?: number;
+        astroPenguinRate?: number;
+        stellarSealPupRate?: number;
+        astroBunnyRate?: number;
+    }): void {
         if (playerX - this.lastSpawnX > this.spawnInterval) {
             this.lastSpawnX = playerX;
+            this.astroBunniesThisSegment = 0;
             
             // Spawn 1-3 friends near this area
             const count = 1 + Math.floor(Math.random() * 3);
             const otterWeight = levelConfig?.cosmicOtterRate ?? 0;
             const penguinWeight = levelConfig?.astroPenguinRate ?? 0;
-            const remaining = Math.max(0, 1 - otterWeight - penguinWeight);
+            const sealWeight = levelConfig?.stellarSealPupRate ?? 0;
+            const astroBunnyWeight = levelConfig?.astroBunnyRate ?? 0;
+            const remaining = Math.max(0, 1 - otterWeight - penguinWeight - sealWeight - astroBunnyWeight);
             
             for (let i = 0; i < count; i++) {
                 const spawnX = playerX + 30 + Math.random() * 40;
@@ -2587,9 +3262,13 @@ export class FriendsManager {
                     this.spawnOtter(spawnX, spawnY);
                 } else if (type < otterWeight + penguinWeight) {
                     this.spawnPenguin(spawnX, spawnY);
-                } else if (type < otterWeight + penguinWeight + 0.35 * remaining) {
+                } else if (type < otterWeight + penguinWeight + sealWeight) {
+                    this.spawnSealPup(spawnX, spawnY);
+                } else if (type < otterWeight + penguinWeight + sealWeight + astroBunnyWeight) {
+                    this.spawnAstroBunny(spawnX, spawnY);
+                } else if (type < otterWeight + penguinWeight + sealWeight + astroBunnyWeight + 0.35 * remaining) {
                     this.spawnKitty(spawnX, spawnY);
-                } else if (type < otterWeight + penguinWeight + 0.7 * remaining) {
+                } else if (type < otterWeight + penguinWeight + sealWeight + astroBunnyWeight + 0.7 * remaining) {
                     this.spawnBunny(spawnX, spawnY);
                 } else {
                     this.spawnLantern(spawnX, spawnY + 2);
@@ -2601,20 +3280,24 @@ export class FriendsManager {
     /**
      * Spawn friends near interesting areas (like asteroid clusters)
      */
-    spawnNearInterestArea(x: number, y: number, type: 'cluster' | 'gap' | 'tunnel'): void {
+    spawnNearInterestArea(x: number, y: number, type: 'cluster' | 'gap' | 'tunnel' | 'aquatic'): void {
         switch (type) {
             case 'cluster':
-                // Otters or bunnies near asteroid clusters
-                if (Math.random() < 0.35) {
+                if (Math.random() < 0.3) {
+                    this.spawnAstroBunny(x, y + 2);
+                } else if (Math.random() < 0.5) {
                     this.spawnOtter(x, y + 2);
                 } else {
                     this.spawnBunny(x, y + 3);
                 }
                 break;
             case 'gap':
-                // Penguins or lanterns in open gaps
-                if (Math.random() < 0.4) {
+                if (Math.random() < 0.3) {
+                    this.spawnAstroBunny(x, y);
+                } else if (Math.random() < 0.45) {
                     this.spawnPenguin(x, y);
+                } else if (Math.random() < 0.55) {
+                    this.spawnSealPup(x, y);
                 } else {
                     this.spawnLantern(x, y);
                 }
@@ -2622,6 +3305,14 @@ export class FriendsManager {
             case 'tunnel':
                 // Spawn a kitty in tunnels (cute companion)
                 this.spawnKitty(x, y);
+                break;
+            case 'aquatic':
+                // Seal pups love open watery zones
+                if (Math.random() < 0.55) {
+                    this.spawnSealPup(x, y);
+                } else {
+                    this.spawnOtter(x, y + 1);
+                }
                 break;
         }
     }
@@ -2688,6 +3379,24 @@ export class FriendsManager {
         for (const penguin of this.penguins) {
             const disturbed = this.isFriendDisturbed(penguin.position, projectiles);
             const result = penguin.update(dt, playerPos, disturbed);
+            if (result) {
+                this.handleInteraction(result, now);
+            }
+        }
+
+        // Update all seal pups
+        for (const seal of this.sealPups) {
+            const disturbed = this.isFriendDisturbed(seal.position, projectiles);
+            const result = seal.update(dt, playerPos, disturbed);
+            if (result) {
+                this.handleInteraction(result, now);
+            }
+        }
+
+        // Update all astro bunnies
+        for (const astroBunny of this.astroBunnies) {
+            const disturbed = this.isFriendDisturbed(astroBunny.position, projectiles);
+            const result = astroBunny.update(dt, playerPos, disturbed);
             if (result) {
                 this.handleInteraction(result, now);
             }
@@ -2807,6 +3516,40 @@ export class FriendsManager {
                 this.particles.emit(result.position, 0xddeeff, 4, 1.8, 0.25, 0.5);
                 this.particles.emit(result.position, 0xaaddff, 3, 1.2, 0.2, 0.4);
                 break;
+
+            case 'seal_clap':
+                if (now - this.lastSealSound > 2200) {
+                    this.audio.playSealClap();
+                    this.lastSealSound = now;
+                }
+                this.particles.emit(result.position, 0xffffff, 5, 1.5, 0.2, 0.5);
+                this.particles.emit(result.position, 0xaaddff, 4, 1.2, 0.15, 0.4);
+                this.onSealClap?.(result.position, result.healthRestore);
+                break;
+
+            case 'seal_bubble_puff':
+                this.particles.emit(result.position, 0xffffff, 4, 1.0, 0.12, 0.35);
+                this.particles.emit(result.position, 0xcceeff, 3, 0.8, 0.1, 0.3);
+                break;
+
+            case 'astro_bunny_lucky':
+                if (now - this.lastAstroBunnySound > 2800) {
+                    this.audio.playSequence([
+                        { sound: 'boing', delay: 0, volume: 0.7 },
+                        { sound: 'twinkle', delay: 0.1, volume: 0.65 },
+                        { sound: 'sparkle', delay: 0.2, volume: 0.5 }
+                    ]);
+                    this.lastAstroBunnySound = now;
+                }
+                this.particles.emit(result.position, 0xffd700, 12, 4.0, 0.45, 1.1);
+                this.particles.emit(result.position, 0xfff0f5, 8, 3.0, 0.35, 0.9);
+                this.onAstroBunnyLucky?.(result.position, result.bonus ?? 8);
+                break;
+
+            case 'astro_bunny_sparkle':
+                this.particles.emit(result.position, 0xffeedd, 5, 2.0, 0.2, 0.5);
+                this.particles.emit(result.position, 0xffffff, 4, 1.5, 0.12, 0.4);
+                break;
         }
     }
     
@@ -2905,6 +3648,24 @@ export class FriendsManager {
             }
         }
 
+        // Remove seal pups that are far behind
+        for (let i = this.sealPups.length - 1; i >= 0; i--) {
+            const seal = this.sealPups[i];
+            if (seal.position.x < playerX - buffer) {
+                seal.destroy(this.scene);
+                this.sealPups.splice(i, 1);
+            }
+        }
+
+        // Remove astro bunnies that are far behind
+        for (let i = this.astroBunnies.length - 1; i >= 0; i--) {
+            const bunny = this.astroBunnies[i];
+            if (bunny.position.x < playerX - buffer) {
+                bunny.destroy(this.scene);
+                this.astroBunnies.splice(i, 1);
+            }
+        }
+
         // Remove trapped friends the player has flown past without rescuing
         for (let i = this.trappedFriends.length - 1; i >= 0; i--) {
             const trapped = this.trappedFriends[i];
@@ -2955,7 +3716,7 @@ export class FriendsManager {
     /**
      * Get total friend count
      */
-    getFriendCount(): { kitties: number; bunnies: number; lanterns: number; tarsiers: number; otters: number; penguins: number; total: number } {
+    getFriendCount(): { kitties: number; bunnies: number; lanterns: number; tarsiers: number; otters: number; penguins: number; sealPups: number; astroBunnies: number; total: number } {
         return {
             kitties: this.kitties.length,
             bunnies: this.bunnies.length,
@@ -2963,7 +3724,9 @@ export class FriendsManager {
             tarsiers: this.tarsiers.length,
             otters: this.otters.length,
             penguins: this.penguins.length,
-            total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length + this.otters.length + this.penguins.length
+            sealPups: this.sealPups.length,
+            astroBunnies: this.astroBunnies.length,
+            total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length + this.otters.length + this.penguins.length + this.sealPups.length + this.astroBunnies.length
         };
     }
 
@@ -2975,6 +3738,8 @@ export class FriendsManager {
             ...this.tarsiers.map(friend => friend.group),
             ...this.otters.map(friend => friend.group),
             ...this.penguins.map(friend => friend.group),
+            ...this.sealPups.map(friend => friend.group),
+            ...this.astroBunnies.map(friend => friend.group),
             ...this.trappedFriends.map(friend => friend.group),
             ...this.flotilla.map(friend => friend.group)
         ];
@@ -3013,6 +3778,17 @@ export class FriendsManager {
             penguin.destroy(this.scene);
         }
         this.penguins = [];
+
+        for (const seal of this.sealPups) {
+            seal.destroy(this.scene);
+        }
+        this.sealPups = [];
+
+        for (const astroBunny of this.astroBunnies) {
+            astroBunny.destroy(this.scene);
+        }
+        this.astroBunnies = [];
+        this.astroBunniesThisSegment = 0;
 
         for (const trapped of this.trappedFriends) {
             trapped.destroy(this.scene);

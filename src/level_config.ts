@@ -48,6 +48,15 @@ export type GhostDebrisEnvironmentConfig = {
     density: number;
 };
 
+export type VoidJellyfishEnvironmentConfig = {
+    density?: number;
+};
+
+export type BubbleCoralEnvironmentConfig = {
+    /** Multiplier on level `bubbleCoralDensity` (default 1). */
+    density?: number;
+};
+
 export type MeteorShowerEnvironmentConfig = boolean;
 
 export type LevelEnvironments = {
@@ -57,6 +66,8 @@ export type LevelEnvironments = {
     waterfall?: boolean;
     biological?: boolean;
     nebula?: boolean;
+    /** Parallax ribbon/veil sheets (cheap depth); uses level skyColors. */
+    nebulaRibbons?: boolean;
     cosmicDust?: boolean;
     planetaryHorizon?: boolean;
     reEntry?: boolean;
@@ -66,7 +77,9 @@ export type LevelEnvironments = {
     lightning?: LightningEnvironmentConfig;
     asteroidField?: AsteroidFieldEnvironmentConfig;
     ghostDebris?: GhostDebrisEnvironmentConfig;
+    voidJellyfish?: VoidJellyfishEnvironmentConfig;
     meteorShower?: MeteorShowerEnvironmentConfig;
+    bubbleCoral?: BubbleCoralEnvironmentConfig | boolean;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -97,9 +110,15 @@ export type LevelConfig = {
         liquidMetal?: number;
         magmaHeart?: number;
         gravityAnchor?: number;
+        /** Solar sail ferns per foliage chunk (capped at 6–12 active per segment). */
+        solarSail?: number;
     };
     chromaShiftDensity?: number;
     stormGeodeDensity?: number;
+    /** Crystal chime clusters per ~400 world units (max 8–12 active per slice). */
+    chimeDensity?: number;
+    /** Rotating wind-chime mobiles per ~400 world units (max 8 active; cloud/nebula zones). */
+    windChimeDensity?: number;
     speed: number;
     bgColor: number;
     skyColors: { top: number, bottom: number };
@@ -112,12 +131,31 @@ export type LevelConfig = {
     // probability while the level has none of that creature active.
     crystalTarsierRate?: number;
     geodeTitanRate?: number;
+    /** Moon Snail set-pieces per streaming interval (levels 5–6, max 2 active). */
+    moonSnailRate?: number;
     /** Weight for Cosmic Otter spawns in the space-friends roulette (levels 2–4). */
     cosmicOtterRate?: number;
     /** Weight for Astro Penguin spawns in the space-friends roulette (levels 4–6). */
     astroPenguinRate?: number;
+    /** Weight for Stellar Seal Pup spawns (levels 3–6, especially aquatic zones). */
+    stellarSealPupRate?: number;
+    /** Weight for Astro Bunny spawns (levels 2–5). */
+    astroBunnyRate?: number;
+    /** Twirling pinwheel flowers per ~100 units along the level (0 = off). */
+    pinwheelDensity?: number;
+    /** Starlight koi school count for biological / aquatic / nebula levels (0 = off, max ~8 schools). */
+    koiSchoolDensity?: number;
+    /** Floating toy rocket wrecks per level (hero slingables, max 3). */
+    toyRocketCount?: number;
+    /** Rainbow bubble coral clusters per level segment (0 = off, max ~12). */
+    bubbleCoralDensity?: number;
     /** Gummy ring hoops per ~100 units along the candy belt (levels 1–3). */
     gummyRingDensity?: number;
+    /**
+     * 0–1: fraction of asteroid spawns (gameplay + parallax) rendered as candy/gummy
+     * variants. Replaces existing rocks — does NOT increase asteroid density budgets.
+     */
+    candyAsteroidChance?: number;
     // Environmental hazards/rewards woven into the asteroid spawn cycle.
     mineRobotRate?: number;
     barnaclePodRate?: number;
@@ -166,7 +204,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             iceNeedle: 15,
             liquidMetal: 8,
             magmaHeart: 5,
-            gravityAnchor: 3
+            gravityAnchor: 3,
+            solarSail: 3
         },
         speed: 8,
         bgColor: 0x1a1a2e,
@@ -174,6 +213,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'open',
         crystalTarsierRate: 0.0006,
         gummyRingDensity: 0.09,
+        candyAsteroidChance: 0.15,
+        pinwheelDensity: 0.14,
+        windChimeDensity: 0.45,
         enemyTintColor: 0x66ff99,
         environments: {
             asteroidField: { rate: 2.5 },
@@ -196,6 +238,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         },
         chromaShiftDensity: 150,
         stormGeodeDensity: 20,
+        chimeDensity: 10,
         foliageDensity: {
             fern: 10,
             rose: 5,
@@ -221,7 +264,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         crystalTarsierRate: 0.0006,
         geodeTitanRate: 0.0008,
         cosmicOtterRate: 0.22,
+        astroBunnyRate: 0.2,
         gummyRingDensity: 0.07,
+        candyAsteroidChance: 0.32,
+        pinwheelDensity: 0.07,
         enemyTintColor: 0x8844ff,
         environments: {
             asteroidField: { rate: 0.8 },
@@ -258,7 +304,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vacuumKelp: 15,
             iceNeedle: 10,
             liquidMetal: 8,
-            magmaHeart: 8
+            magmaHeart: 8,
+            solarSail: 2
         },
         speed: 10,
         bgColor: 0x000510,
@@ -266,14 +313,21 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'open',
         squidSpawnRate: 0.0012,
         cosmicOtterRate: 0.25,
+        stellarSealPupRate: 0.12,
+        astroBunnyRate: 0.16,
         gummyRingDensity: 0.05,
+        candyAsteroidChance: 0.1,
+        pinwheelDensity: 0.09,
+        windChimeDensity: 0.5,
+        bubbleCoralDensity: 3,
         enemyTintColor: 0xff5500,
         environments: {
             asteroidField: { rate: 1.8 },
             meteorShower: true,
             lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
             planetaryHorizon: true,
-            reEntry: true
+            reEntry: true,
+            bubbleCoral: { density: 0.7 }
         },
         vignettes: {
             roseArches: 1.2
@@ -288,6 +342,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             description: "Survive the rusty gauntlet"
         },
         stormGeodeDensity: 40,
+        chimeDensity: 8,
         foliageDensity: {
             fern: 6,
             rose: 4,
@@ -316,10 +371,18 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         mineRobotRate: 0.12,
         cosmicOtterRate: 0.2,
         astroPenguinRate: 0.18,
+        stellarSealPupRate: 0.14,
+        astroBunnyRate: 0.12,
+        pinwheelDensity: 0.05,
+        windChimeDensity: 0.55,
+        candyAsteroidChance: 0.08,
+        bubbleCoralDensity: 4,
+        toyRocketCount: 1,
         enemyTintColor: 0xcc6633,
         environments: {
             asteroidField: { rate: 2.0 },
-            industrial: { intensity: 1.0, tunnelSpeed: 1.2 }
+            industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
+            bubbleCoral: { density: 0.85 }
         },
         vignettes: {
             treeGroves: 0.6,
@@ -335,6 +398,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             description: "Reach an Arc Surge combo"
         },
         stormGeodeDensity: 50,
+        chimeDensity: 6,
+        windChimeDensity: 0.7,
+        toyRocketCount: 2,
         enemyTintColor: 0xff1493, // Nebula pink/purple tint
         foliageDensity: {
             fern: 5,
@@ -352,7 +418,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vacuumKelp: 8,
             iceNeedle: 4,
             liquidMetal: 4,
-            magmaHeart: 4
+            magmaHeart: 4,
+            solarSail: 3
         },
         speed: 10,
         bgColor: 0x0a0810,
@@ -363,15 +430,24 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         fogDensity: 0.02,
         squidSpawnRate: 0.0015,
         geodeTitanRate: 0.0008,
+        moonSnailRate: 0.42,
         barnaclePodRate: 0.18,
         astroPenguinRate: 0.22,
+        stellarSealPupRate: 0.15,
+        astroBunnyRate: 0.14,
+        pinwheelDensity: 0.08,
+        candyAsteroidChance: 0.14,
+        koiSchoolDensity: 4,
+        bubbleCoralDensity: 5,
         environments: {
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
             lightning: { enabled: true, density: 2.5, color: 0xff00ff },
             biological: true,
             nebula: true,
-            cosmicDust: true
+            nebulaRibbons: true,
+            cosmicDust: true,
+            voidJellyfish: { density: 45 }
         },
         vignettes: {
             treeGroves: 0.8,
@@ -411,12 +487,22 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         levelType: 'open',
         squidSpawnRate: 0.0012,
         astroPenguinRate: 0.2,
+        stellarSealPupRate: 0.18,
+        pinwheelDensity: 0.11,
+        windChimeDensity: 0.6,
+        candyAsteroidChance: 0.12,
+        moonSnailRate: 0.48,
+        koiSchoolDensity: 5,
+        bubbleCoralDensity: 6,
+        toyRocketCount: 2,
         enemyTintColor: 0x66ccff,
         environments: {
             asteroidField: { rate: 1.5 },
             aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 },
             waterfall: true,
-            aquaticLife: true
+            aquaticLife: true,
+            nebulaRibbons: true,
+            voidJellyfish: { density: 40 }
         }
     }
 };

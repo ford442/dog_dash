@@ -80,6 +80,11 @@ export class CollectibleOrb {
     collected: boolean = false;
     particleTimer: number = 0;
     glowLight?: THREE.PointLight;
+    glowBoostMultiplier: number = 1;
+    glowBoostUntil: number = 0;
+    private baseEmissiveIntensity: number = 2;
+    private coreMesh: THREE.Mesh | null = null;
+    private outerGlowMesh: THREE.Mesh | null = null;
     
     // Sparkle particles
     private sparkleCount: number = 3;
@@ -177,6 +182,8 @@ export class CollectibleOrb {
         mesh.scale.setScalar(scale);
         mesh.castShadow = false;
         mesh.receiveShadow = false;
+        this.coreMesh = mesh;
+        this.baseEmissiveIntensity = glowIntensity;
         
         this.mesh.add(mesh);
         
@@ -189,7 +196,32 @@ export class CollectibleOrb {
             side: THREE.BackSide
         });
         const glowMesh = new THREE.Mesh(glowGeometry, glowMaterial);
+        this.outerGlowMesh = glowMesh;
         this.mesh.add(glowMesh);
+    }
+
+    /** Temporarily brighten this orb (e.g. Stellar Seal Pup clap cheer). */
+    applyGlowBoost(multiplier: number, durationSeconds: number, time: number): void {
+        this.glowBoostMultiplier = multiplier;
+        this.glowBoostUntil = time + durationSeconds;
+    }
+
+    private refreshGlowVisuals(time: number): void {
+        if (time > this.glowBoostUntil) {
+            this.glowBoostMultiplier = 1;
+        }
+        const boost = this.glowBoostMultiplier;
+        if (this.coreMesh?.material instanceof THREE.MeshStandardMaterial) {
+            this.coreMesh.material.emissiveIntensity = this.baseEmissiveIntensity * boost;
+        }
+        if (this.outerGlowMesh?.material instanceof THREE.MeshBasicMaterial) {
+            this.outerGlowMesh.material.opacity = 0.2 + (boost - 1) * 0.25;
+        }
+    }
+
+    /** Bonus score when collected while seal-boosted. */
+    getSealBoostBonus(): number {
+        return this.glowBoostMultiplier > 1 ? Math.floor(8 * this.glowBoostMultiplier) : 0;
     }
     
     /** Create star-shaped geometry */
@@ -287,10 +319,12 @@ export class CollectibleOrb {
         // Update sparkles
         this.updateSparkles(dt, time);
         
+        this.refreshGlowVisuals(time);
+
         // Pulse glow
         if (this.glowLight) {
             const pulse = 1.0 + Math.sin(time * 3 + this.floatPhase) * 0.3;
-            this.glowLight.intensity = 1.5 * pulse;
+            this.glowLight.intensity = 1.5 * pulse * this.glowBoostMultiplier;
         }
     }
     
@@ -355,7 +389,7 @@ export class CollectibleOrb {
         this.mesh.visible = false;
         
         return {
-            points: this.points,
+            points: this.points + this.getSealBoostBonus(),
             type: this.type,
             healthRestore: this.type === OrbType.HEART ? 1 : undefined
         };
@@ -528,6 +562,22 @@ export class OrbManager {
     /** Set the power-up threshold */
     setPowerUpThreshold(threshold: number): void {
         this.powerUpThreshold = threshold;
+    }
+
+    /**
+     * Brighten nearby uncollected orbs (Stellar Seal Pup clap cheer).
+     * Returns how many orbs were boosted.
+     */
+    boostGlowNearby(center: THREE.Vector3, radius: number, multiplier: number, durationSeconds: number, time: number): number {
+        let count = 0;
+        for (const orb of this.orbs) {
+            if (orb.collected) continue;
+            if (orb.mesh.position.distanceTo(center) < radius) {
+                orb.applyGlowBoost(multiplier, durationSeconds, time);
+                count++;
+            }
+        }
+        return count;
     }
     
     /** Reset orb count (e.g., after power-up activation) */
