@@ -661,6 +661,10 @@ friendsManager.onFriendRescued = (count, position, kind) => {
         creatureCatalogManager.catalog('astro_bunny');
     }
 
+    if (kind === 'lemur') {
+        creatureCatalogManager.catalog('lunar_lemur');
+    }
+
     if (objective?.type === 'rescue') {
         hudManager.updateObjectiveProgress(count, objective.target);
         if (player) {
@@ -750,6 +754,20 @@ friendsManager.onAstroBunnyLucky = (position, bonus) => {
     slingComboManager.refreshComboTimer();
     if (player) {
         juiceManager.showFloatingText('Lucky Star!', position.clone(), '#ffd700', 22);
+        juiceManager.burstMagic(position.clone());
+    }
+    dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
+};
+
+friendsManager.onLemurHeartGift = (position) => {
+    const lemurMemory = saveManager.hasMemory('lunar_lemur');
+    orbManager.spawnHeartOrb(position.x, position.y, position.z);
+    creatureCatalogManager.catalog('lunar_lemur');
+    if (lemurMemory) {
+        orbManager.boostGlowNearby(position, 16, 2.0, 6.5, clock.getElapsedTime());
+    }
+    if (player) {
+        juiceManager.showFloatingText('Heart Fruit!', position.clone(), '#ff69b4', 22);
         juiceManager.burstMagic(position.clone());
     }
     dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
@@ -1026,10 +1044,29 @@ function spawnTarsiersForGravityAnchor(anchor: THREE.Group) {
     }
 }
 
+function maybeSpawnLemurOnProp(anchor: THREE.Object3D, perchType: 'geode' | 'gravityAnchor' | 'iceNeedle' | 'industrial') {
+    if (!debugSystem.isEnabled('spaceFriends')) return;
+    const cfg = levelManager.config[levelManager.currentLevel];
+    friendsManager.maybeSpawnLemurOnPerch(anchor, perchType, cfg);
+}
+
 function createGravityAnchorWithTarsiers(x: number, y: number, z: number, biome: number = 0) {
     const anchor = createGravityAnchorAtPosition(x, y, z, biome);
     spawnTarsiersForGravityAnchor(anchor);
+    maybeSpawnLemurOnProp(anchor, 'gravityAnchor');
     return anchor;
+}
+
+function createGeodeAtPositionWithLemur(x: number, y: number, z: number) {
+    const geode = createGeodeAtPosition(x, y, z);
+    maybeSpawnLemurOnProp(geode, 'geode');
+    return geode;
+}
+
+function createIceNeedleClusterAtPositionWithLemur(x: number, y: number, z: number) {
+    const cluster = createIceNeedleClusterAtPosition(x, y, z);
+    maybeSpawnLemurOnProp(cluster, 'iceNeedle');
+    return cluster;
 }
 
 function createSlingableObjectAtPosition(
@@ -1148,11 +1185,11 @@ const levelManager = new LevelManager({
         createSporeCloudAtPosition,
         createVoidRootBallAtPosition,
         createVacuumKelpAtPosition,
-        createIceNeedleClusterAtPosition,
+        createIceNeedleClusterAtPosition: createIceNeedleClusterAtPositionWithLemur,
         createLiquidMetalBlobAtPosition,
         createMagmaHeartAtPosition,
         createGravityAnchorAtPosition: createGravityAnchorWithTarsiers,
-        createGeodeAtPosition
+        createGeodeAtPosition: createGeodeAtPositionWithLemur
     },
     geologicalCounts: {
         sporeClouds: () => sporeClouds.length,
@@ -1168,6 +1205,7 @@ const levelManager = new LevelManager({
         playerState.distanceToMoon = cfg.distance;
         creatureManager.clear();
         discoveryManager.reset();
+        friendsManager.resetLevelLemurCap();
         toyRocketSpawnManager.spawnForLevel(levelManager.currentLevel, cfg);
         // Mine Robot memory: recharge the wrench auto-bounce for the new level
         wrenchChargeAvailable = saveManager.hasMemory('mine_robot');
@@ -1189,6 +1227,11 @@ const levelManager = new LevelManager({
             hudManager.updateObjectiveProgress(0, 0);
         } else {
             hudManager.updateObjectiveProgress(0, 0);
+        }
+
+        if (cfg.objective?.type === 'rescue' && levelManager.currentLevel === 3) {
+            const px = player?.position.x ?? 0;
+            friendsManager.spawnTrappedLemurIsland(px + 240, 5 + Math.random() * 4, -16 - Math.random() * 8);
         }
     },
     onUpdateLevelDisplay: (levelIndex, name) => {
@@ -2990,7 +3033,12 @@ function animate() {
         
         // Update space friends and spawn new ones
         if (debugSystem.isEnabled('spaceFriends')) {
-            friendsManager.update(delta, player.position, weaponSystem.getActiveProjectiles());
+            friendsManager.update(
+                delta,
+                player.position,
+                weaponSystem.getActiveProjectiles(),
+                new THREE.Vector3(playerState.autoScrollSpeed, playerState.currentSpeedY, 0)
+            );
             friendsManager.maybeSpawnFriends(
                 player.position.x,
                 levelManager.config[levelManager.currentLevel]
@@ -3286,6 +3334,7 @@ function animate() {
                     for (const anchor of gravityAnchors) {
                         if (proj.mesh.position.distanceTo(anchor.position) < 22) {
                             friendsManager.panicTarsiersNear(anchor.position);
+                            friendsManager.panicLemursNear(anchor.position);
                             // Dog notices the commotion
                             if (dogController.getCurrentState() === DogAnimationState.IDLE) {
                                 dogController.triggerAnimation(DogAnimationState.CURIOUS, 1.2);

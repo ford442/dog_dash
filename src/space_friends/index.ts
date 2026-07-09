@@ -11,4 +11,5 @@ export { SpaceOtter } from './SpaceOtter';
 export { TrappedFriend } from './TrappedFriend';
 export { FlotillaMember } from './FlotillaMember';
 export { FriendsManager } from './FriendsManager';
+export { LunarLemur, type LemurPerchType } from './LunarLemur';
 export { FriendsManager as default } from './FriendsManager';

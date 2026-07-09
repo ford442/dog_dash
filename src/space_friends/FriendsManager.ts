@@ -13,6 +13,9 @@ import { SpaceSealPup } from './SpaceSealPup';
 import { SpaceAstroBunny } from './SpaceAstroBunny';
 import { TrappedFriend } from './TrappedFriend';
 import { FlotillaMember } from './FlotillaMember';
+import { LunarLemur, type LemurPerchType } from './LunarLemur';
+import { decorationBudget } from '../decoration_budget';
+import type { LevelConfig } from '../level_config';
 
 export class FriendsManager {
     private scene: THREE.Scene;
@@ -29,6 +32,10 @@ export class FriendsManager {
     astroBunnies: SpaceAstroBunny[] = [];
     trappedFriends: TrappedFriend[] = [];
     flotilla: FlotillaMember[] = [];
+    lemurs: LunarLemur[] = [];
+
+    private lemursThisLevel = 0;
+    private readonly MAX_LEMURS_PER_LEVEL = 3;
 
     // Total friends rescued this run (drives the Level 3 "Rescue" objective)
     private rescuedCount: number = 0;
@@ -48,6 +55,9 @@ export class FriendsManager {
     /** Fired when an Astro Bunny finishes its lucky double-hop greet. */
     onAstroBunnyLucky?: (position: THREE.Vector3, bonus: number) => void;
 
+    /** Fired when a Lunar Lemur tosses a heart fruit (calm approach). */
+    onLemurHeartGift?: (position: THREE.Vector3) => void;
+
     // Cooldowns for audio (prevent spam)
     private lastKittySound: number = 0;
     private lastBunnySound: number = 0;
@@ -57,6 +67,7 @@ export class FriendsManager {
     private lastPenguinSound: number = 0;
     private lastSealSound: number = 0;
     private lastAstroBunnySound: number = 0;
+    private lastLemurSound: number = 0;
     
     // Spawn tracking
     private lastSpawnX: number = 0;
@@ -144,6 +155,59 @@ export class FriendsManager {
         }
     }
 
+    resetLevelLemurCap(): void {
+        this.lemursThisLevel = 0;
+    }
+
+    /**
+     * Perch a Lunar Lemur on a geological / industrial prop (max 3 per level).
+     * Returns null if budget, cap, or spawn roll fails.
+     */
+    maybeSpawnLemurOnPerch(
+        prop: THREE.Object3D,
+        perchType: LemurPerchType,
+        levelConfig?: LevelConfig,
+        perchOffsetY?: number
+    ): LunarLemur | null {
+        const rate = levelConfig?.lunarLemurRate ?? 0;
+        if (rate <= 0 || this.lemursThisLevel >= this.MAX_LEMURS_PER_LEVEL) return null;
+        if (Math.random() > rate) return null;
+        if (!decorationBudget.canSpawn('lunar_lemur')) return null;
+
+        const offsetY = perchOffsetY ?? (perchType === 'gravityAnchor' ? 3.2 : perchType === 'geode' ? 2.4 : 2.0);
+        const lemur = new LunarLemur(this.scene, prop.position, perchType, offsetY);
+        if (!decorationBudget.reportSpawn('lunar_lemur')) {
+            lemur.destroy(this.scene);
+            return null;
+        }
+        this.lemurs.push(lemur);
+        this.lemursThisLevel++;
+        return lemur;
+    }
+
+    /** Trapped lemur on a tiny floating island (rescue objective). */
+    spawnTrappedLemurIsland(x: number, y: number, z: number): TrappedFriend {
+        const island = new THREE.Group();
+        const rockMat = new THREE.MeshStandardMaterial({ color: 0x667788, roughness: 0.95 });
+        const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1.1, 0), rockMat);
+        rock.scale.set(1.4, 0.55, 1.2);
+        island.add(rock);
+        island.position.set(x, y, z);
+        this.scene.add(island);
+
+        const friend = this.spawnTrappedFriend(x, y + 0.9, 'lemur');
+        friend.group.position.z = z;
+        return friend;
+    }
+
+    panicLemursNear(worldPos: THREE.Vector3, radius: number = 20): void {
+        for (const lemur of this.lemurs) {
+            if (lemur.position.distanceTo(worldPos) < radius) {
+                lemur.triggerPanic();
+            }
+        }
+    }
+
     /**
      * Spawn a single trapped friend (cage/wreckage) awaiting rescue.
      */
@@ -155,7 +219,7 @@ export class FriendsManager {
             if (r < 0.08) {
                 chosen = 'moonpup';
             } else {
-                chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin', 'sealpup', 'astrobunny'] as TrappedFriendKind[])[Math.floor(Math.random() * 7)];
+                chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin', 'sealpup', 'astrobunny', 'lemur'] as TrappedFriendKind[])[Math.floor(Math.random() * 8)];
             }
         }
         const friend = new TrappedFriend(this.scene, x, y, chosen);
@@ -284,7 +348,7 @@ export class FriendsManager {
         return false;
     }
     
-    update(dt: number, playerPos: THREE.Vector3, projectiles: { active: boolean; mesh: THREE.Mesh }[] = []): void {
+    update(dt: number, playerPos: THREE.Vector3, projectiles: { active: boolean; mesh: THREE.Mesh }[] = [], playerVel?: THREE.Vector3): void {
         const now = Date.now();
         
         // Update all kitties
@@ -356,6 +420,21 @@ export class FriendsManager {
             const result = astroBunny.update(dt, playerPos, disturbed);
             if (result) {
                 this.handleInteraction(result, now);
+            }
+        }
+
+        const playerSpeed = playerVel ? playerVel.length() : 0;
+        for (let i = this.lemurs.length - 1; i >= 0; i--) {
+            const lemur = this.lemurs[i];
+            const disturbed = this.isFriendDisturbed(lemur.position, projectiles, 16);
+            const result = lemur.update(dt, playerPos, playerSpeed, disturbed);
+            if (result) {
+                this.handleInteraction(result, now);
+            }
+            if (lemur.gone) {
+                lemur.destroy(this.scene);
+                this.lemurs.splice(i, 1);
+                decorationBudget.reportDestroy('lunar_lemur');
             }
         }
 
@@ -507,6 +586,26 @@ export class FriendsManager {
                 this.particles.emit(result.position, 0xffeedd, 5, 2.0, 0.2, 0.5);
                 this.particles.emit(result.position, 0xffffff, 4, 1.5, 0.12, 0.4);
                 break;
+
+            case 'lemur_heart_gift':
+                if (now - this.lastLemurSound > 3200) {
+                    this.audio.playSequence([
+                        { sound: 'heart_pop', delay: 0, volume: 0.7 },
+                        { sound: 'twinkle', delay: 0.12, volume: 0.55 }
+                    ]);
+                    this.lastLemurSound = now;
+                }
+                this.particles.emit(result.position, 0xff69b4, 10, 3.5, 0.45, 1.0);
+                this.onLemurHeartGift?.(result.position);
+                break;
+
+            case 'lemur_panic':
+                if (now - this.lastLemurSound > 1200) {
+                    this.audio.play('sparkle', 0.3);
+                    this.lastLemurSound = now;
+                }
+                this.particles.emit(result.position, 0xccb8dd, 5, 2.2, 0.3, 0.7);
+                break;
         }
     }
     
@@ -623,6 +722,15 @@ export class FriendsManager {
             }
         }
 
+        for (let i = this.lemurs.length - 1; i >= 0; i--) {
+            const lemur = this.lemurs[i];
+            if (lemur.perchPos.x < playerX - buffer) {
+                lemur.destroy(this.scene);
+                this.lemurs.splice(i, 1);
+                decorationBudget.reportDestroy('lunar_lemur');
+            }
+        }
+
         // Remove trapped friends the player has flown past without rescuing
         for (let i = this.trappedFriends.length - 1; i >= 0; i--) {
             const trapped = this.trappedFriends[i];
@@ -673,7 +781,7 @@ export class FriendsManager {
     /**
      * Get total friend count
      */
-    getFriendCount(): { kitties: number; bunnies: number; lanterns: number; tarsiers: number; otters: number; penguins: number; sealPups: number; astroBunnies: number; total: number } {
+    getFriendCount(): { kitties: number; bunnies: number; lanterns: number; tarsiers: number; otters: number; penguins: number; sealPups: number; astroBunnies: number; lemurs: number; total: number } {
         return {
             kitties: this.kitties.length,
             bunnies: this.bunnies.length,
@@ -683,7 +791,8 @@ export class FriendsManager {
             penguins: this.penguins.length,
             sealPups: this.sealPups.length,
             astroBunnies: this.astroBunnies.length,
-            total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length + this.otters.length + this.penguins.length + this.sealPups.length + this.astroBunnies.length
+            lemurs: this.lemurs.length,
+            total: this.kitties.length + this.bunnies.length + this.lanterns.length + this.tarsiers.length + this.otters.length + this.penguins.length + this.sealPups.length + this.astroBunnies.length + this.lemurs.length
         };
     }
 
@@ -697,6 +806,7 @@ export class FriendsManager {
             ...this.penguins.map(friend => friend.group),
             ...this.sealPups.map(friend => friend.group),
             ...this.astroBunnies.map(friend => friend.group),
+            ...this.lemurs.map(friend => friend.group),
             ...this.trappedFriends.map(friend => friend.group),
             ...this.flotilla.map(friend => friend.group)
         ];
@@ -746,6 +856,12 @@ export class FriendsManager {
         }
         this.astroBunnies = [];
         this.astroBunniesThisSegment = 0;
+
+        for (const lemur of this.lemurs) {
+            lemur.destroy(this.scene);
+        }
+        this.lemurs = [];
+        this.lemursThisLevel = 0;
 
         for (const trapped of this.trappedFriends) {
             trapped.destroy(this.scene);

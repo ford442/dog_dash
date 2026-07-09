@@ -254,6 +254,11 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'creatures',
         maxActive: 20
     });
+    decorationBudget.register('lunar_lemur', {
+        label: 'Lunar lemurs',
+        category: 'creatures',
+        maxActive: 3
+    });
     decorationBudget.register('crystal_chimes', {
         label: 'Crystal chime clusters',
         category: 'effects',

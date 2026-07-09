@@ -26,7 +26,9 @@ export class TrappedFriend {
                     ? 'trappedSealPup'
                     : kind === 'astrobunny'
                         ? 'trappedAstroBunny'
-                        : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+                        : kind === 'lemur'
+                            ? 'trappedLemur'
+                            : `trapped${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         // Occupant - the trapped friend, glowing softly inside the wreckage
         const occupantGeo = new THREE.SphereGeometry(0.35, 12, 12);

@@ -19,7 +19,8 @@ export type BestiaryEntryId =
     | 'stellar_seal_pup'
     | 'astro_bunny'
     | 'moon_snail'
-    | 'toy_wreck';
+    | 'toy_wreck'
+    | 'lunar_lemur';
 
 export interface BestiaryEntry {
     id: BestiaryEntryId;
@@ -136,6 +137,14 @@ export const BESTIARY_ENTRIES: Record<BestiaryEntryId, BestiaryEntry> = {
         flavor: 'A tiny pastel rocket from someone else\'s voyage — bent fins, missing pieces, maybe a brave little flag.',
         howTo: 'Scan floating wreckage, or sling it in a spectacular arc.',
         memoryDesc: 'Memory: A story fragment, not a power — "Someone else\'s adventure..."'
+    },
+    lunar_lemur: {
+        id: 'lunar_lemur',
+        name: 'Lunar Lemur',
+        icon: '\u{1F9A7}', // monkey
+        flavor: 'A ring-tailed lemur with enormous moonlit eyes, perched on crystal spires and watching pilots drift by.',
+        howTo: 'Approach calmly without shooting — let it greet you with a heart fruit.',
+        memoryDesc: 'Memory: Night zones feel brighter — collectible glow lasts longer.'
     }
 };
 

@@ -141,6 +141,8 @@ export type LevelConfig = {
     stellarSealPupRate?: number;
     /** Weight for Astro Bunny spawns (levels 2–5). */
     astroBunnyRate?: number;
+    /** Chance (0–1) to perch a Lunar Lemur on eligible geological props (max 3/level). */
+    lunarLemurRate?: number;
     /** Twirling pinwheel flowers per ~100 units along the level (0 = off). */
     pinwheelDensity?: number;
     /** Starlight koi school count for biological / aquatic / nebula levels (0 = off, max ~8 schools). */
@@ -216,6 +218,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         candyAsteroidChance: 0.15,
         pinwheelDensity: 0.14,
         windChimeDensity: 0.45,
+        lunarLemurRate: 0.28,
         enemyTintColor: 0x66ff99,
         environments: {
             asteroidField: { rate: 2.5 },
@@ -265,6 +268,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         geodeTitanRate: 0.0008,
         cosmicOtterRate: 0.22,
         astroBunnyRate: 0.2,
+        lunarLemurRate: 0.38,
         gummyRingDensity: 0.07,
         candyAsteroidChance: 0.32,
         pinwheelDensity: 0.07,
@@ -315,6 +319,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         cosmicOtterRate: 0.25,
         stellarSealPupRate: 0.12,
         astroBunnyRate: 0.16,
+        lunarLemurRate: 0.42,
         gummyRingDensity: 0.05,
         candyAsteroidChance: 0.1,
         pinwheelDensity: 0.09,
@@ -373,6 +378,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         astroPenguinRate: 0.18,
         stellarSealPupRate: 0.14,
         astroBunnyRate: 0.12,
+        lunarLemurRate: 0.35,
         pinwheelDensity: 0.05,
         windChimeDensity: 0.55,
         candyAsteroidChance: 0.08,
@@ -435,6 +441,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         astroPenguinRate: 0.22,
         stellarSealPupRate: 0.15,
         astroBunnyRate: 0.14,
+        lunarLemurRate: 0.32,
         pinwheelDensity: 0.08,
         candyAsteroidChance: 0.14,
         koiSchoolDensity: 4,
@@ -488,6 +495,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         squidSpawnRate: 0.0012,
         astroPenguinRate: 0.2,
         stellarSealPupRate: 0.18,
+        lunarLemurRate: 0.25,
         pinwheelDensity: 0.11,
         windChimeDensity: 0.6,
         candyAsteroidChance: 0.12,

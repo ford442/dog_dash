@@ -49,6 +49,9 @@ export const SPECIES_NAMES: Record<string, string> = {
     auroraRay: 'Aurora Ray',
     nebulaPuffer: 'Nebula Puffer',
     toyRocketWreck: 'Toy Rocket Wreck',
+    lunarLemur: 'Lunar Lemur',
+    trappedLemur: 'Trapped Lunar Lemur',
+    rescuedLemur: 'Rescued Lunar Lemur',
 };
 
 const SCAN_RADIUS = 12;

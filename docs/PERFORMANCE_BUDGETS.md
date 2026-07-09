@@ -65,6 +65,7 @@ Production builds keep counter enforcement with **no DOM overlay** unless `?debu
 | `foliage_scatter` | `level_manager.ts` | Streaming decorative plants |
 | `butterfly_swarm` | `butterfly_swarm.ts` | Fixed 100-instance background pool |
 | `butterfly_escort` | `butterfly_swarm.ts` | ≤20 escort instances |
+| `lunar_lemur` | `LunarLemur.ts` | ≤3 hero perches per level |
 | `crystal_chimes` | `crystal_chimes.ts` | ≤12 clusters, instanced rods |
 | `wind_chimes` | `wind_chimes.ts` | ≤8 hero mobiles |
 | `nebula_cloud_puffs` | `nebula.ts` | 45 cloud instances (3 layers) |

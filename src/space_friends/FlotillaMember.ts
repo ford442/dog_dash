@@ -23,7 +23,9 @@ export class FlotillaMember {
                     ? 'rescuedSealPup'
                     : kind === 'astrobunny'
                         ? 'rescuedAstroBunny'
-                        : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
+                        : kind === 'lemur'
+                            ? 'rescuedLemur'
+                            : `rescued${kind.charAt(0).toUpperCase()}${kind.slice(1)}`;
 
         const bodyGeo = new THREE.SphereGeometry(0.35, 12, 12);
         const bodyMat = new THREE.MeshStandardMaterial({
@@ -166,6 +168,19 @@ export class FlotillaMember {
                     })
                 );
                 this.group.add(miniHelmet);
+                break;
+            }
+            case 'lemur': {
+                const ringMat = new THREE.MeshStandardMaterial({ color: 0x9988aa, roughness: 0.85 });
+                const tail = new THREE.Group();
+                tail.position.set(0, -0.05, -0.28);
+                for (let i = 0; i < 3; i++) {
+                    const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.14, 5), ringMat);
+                    seg.rotation.x = Math.PI / 2;
+                    seg.position.z = -i * 0.12;
+                    tail.add(seg);
+                }
+                this.group.add(tail);
                 break;
             }
         }

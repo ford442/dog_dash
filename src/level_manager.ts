@@ -235,6 +235,15 @@ export class LevelManager {
         nebulaSystem.setMagicActive(active);
     }
 
+    private trackFoliageSpawn(obj: THREE.Object3D): boolean {
+        if (!decorationBudget.canSpawn('foliage_scatter')) return false;
+        if (!decorationBudget.reportSpawn('foliage_scatter')) return false;
+        this.scene.add(obj);
+        this.levelObjects.push(obj);
+        moonPlants.push(obj);
+        return true;
+    }
+
     startLevel(levelIndex: number) {
         this.currentLevel = levelIndex;
         const cfg = this.config[levelIndex];
@@ -654,14 +663,7 @@ export class LevelManager {
                 return dx * dx + dy * dy < c.radius * c.radius;
             });
 
-        const trackFoliageSpawn = (obj: THREE.Object3D): boolean => {
-            if (!decorationBudget.canSpawn('foliage_scatter')) return false;
-            if (!decorationBudget.reportSpawn('foliage_scatter')) return false;
-            this.scene.add(obj);
-            this.levelObjects.push(obj);
-            moonPlants.push(obj);
-            return true;
-        };
+        const trackFoliageSpawn = (obj: THREE.Object3D) => this.trackFoliageSpawn(obj);
 
         const spawn = (
             count: number,
@@ -870,7 +872,7 @@ export class LevelManager {
                     const s = 0.75 + Math.random() * 0.35;
                     obj.scale.set(s, s, s);
                     obj.userData.speciesId = isFlowering ? 'floweringTree' : 'tree';
-                    trackFoliageSpawn(obj);
+                    this.trackFoliageSpawn(obj);
                 }
             }
         }
@@ -888,14 +890,14 @@ export class LevelManager {
                 let s = 0.65 + Math.random() * 0.25;
                 obj1.scale.set(s, s, s);
                 obj1.userData.speciesId = 'rose';
-                trackFoliageSpawn(obj1);
+                this.trackFoliageSpawn(obj1);
 
                 const obj2 = createNebulaRose({ color: 0xFF1493 });
                 obj2.position.set(ax + 1.5, gapY + sep * 0.5, az + 0.8);
                 s = 0.65 + Math.random() * 0.25;
                 obj2.scale.set(s, s, s);
                 obj2.userData.speciesId = 'rose';
-                trackFoliageSpawn(obj2);
+                this.trackFoliageSpawn(obj2);
             }
         }
 
