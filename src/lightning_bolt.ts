@@ -16,6 +16,10 @@ import {
     fract,
     abs,
     normalView,
+    dot,
+    uv,
+    vec2,
+    floor,
     positionWorld,
     length,
     distance,
@@ -27,6 +31,43 @@ import { WeaponLightManager } from './lighting';
 /**
  * Creates a TSL material for jagged lightning bolts.
  */
+
+
+const random2D = (v: any) => {
+    return sin(dot(v, vec2(12.9898, 78.233))).mul(43758.5453).fract();
+};
+
+const valueNoise = (v: any) => {
+    const i = floor(v);
+    const f = fract(v);
+
+    const a = random2D(i);
+    const b = random2D(i.add(vec2(1.0, 0.0)));
+    const c = random2D(i.add(vec2(0.0, 1.0)));
+    const d = random2D(i.add(vec2(1.0, 1.0)));
+
+    const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
+
+    return mix(a, b, u.x).add(
+        (c.sub(a).mul(u.y).mul(float(1.0).sub(u.x))).add(
+        (d.sub(b).mul(u.x).mul(u.y)))
+    );
+};
+
+const fbm = (v: any) => {
+    let total = float(0.0).toVar();
+    let amplitude = float(0.5).toVar();
+    let frequency = float(1.0).toVar();
+
+    // 4 Octaves for detailed lightning
+    Loop({ start: 0, end: 4 }, () => {
+        total.addAssign(valueNoise(v.mul(frequency)).mul(amplitude));
+        frequency.mulAssign(2.0);
+        amplitude.mulAssign(0.5);
+    });
+
+    return total;
+};
 
 function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
@@ -46,27 +87,22 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
     // Advanced procedural jagged offset for volumetric core using fract
     // We use a pseudo-random stepped approach to create sharp turns
     const timeSpeed = uTime.mul(30.0);
-    const stepY = fract(y.mul(5.0).add(timeSpeed)).mul(2.0).sub(1.0);
-    const sharpNoise1 = sin(y.mul(20.0).add(timeSpeed)).mul(stepY).mul(1.5);
-    const sharpNoise2 = cos(y.mul(45.0).sub(timeSpeed)).mul(fract(y.mul(12.0))).mul(1.0);
-    const sharpNoise3 = sin(y.mul(100.0).add(timeSpeed)).mul(0.5);
+    // FBM based procedural displacement for jagged lightning
+    const noiseOffsetX = fbm(vec2(y.mul(4.0), timeSpeed.mul(0.5))).sub(0.5).mul(8.0);
+    const noiseOffsetZ = fbm(vec2(y.mul(4.5).add(10.0), timeSpeed.mul(0.5))).sub(0.5).mul(8.0);
 
-    // Main branch displacement
-    const totalOffsetX = sharpNoise1.add(sharpNoise2).add(sharpNoise3);
+    const highFreqX = fbm(vec2(y.mul(15.0), timeSpeed.mul(1.5))).sub(0.5).mul(2.0);
+    const highFreqZ = fbm(vec2(y.mul(15.0).add(20.0), timeSpeed.mul(1.5))).sub(0.5).mul(2.0);
 
-    const stepZ = fract(y.mul(7.0).add(timeSpeed)).mul(2.0).sub(1.0);
-    const sharpZ1 = sin(y.mul(15.0).add(timeSpeed)).mul(stepZ).mul(1.5);
-    const sharpZ2 = cos(y.mul(35.0).sub(timeSpeed)).mul(fract(y.mul(9.0))).mul(1.2);
-    const sharpZ3 = sin(y.mul(90.0).sub(timeSpeed)).mul(0.5);
-    const totalOffsetZ = sharpZ1.add(sharpZ2).add(sharpZ3);
+    const totalOffsetX = noiseOffsetX.add(highFreqX);
+    const totalOffsetZ = noiseOffsetZ.add(highFreqZ);
 
     // Chaotic secondary forks branching out
-    // Fork activates strongly towards the bottom (higher y if y goes 0 to 1, or lower if 1 to 0, let's use y)
-    const forkTrigger = sin(y.mul(10.0).add(timeSpeed)).add(sin(y.mul(33.0).sub(timeSpeed)));
-    const isFork = smoothstep(0.5, 1.5, forkTrigger);
+    const forkTrigger = fbm(vec2(y.mul(8.0), timeSpeed.mul(0.8)));
+    const isFork = smoothstep(0.6, 0.8, forkTrigger);
 
-    const forkOffsetX = cos(y.mul(40.0).add(timeSpeed)).mul(4.0).mul(y).mul(isFork);
-    const forkOffsetZ = sin(y.mul(50.0).sub(timeSpeed)).mul(3.0).mul(y).mul(isFork);
+    const forkOffsetX = fbm(vec2(y.mul(20.0), timeSpeed)).sub(0.5).mul(12.0).mul(y).mul(isFork);
+    const forkOffsetZ = fbm(vec2(y.mul(20.0).add(30.0), timeSpeed)).sub(0.5).mul(12.0).mul(y).mul(isFork);
 
     const sideFactorX = sin(x.mul(Math.PI * 2.0));
     const sideFactorZ = cos(x.mul(Math.PI * 2.0));
@@ -139,6 +175,124 @@ function createLightningMaterial(uColor: any, weaponLights?: any, uPlayerPos?: a
 }
 
 
+
+function createShockwaveMaterial(uColor: any) {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.DoubleSide
+    });
+
+    const dist = length(uv().sub(0.5));
+    const ringInner = smoothstep(0.3, 0.45, dist);
+    const ringOuter = smoothstep(0.45, 0.5, dist).oneMinus();
+
+    const ringAlpha = ringInner.mul(ringOuter);
+
+    mat.colorNode = vec4(uColor, ringAlpha);
+    mat.userData.uColor = uColor;
+
+    return mat;
+}
+
+export class LightningShockwaveLayer {
+    scene: THREE.Scene;
+    mesh: THREE.InstancedMesh;
+    dummy: THREE.Object3D;
+    count: number;
+
+    positions: Float32Array;
+    timers: Float32Array;
+    baseScales: Float32Array;
+
+    constructor(scene: THREE.Scene, count: number = 10) {
+        this.scene = scene;
+        this.count = count;
+
+        const geo = new THREE.PlaneGeometry(10, 10);
+        const uColor = uniform(new THREE.Color(0x88bbff));
+        const mat = createShockwaveMaterial(uColor);
+
+        this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
+        this.mesh.frustumCulled = false;
+        this.mesh.renderOrder = -1;
+
+        this.dummy = new THREE.Object3D();
+        this.positions = new Float32Array(this.count * 3);
+        this.timers = new Float32Array(this.count);
+        this.baseScales = new Float32Array(this.count);
+
+        for (let i = 0; i < this.count; i++) {
+            this.timers[i] = 0;
+            this.dummy.scale.set(0, 0, 0);
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
+        }
+
+        scene.add(this.mesh);
+    }
+
+    trigger(pos: THREE.Vector3, colorHex: number, scale: number = 1.0) {
+        for (let i = 0; i < this.count; i++) {
+            if (this.timers[i] <= 0) {
+                this.timers[i] = 0.5; // 0.5 seconds life
+                this.positions[i * 3] = pos.x;
+                this.positions[i * 3 + 1] = pos.y;
+                this.positions[i * 3 + 2] = pos.z;
+                this.baseScales[i] = scale;
+
+                const mat = this.mesh.material as any;
+                if (mat.userData && mat.userData.uColor) {
+                    mat.userData.uColor.value.setHex(colorHex);
+                }
+                break;
+            }
+        }
+    }
+
+    update(delta: number) {
+        let needsUpdate = false;
+        for (let i = 0; i < this.count; i++) {
+            if (this.timers[i] > 0) {
+                this.timers[i] -= delta;
+                if (this.timers[i] <= 0) {
+                    this.timers[i] = 0;
+                    this.dummy.scale.set(0, 0, 0);
+                    this.dummy.updateMatrix();
+                    this.mesh.setMatrixAt(i, this.dummy.matrix);
+                    needsUpdate = true;
+                } else {
+                    const life = this.timers[i] / 0.5; // 1.0 down to 0.0
+                    // Expanding shockwave ring
+                    const currentScale = this.baseScales[i] * (1.0 + (1.0 - life) * 4.0);
+
+                    this.dummy.position.set(this.positions[i*3], this.positions[i*3+1], this.positions[i*3+2]);
+                    this.dummy.rotation.x = -Math.PI / 2; // Flat on the ground plane
+
+                    // Emulate fading via scaling Z which we don't use, wait no, let's just scale it.
+                    // As it expands, the thickness visually decreases.
+                    this.dummy.scale.set(currentScale, currentScale, 1.0);
+                    this.dummy.updateMatrix();
+                    this.mesh.setMatrixAt(i, this.dummy.matrix);
+                    needsUpdate = true;
+                }
+            }
+        }
+
+        if (needsUpdate) {
+            this.mesh.instanceMatrix.needsUpdate = true;
+        }
+    }
+
+    cleanup() {
+        this.scene.remove(this.mesh);
+        this.mesh.geometry.dispose();
+        (this.mesh.material as any).dispose?.();
+
+    }
+}
+
 export class LightningBoltSystem {
     weaponLightManager?: WeaponLightManager;
     uPlayerPos: any = uniform(new THREE.Vector3(0,0,0));
@@ -147,6 +301,7 @@ export class LightningBoltSystem {
     mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
     count: number = 10;
+    shockwaveLayer!: LightningShockwaveLayer;
 
     positions: Float32Array;
     timers: Float32Array;
@@ -191,6 +346,7 @@ export class LightningBoltSystem {
         }
 
         this.scene.add(this.mesh);
+        this.shockwaveLayer = new LightningShockwaveLayer(scene, this.count);
         this.deactivate();
     }
 
@@ -210,12 +366,14 @@ export class LightningBoltSystem {
         if (this.active) return;
         this.active = true;
         this.mesh.visible = true;
+        if (this.shockwaveLayer) this.shockwaveLayer.mesh.visible = true;
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
+        if (this.shockwaveLayer) this.shockwaveLayer.mesh.visible = false;
     }
 
     update(delta: number, cameraX: number, playerSpeed: number = 8.0, playerPos?: THREE.Vector3) {
@@ -257,6 +415,11 @@ export class LightningBoltSystem {
                         const mat = this.mesh.material as any;
                         const strikeColor = mat.userData && mat.userData.uColor ? mat.userData.uColor.value : new THREE.Color(0x88bbff);
                         this.onBoltStrike(new THREE.Vector3(x, y, z), strikeColor);
+
+                        // Trigger expanding shockwave at base level
+                        if (this.shockwaveLayer) {
+                            this.shockwaveLayer.trigger(new THREE.Vector3(x, y - 20, z), strikeColor.getHex(), 1.0 + Math.random() * 1.5);
+                        }
                     }
 
                     this.positions[i * 3] = x;
@@ -280,6 +443,8 @@ export class LightningBoltSystem {
             }
         }
 
+        if (this.shockwaveLayer) this.shockwaveLayer.update(delta);
+
         if (needsUpdate) {
             this.mesh.instanceMatrix.needsUpdate = true;
         }
@@ -289,5 +454,6 @@ export class LightningBoltSystem {
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         (this.mesh.material as any).dispose?.();
+
     }
 }
