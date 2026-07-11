@@ -129,6 +129,47 @@ function createAccretionDiskMaterial(flareUniform?: any) {
 /**
  * Creates a TSL material for the gravitational lensing halo with dynamic intensity.
  */
+
+/**
+ * Creates a TSL material for an expanding plasma shockwave.
+ */
+function createShockwaveMaterial(flareUniform: any) {
+    const mat = new MeshBasicNodeMaterial({
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+
+    const pos = positionLocal.xy;
+    const dist = length(pos);
+
+    // Normalize distance between inner (35) and outer (200) radius
+    const normalizedDist = dist.sub(35.0).div(200.0 - 35.0);
+
+    // The shockwave expands outwards based on the flare uniform.
+    // flareUniform spikes to ~1.0 when hit, then decays to 0.0.
+    // We invert it so the wave moves outward as it decays, or just map it.
+    // Actually, flareUniform goes from 1.0 -> 0.0 over time.
+    // Let's make the ring radius expand as flare drops.
+    const progress = float(1.0).sub(flareUniform.clamp(0.0, 1.0)); // 0.0 to 1.0
+
+    // Ring shape
+    const ringDist = normalizedDist.sub(progress);
+    const ringThickness = float(0.05).add(progress.mul(0.1)); // Gets thicker as it expands
+    const alpha = float(1.0).sub(smoothstep(float(0.0), ringThickness, ringDist.abs()));
+
+    // Fade out as it expands
+    const fadeOut = float(1.0).sub(progress).pow(2.0);
+
+    // Color gradient
+    const shockColor = color(0xffffff).mix(color(0xffaa00), progress);
+
+    mat.colorNode = vec4(shockColor, alpha.mul(fadeOut).mul(0.8));
+
+    return mat;
+}
+
 function createHaloMaterial(intensityUniform?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
@@ -164,6 +205,7 @@ export class BlackHoleSystem {
     accretionDisk: THREE.Mesh;
     halo: THREE.Mesh;
     lensingMesh: THREE.Mesh;
+    shockwaveMesh: THREE.Mesh;
 
     baseX: number = 2000;
     baseZ: number = -400;
@@ -212,6 +254,16 @@ export class BlackHoleSystem {
         this.group.add(this.eventHorizon);
         this.group.add(this.halo);
         this.group.add(this.lensingMesh);
+
+        const shockwaveGeo = new THREE.RingGeometry(35, 200, 64);
+        const shockwaveMat = createShockwaveMaterial(this.flareUniform);
+        this.shockwaveMesh = new THREE.Mesh(shockwaveGeo, shockwaveMat);
+        this.shockwaveMesh.rotation.x = -Math.PI * 0.4;
+        this.shockwaveMesh.rotation.y = Math.PI * 0.1;
+        this.shockwaveMesh.position.z = -1.5; // Slightly behind accretion disk
+
+        this.group.add(this.shockwaveMesh);
+
 
         this.group.renderOrder = -10;
         scene.add(this.group);
@@ -343,5 +395,9 @@ export class BlackHoleSystem {
         (this.halo.material as any).dispose?.();
         this.lensingMesh.geometry.dispose();
         (this.lensingMesh.material as any).dispose?.();
+
+        this.shockwaveMesh.geometry.dispose();
+        (this.shockwaveMesh.material as any).dispose?.();
+
     }
 }
