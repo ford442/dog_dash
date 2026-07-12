@@ -329,7 +329,7 @@ export function createCoresDisplay() {
         text-shadow: 0 0 10px rgba(0,255,255,0.5);
         z-index: 100;
     `;
-    coresDiv.innerHTML = `🔷 Cores: <span id="cores-count">0</span> | Total: <span id="cores-total">${saveManager.getCores()}</span>`;
+    coresDiv.innerHTML = `🔷 Cores: <span id="cores-count">0</span> | Total: <span id="cores-total">${game.saveManager.getCores()}</span>`;
     document.body.appendChild(coresDiv);
 }
 

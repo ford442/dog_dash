@@ -1,11 +1,6 @@
 import type { NebulaKraken } from '../space_robot_squid';
 import { BOSS_DISPLAY_NAME } from '../space_robot_squid';
 
-let bossHealthBar: HTMLDivElement | null = null;
-let bossHealthFill: HTMLDivElement | null = null;
-let bossHealthLabel: HTMLDivElement | null = null;
-
-// =============================================================================
 // BOSS HEALTH BAR UI
 // =============================================================================
 let bossHealthBar: HTMLDivElement | null = null;
