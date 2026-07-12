@@ -52,6 +52,14 @@ export const playerState = {
 export let isGamePaused = false;
 export let gameStarted = false;
 
+export function setGameStarted(value: boolean): void {
+    gameStarted = value;
+}
+
+export function setIsGamePaused(value: boolean): void {
+    isGamePaused = value;
+}
+
 // --- Error Handling ---
 export function showError(title: string, message: string) {
     const errorDiv = document.createElement('div');
