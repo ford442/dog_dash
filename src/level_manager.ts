@@ -547,9 +547,9 @@ export class LevelManager {
         if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
             nebulaSystem.update(delta, cameraX, playerPos, speed);
         }
-        if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX);
+        if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX, playerPos);
         if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, playerPos);
-        if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX);
+        if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX, playerPos);
         if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
