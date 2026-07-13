@@ -499,8 +499,9 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                     if ((proj as any).velocity) {
                         shotDir.copy((proj as any).velocity).normalize();
                     }
-                    const hit = game.asteroidFieldSystem.hitAsteroid(proj.mesh.position, game.particleSystem, camera.position, shotDir);
-                    if (hit) {
+                    const hitAsteroid = game.asteroidFieldSystem.hitAsteroid(proj.mesh.position, game.particleSystem, camera.position, shotDir);
+                    const hitMeteor = game.meteorShowerSystem.hitMeteor(proj.mesh.position, game.particleSystem, camera.position, shotDir);
+                    if (hitAsteroid || hitMeteor) {
                         game.audioSystem.play('explode');
                         // We DO NOT deactivate the projectile here so it doesn't get blocked by background visual elements
                     }

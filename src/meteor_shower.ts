@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { time, vec4, color, mix, sin, positionLocal } from 'three/tsl';
+import { time, vec4, vec3, color, mix, sin, positionLocal, positionWorld, length, smoothstep, uniform, Loop, distance, float } from 'three/tsl';
+import { WeaponLightManager } from './lighting';
 
-function createMeteorMaterial(opacityMultiplier: number = 1.0) {
+function createMeteorMaterial(opacityMultiplier: number = 1.0, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -26,7 +27,32 @@ function createMeteorMaterial(opacityMultiplier: number = 1.0) {
 
     // Mix colors based on normalizedZ
     const colorMix1 = mix(tailColor, midColor, normalizedZ.mul(2.0));
-    const finalColor = mix(colorMix1, coreColor, normalizedZ.mul(2.0).sub(1.0).clamp(0.0, 1.0));
+    let finalColor: any = mix(colorMix1, coreColor, normalizedZ.mul(2.0).sub(1.0).clamp(0.0, 1.0));
+
+    // Player Engine Glow Interaction
+    if (uPlayerPos) {
+        const distToPlayer = length(positionWorld.sub(uPlayerPos));
+        const playerGlow = smoothstep(50.0, 0.0, distToPlayer).mul(0.6);
+        finalColor = finalColor.add(vec3(1.0, 0.5, 0.2).mul(playerGlow));
+    }
+
+    // Weapon Projectile Interactions
+    if (weaponLights) {
+        const uWeaponColor = uniform(new THREE.Color(0x00ffff));
+        const weaponGlow = float(0.0).toVar();
+
+        Loop({ start: 0, end: 20 }, ({ i }) => {
+            const lightData = weaponLights.element(i);
+            const lightPos = lightData.xyz;
+            const lightIntensity = lightData.w;
+
+            const distToLight = distance(positionWorld, lightPos);
+            const lightFactor = smoothstep(40.0, 0.0, distToLight).mul(lightIntensity);
+            weaponGlow.addAssign(lightFactor);
+        });
+
+        finalColor = finalColor.add(uWeaponColor.mul(weaponGlow));
+    }
 
     // Opacity fades out towards the tail
     const alpha = normalizedZ.mul(flicker).mul(opacityMultiplier);
@@ -51,10 +77,14 @@ export class MeteorShowerSystem {
     scene: THREE.Scene;
     active: boolean = false;
     dummy: THREE.Object3D;
+    weaponLightManager?: WeaponLightManager;
+    uPlayerPos: any;
 
     layers: MeteorLayer[] = [];
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager?: WeaponLightManager) {
+        this.weaponLightManager = weaponLightManager;
+        this.uPlayerPos = uniform(new THREE.Vector3(9999, 9999, 9999));
         this.scene = scene;
         this.dummy = new THREE.Object3D();
 
@@ -66,7 +96,8 @@ export class MeteorShowerSystem {
 
         for (const config of layerConfigs) {
             const geo = new THREE.BoxGeometry(0.5 * config.scale, 0.5 * config.scale, 20 * config.scale);
-            const mat = createMeteorMaterial(config.opacity);
+            const weaponLights = this.weaponLightManager ? this.weaponLightManager.storageNode : undefined;
+            const mat = createMeteorMaterial(config.opacity, weaponLights, this.uPlayerPos);
 
             const mesh = new THREE.InstancedMesh(geo, mat, config.count);
             mesh.frustumCulled = false; // Wrap manually
@@ -147,8 +178,11 @@ export class MeteorShowerSystem {
         }
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
+        if (playerPos) {
+            this.uPlayerPos.value.copy(playerPos);
+        }
 
         for (const layer of this.layers) {
             for (let i = 0; i < layer.count; i++) {
@@ -164,6 +198,56 @@ export class MeteorShowerSystem {
             }
             layer.mesh.instanceMatrix.needsUpdate = true;
         }
+    }
+
+    hitMeteor(worldPosition: THREE.Vector3, particleSystem: any, cameraPos: THREE.Vector3, shotDirection: THREE.Vector3 = new THREE.Vector3(1, 0, 0)): boolean {
+        if (!this.active) return false;
+
+        let hitFound = false;
+        const rayDir = new THREE.Vector3().subVectors(worldPosition, cameraPos).normalize();
+
+        for (const layer of this.layers) {
+            for (let i = 0; i < layer.count; i++) {
+                const idx = i * 3;
+                const mx = layer.positions[idx];
+                const my = layer.positions[idx+1];
+                const mz = layer.positions[idx+2];
+
+                // Scale checking - if it's currently exploding/invisible we shouldn't hit it again
+                // For now meteors don't have scale array so we assume they are active. We'll use a hack to move them offscreen when hit.
+                if (mx < cameraPos.x - 100) continue;
+
+                if (Math.abs(rayDir.z) < 0.001) continue;
+                const t = (mz - cameraPos.z) / rayDir.z;
+                if (t < 0) continue;
+
+                const projectedX = cameraPos.x + t * rayDir.x;
+                const projectedY = cameraPos.y + t * rayDir.y;
+
+                const distSq = (projectedX - mx) * (projectedX - mx) + (projectedY - my) * (projectedY - my);
+
+                // Meteors are long but thin. Approximate hit radius based on scale.
+                // 0.5 is base width, scale adjusts it.
+                const hitRadius = layer.scale * 2.0;
+
+                if (distSq < hitRadius * hitRadius) {
+                    hitFound = true;
+
+                    // Explode
+                    if (particleSystem) {
+                        particleSystem.emit(new THREE.Vector3(mx, my, mz), 0xffaa00, 10, 4.0, layer.scale);
+                        particleSystem.emit(new THREE.Vector3(mx, my, mz), 0xffffff, 5, 2.0, layer.scale * 0.5);
+                    }
+
+                    // Move offscreen to simulate destruction (it will reset normally)
+                    layer.positions[idx] = cameraPos.x - 200;
+                    this.updateInstance(layer, i);
+                    layer.mesh.instanceMatrix.needsUpdate = true;
+                    return true; // Single hit
+                }
+            }
+        }
+        return hitFound;
     }
 
     cleanup() {

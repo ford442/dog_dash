@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { uniform } from 'three/tsl';
 import { WeaponLightManager } from './lighting';
 import { createAsteroidFieldMaterial } from './candy_materials';
 
@@ -39,7 +40,8 @@ export class AsteroidLayer {
             width: number,
             opacity?: number,
             weaponLights: any,
-            candyChance?: number
+            candyChance?: number,
+            uPlayerPos?: any
         }
     ) {
         this.maxCount = config.count;
@@ -58,7 +60,8 @@ export class AsteroidLayer {
             config.color,
             config.opacity ?? 1.0,
             config.weaponLights,
-            this.candyChance
+            this.candyChance,
+            config.uPlayerPos
         );
 
         this.mesh = new THREE.InstancedMesh(geometry, material, this.maxCount);
@@ -400,16 +403,20 @@ export class AsteroidLayer {
     }
 }
 
+
+
 export class AsteroidFieldSystem {
     scene: THREE.Scene;
     layers: AsteroidLayer[] = [];
     active: boolean = false;
     weaponLightManager: WeaponLightManager;
+    uPlayerPos: any;
     private candyChance = 0;
 
     constructor(scene: THREE.Scene, weaponLightManager: WeaponLightManager) {
         this.scene = scene;
         this.weaponLightManager = weaponLightManager;
+        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
         this.initLayers();
     }
 
@@ -425,7 +432,8 @@ export class AsteroidFieldSystem {
             this.layers.push(new AsteroidLayer(this.scene, {
                 ...cfg,
                 weaponLights,
-                candyChance: this.candyChance
+                candyChance: this.candyChance,
+                uPlayerPos: this.uPlayerPos
             }));
         }
 
@@ -478,8 +486,11 @@ export class AsteroidFieldSystem {
         return hitFound;
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
+        if (playerPos) {
+            this.uPlayerPos.value.copy(playerPos);
+        }
         this.layers.forEach(l => l.update(delta, cameraX));
     }
 }

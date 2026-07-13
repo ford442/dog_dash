@@ -80,7 +80,7 @@ export const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightMan
 export const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
 
 // METEOR SHOWER SYSTEM
-export const meteorShowerSystem = new MeteorShowerSystem(scene);
+export const meteorShowerSystem = new MeteorShowerSystem(scene, weaponLightManager);
 
 // INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
 export const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);

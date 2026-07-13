@@ -705,7 +705,8 @@ export function createAsteroidFieldMaterial(
     baseColorHex: number,
     opacity: number,
     weaponLights: unknown,
-    candyChance: number
+    candyChance: number,
+    uPlayerPos?: any
 ): MeshStandardNodeMaterial {
     _weaponLightsNode = weaponLights;
 
@@ -732,6 +733,13 @@ export function createAsteroidFieldMaterial(
         weaponGlow.addAssign(falloff.mul(lightIntensity as ReturnType<typeof float>));
     });
 
+    let finalPlayerGlow = float(0.0);
+    if (uPlayerPos) {
+        const distToPlayer = distance(positionWorld, uPlayerPos);
+        finalPlayerGlow = smoothstep(float(30.0), float(0.0), distToPlayer).mul(0.6);
+    }
+
+
     const aCandyMix = attribute('aCandyMix', 'float');
     const aCandyHue = attribute('aCandyHue', 'float');
 
@@ -748,9 +756,12 @@ export function createAsteroidFieldMaterial(
 
     const surfaceColor = mix(rockColor, candyGloss, aCandyMix.mul(float(candyChance > 0 ? 1 : 0)));
     const candyRim = rimGlow.mul(aCandyMix).mul(0.8);
+    const uPlayerGlowColor = uniform(new THREE.Color(0xff8844));
     const finalEmissive = surfaceColor.mul(rimGlow)
         .add(candyMaterialUniforms.weaponLightColor.mul(weaponGlow.mul(candyMaterialUniforms.playerLightInfluence)))
+        .add(uPlayerGlowColor.mul(finalPlayerGlow))
         .add(candyTint.mul(candyRim));
+
 
     mat.emissiveNode = finalEmissive;
 
