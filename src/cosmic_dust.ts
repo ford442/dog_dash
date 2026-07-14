@@ -1,8 +1,12 @@
 import * as THREE from 'three';
-import { time, vec3, color, uniform, sin, mix, positionLocal, positionWorld, float, uv } from 'three/tsl';
+import { time, vec3, color, uniform, sin, mix, positionLocal, positionWorld, float, uv, length, smoothstep, Loop } from 'three/tsl';
 import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
 
+
 export class CosmicDustSystem {
+    weaponLightManager?: any;
+    uPlayerPos: any = uniform(new THREE.Vector3(0,0,0));
+
     scene: THREE.Scene;
     active: boolean = false;
     mesh: THREE.InstancedMesh;
@@ -14,7 +18,8 @@ export class CosmicDustSystem {
     baseYs: Float32Array;
     baseRotations: Float32Array;
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, weaponLightManager?: any) {
+        this.weaponLightManager = weaponLightManager;
         this.scene = scene;
         this.dummy = new THREE.Object3D();
 
@@ -34,10 +39,35 @@ export class CosmicDustSystem {
         const pulse = sin(time.mul(2.0).add(positionWorld.x.mul(0.1))).mul(0.5).add(0.5);
 
         // Circular soft alpha
+
         const distFromCenter = uv().sub(0.5).length();
+
+        const finalColor = vec3(baseColor.mul(pulse)).toVar();
+
+        // Player Glow
+        const distToPlayer = length(positionWorld.sub(this.uPlayerPos));
+        const playerGlow = smoothstep(30.0, 0.0, distToPlayer).mul(0.8);
+        const engineColor = color(0xffaa00);
+        finalColor.addAssign(vec3(engineColor).mul(playerGlow));
+
+        // Weapon lights glow
+        if (this.weaponLightManager && this.weaponLightManager.storageNode) {
+            const lights = this.weaponLightManager.storageNode;
+            const maxLights = this.weaponLightManager.maxLights;
+
+            Loop(maxLights, ({ i }) => {
+                const lightActive = lights.element(i).x;
+                const lightPos = vec3(lights.element(i).y, lights.element(i).z, lights.element(i).w);
+                const lightDist = length(positionWorld.sub(lightPos));
+                const glow = smoothstep(20.0, 0.0, lightDist).mul(lightActive);
+
+                finalColor.addAssign(vec3(0.0, 1.0, 1.0).mul(glow).mul(0.6));
+            });
+        }
+
         const alpha = float(1.0).sub(distFromCenter.mul(2.0)).max(0.0).pow(2.0);
 
-        mat.colorNode = baseColor.mul(pulse);
+        mat.colorNode = finalColor;
         mat.opacityNode = alpha.mul(0.6); // Base opacity
 
         // 3. Create InstancedMesh
@@ -90,6 +120,7 @@ export class CosmicDustSystem {
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+        if (playerPos) this.uPlayerPos.value.copy(playerPos);
         if (!this.active) return;
 
         // Wrapping logic
