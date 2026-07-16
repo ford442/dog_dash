@@ -34,6 +34,7 @@ import type { MeteorShowerSystem } from './meteor_shower';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
 import type { BlackHoleSystem } from './black_hole';
+import { GravLensManager } from './grav_lens';
 import type { BiologicalBackgroundSystem } from './biological_background';
 import type { LiquidMetalSystem } from './geological';
 import type { BossManager } from './boss_system';
@@ -281,6 +282,7 @@ export let stormGeodeSystem: StormGeodeSystem = createStormGeodeSystemStub();
 export const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
 
 export let blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
+export const gravLensManager = new GravLensManager(scene);
 
 export type LevelEnvironmentSystemExports = {
     reEntrySystem: ReEntrySystem;

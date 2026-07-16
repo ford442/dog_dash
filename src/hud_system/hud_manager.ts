@@ -106,6 +106,56 @@ export class HUDManager {
         display.style.animation = '';
     }
 
+    /** Approach-angle meter while inside a grav-lens field (0–90°). */
+    updateGravLensApproach(angleDeg: number, visible: boolean): void {
+        const meter = this.elements.gravLensMeter;
+        const bar = this.elements.gravLensAngleBar;
+        if (!meter || !bar) return;
+
+        if (!visible) {
+            meter.style.opacity = '0';
+            return;
+        }
+
+        meter.style.opacity = '1';
+        const pct = Math.min(100, Math.max(0, (angleDeg / 90) * 100));
+        bar.style.height = `${pct}%`;
+    }
+
+    /** Brief slingshot grade pop (Perfect / Partial / Failed). */
+    showGravLensGrade(grade: 'perfect' | 'partial' | 'failed', chain: number = 0): void {
+        const el = this.elements.gravLensGrade;
+        if (!el) return;
+
+        const labels = {
+            perfect: 'Perfect!',
+            partial: 'Partial',
+            failed: 'Failed'
+        };
+        const colors = {
+            perfect: 'linear-gradient(135deg, #44ffcc, #2288ff)',
+            partial: 'linear-gradient(135deg, #ffcc44, #ff8800)',
+            failed: 'linear-gradient(135deg, #ff2244, #880022)'
+        };
+
+        el.textContent = chain > 1 ? `${labels[grade]} ×${chain}` : labels[grade];
+        el.style.background = colors[grade];
+        el.style.opacity = '1';
+        el.style.transform = 'scale(1.05)';
+
+        window.clearTimeout((el as unknown as { _gradeTimer?: number })._gradeTimer);
+        (el as unknown as { _gradeTimer?: number })._gradeTimer = window.setTimeout(() => {
+            el.style.opacity = '0';
+            el.style.transform = 'scale(0.85)';
+        }, grade === 'perfect' ? 1400 : 900);
+    }
+
+    hideGravLensHud(): void {
+        this.updateGravLensApproach(0, false);
+        const el = this.elements.gravLensGrade;
+        if (el) el.style.opacity = '0';
+    }
+
     setObjectiveLabel(text: string): void {
         const label = document.getElementById('hud-scan-label');
         if (label) label.textContent = text;

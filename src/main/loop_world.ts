@@ -21,6 +21,8 @@ import {
 } from '../environment';
 import { updateCamera } from './camera_system';
 import { updateShadowQuality, updateShadowCulling } from './render_helpers';
+import { updateGravLensSystems } from './grav_lens_update';
+import { gravLensManager } from '../game_systems';
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
@@ -81,6 +83,11 @@ export function updateLoopWorld(delta: number, time: number): void {
                 });
             }
         }
+
+        // Grav-lens slingshot corridors (levels 2–3)
+        if (player) {
+            updateGravLensSystems(delta);
+        }
     
         // Update Level Manager (and Clouds)
         if (player) {
@@ -94,6 +101,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                 ...iceNeedleClusters,
                 ...gravityAnchors,
                 ...liquidMetalBlobs,
+                ...gravLensManager.getScannables(),
             ];
             game.discoveryManager.update(player.position, [
                 ...game.levelManager.levelObjects,

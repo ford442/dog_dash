@@ -18,6 +18,9 @@ export interface HUDElementRefs {
     grazeComboDisplay: HTMLDivElement | null;
     slingComboDisplay: HTMLDivElement | null;
     slingComboLabel: HTMLSpanElement | null;
+    gravLensMeter: HTMLDivElement | null;
+    gravLensAngleBar: HTMLDivElement | null;
+    gravLensGrade: HTMLDivElement | null;
 }
 
 export function injectHUDStyles(): void {
@@ -113,6 +116,9 @@ export class HUDElementsBuilder {
     grazeComboDisplay: HTMLDivElement | null = null;
     slingComboDisplay: HTMLDivElement | null = null;
     slingComboLabel: HTMLSpanElement | null = null;
+    gravLensMeter: HTMLDivElement | null = null;
+    gravLensAngleBar: HTMLDivElement | null = null;
+    gravLensGrade: HTMLDivElement | null = null;
 
     createAll(callbacks: HUDElementsCallbacks): void {
         this.createScoreDisplay(callbacks.updateHighScoreDisplay);
@@ -123,6 +129,7 @@ export class HUDElementsBuilder {
         this.createScanProgressDisplay();
         this.createGrazeComboDisplay();
         this.createSlingComboDisplay();
+        this.createGravLensDisplay();
         this.createJourneyMapDisplay();
     }
 
@@ -337,6 +344,76 @@ export class HUDElementsBuilder {
         this.slingComboDisplay.appendChild(icon);
         this.slingComboDisplay.appendChild(this.slingComboLabel);
         document.body.appendChild(this.slingComboDisplay);
+    }
+
+    private createGravLensDisplay(): void {
+        this.gravLensMeter = document.createElement('div');
+        this.gravLensMeter.style.cssText = `
+            position: fixed;
+            top: 50%;
+            right: 24px;
+            transform: translateY(-50%);
+            z-index: 100;
+            width: 18px;
+            height: 160px;
+            background: rgba(10, 5, 30, 0.65);
+            border-radius: 12px;
+            border: 2px solid rgba(170, 100, 255, 0.5);
+            box-shadow: 0 0 16px rgba(100, 60, 200, 0.35);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+        `;
+
+        const label = document.createElement('div');
+        label.textContent = '∠';
+        label.style.cssText = `
+            position: absolute;
+            top: 6px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 11px;
+            color: #cc99ff;
+            font-weight: bold;
+        `;
+        this.gravLensMeter.appendChild(label);
+
+        this.gravLensAngleBar = document.createElement('div');
+        this.gravLensAngleBar.style.cssText = `
+            width: 100%;
+            height: 0%;
+            background: linear-gradient(0deg, #ff2244 0%, #ffaa00 45%, #44ffcc 100%);
+            border-radius: 0 0 10px 10px;
+            transition: height 0.08s linear;
+        `;
+        this.gravLensMeter.appendChild(this.gravLensAngleBar);
+        document.body.appendChild(this.gravLensMeter);
+
+        this.gravLensGrade = document.createElement('div');
+        this.gravLensGrade.style.cssText = `
+            position: fixed;
+            top: calc(50% + 95px);
+            right: 8px;
+            z-index: 101;
+            min-width: 90px;
+            text-align: center;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            opacity: 0;
+            transform: scale(0.85);
+            transition: opacity 0.15s, transform 0.15s;
+            pointer-events: none;
+        `;
+        document.body.appendChild(this.gravLensGrade);
     }
 
     private createPowerUpDisplay(): void {

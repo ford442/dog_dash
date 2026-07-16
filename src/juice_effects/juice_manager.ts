@@ -29,6 +29,10 @@ export class JuiceManager {
     // Chromatic aberration overlay element
     private chromaticElement: HTMLDivElement;
     
+    // Sustained gravitational lens crush distortion
+    private distortionElement: HTMLDivElement;
+    private distortionIntensity: number = 0;
+    
     // Time tracking
     private time: number = 0;
     
@@ -71,6 +75,19 @@ export class JuiceManager {
         this.chromaticElement.style.opacity = '0';
         this.chromaticElement.style.mixBlendMode = 'screen';
         document.body.appendChild(this.chromaticElement);
+
+        this.distortionElement = document.createElement('div');
+        this.distortionElement.id = 'grav-lens-distortion';
+        this.distortionElement.style.position = 'absolute';
+        this.distortionElement.style.top = '0';
+        this.distortionElement.style.left = '0';
+        this.distortionElement.style.width = '100%';
+        this.distortionElement.style.height = '100%';
+        this.distortionElement.style.pointerEvents = 'none';
+        this.distortionElement.style.zIndex = '390';
+        this.distortionElement.style.opacity = '0';
+        this.distortionElement.style.mixBlendMode = 'overlay';
+        document.body.appendChild(this.distortionElement);
     }
     
     // =========================================================================
@@ -221,6 +238,13 @@ export class JuiceManager {
         };
         
         this.updateChromaticVisuals();
+    }
+
+    /**
+     * Sustained screen warp for grav-lens crush zones (0 = off, 1 = max).
+     */
+    setGravLensDistortion(intensity: number): void {
+        this.distortionIntensity = THREE.MathUtils.clamp(intensity, 0, 1);
     }
     
     /**
@@ -605,6 +629,28 @@ export class JuiceManager {
         text.element.style.transform = `translate(-50%, -50%) scale(${text.scale})`;
     }
     
+    private updateGravLensDistortion(): void {
+        const t = this.time;
+        const wobble = Math.sin(t * 14) * 0.4 + Math.sin(t * 7.3) * 0.3;
+        const intensity = this.distortionIntensity;
+        if (intensity <= 0.01) {
+            this.distortionElement.style.opacity = '0';
+            this.distortionElement.style.transform = '';
+            return;
+        }
+        const px = (2 + wobble * 3) * intensity;
+        this.distortionElement.style.background = `
+            radial-gradient(ellipse at 50% 45%, rgba(120,40,200,0.35) 0%, transparent 55%),
+            repeating-linear-gradient(
+                ${45 + wobble * 20}deg,
+                rgba(255,80,120,${0.08 * intensity}) 0px,
+                rgba(80,200,255,${0.06 * intensity}) ${px}px
+            )`;
+        this.distortionElement.style.opacity = String(0.25 + intensity * 0.55);
+        this.distortionElement.style.transform =
+            `scale(${1 + intensity * 0.02}) skewX(${wobble * intensity * 1.5}deg)`;
+    }
+
     // =========================================================================
     // MAIN UPDATE
     // =========================================================================
@@ -628,6 +674,7 @@ export class JuiceManager {
         
         // Always update these (visual only)
         this.updateChromatic(deltaTime);
+        this.updateGravLensDistortion();
         this.updateFloatingTexts(deltaTime);
         
         return modifiedDelta;
@@ -652,6 +699,8 @@ export class JuiceManager {
         // Clear chromatic
         this.chromaticFlash = null;
         this.chromaticElement.style.opacity = '0';
+        this.distortionIntensity = 0;
+        this.distortionElement.style.opacity = '0';
         
         // Clear white flash
         if (this.whiteFlash) {
@@ -675,6 +724,7 @@ export class JuiceManager {
         this.reset();
         this.textContainer.remove();
         this.chromaticElement.remove();
+        this.distortionElement.remove();
     }
     
     // =========================================================================

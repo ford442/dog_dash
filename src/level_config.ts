@@ -59,6 +59,19 @@ export type BubbleCoralEnvironmentConfig = {
 
 export type MeteorShowerEnvironmentConfig = boolean;
 
+export type GravLensPlacement = {
+    offsetX: number;
+    y: number;
+    z?: number;
+    mass?: number;
+};
+
+/** Chained grav-lens puzzle corridor (levels 2–3). */
+export type GravLensCorridorConfig = {
+    startX: number;
+    lenses: GravLensPlacement[];
+};
+
 export type LevelEnvironments = {
     butterflySwarm?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
@@ -178,6 +191,8 @@ export type LevelConfig = {
      * Systems not listed (or false) are deactivated.
      */
     environments?: LevelEnvironments;
+    /** Optional chained grav-lens slingshot corridors. */
+    gravLensCorridors?: GravLensCorridorConfig[];
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
@@ -282,7 +297,24 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         },
         vignettes: {
             geodeClearings: 0.5
-        }
+        },
+        gravLensCorridors: [
+            {
+                startX: 620,
+                lenses: [
+                    { offsetX: 0, y: 4, z: -5 },
+                    { offsetX: 95, y: -2, z: -6 },
+                    { offsetX: 185, y: 6, z: -4 }
+                ]
+            },
+            {
+                startX: 980,
+                lenses: [
+                    { offsetX: 0, y: 0, z: -5 },
+                    { offsetX: 110, y: 5, z: -7 }
+                ]
+            }
+        ]
     },
     3: {
         name: "Orbital Descent",
@@ -336,7 +368,18 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         },
         vignettes: {
             roseArches: 1.2
-        }
+        },
+        gravLensCorridors: [
+            {
+                startX: 1380,
+                lenses: [
+                    { offsetX: 0, y: 3, z: -5 },
+                    { offsetX: 100, y: -3, z: -6 },
+                    { offsetX: 200, y: 2, z: -4 },
+                    { offsetX: 310, y: 7, z: -5 }
+                ]
+            }
+        ]
     },
     4: {
         name: "The Rusty Gauntlet",
