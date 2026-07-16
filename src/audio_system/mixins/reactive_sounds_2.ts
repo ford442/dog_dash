@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import { bindMixin } from '../types';
 
-export const reactiveSoundsMixin2 = {
+export const reactiveSoundsMixin2 = bindMixin({
 playTetherLatch() {
     this.init();
     if (!this.ctx || !this.sfxGain) return;
@@ -346,4 +346,4 @@ applyDuck(duration: number, amount: number) {
         this.isDucked = false;
     }, duration * 1000);
 }
-} as const;
+});

@@ -11,7 +11,10 @@ build/game_cpp.wasm
 # Logs
 *.log
 npm-debug.log*
-package-lock.json
+
+# Playwright
+test-results/
+
 # OS files
 .DS_Store
 Thumbs.db

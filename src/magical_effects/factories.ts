@@ -121,7 +121,7 @@ export function spawnSparkleField(
 // HELPER FUNCTIONS
 // =============================================================================
 
-function createHeartShape(size: number = 1): THREE.Shape {
+export function createHeartShape(size: number = 1): THREE.Shape {
   const shape = new THREE.Shape();
   const x = 0, y = 0;
   

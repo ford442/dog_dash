@@ -44,6 +44,30 @@ The built files will be in the `dist/` directory. You can preview the production
 npm run preview
 ```
 
+### Typecheck
+
+Run the TypeScript compiler in strict mode (no emit):
+
+```bash
+npm run typecheck
+```
+
+CI uses a **baseline ratchet** so existing known errors do not block PRs, but new strict-mode violations do:
+
+```bash
+npm run typecheck:ci                  # compare against .github/typecheck-baseline.txt
+npm run typecheck:baseline:update     # after fixing errors, ratchet the baseline down
+```
+
+### Smoke test
+
+After building, verify the production bundle serves the start screen (Playwright + SwiftShader WebGL flags in CI):
+
+```bash
+npm run build
+npm run test:smoke
+```
+
 ### Requirements
 
 - Node.js 16+ and npm

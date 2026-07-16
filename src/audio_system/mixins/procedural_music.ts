@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import type { SoundConfig } from '../types';
+import { bindMixin, PENTATONIC_SCALE, ALTITUDE_CHORDS } from '../types';
 
-export const proceduralMusicMixin = {
+export const proceduralMusicMixin = bindMixin({
 playNoteForCollect(pitch?: number): void {
     this.init();
     if (!this.ctx || !this.sfxGain) return;
@@ -131,4 +132,4 @@ playChordForAltitude(altitude: number): void {
         osc.stop(this.ctx!.currentTime + 2);
     });
 }
-} as const;
+});

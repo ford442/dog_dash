@@ -360,3 +360,23 @@ Object.assign(
     gravityAudioMixin,
     cleanupMixin,
 );
+
+type StripMixinThis<T> = T extends (this: infer _Host, ...args: infer A) => infer R ? (...args: A) => R : T;
+
+type StripMixinThisMethods<T extends Record<string, unknown>> = {
+    [K in keyof T]: StripMixinThis<T[K]>;
+};
+
+type RawAudioSystemMixins = typeof musicLayerMixin
+    & typeof proceduralMusicMixin
+    & typeof spatialAudioMixin
+    & typeof mixingMixin
+    & typeof engineSoundsMixin
+    & typeof reactiveSoundsMixin
+    & typeof reactiveSoundsMixin2
+    & typeof gravityAudioMixin
+    & typeof cleanupMixin;
+
+export type AudioSystemMixins = StripMixinThisMethods<RawAudioSystemMixins>;
+
+export interface AudioSystem extends AudioSystemMixins {}

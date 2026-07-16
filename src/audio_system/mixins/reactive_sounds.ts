@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import { bindMixin } from '../types';
 
-export const reactiveSoundsMixin = {
+export const reactiveSoundsMixin = bindMixin({
 toggleMute(): boolean {
     if (this.isMuted) {
         this.unmute();
@@ -523,4 +523,4 @@ playRoll() {
     rumble.start(now);
     rumble.stop(now + 0.35);
 }
-} as const;
+});

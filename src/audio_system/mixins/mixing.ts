@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import { bindMixin } from '../types';
 
-export const mixingMixin = {
+export const mixingMixin = bindMixin({
 setMasterVolume(volume: number): void {
     this.masterVolume = Math.max(0, Math.min(1, volume));
     if (!this.masterGain || !this.ctx) return;
@@ -48,4 +48,4 @@ getVolumeSettings() {
         muted: this.isMuted
     };
 }
-} as const;
+});

@@ -29,9 +29,20 @@ npm run watch:wasm               # watch assembly/ and rebuild WASM on change
 npm run build:cpp-wasm           # release build of cpp/ via cpp/build.sh --release
 npm run build:cpp-wasm:debug     # debug build of cpp/ via cpp/build.sh
 npm run copy:cpp-wasm             # copy build/game_cpp.wasm into public/build/
+
+npm run typecheck                 # strict TypeScript check (see baseline ratchet below)
+npm run typecheck:ci              # CI gate: fail only on new errors vs .github/typecheck-baseline.txt
+npm run typecheck:baseline:update # refresh baseline after fixing errors (ratchet down)
+npm run test:smoke                # Playwright smoke test (WebGL path, SwiftShader in CI)
 ```
 
-There is no test suite, linter, or CI pipeline. The only automated quality gate is `tools/check_braces.cjs`, which walks all `.ts`/`.js`/`.cjs` files and verifies brace balance — it runs automatically as `prebuild`. WebGPU is unavailable headlessly, so runtime verification requires a browser with WebGPU enabled (Chrome/Edge 113+).
+There is no ESLint or unit-test suite. The automated quality gates are:
+
+- `tools/check_braces.cjs` — runs on `prebuild`, verifies brace balance in `.ts`/`.js`/`.cjs` files
+- `npm run typecheck:ci` — compares `tsc --noEmit` against a tracked baseline (currently ~180 known strict-mode violations); CI fails only when **new** errors appear. After fixing errors locally, run `npm run typecheck:baseline:update` to ratchet the baseline down.
+- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, production build, and Playwright smoke test on PRs to `main`.
+
+WebGPU is unavailable headlessly, so runtime verification requires a browser with WebGPU enabled (Chrome/Edge 113+).
 
 ## Architecture
 

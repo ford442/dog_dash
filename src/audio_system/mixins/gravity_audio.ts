@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import { bindMixin } from '../types';
 
-export const gravityAudioMixin = {
+export const gravityAudioMixin = bindMixin({
 startGravityHum(): void {
     this.init();
     if (!this.ctx || !this.sfxGain) return;
@@ -175,4 +175,4 @@ playGravitySlingRelease(quality: 'perfect' | 'good' | 'ok' = 'good', combo: numb
         tone.stop(now + 0.65);
     }
 }
-} as const;
+});
