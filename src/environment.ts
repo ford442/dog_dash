@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { scene } from './scene_context';
 import { player } from './player_loader';
 import { playerState } from './game_config';
+import { decorationBudget } from './decoration_budget';
 import {
     SporeCloud,
     createFracturedGeode,
@@ -10,7 +11,7 @@ import {
     updateNebulaJellyMoss,
     destroyNebulaJellyMoss,
     createVoidRootBall,
-    updateVoidRootBall,
+    disposeVoidRootBall,
     createVacuumKelp,
     updateVacuumKelp,
     createIceNeedleCluster,
@@ -85,6 +86,8 @@ export function createSolarSailAtPosition(x: number, y: number, z: number) {
 export const voidRootBalls: THREE.Group[] = [];
 
 export function createVoidRootBallAtPosition(x: number, y: number, z: number) {
+    if (!decorationBudget.canSpawn('void_root_ball')) return null;
+    if (!decorationBudget.reportSpawn('void_root_ball')) return null;
     const rootBall = createVoidRootBall({ size: 2 + Math.random() * 2 });
     rootBall.position.set(x, y, z);
     rootBall.userData.speciesId = 'voidRootBall';
@@ -198,12 +201,12 @@ export function cleanupGeologicalObjects(cameraX: number) {
         }
     }
 
-    // Void root balls
+    // Void root balls (withered roots remain as obstacles until they leave the stream)
     for (let i = voidRootBalls.length - 1; i >= 0; i--) {
         const rootBall = voidRootBalls[i];
         if (rootBall.position.x < cutoff) {
-            scene.remove(rootBall);
-            disposeObject(rootBall);
+            disposeVoidRootBall(rootBall, scene);
+            decorationBudget.reportDestroy('void_root_ball');
             voidRootBalls.splice(i, 1);
         }
     }
@@ -392,17 +395,7 @@ export function updateGeologicalObjects(delta: number, time: number, cameraPos: 
     // Update solar sails (iridescent rippling, unfold near player)
     solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player ? player.position : undefined));
 
-    // Update new geological objects from plan.md
-    voidRootBalls.forEach(rootBall => {
-        const interaction = updateVoidRootBall(rootBall, delta, time, player);
-        if (interaction.isLatched) {
-            playerState.velocity.add(interaction.force);
-            // Visual feedback
-            if (interaction.hitPoint && Math.random() < 0.2) {
-                particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
-            }
-        }
-    });
+    // Void root ball updates run in loop_geological.ts
     vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
     iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
 

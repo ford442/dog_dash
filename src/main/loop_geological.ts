@@ -23,6 +23,8 @@ import {
     updateVoidRootBall, updateVacuumKelp, updateIceNeedleCluster, updateMagmaHeart,
     updateGravityAnchor, GA_SLING_BONUS
 } from '../geological';
+import type { VoidRootBallUpdateContext } from '../void_root_ball';
+import { isVoidRootTethered } from '../void_root_ball';
 import { CONFIG } from '../game_config';
 export function updateLoopGeological(delta: number, time: number): void {
         // --- NEW: Update Geological Objects ---
@@ -222,19 +224,62 @@ export function updateLoopGeological(delta: number, time: number): void {
     
             // Update solar sails (iridescent rippling, unfold near player)
             if (player) {
-                solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player.position));
+                const activePlayer = player;
+                solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, activePlayer.position));
     
-                // Update new geological objects from plan.md
+                // Update void root balls (harpoon AI, tether, crystal flowers)
+                const playerStealthed = jellyMosses.some(
+                    (m) => m.userData.isHiding && m.visible
+                );
+                const voidRootCtx: VoidRootBallUpdateContext = {
+                    scene,
+                    projectiles: game.weaponSystem.getActiveProjectiles(),
+                    sporeClouds,
+                    playerStealthed
+                };
                 voidRootBalls.forEach(rootBall => {
-                    const interaction = updateVoidRootBall(rootBall, delta, time, player);
-                    if (interaction.isLatched) {
-                        playerState.velocity.add(interaction.force);
-                        // Visual feedback
-                        if (interaction.hitPoint && Math.random() < 0.2) {
-                            game.particleSystem.emit(interaction.hitPoint, 0x8800ff, 2, 2.0, 0.5);
+                    const interaction = updateVoidRootBall(rootBall, delta, time, activePlayer, voidRootCtx);
+                    if (interaction.isTethered) {
+                        playerState.vineTetherActive = true;
+                        playerState.currentSpeedY += interaction.force.y;
+                        playerState.currentSpeedY = THREE.MathUtils.clamp(
+                            playerState.currentSpeedY,
+                            -CONFIG.player.maxDescentSpeed,
+                            CONFIG.player.maxSpeedY
+                        );
+                        activePlayer.position.z += interaction.force.z;
+                        activePlayer.position.y += interaction.force.y * 0.35;
+                        if (interaction.hitPoint && Math.random() < 0.25) {
+                            game.particleSystem.emit(interaction.hitPoint, 0xcc44ff, 2, 2.0, 0.5);
                         }
                     }
+                    if (interaction.impactDamage > 0 && !playerState.invincible) {
+                        playerState.health = Math.max(0, playerState.health - 1);
+                        playerState.vineBleedTimer = 10;
+                        playerState.vineBleedDps = interaction.bleedDamagePerSec;
+                        playerState.invincible = true;
+                        setTimeout(() => { playerState.invincible = false; }, 1200);
+                        game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                        game.juiceManager.shakeScreen(ShakeType.MEDIUM, 0.5);
+                        updateHealthDisplay(playerState);
+                    }
                 });
+                if (!voidRootBalls.some(isVoidRootTethered)) {
+                    playerState.vineTetherActive = false;
+                }
+
+                // Vine bleed damage over time after failed sever
+                if (playerState.vineBleedTimer > 0) {
+                    playerState.vineBleedTimer = Math.max(0, playerState.vineBleedTimer - delta);
+                    if (!playerState.invincible && playerState.vineBleedDps > 0) {
+                        const bleedTick = playerState.vineBleedDps * delta;
+                        if (Math.random() < bleedTick * 0.15) {
+                            playerState.health = Math.max(0, playerState.health - 1);
+                            game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                            updateHealthDisplay(playerState);
+                        }
+                    }
+                }
             }
             vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
             iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));

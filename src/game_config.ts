@@ -46,6 +46,9 @@ export const playerState = {
     cores: 0, // Cores collected this run
     slingCombo: 0,
     slingAssistTimer: 0,
+    vineTetherActive: false,
+    vineBleedTimer: 0,
+    vineBleedDps: 0,
     penguinSlideAssistTimer: 0
 };
 
