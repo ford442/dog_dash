@@ -178,9 +178,8 @@ export class ObstacleSystem implements ObstacleSystemHost {
 
         const squidRate = currentCfg?.squidSpawnRate || 0;
         const currentLevel = this.options.getCurrentLevel();
-        const isLevel6Capstone = currentLevel === 6 && !this.level6KrakenSpawned
-            && this.squids.length === 0 && currentCfg?.distance
-            && playerX > currentCfg.distance - 750;
+        // L6 capstone is the Star-Eater Pitcher (boss_system); Kraken still spawns randomly elsewhere.
+        const isLevel6Capstone = false;
 
         if (isLevel6Capstone || (squidRate > 0 && this.squids.length === 0 && Math.random() < squidRate)) {
             const spawnX = playerX + 55;

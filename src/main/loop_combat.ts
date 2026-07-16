@@ -22,6 +22,8 @@ import { FlotillaMember } from '../space_friends';
 import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../candy_materials';
 import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
 import { updateBossHealthBar } from './boss_health_ui';
+import { writeBossHitboxesToWasm } from '../physics_utils';
+import type { WasmHandle } from '../wasm_loader';
 export function updateLoopCombat(_rawDelta: number, delta: number, time: number): boolean {
         // --- BOSS SYSTEM ---
         if (player) {
@@ -30,6 +32,7 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                 const bossSpawned = game.bossManager.checkBossSpawn(
                     player.position.x,
                     playerState.level,
+                    game.levelManager.config[game.levelManager.currentLevel]?.distance,
                     {
                         onDefeated: () => {
                             // Boss defeated - give rewards and continue
@@ -43,17 +46,47 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                             game.saveManager.recordBossDefeated();
                             game.audioSystem.play('boss_defeat');
                             playerState.bossActive = false;
-                            
+
                             // Resume auto-scroll
                             playerState.autoScrollSpeed = game.saveManager.applyToSpeed(8);
-    
-                            // 'boss' objective (L6): defeating the boss completes the chapter
+
+                            // 'boss' objective (L6): defeating the Star-Eater completes the chapter
                             const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
                             if (objective?.type === 'boss') {
                                 game.hudManager.updateObjectiveProgress(objective.target, objective.target);
+                                game.hudManager.onObjectiveComplete?.();
+
+                                if (game.levelManager.currentLevel === 6 && !game.level6BossDefeated) {
+                                    game.level6BossDefeated = true;
+                                    game.particleSystem.emit(
+                                        player!.position.clone(), 0xeeffff, 25, 5.0, 1.2, 1.4
+                                    );
+                                    game.particleSystem.emit(
+                                        player!.position.clone(), 0xff0044, 20, 4.0, 1.4, 1.6
+                                    );
+                                    game.waterfallSystem.triggerSplash(player!.position.clone(), 35);
+                                    game.audioSystem.playWhaleSong();
+
+                                    game.juiceManager.showFloatingText(
+                                        'The Path to the Moon Opens!',
+                                        player!.position.clone(),
+                                        '#aaffff',
+                                        30
+                                    );
+                                    game.juiceManager.burstMagic(player!.position.clone());
+                                    game.dogController.triggerAnimation(DogAnimationState.VICTORY, 2.0);
+
+                                    const bossPos = game.bossManager.getBoss()?.group.position
+                                        ?? player!.position.clone();
+                                    game.planetaryHorizonSystem.activateMoonGate(
+                                        new THREE.Vector3(bossPos.x + 120, 0, -30)
+                                    );
+                                    game.friendsManager.triggerVictoryFlyby(4.0);
+                                    game.moonGateSequenceActive = true;
+                                    game.moonGateSequenceTimer = 0;
+                                }
                             }
-    
-                            // Show victory message briefly
+
                             console.log('🎉 BOSS DEFEATED! +50 Cores');
                         },
                         onPlayerHit: () => {
@@ -73,10 +106,20 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                             }
                         },
                         getPlayerPosition: () => player ? player.position : null,
-                        spawnDebris: (pos) => {
-                            // Spawn debris from boss mouth
-                            game.obstacleSystem.createAsteroid(pos.x, pos.y, pos.z, 1.0, 
-                                new THREE.Vector3(-5 - Math.random() * 5, (Math.random() - 0.5) * 5, 0));
+                        spawnDebris: (pos, homing) => {
+                            const speed = homing ? 12 : 8;
+                            game.obstacleSystem.createAsteroid(
+                                pos.x, pos.y, pos.z, homing ? 0.8 : 1.0,
+                                new THREE.Vector3(-speed - Math.random() * 5, (Math.random() - 0.5) * 5, 0)
+                            );
+                        },
+                        onPhaseChange: (phase) => {
+                            if (phase === 'phase1') {
+                                game.audioSystem.play('boss_suction');
+                            } else {
+                                game.audioSystem.play('boss_phase');
+                            }
+                            game.juiceManager.shakeScreen(ShakeType.HEAVY);
                         },
                         onBossStart: () => {
                             playerState.bossActive = true;
@@ -124,22 +167,56 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                         }
                     }
                     
-                    // Check projectile hits on boss
+                    // Check projectile hits on boss (WASM hitboxes)
                     const projectiles = game.weaponSystem.getActiveProjectiles();
-                    for (const proj of projectiles) {
-                        if (!proj.active) continue;
-                        const hitbox = boss.getHitbox();
-                        const dist = proj.mesh.position.distanceTo(hitbox.center);
-                        if (dist < hitbox.radius) {
-                            if (boss.takeDamage(10)) {
-                                // Hit registered
+                    const hitboxes = boss.collectWasmHitboxes();
+                    if (hitboxes.length > 0 && game.wasmExports) {
+                        const wasmHandle = {
+                            exports: game.wasmExports,
+                            memory: game.wasmMemory
+                        } as WasmHandle;
+                        const count = writeBossHitboxesToWasm(wasmHandle, hitboxes);
+                        if (game.wasmMemory?.buffer !== (game.wasmExports as { memory: WebAssembly.Memory }).memory.buffer) {
+                            game.wasmMemory = new Float32Array(
+                                (game.wasmExports as { memory: WebAssembly.Memory }).memory.buffer
+                            );
+                        }
+
+                        for (const proj of projectiles) {
+                            if (!proj.active) continue;
+                            const hitIndex = (game.wasmExports as {
+                                checkBossCollision: (x: number, y: number, r: number, n: number) => number;
+                            }).checkBossCollision(
+                                proj.mesh.position.x,
+                                proj.mesh.position.y,
+                                0.5,
+                                count
+                            );
+                            if (hitIndex === -1) continue;
+
+                            const entry = boss.resolveHitboxEntry(hitIndex);
+                            if (!entry?.dealsDamage) {
+                                proj.deactivate();
+                                continue;
+                            }
+
+                            const damage = entry.target === 'boss' ? 10 : 15;
+                            if (boss.takeDamage(damage, entry.target)) {
                                 game.audioSystem.play('hit');
+                                game.particleSystem.emit(
+                                    proj.mesh.position.clone(),
+                                    entry.target === 'boss' ? 0xff0044 : 0xff66aa,
+                                    12, 4.0, 0.8, 1.2
+                                );
                                 proj.deactivate();
                             }
                         }
                     }
                 }
             }
+
+            // Boss health bar (Star-Eater Pitcher or Kraken)
+            updateBossHealthBar(game.obstacleSystem.getSquids(), game.bossManager.getBoss());
             
             // --- PICKUP SYSTEM ---
             const collected = game.pickupManager.update(delta, time, player.position);
@@ -535,43 +612,17 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                                 }
                             }
     
-                            // Aquatic capstone: an ink + bubble burst marks the
-                            // wounded Kraken's defeat - the L6 "boss" objective.
+                            // Kraken defeated — bonus rewards only (L6 capstone is Star-Eater Pitcher)
                             if (squid.isDestroyed) {
                                 game.particleSystem.emit(squid.getPosition().clone(), 0xeeffff, 25, 5.0, 1.2, 1.4);
                                 game.particleSystem.emit(squid.getPosition().clone(), 0x440088, 20, 4.0, 1.4, 1.6);
                                 game.waterfallSystem.triggerSplash(squid.getPosition().clone(), 35);
                                 game.audioSystem.playWhaleSong();
-    
-                                const objective6 = game.levelManager.config[game.levelManager.currentLevel]?.objective;
-                                if (game.levelManager.currentLevel === 6 && objective6?.type === 'boss' && !game.level6BossDefeated) {
-                                    game.level6BossDefeated = true;
-                                    game.saveManager.addCores(50);
-                                    game.hudManager.updateObjectiveProgress(objective6.target, objective6.target);
-                                    game.hudManager.onObjectiveComplete?.();
-    
-                                    if (player) {
-                                        game.juiceManager.showFloatingText('The Path to the Moon Opens!', player.position.clone(), '#aaffff', 30);
-                                        game.juiceManager.burstMagic(player.position.clone());
-                                    }
-                                    game.dogController.triggerAnimation(DogAnimationState.VICTORY, 2.0);
-    
-                                    // Open the Moon Gate ahead and begin the celebratory pull-back
-                                    game.planetaryHorizonSystem.activateMoonGate(
-                                        new THREE.Vector3(squid.getPosition().x + 120, 0, -30)
-                                    );
-                                    game.friendsManager.triggerVictoryFlyby(4.0);
-                                    game.moonGateSequenceActive = true;
-                                    game.moonGateSequenceTimer = 0;
-                                }
                             }
                             break;
                         }
                     }
                 }
-    
-                // Update boss health bar UI
-                updateBossHealthBar(squids);
     
                 // Tarsiers panic when a projectile passes near a gravity anchor
                 if (game.debugSystem.isEnabled('spaceFriends') && gravityAnchors.length > 0) {

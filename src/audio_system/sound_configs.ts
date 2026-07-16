@@ -41,6 +41,22 @@ export const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
             volume: 0.5,
             slide: -40
         },
+        boss_phase: {
+            type: 'boss_phase',
+            frequency: 120,
+            duration: 0.9,
+            waveform: 'sawtooth',
+            volume: 0.45,
+            slide: 220
+        },
+        boss_suction: {
+            type: 'boss_suction',
+            frequency: 55,
+            duration: 1.2,
+            waveform: 'sine',
+            volume: 0.35,
+            slide: -30
+        },
         engine: {
             type: 'engine',
             frequency: 60,

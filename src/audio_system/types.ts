@@ -6,6 +6,8 @@ export type SoundType =
     | 'hit' 
     | 'powerup' 
     | 'boss_roar' 
+    | 'boss_phase'
+    | 'boss_suction'
     | 'engine' 
     | 'alert' 
     | 'ui_click'
