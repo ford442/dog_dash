@@ -25,7 +25,9 @@ import {
     smoothstep,
     distance,
     Loop,
-    storage
+    storage,
+    cameraPosition,
+    dot
 } from 'three/tsl';
 import { Projectile } from './weapons';
 import { WeaponLightManager } from './lighting';
@@ -101,7 +103,21 @@ function createNebulaMaterial(
     const ripple = sin(distToPlayer.mul(2.0).sub(uTime.mul(5.0))).add(1.0).mul(0.5);
     const magicRipple = mix(float(1.0), ripple, uMagicIntensity);
 
-    finalColor = finalColor.add(uGlowColor.mul(glowIntensity.mul(0.8).mul(magicRipple)));
+    // Silver Lining Effect (Rim Lighting when player light is behind the nebula relative to camera)
+    const viewDir = cameraPosition.sub(positionWorld).normalize();
+    const lightDir = uPlayerPos.sub(positionWorld).normalize(); // from fragment to player
+    const backlight = dot(viewDir, lightDir).negate().max(0.0);
+    // Use softCore (0 to 1 based on density) for edge factor
+    const edgeFactor = smoothstep(0.35, 0.85, float(1.0).sub(density));
+
+    // Smooth threshold for backlight to avoid flickering
+    const backlightSmooth = smoothstep(0.0, 0.6, backlight);
+    const silverLining = backlightSmooth.mul(edgeFactor).mul(glowIntensity).mul(1.2); // Tuned for nebula
+
+    const basePlayerGlow = uGlowColor.mul(glowIntensity.mul(0.8).mul(magicRipple));
+    const silverLiningColor = color(new THREE.Color(0xffffff)).mul(silverLining);
+
+    finalColor = finalColor.add(basePlayerGlow).add(silverLiningColor);
 
     // 4. Weapon Light Interaction
     const weaponGlow = float(0.0).toVar();
@@ -125,7 +141,9 @@ function createNebulaMaterial(
     finalColor = finalColor.add(harmonicBoost.mul(col2));
 
     mat.colorNode = vec4(finalColor, density.mul(opacity));
-    mat.emissiveNode = finalColor.mul(0.2);
+
+    // Add rim lighting strongly into emissive only, to avoid washing out alpha
+    mat.emissiveNode = finalColor.mul(0.2).add(silverLiningColor);
 
     // Expose uniform for updates
     mat.userData.uPlayerPos = uPlayerPos;
