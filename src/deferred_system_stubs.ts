@@ -181,8 +181,15 @@ export function createBubbleCoralManagerStub(): RainbowBubbleCoralManager {
 export function createSlingableObjectSystemStub(): SlingableObjectSystem {
     return {
         onSpecialEffect: undefined,
+        objects: [],
         update: noop,
-        handleAsteroidCollisions: noop
+        handleAsteroidCollisions: noop,
+        setLatchedTarget: noop,
+        getTetherTargets: () => [],
+        isInSlipstream: () => false,
+        applyTetherImpulse: () => false,
+        getScannables: () => [],
+        createObject: () => null
     } as unknown as SlingableObjectSystem;
 }
 

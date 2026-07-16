@@ -1,6 +1,10 @@
 import * as THREE from 'three';
+import type { AudioSystem } from '../audio_system';
+import type { ParticleSystem } from '../particles';
 import { FlowerConstellation } from './constellation';
+import { HeartPollenSystem } from './pollen';
 import { GoldenSparkleSystem } from './sparkle';
+import { FlowerType } from './types';
 
 export class ConstellationManager {
     private scene: THREE.Scene;

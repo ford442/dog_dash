@@ -240,9 +240,9 @@ export function updateLoopGeological(delta: number, time: number): void {
             iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
     
             // Update Liquid Metal System (Physics & Collisions)
-            liquidMetalSystem.update(delta);
+            game.liquidMetalSystem.update(delta);
             if (player && game.weaponSystem) {
-                liquidMetalSystem.checkCollisions(game.weaponSystem.getActiveProjectiles());
+                game.liquidMetalSystem.checkCollisions(game.weaponSystem.getActiveProjectiles());
             }
     
             magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));

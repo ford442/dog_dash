@@ -137,6 +137,10 @@ export function trackMaterial(mat: CandyMaterial, cacheKey?: string): CandyMater
     return mat;
 }
 
+export function getCachedCandyMaterial(cacheKey: string): CandyMaterial | undefined {
+    return materialCache.get(cacheKey);
+}
+
 export function disposeCandyMaterial(mat: THREE.Material): void {
     if (materialCache.has(mat as CandyMaterial)) return;
     if (!uncachedMaterials.delete(mat as CandyMaterial)) return;

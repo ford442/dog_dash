@@ -1,6 +1,26 @@
+import fs from 'node:fs';
 import { defineConfig } from '@playwright/test';
 
-const chromePath = process.env.PLAYWRIGHT_CHROME_PATH ?? '/usr/local/bin/google-chrome';
+const SWIFT_SHADER_ARGS = [
+    '--use-gl=angle',
+    '--use-angle=swiftshader',
+    '--enable-unsafe-swiftshader',
+    '--ignore-gpu-blocklist',
+];
+
+function resolveChromeExecutable(): string | undefined {
+    const candidates = [
+        process.env.PLAYWRIGHT_CHROME_PATH,
+        '/usr/local/bin/google-chrome',
+        '/usr/bin/google-chrome-stable',
+        '/usr/bin/google-chrome',
+        '/opt/google/chrome/google-chrome',
+    ].filter((value): value is string => Boolean(value));
+
+    return candidates.find((candidate) => fs.existsSync(candidate));
+}
+
+const chromePath = resolveChromeExecutable();
 
 export default defineConfig({
     testDir: './tests',
@@ -10,13 +30,8 @@ export default defineConfig({
         baseURL: 'http://127.0.0.1:4173',
         browserName: 'chromium',
         launchOptions: {
-            executablePath: chromePath,
-            args: [
-                '--use-gl=angle',
-                '--use-angle=swiftshader',
-                '--enable-unsafe-swiftshader',
-                '--ignore-gpu-blocklist',
-            ],
+            ...(chromePath ? { executablePath: chromePath } : {}),
+            args: SWIFT_SHADER_ARGS,
         },
     },
     webServer: {

@@ -59,14 +59,30 @@ npm run typecheck:ci                  # compare against .github/typecheck-baseli
 npm run typecheck:baseline:update     # after fixing errors, ratchet the baseline down
 ```
 
-### Smoke test
+### Testing
 
-After building, verify the production bundle serves the start screen (Playwright + SwiftShader WebGL flags in CI):
+Playwright smoke tests verify the **production build** on the WebGL2 fallback path (`/?renderer=webgl`). Headless/cloud VMs have no WebGPU adapter, so tests launch system Chrome with SwiftShader flags (see `playwright.config.ts`).
+
+**Run locally:**
 
 ```bash
 npm run build
 npm run test:smoke
 ```
+
+**Requirements:**
+
+- Google Chrome (or Chromium) on the machine. The config checks common install paths and falls back to Playwright's bundled Chromium.
+- Optional: set `PLAYWRIGHT_CHROME_PATH` to override the Chrome executable.
+
+**What the smoke test checks (DOM/state, not screenshot diffs):**
+
+- Page loads with `window.usingWebGL === true`
+- Canvas is initialized (sized by the renderer)
+- Title screen dismisses on click; gameplay HUD elements appear
+- After ~2s, the debug FPS overlay (`` ` `` toggle) shows live stats and `renderer: webgl`
+
+CI runs the smoke job on PRs (currently `continue-on-error: true` while the suite stabilizes).
 
 ### Requirements
 

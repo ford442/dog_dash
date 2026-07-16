@@ -133,45 +133,6 @@ export class NebulaCloudLayer {
 }
 
 
-/**
- * Creates a TSL material for a whimsical butterfly mote.
- */
-function createButterflyMaterial(colorHex: number, uGlobalPulse: any, uMagicIntensity: any) {
-    const mat = new MeshBasicNodeMaterial({
-        transparent: true,
-        side: THREE.DoubleSide,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-    });
-
-    const uTime = time;
-    const pos = positionLocal;
-
-    // Wing flap animation
-    const flapSpeed = float(15.0).add(uMagicIntensity.mul(15.0)); // flap faster with magic
-    const flap = sin(uTime.mul(flapSpeed));
-    // Fold plane on X axis
-    const zOffset = pos.x.abs().mul(flap);
-
-    mat.positionNode = vec3(pos.x, pos.y, pos.z.add(zOffset));
-
-    const phase = pos.x.mul(10.0).add(pos.y.mul(20.0)).add(pos.z.mul(30.0));
-    const sparkle = sin(uTime.mul(5.0).add(phase)).add(1.0).mul(0.5);
-    const sharpSparkle = pow(sparkle, 2.0);
-
-    // Base colors
-    const baseColor = color(new THREE.Color(colorHex));
-    const pastelColor = mix(baseColor, color(0xffffff), 0.5);
-
-    // Glow intensifies with magic
-    const magicGlow = mix(float(0.5), float(1.0), uMagicIntensity);
-    const globalSync = uGlobalPulse.mul(0.5).add(0.5);
-
-    mat.colorNode = vec4(pastelColor, sharpSparkle.mul(globalSync).mul(magicGlow));
-
-    return mat;
-}
-
 export class EnergyParticleLayer {
     mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
