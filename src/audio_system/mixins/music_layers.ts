@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import type { MusicLayer } from '../types';
+import { bindMixin, PENTATONIC_SCALE } from '../types';
 
-export const musicLayerMixin = {
+export const musicLayerMixin = bindMixin({
 startBackgroundMusic(): void {
     this.init();
     if (!this.ctx || !this.musicGain) return;
@@ -318,4 +319,4 @@ setMusicState(state: MusicState): void {
 getMusicState(): MusicState {
     return this.currentMusicState;
 }
-} as const;
+});

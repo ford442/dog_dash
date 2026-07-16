@@ -14,7 +14,11 @@
     "build:cpp-wasm:debug": "bash cpp/build.sh",
     "copy:cpp-wasm": "node -e \"const fs=require('fs'); const src='build/game_cpp.wasm'; const dest='public/build/game_cpp.wasm'; if(fs.existsSync(src)){fs.mkdirSync('public/build',{recursive:true}); fs.copyFileSync(src,dest); console.log('Copied',dest);}\"",
     "predev": "npm run build:wasm && npm run copy:wasm",
-    "watch:wasm": "node scripts/watch-wasm.cjs"
+    "watch:wasm": "node scripts/watch-wasm.cjs",
+    "typecheck": "tsc --noEmit",
+    "typecheck:ci": "node tools/typecheck_baseline.cjs",
+    "typecheck:baseline:update": "node tools/typecheck_baseline.cjs --update",
+    "test:smoke": "playwright test"
   },
   "keywords": [],
   "author": "",

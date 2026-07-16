@@ -1,7 +1,7 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import { bindMixin } from '../types';
 
-export const cleanupMixin = {
+export const cleanupMixin = bindMixin({
 destroy() {
     this.stopGravityHum();
     this.stopEngine();
@@ -42,4 +42,4 @@ destroy() {
         this.ctx = null;
     }
 }
-} as const;
+});

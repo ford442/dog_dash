@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import type { SoundType, MagicSequence, SoundConfig, MusicLayer } from '../types';
+import { bindMixin } from '../types';
 
-export const engineSoundsMixin = {
+export const engineSoundsMixin = bindMixin({
 startEngine() {
     this.init();
     if (!this.ctx || !this.sfxGain || this.engineActive) return;
@@ -458,4 +459,4 @@ playMilestone(): void {
         { sound: 'choir_ahh', delay: 0.5, volume: 0.6 }
     ]);
 }
-} as const;
+});

@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import type { SoundType, MagicSequence, MusicState, SoundConfig, MusicLayer } from '../types';
+import type { SoundType, SoundConfig } from '../types';
+import { bindMixin } from '../types';
 
-export const spatialAudioMixin = {
+export const spatialAudioMixin = bindMixin({
 updateListenerPosition(position: THREE.Vector3): void {
     this.init();
     if (!this.ctx) return;
@@ -250,4 +251,4 @@ playCrystalChime(notes: number[], volume = 0.32, pitchShift = 1.0): void {
         }, delay * 1000);
     });
 }
-} as const;
+});
