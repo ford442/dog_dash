@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { time, positionLocal, positionWorld, normalWorld, cameraPosition, vec3, vec4, color, uniform, mix, sin, cos, float, pow, length, smoothstep, dot, fract, step } from 'three/tsl';
+import { time, positionLocal, positionWorld, normalWorld, normalView, normalLocal, cameraPosition, vec3, vec4, color, uniform, mix, sin, cos, float, pow, length, smoothstep, dot, fract, step, attribute } from 'three/tsl';
 import {
     candyMaterialUniforms, updateCandyMaterialGlobals, type CandyMaterial, type CandyMaterialHandle,
-    shouldUseLiteMaterials, trackMaterial, buildFresnelRim, buildSparkleGlitter, buildWeaponGlowContribution, attachCandyUniforms,
+    shouldUseLiteMaterials, trackMaterial, getCachedCandyMaterial, buildFresnelRim, buildSparkleGlitter, buildWeaponGlowContribution, attachCandyUniforms,
     createLitePhysical, type CandyGlossOptions
 } from './shared';
 
@@ -44,7 +44,7 @@ export function createCandyGloss(colorHex: number, options: CandyGlossOptions = 
         }, 'gloss', key);
     }
 
-    const cached = materialCache.get(key);
+    const cached = getCachedCandyMaterial(key);
     if (cached) return cached;
 
     const mat = new MeshStandardNodeMaterial({
@@ -138,7 +138,7 @@ export function createIridescentCrystal(
         return trackMaterial(mat, key);
     }
 
-    const cached = materialCache.get(key);
+    const cached = getCachedCandyMaterial(key);
     if (cached) return cached;
 
     const mat = new MeshStandardNodeMaterial({
@@ -236,7 +236,7 @@ export function createGummyTranslucent(colorHex: number, options: GummyTransluce
         }, 'gummy', key);
     }
 
-    const cached = materialCache.get(key);
+    const cached = getCachedCandyMaterial(key);
     if (cached) return cached;
 
     const mat = new MeshStandardNodeMaterial({
@@ -320,7 +320,7 @@ export function createFluffyPastel(colorHex: number, options: FluffyPastelOption
         return trackMaterial(mat, key);
     }
 
-    const cached = materialCache.get(key);
+    const cached = getCachedCandyMaterial(key);
     if (cached) return cached;
 
     const mat = new MeshStandardNodeMaterial({

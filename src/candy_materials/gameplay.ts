@@ -1,6 +1,23 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import {
+    time,
+    positionWorld,
+    normalView,
+    color,
+    uniform,
+    mix,
+    sin,
+    float,
+    smoothstep,
+    distance,
+    Loop,
+    vec3,
+    attribute
+} from 'three/tsl';
+import type { ParticleSystem } from '../particles';
 import type { CandyFlavor, CandyAsteroidVariant } from './shared';
-import { FLAVORS, CANDY_FLAVOR_COLORS } from './shared';
+import { FLAVORS, CANDY_FLAVOR_COLORS, candyMaterialUniforms, updateCandyMaterialGlobals } from './shared';
 import { createCandyGloss, createGummyTranslucent } from './factories';
 
 export function pickCandyFlavor(): CandyFlavor {
@@ -53,7 +70,7 @@ export function createAsteroidFieldMaterial(
     candyChance: number,
     uPlayerPos?: any
 ): MeshStandardNodeMaterial {
-    _weaponLightsNode = weaponLights;
+    updateCandyMaterialGlobals({ weaponLights });
 
     const mat = new MeshStandardNodeMaterial({
         color: baseColorHex,

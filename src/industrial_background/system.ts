@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { uniform } from 'three/tsl';
 import { WeaponLightManager } from '../lighting';
 import { IndustrialLayer, AnimatedMechanismLayer, TunnelLayer } from './layers';
+import { createPulsingConduitMaterial } from './materials';
 
 export class IndustrialBackgroundSystem {
     scene: THREE.Scene;
