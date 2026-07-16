@@ -1,16 +1,23 @@
-## 🌌 Architect: Galactic Core Lensing Effect
+## 🌌 Architect: Volumetric Rim Lighting (Silver Lining) in Nebula
 
 ### Concept
-> "A massive, slowly spinning black hole or quasar in the deep background, surrounded by an intensely glowing accretion disk that warps and distorts due to gravitational lensing."
+> "The player's exhaust and weapons cast a subtle glow on nearby nebula clouds, creating a dynamic interplay of light." (From future-plan.md §7)
 
 ### Implementation
-- Added a `lensingMesh` utilizing `THREE.PlaneGeometry` around the event horizon.
-- Created `createLensingMaterial` using `MeshPhysicalNodeMaterial` with `transmission: 1.0` and `ior: 2.0` to simulate glass/lensing.
-- Warped the normal vectors in TSL based on the distance from the center, bending background light inwards to mimic intense gravity.
+- Implemented Volumetric Rim Lighting (Silver Lining) on the Nebula clouds in `src/nebula.ts`.
+- Calculated the dot product between the view direction (`cameraPosition`) and light direction (`uPlayerPos`).
+- Applied a smoothstep edge factor based on density to ensure the rim lighting emphasizes the edges.
+- Blended the rim lighting strongly into the emissive node to make the edges pop without washing out the alpha channel.
+- Modifies `createNebulaMaterial()` and does not require new properties in level config.
 
 ### Visuals
-- Generates a bowl-like normal distortion `mat.normalNode = mix(normalLocal, inwardDir, strength)`.
-- Replaces the generic non-distorting approach with a functional 2D screen-space style pull using `PlaneGeometry`.
+- Dynamic lighting: Player engine glow strongly illuminates the edges of the cloud when flying behind a nebula puff, creating a highly realistic volumetric depth cue.
 
 ### Integration
-- `src/black_hole.ts`: Added to `BlackHoleSystem` group, inserted in the scene behind the halo but in front of the accretion disk to warp elements properly.
+- `src/nebula.ts`: Replaces proximity logic inside `createNebulaMaterial` to combine basic proximity glow and the new directional backlight silver lining.
+- Fits perfectly into existing Level 5 nebula logic (environments.nebula).
+
+### Testing
+- [x] `npm run build` passes
+- [x] Tested in Level 5
+- [x] Mobile/touch controls unaffected
