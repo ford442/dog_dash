@@ -86,7 +86,7 @@ export interface SpatialSound {
 }
 
 /** Shared `this` context for audio mixins merged onto AudioSystem. */
-export interface AudioMixinHost {
+export interface AudioSystemBase {
     ctx: AudioContext | null;
     masterGain: GainNode | null;
     musicGain: GainNode | null;
@@ -143,9 +143,9 @@ export interface AudioMixinHost {
     init(): void;
     play(type: SoundType, volumeMultiplier?: number, priority?: number): void;
     playHarmonic(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number, priority: number, baseDurationSecs: number): void;
-    playHarmonicWithPanner(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number, priority: number, baseDurationSecs: number, panner: PannerNode): void;
-    playToneWithPanner(config: SoundConfig, volumeMultiplier: number, priority: number, durationSecs: number, panner: PannerNode): void;
-    playNoiseWithPanner(config: SoundConfig, volumeMultiplier: number, priority: number, durationSecs: number, panner: PannerNode): void;
+    playHarmonicWithPanner(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number, panner: PannerNode): void;
+    playToneWithPanner(config: SoundConfig, volumeMultiplier: number, panner: PannerNode): void;
+    playNoiseWithPanner(config: SoundConfig, volumeMultiplier: number, panner: PannerNode): void;
     applyDuck(duration: number, amount: number): void;
     playSequence(sequence: Array<{ sound: SoundType; delay: number; volume?: number }>): void;
     playMagicSequence(sequence: MagicSequence): void;
@@ -156,11 +156,11 @@ export interface AudioMixinHost {
     setMusicEnergy(energy: number): void;
     startMusicSequencer(): void;
     updateMusicSequence(): void;
-    playAmbientNotes(): void;
-    playEnergyNotes(): void;
-    playMagicNotes(): void;
-    playVictoryNotes(): void;
-    activateMagicMusic(): void;
+    playAmbientNotes(time: number): void;
+    playEnergyNotes(time: number): void;
+    playMagicNotes(time: number): void;
+    playVictoryNotes(time: number): void;
+    activateMagicMusic(duration: number): void;
     setMasterVolume(volume: number): void;
     createPanner(): PannerNode | null;
     playStarJingle(): void;
@@ -172,7 +172,10 @@ export interface AudioMixinHost {
     updateEngineState(currentSpeedY: number, isMovingUp: boolean, isMovingDown: boolean, isBoosting?: boolean): void;
 }
 
-export function bindMixin<T extends Record<string, (this: AudioMixinHost, ...args: any[]) => any>>(mixin: T): T {
+/** @deprecated Use AudioSystemBase */
+export type AudioMixinHost = AudioSystemBase;
+
+export function bindMixin<T extends Record<string, (this: AudioSystemBase, ...args: any[]) => any>>(mixin: T): T {
     return mixin;
 }
 

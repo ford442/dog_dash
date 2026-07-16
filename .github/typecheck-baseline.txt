@@ -1,18 +1,6 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 183
-shaders/magical_edition.ts(19,33): TS2724: '"three/webgpu"' has no exported member named 'MeshPhysicalNodeMaterial'. Did you mean 'MeshPhysicalMaterial'?
-src/audio_system/mixins/music_layers.ts(298,22): TS2304: Cannot find name 'MusicState'.
-src/audio_system/mixins/music_layers.ts(311,37): TS2554: Expected 0 arguments, but got 1.
-src/audio_system/mixins/music_layers.ts(319,18): TS2304: Cannot find name 'MusicState'.
-src/audio_system/mixins/music_layers.ts(78,31): TS2554: Expected 0 arguments, but got 1.
-src/audio_system/mixins/music_layers.ts(83,30): TS2554: Expected 0 arguments, but got 1.
-src/audio_system/mixins/music_layers.ts(88,29): TS2554: Expected 0 arguments, but got 1.
-src/audio_system/mixins/music_layers.ts(93,31): TS2554: Expected 0 arguments, but got 1.
-src/audio_system/mixins/procedural_music.ts(55,14): TS2554: Expected 6 arguments, but got 4.
-src/audio_system/mixins/spatial_audio.ts(121,18): TS2554: Expected 7 arguments, but got 5.
-src/audio_system/mixins/spatial_audio.ts(72,14): TS2554: Expected 5 arguments, but got 3.
-src/audio_system/mixins/spatial_audio.ts(74,14): TS2554: Expected 5 arguments, but got 3.
+# Count: 169
 src/aurora.ts(104,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/aurora.ts(86,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/biological_background.ts(57,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
@@ -22,7 +10,6 @@ src/biological_background.ts(61,5): TS2740: Type 'OperatorNode' is missing the f
 src/biological_background.ts(62,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/biological_background.ts(63,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/biological_background.ts(65,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
-src/black_hole.ts(2,33): TS2724: '"three/webgpu"' has no exported member named 'MeshPhysicalNodeMaterial'. Did you mean 'MeshPhysicalMaterial'?
 src/boss_system.ts(25,5): TS2564: Property 'mouth' has no initializer and is not definitely assigned in the constructor.
 src/boss_system.ts(26,5): TS2564: Property 'jaw' has no initializer and is not definitely assigned in the constructor.
 src/boss_system.ts(27,5): TS2564: Property 'uvula' has no initializer and is not definitely assigned in the constructor.
@@ -182,5 +169,4 @@ src/main/startup.ts(340,40): TS2345: Argument of type 'Object3D<Object3DEventMap
 src/pinwheel_flora.ts(185,31): TS2345: Argument of type 'Material | Material[]' is not assignable to parameter of type 'Material'.
 src/pinwheel_flora.ts(186,30): TS2345: Argument of type 'Material | Material[]' is not assignable to parameter of type 'Material'.
 src/player_loader.ts(31,23): TS2339: Property 'isMesh' does not exist on type 'Object3D<Object3DEventMap>'.
-src/solar_sail_ferns.ts(7,10): TS2724: '"three/webgpu"' has no exported member named 'MeshPhysicalNodeMaterial'. Did you mean 'MeshPhysicalMaterial'?
 src/ui_factory.ts(262,40): TS2304: Cannot find name 'PlayerState'.

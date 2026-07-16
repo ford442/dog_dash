@@ -56,7 +56,7 @@ playNoteForCollect(pitch?: number): void {
             volume: volume * 0.4, 
             duration, 
             decay: duration 
-        } as SoundConfig, 1, 0.05);
+        } as SoundConfig, 1, 0.05, 3, duration);
     }
 
     // 5 stars in a row = little jingle!

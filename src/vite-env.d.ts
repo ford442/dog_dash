@@ -10,7 +10,7 @@ declare module 'three/examples/jsm/capabilities/WebGPU.js' {
 
 declare module 'three/webgpu' {
     export * from 'three';
-    import { WebGLRenderer, WebGLRendererParameters, MeshStandardMaterial, PointsMaterial, MeshBasicMaterial } from 'three';
+    import { WebGLRenderer, WebGLRendererParameters, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, MeshBasicMaterial } from 'three';
 
     // Minimal mock for WebGPURenderer as it's not in standard @types/three yet or might differ
     export class WebGPURenderer extends WebGLRenderer {
@@ -35,5 +35,15 @@ declare module 'three/webgpu' {
         emissiveNode?: any;
         roughnessNode?: any;
         metalnessNode?: any;
+    }
+
+    export class MeshPhysicalNodeMaterial extends MeshPhysicalMaterial {
+        colorNode?: any;
+        positionNode?: any;
+        emissiveNode?: any;
+        roughnessNode?: any;
+        metalnessNode?: any;
+        clearcoatNode?: any;
+        clearcoatRoughnessNode?: any;
     }
 }

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { MusicLayer } from '../types';
+import type { MusicLayer, MusicState } from '../types';
 import { bindMixin, PENTATONIC_SCALE } from '../types';
 
 export const musicLayerMixin = bindMixin({
