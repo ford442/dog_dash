@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { GhostDebrisSystem } from '../ghost_debris';
-import { VoidJellyfishSystem } from '../void_jellyfish';
 import {
     particleSystem, debrisSystem, weaponSystem, weaponLightManager,
     reEntrySystem, waterfallSystem, asteroidFieldSystem, planetaryHorizonSystem,
@@ -21,43 +19,30 @@ import {
 import { player, onPlayerLoaded } from '../player_loader';
 import { playerState, showError } from '../game_config';
 import { LevelManager } from '../level_manager';
-import { IndustrialGeometryManager } from '../industrial_geometry';
-import { AquaticLifeManager } from '../aquatic_life';
-import { StarlightKoiManager } from '../starlight_koi';
-import { RainbowBubbleCoralManager } from '../bubble_coral';
 import { CreatureManager } from '../creature_manager';
 import { DiscoveryManager, CreatureCatalogManager } from '../discovery_system';
 import { SlingObjectiveManager } from '../sling_objective';
 import { SlingComboManager } from '../sling_combo';
 import { TetherSystem } from '../tether_system';
-import { SlingableObjectSystem } from '../slingable_objects';
-import { ToyRocketSpawnManager } from '../toy_rockets';
 import { DebugSystem } from '../debug_system';
 import { decorationBudget, registerDefaultDecorationBudgets } from '../decoration_budget';
 import { createGalaxy, createMoon } from '../visuals';
-import { VideoTumblingStar } from '../video_tumbling_star';
 import { shouldShowTutorial } from '../tutorial_system';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
 import { game } from '../game_runtime';
 import {
-    sporeClouds, voidRootBalls, vacuumKelps, iceNeedleClusters,
-    magmaHearts, gravityAnchors, geodes,
-    createSporeCloudAtPosition, createVoidRootBallAtPosition,
-    createVacuumKelpAtPosition, createIceNeedleClusterAtPosition,
-    createLiquidMetalBlobAtPosition, createMagmaHeartAtPosition,
-    createGravityAnchorAtPosition, createGeodeAtPosition
-} from '../environment';
-import type { SlingableObjectConfig } from '../slingable_objects';
-import {
-    createGravityAnchorWithTarsiers,
-    createGeodeAtPositionWithLemur,
-    createIceNeedleClusterAtPositionWithLemur,
-    createSlingableObjectAtPosition
-} from './spawn_helpers';
-import { wireStartupCallbacks } from './startup_callbacks';
-import { createObstacleSystem, handleGameOver } from './obstacle_setup';
+    createGhostDebrisSystemStub,
+    createVoidJellyfishSystemStub,
+    createIndustrialGeometryManagerStub,
+    createAquaticLifeManagerStub,
+    createStarlightKoiManagerStub,
+    createBubbleCoralManagerStub,
+    createSlingableObjectSystemStub,
+    createToyRocketSpawnManagerStub
+} from '../deferred_system_stubs';
+import type { IndustrialGeometryManager } from '../industrial_geometry';
 
 async function loadWasm(): Promise<void> {
     const handle = await loadWasmModule();
@@ -125,7 +110,28 @@ function registerDebugSystem(): void {
     game.debugSystem = debugSystem;
 }
 
-function spawnPrototypeContent(): void {
+import {
+    sporeClouds, voidRootBalls, vacuumKelps, iceNeedleClusters,
+    magmaHearts, gravityAnchors, geodes,
+    createSporeCloudAtPosition, createVoidRootBallAtPosition,
+    createVacuumKelpAtPosition, createIceNeedleClusterAtPosition,
+    createLiquidMetalBlobAtPosition, createMagmaHeartAtPosition,
+    createGravityAnchorAtPosition, createGeodeAtPosition
+} from '../environment';
+import {
+    createGravityAnchorWithTarsiers,
+    createGeodeAtPositionWithLemur,
+    createIceNeedleClusterAtPositionWithLemur,
+    createSlingableObjectAtPosition
+} from './spawn_helpers';
+import { wireStartupCallbacks } from './startup_callbacks';
+import { createObstacleSystem, handleGameOver } from './obstacle_setup';
+import { ensureGameplayReady } from '../level_systems_loader';
+
+/** Prototype sling/geological content — deferred until first gameplay click. */
+export async function spawnDeferredPrototypeContent(): Promise<void> {
+    await ensureGameplayReady();
+
     createGravityAnchorWithTarsiers(80, 5, -25, 1);
     createGravityAnchorWithTarsiers(180, -6, -20, 1);
     createGravityAnchorWithTarsiers(280, 8, -22, 1);
@@ -165,6 +171,15 @@ function spawnPrototypeContent(): void {
         radius: 1.8, mass: 4.5,
         velocity: new THREE.Vector3(-0.9, 0.2, 0), kind: 'wreckingBall'
     });
+}
+
+export async function spawnDeferredVideoStars(): Promise<void> {
+    const { VideoTumblingStar } = await import('../video_tumbling_star');
+    game.videoTumblingStars = [
+        new VideoTumblingStar(scene, 360, 12, -45),
+        new VideoTumblingStar(scene, 980, -6, -40),
+        new VideoTumblingStar(scene, 1620, 8, -48)
+    ];
 }
 
 function createLevelManager(industrialGeometryManager: IndustrialGeometryManager): LevelManager {
@@ -309,13 +324,13 @@ export function initializeStartup(): void {
     Object.assign(game, managers);
     game.butterflySwarmSystem.bindEffects(particleSystem, juiceManager, audioSystem);
 
-    game.slingableObjectSystem = new SlingableObjectSystem(scene, particleSystem, debrisSystem);
-    game.toyRocketSpawnManager = new ToyRocketSpawnManager(game.slingableObjectSystem);
-    game.ghostDebrisSystem = new GhostDebrisSystem(scene);
-    game.voidJellyfishSystem = new VoidJellyfishSystem(scene);
-    game.aquaticLifeManager = new AquaticLifeManager(scene);
-    game.starlightKoiManager = new StarlightKoiManager(scene, particleSystem);
-    game.bubbleCoralManager = new RainbowBubbleCoralManager(scene, particleSystem);
+    game.slingableObjectSystem = createSlingableObjectSystemStub();
+    game.toyRocketSpawnManager = createToyRocketSpawnManagerStub();
+    game.ghostDebrisSystem = createGhostDebrisSystemStub();
+    game.voidJellyfishSystem = createVoidJellyfishSystemStub();
+    game.aquaticLifeManager = createAquaticLifeManagerStub();
+    game.starlightKoiManager = createStarlightKoiManagerStub();
+    game.bubbleCoralManager = createBubbleCoralManagerStub();
     game.creatureManager = new CreatureManager({ scene, particleSystem, debrisSystem, audioSystem });
     game.discoveryManager = new DiscoveryManager(saveManager);
     game.creatureCatalogManager = new CreatureCatalogManager(saveManager);
@@ -358,15 +373,9 @@ export function initializeStartup(): void {
     game.moon.position.set(500, 5, -50);
     scene.add(game.moon);
 
-    spawnPrototypeContent();
+    game.videoTumblingStars = [];
 
-    game.videoTumblingStars = [
-        new VideoTumblingStar(scene, 360, 12, -45),
-        new VideoTumblingStar(scene, 980, -6, -40),
-        new VideoTumblingStar(scene, 1620, 8, -48)
-    ];
-
-    const industrialGeometryManager = new IndustrialGeometryManager(scene);
+    const industrialGeometryManager = createIndustrialGeometryManagerStub() as IndustrialGeometryManager;
     game.industrialGeometryManager = industrialGeometryManager;
     game.levelManager = createLevelManager(industrialGeometryManager);
     game.levelManager.cloudSystem.setCamera(camera);

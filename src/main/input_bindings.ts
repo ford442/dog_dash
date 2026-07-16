@@ -11,6 +11,15 @@ import {
     createTetherDisplay, createCoresDisplay
 } from './hud_displays';
 import { RESOLUTION_RATIOS } from './render_helpers';
+import { ensureGameplayReady } from '../level_systems_loader';
+import { spawnDeferredPrototypeContent, spawnDeferredVideoStars } from './startup';
+
+async function beginGameplay(): Promise<void> {
+    await ensureGameplayReady();
+    void spawnDeferredPrototypeContent();
+    void spawnDeferredVideoStars();
+    game.levelManager.startLevel(1);
+}
 
 export let lastSpaceTapTime = 0;
 export const DOUBLE_TAP_THRESHOLD = 300;
@@ -34,7 +43,7 @@ export function setupInputBindings(): void {
             createUI({
                 getPlayer: () => player,
                 playerState,
-                startLevel: () => game.levelManager.startLevel(1)
+                startLevel: () => { void beginGameplay(); }
             });
             createHeatBar();
             createCoresDisplay();

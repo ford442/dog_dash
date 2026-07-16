@@ -1,5 +1,5 @@
-import { ChromaShiftSystem } from './chroma_shift';
-import { StormGeodeSystem } from './storm_geodes';
+import type { ChromaShiftSystem } from './chroma_shift';
+import type { StormGeodeSystem } from './storm_geodes';
 import { CrystalChimeManager } from './crystal_chimes';
 import { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
@@ -9,20 +9,34 @@ import { playerState } from './game_config';
 import { ParticleSystem, DebrisSystem } from './particles';
 import { WeaponSystem } from './weapons';
 import { WeaponLightManager } from './lighting';
-import { ReEntrySystem } from './reentry';
-import { WaterfallSystem } from './waterfall';
 import { AsteroidFieldSystem } from './asteroid_field';
-import { PlanetaryHorizonSystem } from './planetary_horizon';
-import { MeteorShowerSystem } from './meteor_shower';
-import { IndustrialBackgroundSystem } from './industrial_background';
 import { GodRaySystem } from './godrays';
 import { AuroraSystem } from './aurora';
 import { NebulaSystem } from './nebula';
-import { CosmicDustSystem } from './cosmic_dust';
-import { BlackHoleSystem } from './black_hole';
-import { BiologicalBackgroundSystem } from './biological_background';
-import { LiquidMetalSystem } from './geological';
-import { BossManager } from './boss_system';
+import {
+    createReEntrySystemStub,
+    createWaterfallSystemStub,
+    createMeteorShowerSystemStub,
+    createIndustrialSystemStub,
+    createBiologicalSystemStub,
+    createCosmicDustSystemStub,
+    createLiquidMetalSystemStub,
+    createBossManagerStub,
+    createPlanetaryHorizonSystemStub,
+    createChromaShiftSystemStub,
+    createStormGeodeSystemStub,
+    createBlackHoleSystemStub
+} from './deferred_system_stubs';
+import type { ReEntrySystem } from './reentry';
+import type { WaterfallSystem } from './waterfall';
+import type { PlanetaryHorizonSystem } from './planetary_horizon';
+import type { MeteorShowerSystem } from './meteor_shower';
+import type { IndustrialBackgroundSystem } from './industrial_background';
+import type { CosmicDustSystem } from './cosmic_dust';
+import type { BlackHoleSystem } from './black_hole';
+import type { BiologicalBackgroundSystem } from './biological_background';
+import type { LiquidMetalSystem } from './geological';
+import type { BossManager } from './boss_system';
 import { getAudioSystem, initAudioOnInteraction } from './audio_system';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager } from './save_manager';
@@ -67,39 +81,26 @@ weaponSystem.fire = function(position: THREE.Vector3, direction: THREE.Vector3) 
     originalFire(position, direction);
 };
 
-// RE-ENTRY SYSTEM (Atmospheric Heat Effects)
-export const reEntrySystem = new ReEntrySystem(scene, camera);
+// Level-heavy environment systems — stubs until level_systems_loader installs real instances.
+export let reEntrySystem: ReEntrySystem = createReEntrySystemStub();
+export let waterfallSystem: WaterfallSystem = createWaterfallSystemStub();
+export let planetaryHorizonSystem: PlanetaryHorizonSystem = createPlanetaryHorizonSystemStub();
+export let meteorShowerSystem: MeteorShowerSystem = createMeteorShowerSystemStub();
+export let industrialSystem: IndustrialBackgroundSystem = createIndustrialSystemStub();
 
-// WATERFALL SYSTEM (Vertical Water Effects)
-export const waterfallSystem = new WaterfallSystem(scene, camera, weaponLightManager);
-
-// ASTEROID FIELD SYSTEM (Parallax Asteroids)
+// ASTEROID FIELD SYSTEM (Parallax Asteroids) — needed for Level 1
 export const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
-
-// PLANETARY HORIZON SYSTEM (Massive scrolling planet)
-export const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
-
-// METEOR SHOWER SYSTEM
-export const meteorShowerSystem = new MeteorShowerSystem(scene, weaponLightManager);
-
-// INDUSTRIAL BACKGROUND SYSTEM (Megastructures)
-export const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);
 
 // NEBULA SYSTEM (Volumetric Clouds & Particles)
 export const godRaySystem = new GodRaySystem(scene);
 export const auroraSystem = new AuroraSystem(scene, weaponLightManager);
 export const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
-export const cosmicDustSystem = new CosmicDustSystem(scene, weaponLightManager);
+export let cosmicDustSystem: CosmicDustSystem = createCosmicDustSystemStub();
 nebulaSystem.setCamera(camera);
 
-// BIOLOGICAL BACKGROUND SYSTEM (Space Whale Interior)
-export const biologicalSystem = new BiologicalBackgroundSystem(scene);
-
-// LIQUID METAL SYSTEM (Advanced Reflection & Physics)
-export const liquidMetalSystem = new LiquidMetalSystem(scene);
-
-// BOSS SYSTEM
-export const bossManager = new BossManager(scene);
+export let biologicalSystem: BiologicalBackgroundSystem = createBiologicalSystemStub();
+export let liquidMetalSystem: LiquidMetalSystem = createLiquidMetalSystemStub();
+export let bossManager: BossManager = createBossManagerStub();
 
 // AUDIO SYSTEM
 export const audioSystem = getAudioSystem();
@@ -275,11 +276,39 @@ if (shouldShowTutorial(saveManager)) {
 }
 export const lightningBoltSystem = new LightningBoltSystem(scene, weaponLightManager);
 
-export const chromaShiftSystem = new ChromaShiftSystem(scene);
-
-// STORM GEODE SYSTEM
-export const stormGeodeSystem = new StormGeodeSystem(scene);
+export let chromaShiftSystem: ChromaShiftSystem = createChromaShiftSystemStub();
+export let stormGeodeSystem: StormGeodeSystem = createStormGeodeSystemStub();
 export const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
 
-// BLACK HOLE SYSTEM (Galactic Core)
-export const blackHoleSystem = new BlackHoleSystem(scene);
+export let blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
+
+export type LevelEnvironmentSystemExports = {
+    reEntrySystem: ReEntrySystem;
+    waterfallSystem: WaterfallSystem;
+    meteorShowerSystem: MeteorShowerSystem;
+    industrialSystem: IndustrialBackgroundSystem;
+    biologicalSystem: BiologicalBackgroundSystem;
+    cosmicDustSystem: CosmicDustSystem;
+    liquidMetalSystem: LiquidMetalSystem;
+    bossManager: BossManager;
+    planetaryHorizonSystem: PlanetaryHorizonSystem;
+    chromaShiftSystem: ChromaShiftSystem;
+    stormGeodeSystem: StormGeodeSystem;
+    blackHoleSystem: BlackHoleSystem;
+};
+
+/** Replace stub environment systems after the async level-heavy chunk loads. */
+export function installLevelEnvironmentSystems(systems: LevelEnvironmentSystemExports): void {
+    reEntrySystem = systems.reEntrySystem;
+    waterfallSystem = systems.waterfallSystem;
+    meteorShowerSystem = systems.meteorShowerSystem;
+    industrialSystem = systems.industrialSystem;
+    biologicalSystem = systems.biologicalSystem;
+    cosmicDustSystem = systems.cosmicDustSystem;
+    liquidMetalSystem = systems.liquidMetalSystem;
+    bossManager = systems.bossManager;
+    planetaryHorizonSystem = systems.planetaryHorizonSystem;
+    chromaShiftSystem = systems.chromaShiftSystem;
+    stormGeodeSystem = systems.stormGeodeSystem;
+    blackHoleSystem = systems.blackHoleSystem;
+}

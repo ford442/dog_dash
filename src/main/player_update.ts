@@ -8,6 +8,7 @@ import { updateHealthDisplay } from '../ui_controls';
 import { LEVEL_DISTANCE_BOUNDARIES } from '../level_config';
 import { gravityAnchors } from '../environment';
 import { showRollPopup } from './hud_displays';
+import { maybePrefetchNextLevel } from '../level_systems_loader';
 export function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
@@ -425,7 +426,8 @@ export function updatePlayer(delta: number) {
     // --- AUDIO SYSTEM ---
     game.audioSystem.updateEngineState(playerState.currentSpeedY, isMovingUp, isMovingDown, isBoosting);
 
-    // Level Checking
+    // Level Checking — prefetch next level chunk before boundary crossing
+    maybePrefetchNextLevel(player.position.x, game.levelManager.currentLevel);
     game.levelManager.checkProgress(player.position.x);
 
     // "Survive" objectives (e.g. L4 Rusty Gauntlet) don't have a running
