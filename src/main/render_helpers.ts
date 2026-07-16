@@ -76,6 +76,11 @@ export function getCollisionDebugTargets(): CollisionDebugTarget[] {
         addTarget(anchor.position, (anchor.userData.fieldRadius as number) || 40, 0x6699ff);
     });
 
+    voidRootBalls.forEach((rootBall) => {
+        const detection = (rootBall.userData.detectionRadius as number) || 20;
+        addTarget(rootBall.position, detection, 0xcc44ff);
+    });
+
     return targets;
 }
 

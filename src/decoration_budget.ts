@@ -235,6 +235,13 @@ export function applyLevelDecorationBudgets(
             Math.min(8, Math.max(1, Math.ceil(cfg.windChimeDensity * 1.2)))
         );
     }
+    const voidRootDensity = cfg.foliageDensity.voidRootBall ?? 0;
+    if (voidRootDensity > 0) {
+        decorationBudget.setMaxActive(
+            'void_root_ball',
+            Math.min(6, Math.max(1, Math.ceil(voidRootDensity * 0.75)))
+        );
+    }
 }
 
 /** Register default budgets — call once at boot. */
@@ -293,5 +300,10 @@ export function registerDefaultDecorationBudgets(): void {
         label: 'Star-Eater minion orbiters',
         category: 'creatures',
         maxActive: 4
+    });
+    decorationBudget.register('void_root_ball', {
+        label: 'Void Root Balls',
+        category: 'creatures',
+        maxActive: 6
     });
 }

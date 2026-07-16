@@ -93,7 +93,7 @@ export function updatePlayer(delta: number) {
 
     // --- UPGRADED: Visual Flight Angles (Pitch & Roll) ---
     const rocket = player.children[0];
-    if (rocket) {
+    if (rocket && !playerState.vineTetherActive) {
         const speedRatio = playerState.currentSpeedY / CONFIG.player.maxDescentSpeed;
         const targetPitch = -Math.sign(speedRatio) * Math.pow(Math.abs(speedRatio), 1.2) * 0.6;
         const targetRoll = playerState.currentSpeedY * 0.015;
