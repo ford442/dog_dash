@@ -24,6 +24,7 @@ import { DiscoveryManager, CreatureCatalogManager } from '../discovery_system';
 import { SlingObjectiveManager } from '../sling_objective';
 import { SlingComboManager } from '../sling_combo';
 import { TetherSystem } from '../tether_system';
+import { spawnGravLensCorridorsForLevel } from './grav_lens_update';
 import { DebugSystem } from '../debug_system';
 import { decorationBudget, registerDefaultDecorationBudgets } from '../decoration_budget';
 import { createGalaxy, createMoon } from '../visuals';
@@ -228,6 +229,7 @@ function createLevelManager(industrialGeometryManager: IndustrialGeometryManager
             game.discoveryManager.reset();
             game.friendsManager.resetLevelLemurCap();
             game.toyRocketSpawnManager.spawnForLevel(game.levelManager.currentLevel, cfg);
+            spawnGravLensCorridorsForLevel(game.levelManager.currentLevel, cfg);
             game.wrenchChargeAvailable = saveManager.hasMemory('mine_robot');
             game.slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
             if (cfg.objective?.type === 'scan') {

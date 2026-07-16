@@ -20,6 +20,7 @@ export const SPECIES_NAMES: Record<string, string> = {
     magmaHeart: 'Magma Heart',
     iceNeedleCluster: 'Ice Needle Cluster',
     gravityAnchor: 'Gravity Anchor',
+    gravLens: 'Grav-Lens',
     sporeCloud: 'Spore Cloud',
     vacuumKelp: 'Vacuum Kelp',
     liquidMetalBlob: 'Liquid Metal Blob',

@@ -49,7 +49,9 @@ export const playerState = {
     vineTetherActive: false,
     vineBleedTimer: 0,
     vineBleedDps: 0,
-    penguinSlideAssistTimer: 0
+    penguinSlideAssistTimer: 0,
+    gravLensBoostTimer: 0,
+    gravLensBoostMultiplier: 1
 };
 
 export let isGamePaused = false;
