@@ -284,4 +284,14 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'background3d',
         maxActive: 24
     });
+    decorationBudget.register('star_eater_boss', {
+        label: 'Star-Eater Pitcher (boss)',
+        category: 'creatures',
+        maxActive: 1
+    });
+    decorationBudget.register('star_eater_minions', {
+        label: 'Star-Eater minion orbiters',
+        category: 'creatures',
+        maxActive: 4
+    });
 }

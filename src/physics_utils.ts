@@ -39,3 +39,27 @@ export function writeObjectsToWasm(wasm: WasmHandle, objects: { position: { x: n
     
     return count;
 }
+
+/** Writes boss hitbox circles into the WASM allocBossHitboxes buffer. */
+export function writeBossHitboxesToWasm(
+    wasm: WasmHandle,
+    hitboxes: { x: number; y: number; radius: number }[]
+): number {
+    if (!wasm.exports.allocBossHitboxes || hitboxes.length === 0) return 0;
+
+    const ptr = wasm.exports.allocBossHitboxes(hitboxes.length);
+
+    if (!wasm.memory || wasm.memory.buffer !== wasm.exports.memory.buffer) {
+        wasm.memory = new Float32Array(wasm.exports.memory.buffer);
+    }
+
+    const startIdx = ptr >>> 2;
+    for (let i = 0; i < hitboxes.length; i++) {
+        const offset = startIdx + i * 3;
+        wasm.memory[offset] = hitboxes[i].x;
+        wasm.memory[offset + 1] = hitboxes[i].y;
+        wasm.memory[offset + 2] = hitboxes[i].radius;
+    }
+
+    return hitboxes.length;
+}
