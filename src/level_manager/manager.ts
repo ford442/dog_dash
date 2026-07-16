@@ -52,6 +52,7 @@ import type { GeologicalSpawners, GeologicalCounts, LevelManagerOptions } from '
 import { applyEnvironmentPlugins } from './environment_plugins';
 import { maybeStreamFoliage, populateZone } from './foliage_streaming';
 import type { LevelFoliageHost } from './foliage_host';
+import { ensureLevelSystemsForLevel } from '../level_systems_loader';
 
 export class LevelManager {
     currentLevel: number;
@@ -346,7 +347,10 @@ export class LevelManager {
     checkProgress(playerX: number) {
         const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
         if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
-            this.startLevel(this.currentLevel + 1);
+            const nextLevel = this.currentLevel + 1;
+            void ensureLevelSystemsForLevel(nextLevel).then(() => {
+                this.startLevel(nextLevel);
+            });
         }
     }
 

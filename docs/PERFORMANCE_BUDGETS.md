@@ -78,3 +78,24 @@ Production builds keep counter enforcement with **no DOM overlay** unless `?debu
 - `src/debug_system.ts` — FPS + system toggles (`\` key)
 - `src/level_config.ts` — per-level density knobs
 - `src/candy_materials.ts` — `PROP_COST_HINTS` for new materials
+
+## JavaScript bundle budgets (production)
+
+Vite splits the production build into async chunks so Level 1 only pulls core gameplay code at startup; level-heavy systems load on the first gameplay click or during level transitions.
+
+| Chunk | Role | Budget (minified) | Notes |
+|-------|------|-------------------|-------|
+| `index-*.js` | Core boot + L1 gameplay loop | **< 1 MB** (currently ~265 KB) | Entry script referenced from `index.html` |
+| `three-*.js` | Three.js vendor | ~1.1 MB | Cached vendor chunk; shared across sessions |
+| `audio-*.js` | Procedural audio mixins | ~51 KB | Separate chunk via `vite.config.ts` `manualChunks` |
+| `level-heavy-*.js` | Waterfall, industrial, boss, biological, slingables, etc. | ~443 KB | Dynamic `import()` — **not** part of L1 initial parse |
+| `deferred_managers-*.js` | Ghost debris, void jellyfish, koi, coral, toy rockets | ~0.5 KB entry | Facade; implementation lives in `level-heavy` |
+| `level_environment_systems-*.js` | Environment system factory | ~0.7 KB entry | Facade; implementation lives in `level-heavy` |
+
+**Level 1 initial JS (entry + vendor):** ~1.35 MB minified (~378 KB gzip) — down from a single 1.85 MB bundle. The former monolith warning is resolved because the entry chunk is under Vite’s 500 KB advisory.
+
+**Level transition hitch:** `level_systems_loader.ts` prefetches the next level’s async chunks when the player is ~75% through the current segment (and again near the boundary), keeping level loads under ~200 ms on mid-tier mobile when cached.
+
+**Measure:** `npm run build` prints chunk sizes; in dev, use the debug FPS panel (`\``) and the browser Network tab (filter JS) after `npm run preview`.
+
+Configuration lives in `vite.config.ts`; lazy wiring in `src/level_systems_loader.ts`, `src/level_environment_systems.ts`, and `src/deferred_managers.ts`.
