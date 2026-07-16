@@ -559,6 +559,7 @@ export class WaterfallSystem {
     splash!: SplashSystem;
     submersion!: SubmersionOverlay;
     active: boolean = false;
+    levelDistance: number = 2000;
 
     constructor(scene: THREE.Scene, camera: THREE.Camera, weaponLightManager?: WeaponLightManager) {
         this.weaponLightManager = weaponLightManager;
@@ -632,9 +633,6 @@ export class WaterfallSystem {
         this.layers.forEach(l => l.mesh.visible = true);
         this.bubbles.mesh.visible = true;
         this.splash.mesh.visible = true;
-
-        // Fade in submersion
-        this.submersion.setIntensity(1.0);
     }
 
     deactivate() {
@@ -655,6 +653,9 @@ export class WaterfallSystem {
         this.splash.update(delta, playerPos);
 
         if (!this.active) return;
+
+        const progress = Math.max(0, Math.min(1, cameraX / this.levelDistance));
+        this.submersion.setIntensity(progress);
 
         this.layers.forEach(l => l.update(cameraX));
         this.bubbles.update(delta, cameraX);

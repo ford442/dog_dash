@@ -325,7 +325,10 @@ export class LevelManager {
             },
             {
                 flag: 'waterfall',
-                activate: () => waterfallSystem.activate(),
+                activate: () => {
+                    waterfallSystem.levelDistance = levelLength;
+                    waterfallSystem.activate();
+                },
                 deactivate: () => waterfallSystem.deactivate()
             },
             {
