@@ -22,7 +22,8 @@ import {
 import { updateCamera } from './camera_system';
 import { updateShadowQuality, updateShadowCulling } from './render_helpers';
 import { updateGravLensSystems } from './grav_lens_update';
-import { gravLensManager } from '../game_systems';
+import { updateArtifacts } from './artifact_update';
+import { gravLensManager, derelictBuoyManager, dataMonolithManager } from '../game_systems';
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
@@ -88,6 +89,11 @@ export function updateLoopWorld(delta: number, time: number): void {
         if (player) {
             updateGravLensSystems(delta);
         }
+
+        // Artifacts — Derelict Buoys + Data Monoliths (levels 4–5)
+        if (player) {
+            updateArtifacts(delta);
+        }
     
         // Update Level Manager (and Clouds)
         if (player) {
@@ -102,6 +108,8 @@ export function updateLoopWorld(delta: number, time: number): void {
                 ...gravityAnchors,
                 ...liquidMetalBlobs,
                 ...gravLensManager.getScannables(),
+                ...derelictBuoyManager.getScannables(),
+                ...dataMonolithManager.getScannables(),
             ];
             game.discoveryManager.update(player.position, [
                 ...game.levelManager.levelObjects,

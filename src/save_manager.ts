@@ -25,6 +25,12 @@ export interface SaveData {
     unlockedLevels: number[];
     discoveredSpecies: string[];
     catalogedCreatures: string[];
+    /** Data Monolith lore ids decoded (see architect_lore.ts). */
+    architectLoreUnlocked: string[];
+    /** Derelict Buoy map fragments collected (persist across runs). */
+    mapFragments: number;
+    /** Quantum Compass HUD upgrade unlocked (full buoy network decoded). */
+    quantumCompassUnlocked: boolean;
     version: string;
 }
 
@@ -81,6 +87,9 @@ export class SaveManager {
             unlockedLevels: [1],
             discoveredSpecies: [],
             catalogedCreatures: [],
+            architectLoreUnlocked: [],
+            mapFragments: 0,
+            quantumCompassUnlocked: false,
             version: CURRENT_VERSION
         };
     }
@@ -217,6 +226,47 @@ export class SaveManager {
     /** True if this creature has been cataloged (its "memory" bonus is active). */
     hasMemory(creatureId: string): boolean {
         return (this.data.catalogedCreatures || []).includes(creatureId);
+    }
+
+    // --- Artifacts: Data Monolith lore (The Architects) ---
+    getArchitectLore(): string[] {
+        return [...(this.data.architectLoreUnlocked || [])];
+    }
+
+    /** Decodes a monolith lore entry. Returns true the first time ever. */
+    unlockArchitectLore(loreId: string): boolean {
+        if (!this.data.architectLoreUnlocked) this.data.architectLoreUnlocked = [];
+        if (this.data.architectLoreUnlocked.includes(loreId)) return false;
+        this.data.architectLoreUnlocked.push(loreId);
+        this.save();
+        return true;
+    }
+
+    hasArchitectLore(loreId: string): boolean {
+        return (this.data.architectLoreUnlocked || []).includes(loreId);
+    }
+
+    // --- Artifacts: Derelict Buoy map fragments + Quantum Compass ---
+    getMapFragments(): number {
+        return this.data.mapFragments || 0;
+    }
+
+    addMapFragment(amount = 1): number {
+        this.data.mapFragments = (this.data.mapFragments || 0) + amount;
+        this.save();
+        return this.data.mapFragments;
+    }
+
+    hasQuantumCompass(): boolean {
+        return this.data.quantumCompassUnlocked === true;
+    }
+
+    /** Unlocks the permanent Quantum Compass HUD upgrade. True the first time. */
+    unlockQuantumCompass(): boolean {
+        if (this.data.quantumCompassUnlocked) return false;
+        this.data.quantumCompassUnlocked = true;
+        this.save();
+        return true;
     }
 
     // Level unlocks

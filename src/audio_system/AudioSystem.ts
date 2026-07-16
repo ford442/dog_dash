@@ -12,6 +12,7 @@ import { engineSoundsMixin } from './mixins/engine_sounds';
 import { reactiveSoundsMixin } from './mixins/reactive_sounds';
 import { reactiveSoundsMixin2 } from './mixins/reactive_sounds_2';
 import { gravityAudioMixin } from './mixins/gravity_audio';
+import { hackingSoundsMixin } from './mixins/hacking_sounds';
 import { cleanupMixin } from './mixins/cleanup';
 
 export class AudioSystem {
@@ -358,6 +359,7 @@ Object.assign(
     reactiveSoundsMixin,
     reactiveSoundsMixin2,
     gravityAudioMixin,
+    hackingSoundsMixin,
     cleanupMixin,
 );
 
@@ -375,6 +377,7 @@ type RawAudioSystemMixins = typeof musicLayerMixin
     & typeof reactiveSoundsMixin
     & typeof reactiveSoundsMixin2
     & typeof gravityAudioMixin
+    & typeof hackingSoundsMixin
     & typeof cleanupMixin;
 
 export type AudioSystemMixins = StripMixinThisMethods<RawAudioSystemMixins>;

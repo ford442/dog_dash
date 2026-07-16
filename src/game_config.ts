@@ -51,7 +51,10 @@ export const playerState = {
     vineBleedDps: 0,
     penguinSlideAssistTimer: 0,
     gravLensBoostTimer: 0,
-    gravLensBoostMultiplier: 1
+    gravLensBoostMultiplier: 1,
+    // Artifact hacking (Derelict Buoy extraction): shields drop, thruster to 30%.
+    hackExtractionTimer: 0,
+    hackThrusterEfficiency: 1
 };
 
 export let isGamePaused = false;
