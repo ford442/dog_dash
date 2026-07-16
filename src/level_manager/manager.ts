@@ -1,0 +1,358 @@
+import { ShakeType } from '../juice_effects';
+import { lightningBoltSystem, particleSystem, juiceManager } from '../game_systems';
+import * as THREE from 'three';
+import { CloudSystem } from '../clouds';
+import { AtmosphereSystem } from '../sky';
+import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from '../level_config';
+import { IndustrialGeometryManager } from '../industrial_geometry';
+import { getLevelSpan } from '../depth_layers';
+import { playerState } from '../game_config';
+import { moonPlants } from '../visuals';
+import { disposeObject } from '../utils';
+import {
+    blackHoleSystem,
+    waterfallSystem,
+    industrialSystem,
+    chromaShiftSystem,
+    stormGeodeSystem,
+    biologicalSystem,
+    nebulaSystem,
+    cosmicDustSystem,
+    meteorShowerSystem,
+    asteroidFieldSystem,
+    planetaryHorizonSystem,
+    reEntrySystem
+} from '../game_systems';
+import { GodRaySystem } from '../godrays';
+import { AuroraSystem } from '../aurora';
+import { GhostDebrisSystem } from '../ghost_debris';
+import { VoidJellyfishSystem } from '../void_jellyfish';
+import { DebugSystem } from '../debug_system';
+import { FriendsManager } from '../space_friends';
+import { ButterflySwarmSystem } from '../butterfly_swarm';
+import { WeaponLightManager } from '../lighting';
+import type { ConstellationManager } from '../flower_constellations';
+import type { PinwheelFloraManager } from '../pinwheel_flora';
+import type { WindChimeManager } from '../wind_chimes';
+import type { SolarSailFernManager } from '../solar_sail_ferns';
+import type { CastleBackgroundManager } from '../cloud_castles';
+import type { CandyBeltManager } from '../candy_obstacles';
+import { applyLevelDecorationBudgets, decorationBudget } from '../decoration_budget';
+import { DEPTH_LAYERS } from '../depth_layers';
+import { crystalChimeManager } from '../game_systems';
+import {
+    DEFAULT_FOG_FAR,
+    DEFAULT_FOG_NEAR,
+    FOG_FAR_DENSITY_FACTOR,
+    FOG_NEAR_DENSITY_FACTOR,
+    STREAM_AHEAD_END,
+    STREAM_AHEAD_START
+} from './constants';
+import type { GeologicalSpawners, GeologicalCounts, LevelManagerOptions } from './types';
+import { applyEnvironmentPlugins } from './environment_plugins';
+import { maybeStreamFoliage, populateZone } from './foliage_streaming';
+import type { LevelFoliageHost } from './foliage_host';
+
+export class LevelManager {
+    currentLevel: number;
+    config: { [key: number]: LevelConfig };
+    levelObjects: THREE.Object3D[];
+    cloudSystem: CloudSystem;
+    atmosphereSystem: AtmosphereSystem;
+    lastPopulatedEndX: number;
+    godRaySystem: GodRaySystem;
+    auroraSystem: AuroraSystem;
+    ghostDebrisSystem: GhostDebrisSystem;
+    voidJellyfishSystem: VoidJellyfishSystem;
+    debugSystem?: DebugSystem;
+    friendsManager?: FriendsManager;
+    industrialGeometryManager: IndustrialGeometryManager;
+    objectDensityMultiplier: number;
+    readonly scene: THREE.Scene;
+    readonly camera: THREE.PerspectiveCamera;
+    readonly butterflySwarmSystem: ButterflySwarmSystem;
+    private readonly flowerManager: ConstellationManager;
+    readonly pinwheelManager: PinwheelFloraManager;
+    readonly windChimeManager: WindChimeManager;
+    readonly solarSailFernManager: SolarSailFernManager;
+    private readonly castleManager: CastleBackgroundManager;
+    private readonly candyManager: CandyBeltManager;
+    readonly getPlayer: () => THREE.Group | null;
+    readonly spawners: GeologicalSpawners;
+    readonly geologicalCounts: GeologicalCounts;
+    private readonly onLevelStart?: (cfg: LevelConfig) => void;
+    private readonly onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
+    baseAsteroidDensity = 0;
+    /** True once this level's objective has been completed and the "fast lane"
+     *  (reduced hazard density, bonus orbs) toward the level exit is active. */
+    fastLaneActive = false;
+    private fastLaneDensityFactor = 1.0;
+
+    readonly GEOLOGICAL_SPAWN_CAPS = {
+        cloud: 8,
+        voidRootBall: 8,
+        vacuumKelp: 6,
+        iceNeedle: 6,
+        liquidMetal: 6,
+        magmaHeart: 6,
+        gravityAnchor: 6,
+        geode: 4
+    } as const;
+
+    constructor(options: LevelManagerOptions) {
+        this.scene = options.scene;
+        this.camera = options.camera;
+        this.butterflySwarmSystem = options.butterflySwarmSystem;
+        this.flowerManager = options.flowerManager;
+        this.pinwheelManager = options.pinwheelManager;
+        this.windChimeManager = options.windChimeManager;
+        this.solarSailFernManager = options.solarSailFernManager;
+        this.castleManager = options.castleManager;
+        this.candyManager = options.candyManager;
+        this.getPlayer = options.getPlayer;
+        this.spawners = options.spawners;
+        this.geologicalCounts = options.geologicalCounts;
+        this.onLevelStart = options.onLevelStart;
+        this.onUpdateLevelDisplay = options.onUpdateLevelDisplay;
+
+        this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
+        this.atmosphereSystem = new AtmosphereSystem(this.scene);
+
+        lightningBoltSystem.onBoltStrike = (pos, color) => {
+            this.cloudSystem.triggerLightningAt(pos, color);
+            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
+
+            // Add impact effects: subtle screen shake and spark particles
+            juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
+            particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
+        };
+        this.godRaySystem = options.godRaySystem;
+        this.auroraSystem = options.auroraSystem;
+        this.ghostDebrisSystem = options.ghostDebrisSystem;
+        this.voidJellyfishSystem = options.voidJellyfishSystem;
+        this.debugSystem = options.debugSystem;
+        this.friendsManager = options.friendsManager;
+        this.industrialGeometryManager = options.industrialGeometryManager;
+        this.currentLevel = 1;
+        this.config = LEVEL_CONFIG;
+
+        this.levelObjects = [];
+        this.lastPopulatedEndX = -Infinity;
+        this.objectDensityMultiplier = 1.0;
+    }
+
+    setObjectDensityMultiplier(multiplier: number) {
+        this.objectDensityMultiplier = Math.min(1.0, Math.max(0.25, multiplier));
+        if (this.baseAsteroidDensity > 0) {
+            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
+        }
+        const cfg = this.config[this.currentLevel];
+        if (cfg) applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
+    }
+
+    enterFastLane() {
+        if (this.fastLaneActive) return;
+        this.fastLaneActive = true;
+        this.fastLaneDensityFactor = 0.35;
+        if (this.baseAsteroidDensity > 0) {
+            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
+        }
+    }
+
+    setMagicActive(active: boolean) {
+        nebulaSystem.setMagicActive(active);
+    }
+
+
+    startLevel(levelIndex: number) {
+        this.currentLevel = levelIndex;
+        const cfg = this.config[levelIndex];
+        if (!cfg) return;
+
+        this.fastLaneActive = false;
+        this.fastLaneDensityFactor = 1.0;
+        this.lastPopulatedEndX = -Infinity;
+
+        console.log(`Starting Level ${levelIndex}: ${cfg.name}`);
+
+        const player = this.getPlayer();
+        const playerX = player ? player.position.x : 0;
+        const { startX: levelStartX, endX: levelEndX, length: levelLength } = getLevelSpan(levelIndex);
+
+        playerState.autoScrollSpeed = cfg.speed;
+        playerState.distanceToMoon = cfg.distance;
+
+        let transitionDuration = 2.0;
+        if (levelIndex === 3) {
+            transitionDuration = 100.0;
+        }
+
+        this.atmosphereSystem.transitionTo(cfg.skyColors.top, cfg.skyColors.bottom, transitionDuration);
+        nebulaSystem.setSkyColors(cfg.skyColors.top, cfg.skyColors.bottom);
+
+        if (this.scene.fog) {
+            if (this.scene.fog instanceof THREE.Fog) {
+                if (cfg.fogDensity) {
+                    this.scene.fog.far = DEFAULT_FOG_FAR * (1 - cfg.fogDensity * FOG_FAR_DENSITY_FACTOR);
+                    this.scene.fog.near = DEFAULT_FOG_NEAR * (1 - cfg.fogDensity * FOG_NEAR_DENSITY_FACTOR);
+                } else {
+                    this.scene.fog.far = DEFAULT_FOG_FAR;
+                    this.scene.fog.near = DEFAULT_FOG_NEAR;
+                }
+            }
+        }
+
+        const levelDiv = document.getElementById('level-display');
+        if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
+        this.onUpdateLevelDisplay?.(levelIndex, cfg.name);
+        this.onLevelStart?.(cfg);
+        applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
+
+        populateZone(this, playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
+
+        this.cloudSystem.setLevel(cfg);
+
+        chromaShiftSystem.clearRocks();
+        if (cfg.chromaShiftDensity && cfg.chromaShiftDensity > 0) {
+            chromaShiftSystem.activate();
+        } else {
+            chromaShiftSystem.deactivate();
+        }
+
+        if (cfg.stormGeodeDensity && cfg.stormGeodeDensity > 0 && stormGeodeSystem) {
+            stormGeodeSystem.activate(cfg.stormGeodeDensity);
+        } else if (stormGeodeSystem) {
+            stormGeodeSystem.deactivate();
+        }
+
+        const environments = cfg.environments || {};
+        applyEnvironmentPlugins(this, cfg, environments, levelLength);
+
+        // Level 3 rescue objective friends spawn
+        if (levelIndex === 3) {
+            if (this.friendsManager && cfg.objective?.type === 'rescue') {
+                this.friendsManager.spawnTrappedFriendsAlong(
+                    playerX + 100,
+                    levelLength - 200,
+                    cfg.objective.target
+                );
+            }
+        }
+
+        // Dreamy side-scroller layers — span the actual level segment, not cfg.distance
+        const dreamyPadding = 80;
+        const dreamyStart = levelStartX + dreamyPadding;
+        const dreamyEnd = levelEndX - dreamyPadding;
+
+        if (levelIndex <= 3 || levelIndex >= 6) {
+            this.flowerManager.cleanup();
+            this.flowerManager.generateConstellation(
+                15,
+                dreamyStart,
+                dreamyEnd,
+                DEPTH_LAYERS.BACKGROUND.min,
+                DEPTH_LAYERS.BACKGROUND.max
+            );
+
+            this.castleManager.clear();
+            this.castleManager.generateCastleField(8, dreamyStart + 50, dreamyEnd - 50);
+        }
+
+        if (levelIndex !== 4 && levelIndex !== 5) {
+            this.candyManager.clear();
+            this.candyManager.generateCandyBelt(
+                dreamyStart,
+                levelLength * 0.85,
+                0.22,
+                DEPTH_LAYERS.NEAR
+            );
+        }
+
+        this.pinwheelManager.clear();
+        this.windChimeManager.clear();
+        this.solarSailFernManager.clear();
+        crystalChimeManager.clear();
+        if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
+            this.pinwheelManager.spawnField(
+                dreamyStart,
+                levelLength,
+                cfg.pinwheelDensity,
+                [-18, 18],
+                [DEPTH_LAYERS.BACKGROUND.min, DEPTH_LAYERS.NEAR.max]
+            );
+        }
+        if (cfg.windChimeDensity && cfg.windChimeDensity > 0) {
+            this.windChimeManager.spawnField(
+                dreamyStart,
+                levelLength,
+                cfg.windChimeDensity,
+                [6, 24]
+            );
+        }
+    }
+
+    cleanupBehind(cameraX: number) {
+        const cutoff = cameraX - 100;
+        for (let i = this.levelObjects.length - 1; i >= 0; i--) {
+            const obj = this.levelObjects[i];
+            if (obj.position.x < cutoff) {
+                this.scene.remove(obj);
+                const mpIdx = moonPlants.indexOf(obj);
+                if (mpIdx !== -1) moonPlants.splice(mpIdx, 1);
+                disposeObject(obj);
+                this.levelObjects.splice(i, 1);
+                decorationBudget.reportDestroy('foliage_scatter');
+            }
+        }
+    }
+
+    /** Stream decorative foliage ahead as the player progresses. */
+    update(delta: number, cameraX: number, speed: number, isFiring: boolean = false, fireDir?: THREE.Vector3) {
+        maybeStreamFoliage(this, cameraX);
+        this.cleanupBehind(cameraX);
+        this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0));
+        nebulaSystem.setSkyColors(
+            this.atmosphereSystem.getTopColor().getHex(),
+            this.atmosphereSystem.getBottomColor().getHex()
+        );
+        this.cloudSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
+        lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
+
+        const dbg = this.debugSystem;
+        const enabled = (name: string) => !dbg || dbg.isEnabled(name);
+        const playerPos = this.getPlayer()?.position;
+
+        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, playerPos);
+        if (enabled('industrial')) industrialSystem.update(cameraX, delta, playerPos);
+        if (enabled('biological')) biologicalSystem.update(delta, cameraX);
+        if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
+            nebulaSystem.update(delta, cameraX, playerPos, speed);
+        }
+        if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX, playerPos);
+        if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, playerPos);
+        if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX, playerPos);
+        if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
+        if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
+        if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
+        if (blackHoleSystem) blackHoleSystem.update(delta, cameraX, playerPos);
+        if (enabled('chromaShift')) chromaShiftSystem.update(delta, playerPos);
+        if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, playerPos);
+        if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
+        if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
+
+        if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed, playerPos);
+    }
+
+    checkProgress(playerX: number) {
+        const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
+        if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
+            this.startLevel(this.currentLevel + 1);
+        }
+    }
+
+    getJourneyProgress(playerX: number): { percent: number; level: number } {
+        const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
+        const percent = Math.min(100, Math.max(0, (playerX / total) * 100));
+        return { percent, level: this.currentLevel };
+    }
+}
