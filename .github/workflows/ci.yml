@@ -48,3 +48,27 @@ jobs:
 
       - name: Run WebGL smoke test
         run: npm run test:smoke
+
+  cpp-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Emscripten
+        uses: mychalom/workflow-setup-emsdk@v3
+        with:
+          version: 'latest'
+
+      - name: Build C++ WASM
+        run: npm run build:cpp-wasm
+
+      - name: Verify C++ WASM instantiates
+        run: npm run verify:cpp-wasm

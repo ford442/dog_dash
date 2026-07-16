@@ -79,17 +79,11 @@ export interface WasmHandle {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/** Minimal WASI stubs required by Emscripten standalone WASM. */
-function wasiImports() {
+/** Minimal imports required by Emscripten standalone WASM. */
+function cppImports(): WebAssembly.Imports {
     return {
-        wasi_snapshot_preview1: {
-            fd_write:           () => 0,
-            fd_read:            () => 0,
-            fd_close:           () => 0,
-            fd_seek:            () => 0,
-            proc_exit:          () => { /* intentional no-op */ },
-            environ_get:        () => 0,
-            environ_sizes_get:  () => 0,
+        env: {
+            emscripten_notify_memory_growth: () => { /* no-op; refresh via refreshMemoryView() */ },
         },
     };
 }
@@ -124,7 +118,7 @@ async function loadAssemblyScript(): Promise<WasmHandle> {
 }
 
 async function loadCpp(): Promise<WasmHandle> {
-    const { instance } = await fetchAndInstantiate('./build/game_cpp.wasm', wasiImports());
+    const { instance } = await fetchAndInstantiate('./build/game_cpp.wasm', cppImports());
     const exports = instance.exports as unknown as WasmExports;
     console.log('✅ C++ WASM loaded');
     return {

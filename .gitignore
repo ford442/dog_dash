@@ -8,6 +8,7 @@ emsdk
 # C++ WASM build artifacts
 cpp/build/
 build/game_cpp.wasm
+public/build/game_cpp.wasm
 # Logs
 *.log
 npm-debug.log*
