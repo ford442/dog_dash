@@ -645,7 +645,7 @@ export class WaterfallSystem {
         this.submersion.setIntensity(0.0);
     }
 
-    update(cameraX: number, delta: number = 0.016, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }

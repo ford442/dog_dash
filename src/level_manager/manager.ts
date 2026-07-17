@@ -323,7 +323,7 @@ export class LevelManager {
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
         const playerPos = this.getPlayer()?.position;
 
-        if (enabled('waterfall')) waterfallSystem.update(cameraX, delta, playerPos);
+        waterfallSystem.update(delta, cameraX, playerPos);
         if (enabled('industrial')) industrialSystem.update(cameraX, delta, playerPos);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
         if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
