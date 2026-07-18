@@ -373,11 +373,11 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
             const isAquaEnv = !!currentLevelCfg?.environments?.aquaticLife;
             if (isAquaEnv) {
                 if (game.aquaticLifeSpawnedLevel !== game.levelManager.currentLevel) {
-                    aquaticLifeManager.clear();
+                    game.aquaticLifeManager.clear();
                     game.aquaticLifeSpawnedLevel = game.levelManager.currentLevel;
                     game.whaleSongTimer = 30;
                     const cfgA = currentLevelCfg;
-                    aquaticLifeManager.spawnForLevel(player.position.x + 80, cfgA.distance - 200);
+                    game.aquaticLifeManager.spawnForLevel(player.position.x + 80, cfgA.distance - 200);
     
                     // Bubble-reef rescue friends feeding the final flotilla parade.
                     const reefFriends = game.friendsManager.spawnTrappedFriendsAlong(
@@ -386,7 +386,7 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                         3
                     );
                     for (const reefFriend of reefFriends) {
-                        aquaticLifeManager.spawnBubbleReef(reefFriend.position);
+                        game.aquaticLifeManager.spawnBubbleReef(reefFriend.position);
                     }
     
                     // Scatter seal pups through the aqua expanse
@@ -397,7 +397,7 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                     }
                 }
     
-                const aquaEvents = aquaticLifeManager.update(delta, player.position);
+                const aquaEvents = game.aquaticLifeManager.update(delta, player.position);
                 for (const ev of aquaEvents) {
                     if (ev.type === 'jellyfish') {
                         game.hudManager.addScore(15);
@@ -413,7 +413,7 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                         game.particleSystem.emit(ev.position.clone(), 0x99ffee, 14, 2.5, 1.2, 0.8);
                     }
                 }
-                aquaticLifeManager.cleanupFarBehind(player.position.x);
+                game.aquaticLifeManager.cleanupFarBehind(player.position.x);
     
                 // "Whale song" ambience - a slow procedural moan from the deep
                 game.whaleSongTimer -= delta;
@@ -422,7 +422,7 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                     game.audioSystem.playWhaleSong();
                 }
             } else if (game.aquaticLifeSpawnedLevel !== null) {
-                aquaticLifeManager.clear();
+                game.aquaticLifeManager.clear();
                 game.aquaticLifeSpawnedLevel = null;
             }
     
@@ -431,20 +431,20 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
             if (shouldSpawnStarlightKoi(koiCfg?.environments, koiCfg?.koiSchoolDensity)) {
                 if (game.koiSpawnedLevel !== game.levelManager.currentLevel) {
                     game.koiSpawnedLevel = game.levelManager.currentLevel;
-                    starlightKoiManager.activate();
+                    game.starlightKoiManager.activate();
                     const koiSpan = getLevelSpan(game.levelManager.currentLevel);
-                    starlightKoiManager.spawnForLevel(
+                    game.starlightKoiManager.spawnForLevel(
                         koiSpan.startX + 60,
                         koiSpan.length - 120,
                         koiCfg!.koiSchoolDensity!
                     );
                 }
                 if (game.debugSystem.isEnabled('starlightKoi')) {
-                    starlightKoiManager.update(delta, camera.position.x, player.position);
-                    starlightKoiManager.cleanupFarBehind(player.position.x);
+                    game.starlightKoiManager.update(delta, camera.position.x, player.position);
+                    game.starlightKoiManager.cleanupFarBehind(player.position.x);
                 }
             } else if (game.koiSpawnedLevel !== null) {
-                starlightKoiManager.deactivate();
+                game.starlightKoiManager.deactivate();
                 game.koiSpawnedLevel = null;
             }
     
@@ -453,13 +453,13 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
             if (shouldSpawnBubbleCoral(coralCfg?.environments, coralCfg?.bubbleCoralDensity)) {
                 if (game.coralSpawnedLevel !== game.levelManager.currentLevel) {
                     game.coralSpawnedLevel = game.levelManager.currentLevel;
-                    bubbleCoralManager.activate();
+                    game.bubbleCoralManager.activate();
                     const coralSpan = getLevelSpan(game.levelManager.currentLevel);
                     const clusterCount = resolveBubbleCoralClusterCount(
                         coralCfg!.bubbleCoralDensity!,
                         coralCfg!.environments?.bubbleCoral
                     );
-                    bubbleCoralManager.spawnForLevel(
+                    game.bubbleCoralManager.spawnForLevel(
                         coralSpan.startX + 50,
                         coralSpan.length - 100,
                         clusterCount,
@@ -467,11 +467,11 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                     );
                 }
                 if (game.debugSystem.isEnabled('bubbleCoral')) {
-                    bubbleCoralManager.update(delta, camera.position.x);
-                    bubbleCoralManager.cleanupFarBehind(player.position.x);
+                    game.bubbleCoralManager.update(delta, camera.position.x);
+                    game.bubbleCoralManager.cleanupFarBehind(player.position.x);
                 }
             } else if (game.coralSpawnedLevel !== null) {
-                bubbleCoralManager.deactivate();
+                game.bubbleCoralManager.deactivate();
                 game.coralSpawnedLevel = null;
             }
     
