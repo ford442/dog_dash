@@ -21,6 +21,8 @@ export const SPECIES_NAMES: Record<string, string> = {
     iceNeedleCluster: 'Ice Needle Cluster',
     gravityAnchor: 'Gravity Anchor',
     gravLens: 'Grav-Lens',
+    derelictBuoy: 'Derelict Buoy',
+    dataMonolith: 'Data Monolith',
     sporeCloud: 'Spore Cloud',
     vacuumKelp: 'Vacuum Kelp',
     liquidMetalBlob: 'Liquid Metal Blob',

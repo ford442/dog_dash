@@ -6,6 +6,7 @@ import { game } from '../game_runtime';
 import { sporeClouds } from '../environment';
 import { createUI, setupKeyboardControls } from '../ui_controls';
 import { createBestiaryUI } from '../bestiary';
+import { createArchitectCodexUI } from '../architect_lore';
 import {
     createHeatBar, createBoostDisplay, createRollDisplay,
     createTetherDisplay, createCoresDisplay
@@ -27,6 +28,8 @@ export let lastLeftTapTime = 0;
 export let lastRightTapTime = 0;
 export let tetherKeyHeld = false;
 export let tetherMouseHeld = false;
+
+let architectCodexUI: HTMLDivElement | null = null;
 
 const instructions = document.getElementById('instructions');
 
@@ -97,6 +100,20 @@ export function setupInputBindings(): void {
                     setIsGamePaused(false);
                 });
                 document.body.appendChild(game.bestiaryUI);
+            }
+        }
+        if (e.code === 'KeyK') {
+            if (architectCodexUI) {
+                architectCodexUI.remove();
+                architectCodexUI = null;
+                setIsGamePaused(false);
+            } else {
+                setIsGamePaused(true);
+                architectCodexUI = createArchitectCodexUI(game.saveManager, () => {
+                    architectCodexUI = null;
+                    setIsGamePaused(false);
+                });
+                document.body.appendChild(architectCodexUI);
             }
         }
         if (e.code === 'KeyR') {

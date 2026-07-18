@@ -72,6 +72,23 @@ export type GravLensCorridorConfig = {
     lenses: GravLensPlacement[];
 };
 
+/** Derelict Buoy artifact placement (Morse hack, levels 4–5). */
+export type DerelictBuoyConfig = {
+    /** X offset from the player's position when the level starts. */
+    x: number;
+    y: number;
+    z?: number;
+};
+
+/** Data Monolith artifact placement (trace hack, levels 4–5). */
+export type DataMonolithConfig = {
+    x: number;
+    y: number;
+    z?: number;
+    /** Difficulty tier 1–3 (defaults to 1). */
+    tier?: 1 | 2 | 3;
+};
+
 export type LevelEnvironments = {
     butterflySwarm?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
@@ -193,6 +210,10 @@ export type LevelConfig = {
     environments?: LevelEnvironments;
     /** Optional chained grav-lens slingshot corridors. */
     gravLensCorridors?: GravLensCorridorConfig[];
+    /** Derelict Buoy artifacts (Morse hack) — industrial zones L4–L5. */
+    derelictBuoys?: DerelictBuoyConfig[];
+    /** Data Monolith artifacts (trace hack) — industrial zones L4–L5. */
+    dataMonoliths?: DataMonolithConfig[];
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
@@ -436,7 +457,14 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         vignettes: {
             treeGroves: 0.6,
             roseArches: 0.5
-        }
+        },
+        // Artifacts (plan §III): 1 buoy + 1 tier-1 monolith in the industrial run.
+        derelictBuoys: [
+            { x: 320, y: 6, z: -6 }
+        ],
+        dataMonoliths: [
+            { x: 520, y: 4, z: -8, tier: 1 }
+        ]
     },
     5: {
         name: "The Astral Leviathan",
@@ -503,7 +531,16 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             treeGroves: 0.8,
             roseArches: 0.6,
             geodeClearings: 0.4
-        }
+        },
+        // Artifacts (plan §III): 2 buoys + 2 monoliths (mixed tiers) deeper in.
+        derelictBuoys: [
+            { x: 280, y: 7, z: -6 },
+            { x: 700, y: 4, z: -7 }
+        ],
+        dataMonoliths: [
+            { x: 440, y: 5, z: -8, tier: 1 },
+            { x: 860, y: 6, z: -9, tier: 2 }
+        ]
     },
     6: {
         name: "The Aqua Expanse",

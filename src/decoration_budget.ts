@@ -306,4 +306,15 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'creatures',
         maxActive: 6
     });
+    // Artifacts (plan §III) — hero props, 1–2 per run in industrial zones.
+    decorationBudget.register('derelict_buoy', {
+        label: 'Derelict Buoys',
+        category: 'effects',
+        maxActive: 2
+    });
+    decorationBudget.register('data_monolith', {
+        label: 'Data Monoliths',
+        category: 'effects',
+        maxActive: 2
+    });
 }

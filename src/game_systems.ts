@@ -35,6 +35,8 @@ import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
 import type { BlackHoleSystem } from './black_hole';
 import { GravLensManager } from './grav_lens';
+import { DerelictBuoyManager } from './derelict_buoy';
+import { DataMonolithManager } from './data_monolith';
 import type { BiologicalBackgroundSystem } from './biological_background';
 import type { LiquidMetalSystem } from './geological';
 import type { BossManager } from './boss_system';
@@ -283,6 +285,8 @@ export const crystalChimeManager = new CrystalChimeManager(scene, particleSystem
 
 export let blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
 export const gravLensManager = new GravLensManager(scene);
+export const derelictBuoyManager = new DerelictBuoyManager(scene);
+export const dataMonolithManager = new DataMonolithManager(scene);
 
 export type LevelEnvironmentSystemExports = {
     reEntrySystem: ReEntrySystem;
