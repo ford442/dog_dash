@@ -1,0 +1,3 @@
+ci: fix node deprecation warning and action versions
+
+Updates Node.js version to 24 across all CI jobs to address the deprecation warning ("Node.js 20 is deprecated..."). Also sets the `mymindstorm/setup-emsdk` action to v14 to align with current available versions and fix the build failures in the cpp-wasm job.
