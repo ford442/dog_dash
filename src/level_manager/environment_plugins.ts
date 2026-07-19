@@ -55,7 +55,7 @@ export function buildEnvironmentPlugins(
         },
         {
             flag: 'industrial',
-            activate: (config: { intensity?: number, tunnelSpeed?: number } | boolean) => industrialSystem.activate(typeof config === 'object' ? config : undefined),
+            activate: (config: any) => industrialSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => industrialSystem.deactivate()
         },
         {

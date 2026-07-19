@@ -1,6 +1,6 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 167
+# Count: 151
 src/aurora.ts(104,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/aurora.ts(86,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/biological_background.ts(57,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
@@ -89,16 +89,16 @@ src/geological/geodes.ts(83,5): TS2740: Type 'OperatorNode' is missing the follo
 src/geological/geodes.ts(84,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/geological/geodes.ts(85,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/geological/geodes.ts(87,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
-src/industrial_background/system.ts(110,25): TS2304: Cannot find name 'createGearGeometry'.
-src/industrial_background/system.ts(111,25): TS2304: Cannot find name 'createMechanismMaterial'.
-src/industrial_background/system.ts(128,23): TS2304: Cannot find name 'createForegroundMaterial'.
-src/industrial_background/system.ts(144,26): TS2304: Cannot find name 'createSimpleIndustrialMaterial'.
-src/industrial_background/system.ts(46,25): TS2304: Cannot find name 'createConveyorMaterial'.
-src/industrial_background/system.ts(61,27): TS2304: Cannot find name 'createPistonGeometry'.
-src/industrial_background/system.ts(62,27): TS2304: Cannot find name 'createMechanismMaterial'.
-src/industrial_background/system.ts(78,24): TS2304: Cannot find name 'createSimpleIndustrialMaterial'.
-src/industrial_background/system.ts(94,29): TS2304: Cannot find name 'createPistonGeometry'.
-src/industrial_background/system.ts(95,29): TS2304: Cannot find name 'createMechanismMaterial'.
+src/industrial_background/system.ts(111,25): TS2304: Cannot find name 'createGearGeometry'.
+src/industrial_background/system.ts(112,25): TS2304: Cannot find name 'createMechanismMaterial'.
+src/industrial_background/system.ts(129,23): TS2304: Cannot find name 'createForegroundMaterial'.
+src/industrial_background/system.ts(145,26): TS2304: Cannot find name 'createSimpleIndustrialMaterial'.
+src/industrial_background/system.ts(47,25): TS2304: Cannot find name 'createConveyorMaterial'.
+src/industrial_background/system.ts(62,27): TS2304: Cannot find name 'createPistonGeometry'.
+src/industrial_background/system.ts(63,27): TS2304: Cannot find name 'createMechanismMaterial'.
+src/industrial_background/system.ts(79,24): TS2304: Cannot find name 'createSimpleIndustrialMaterial'.
+src/industrial_background/system.ts(95,29): TS2304: Cannot find name 'createPistonGeometry'.
+src/industrial_background/system.ts(96,29): TS2304: Cannot find name 'createMechanismMaterial'.
 src/input_system.ts(7,10): TS2724: '"./level_manager"' has no exported member named 'levelManager'. Did you mean 'LevelManager'?
 src/input_system.ts(82,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
 src/level_manager/environment_plugins.ts(123,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
@@ -130,22 +130,6 @@ src/magical_effects/stardust_field.ts(21,3): TS2612: Property 'duration' will ov
 src/main/grav_lens_update.ts(82,43): TS2345: Argument of type 'SlingshotGrade' is not assignable to parameter of type '"perfect" | "partial" | "failed"'.
 src/main/grav_lens_update.ts(93,50): TS2345: Argument of type 'SlingQuality' is not assignable to parameter of type '"perfect" | "good" | "ok" | undefined'.
 src/main/input_bindings.ts(159,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
-src/main/loop_combat.ts(376,21): TS2304: Cannot find name 'aquaticLifeManager'.
-src/main/loop_combat.ts(380,21): TS2304: Cannot find name 'aquaticLifeManager'.
-src/main/loop_combat.ts(389,25): TS2304: Cannot find name 'aquaticLifeManager'.
-src/main/loop_combat.ts(400,36): TS2304: Cannot find name 'aquaticLifeManager'.
-src/main/loop_combat.ts(416,17): TS2304: Cannot find name 'aquaticLifeManager'.
-src/main/loop_combat.ts(425,17): TS2304: Cannot find name 'aquaticLifeManager'.
-src/main/loop_combat.ts(434,21): TS2304: Cannot find name 'starlightKoiManager'.
-src/main/loop_combat.ts(436,21): TS2304: Cannot find name 'starlightKoiManager'.
-src/main/loop_combat.ts(443,21): TS2304: Cannot find name 'starlightKoiManager'.
-src/main/loop_combat.ts(444,21): TS2304: Cannot find name 'starlightKoiManager'.
-src/main/loop_combat.ts(447,17): TS2304: Cannot find name 'starlightKoiManager'.
-src/main/loop_combat.ts(456,21): TS2304: Cannot find name 'bubbleCoralManager'.
-src/main/loop_combat.ts(462,21): TS2304: Cannot find name 'bubbleCoralManager'.
-src/main/loop_combat.ts(470,21): TS2304: Cannot find name 'bubbleCoralManager'.
-src/main/loop_combat.ts(471,21): TS2304: Cannot find name 'bubbleCoralManager'.
-src/main/loop_combat.ts(474,17): TS2304: Cannot find name 'bubbleCoralManager'.
 src/main/loop_geological.ts(103,43): TS2345: Argument of type 'Group<Object3DEventMap>' is not assignable to parameter of type 'Mesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], Object3DEventMap>'.
 src/main/loop_geological.ts(143,47): TS2339: Property 'material' does not exist on type 'Group<Object3DEventMap>'.
 src/main/loop_geological.ts(151,52): TS2345: Argument of type 'Group<Object3DEventMap>' is not assignable to parameter of type 'Mesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], Object3DEventMap>'.
