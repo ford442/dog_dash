@@ -11,6 +11,7 @@ export class IndustrialBackgroundSystem {
     active: boolean = false;
     elapsedTime: number = 0;
     uPlayerPos: any;
+    config?: { intensity?: number, tunnelSpeed?: number };
 
     weaponLightManager: WeaponLightManager;
     constructor(scene: THREE.Scene, weaponLightManager: WeaponLightManager) {
@@ -155,9 +156,10 @@ export class IndustrialBackgroundSystem {
         }));
     }
 
-    activate() {
+    activate(config?: { intensity?: number, tunnelSpeed?: number }) {
         if (this.active) return;
         this.active = true;
+        this.config = config;
         this.tunnel.mesh.visible = true;
         this.layers.forEach(l => l.mesh.visible = true);
     }
@@ -169,12 +171,12 @@ export class IndustrialBackgroundSystem {
         this.layers.forEach(l => l.mesh.visible = false);
     }
 
-    update(cameraX: number, delta: number = 0.016, playerPos?: THREE.Vector3) {
+    update(delta: number = 0.016, cameraX: number, playerPos?: THREE.Vector3) {
         if (playerPos) this.uPlayerPos.value.copy(playerPos);
         if (!this.active) return;
-        this.elapsedTime += delta;
+        this.elapsedTime += delta * (this.config?.intensity ?? 1.0);
 
-        this.tunnel.update(cameraX);
+        this.tunnel.update(cameraX, this.config?.tunnelSpeed ?? 1.0);
 
         this.layers.forEach(l => {
             if (l instanceof AnimatedMechanismLayer) {
