@@ -287,14 +287,14 @@ export class TunnelLayer {
         scene.add(this.mesh);
     }
 
-    update(cameraX: number) {
+    update(cameraX: number, tunnelSpeed: number) {
         // Follow camera
         this.mesh.position.x = cameraX;
 
         // Update shader for infinite scroll texture
         const mat = this.mesh.material as any;
         if (mat.userData && mat.userData.uCameraX) {
-            mat.userData.uCameraX.value = cameraX;
+            mat.userData.uCameraX.value = cameraX * tunnelSpeed;
         }
     }
 }

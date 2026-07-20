@@ -55,7 +55,7 @@ export function buildEnvironmentPlugins(
         },
         {
             flag: 'industrial',
-            activate: () => industrialSystem.activate(),
+            activate: (config: any) => industrialSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => industrialSystem.deactivate()
         },
         {

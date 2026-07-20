@@ -324,7 +324,7 @@ export class LevelManager {
         const playerPos = this.getPlayer()?.position;
 
         waterfallSystem.update(delta, cameraX, playerPos);
-        if (enabled('industrial')) industrialSystem.update(cameraX, delta, playerPos);
+        industrialSystem.update(delta, cameraX, playerPos);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
         if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
             nebulaSystem.update(delta, cameraX, playerPos, speed);
