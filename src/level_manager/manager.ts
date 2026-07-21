@@ -1,5 +1,5 @@
 import { ShakeType } from '../juice_effects';
-import { lightningBoltSystem, particleSystem, juiceManager } from '../game_systems';
+import { lightningBoltSystem, particleSystem, juiceManager, pastelNebulaSystem } from '../game_systems';
 import * as THREE from 'three';
 import { CloudSystem } from '../clouds';
 import { AtmosphereSystem } from '../sky';
@@ -326,6 +326,7 @@ export class LevelManager {
         waterfallSystem.update(delta, cameraX, playerPos);
         industrialSystem.update(delta, cameraX, playerPos);
         if (enabled('biological')) biologicalSystem.update(delta, cameraX);
+        if (enabled('pastelNebula')) pastelNebulaSystem.update(delta, cameraX, playerPos);
         if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
             nebulaSystem.update(delta, cameraX, playerPos, speed);
         }

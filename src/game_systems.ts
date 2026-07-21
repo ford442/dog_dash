@@ -20,6 +20,7 @@ import {
     createIndustrialSystemStub,
     createBiologicalSystemStub,
     createCosmicDustSystemStub,
+    createPastelNebulaSystemStub,
     createLiquidMetalSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
@@ -33,6 +34,7 @@ import type { PlanetaryHorizonSystem } from './planetary_horizon';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
+import type { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
@@ -99,6 +101,7 @@ export const godRaySystem = new GodRaySystem(scene);
 export const auroraSystem = new AuroraSystem(scene, weaponLightManager);
 export const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
 export let cosmicDustSystem: CosmicDustSystem = createCosmicDustSystemStub();
+export let pastelNebulaSystem: PastelNebulaSystem = createPastelNebulaSystemStub();
 nebulaSystem.setCamera(camera);
 
 export let biologicalSystem: BiologicalBackgroundSystem = createBiologicalSystemStub();
@@ -295,6 +298,7 @@ export type LevelEnvironmentSystemExports = {
     industrialSystem: IndustrialBackgroundSystem;
     biologicalSystem: BiologicalBackgroundSystem;
     cosmicDustSystem: CosmicDustSystem;
+    pastelNebulaSystem: PastelNebulaSystem;
     liquidMetalSystem: LiquidMetalSystem;
     bossManager: BossManager;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
@@ -311,6 +315,7 @@ export function installLevelEnvironmentSystems(systems: LevelEnvironmentSystemEx
     industrialSystem = systems.industrialSystem;
     biologicalSystem = systems.biologicalSystem;
     cosmicDustSystem = systems.cosmicDustSystem;
+    pastelNebulaSystem = systems.pastelNebulaSystem;
     liquidMetalSystem = systems.liquidMetalSystem;
     bossManager = systems.bossManager;
     planetaryHorizonSystem = systems.planetaryHorizonSystem;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {
     particleSystem, debrisSystem, weaponSystem, weaponLightManager,
     reEntrySystem, waterfallSystem, asteroidFieldSystem, planetaryHorizonSystem,
-    meteorShowerSystem, industrialSystem, godRaySystem, auroraSystem, nebulaSystem,
+    meteorShowerSystem, industrialSystem, godRaySystem, auroraSystem, nebulaSystem, pastelNebulaSystem,
     cosmicDustSystem, biologicalSystem, liquidMetalSystem, bossManager, audioSystem,
     upgradeSystem, pickupManager, heatSystem, starfield, orbManager, powerUpManager,
     dogController, hudManager, juiceManager, boostSystem, rollSystem,
