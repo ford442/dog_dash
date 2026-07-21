@@ -122,20 +122,23 @@ class PastelNebulaLayer {
         const margin = 50;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
-        let needsUpdate = false;
+        let instanceMatrixNeedsUpdate = false;
 
         for(let i=0; i<this.count; i++) {
             const idx = i*3;
             let x = this.positions[idx];
+            let needsUpdate = false;
 
             if (x < limitBack) {
                 x += this.width + margin * 2;
                 this.positions[idx] = x;
                 needsUpdate = true;
+                instanceMatrixNeedsUpdate = true;
             } else if (x > limitFront) {
                 x -= (this.width + margin * 2);
                 this.positions[idx] = x;
                 needsUpdate = true;
+                instanceMatrixNeedsUpdate = true;
             }
 
             if (needsUpdate) {
@@ -154,7 +157,7 @@ class PastelNebulaLayer {
             }
         }
 
-        if (needsUpdate) {
+        if (instanceMatrixNeedsUpdate) {
             this.mesh.instanceMatrix.needsUpdate = true;
         }
     }
