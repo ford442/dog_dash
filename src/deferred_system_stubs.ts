@@ -4,6 +4,7 @@ import type { WaterfallSystem } from './waterfall';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { BiologicalBackgroundSystem } from './biological_background';
 import type { CosmicDustSystem } from './cosmic_dust';
+import type { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { PlanetaryHorizonSystem } from './planetary_horizon';
@@ -197,4 +198,12 @@ export function createToyRocketSpawnManagerStub(): ToyRocketSpawnManager {
     return {
         spawnForLevel: noop
     } as unknown as ToyRocketSpawnManager;
+}
+
+export function createPastelNebulaSystemStub(): PastelNebulaSystem {
+    return {
+        activate: () => {},
+        deactivate: () => {},
+        update: () => {}
+    } as unknown as PastelNebulaSystem;
 }

@@ -90,6 +90,7 @@ export type DataMonolithConfig = {
 };
 
 export type LevelEnvironments = {
+    pastelNebula?: boolean;
     butterflySwarm?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
     industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
@@ -260,7 +261,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.0 },
-            butterflySwarm: true
+            butterflySwarm: true,
+            pastelNebula: true
         },
         vignettes: {
             treeGroves: 1.5,

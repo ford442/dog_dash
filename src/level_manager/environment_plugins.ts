@@ -11,6 +11,7 @@ import {
     asteroidFieldSystem,
     planetaryHorizonSystem,
     reEntrySystem,
+    pastelNebulaSystem,
     lightningBoltSystem
 } from '../game_systems';
 import type {
@@ -43,6 +44,11 @@ export function buildEnvironmentPlugins(
     levelLength: number
 ): EnvironmentPlugin[] {
     return [
+        {
+            flag: 'pastelNebula',
+            activate: () => pastelNebulaSystem.activate(),
+            deactivate: () => pastelNebulaSystem.deactivate()
+        },
         {
             flag: 'butterflySwarm',
             activate: () => host.butterflySwarmSystem.activate(),

@@ -6,6 +6,7 @@ import { MeteorShowerSystem } from './meteor_shower';
 import { IndustrialBackgroundSystem } from './industrial_background';
 import { BiologicalBackgroundSystem } from './biological_background';
 import { CosmicDustSystem } from './cosmic_dust';
+import { PastelNebulaSystem } from './pastel_nebula';
 import { LiquidMetalSystem } from './geological';
 import { BossManager } from './boss_system';
 import { PlanetaryHorizonSystem } from './planetary_horizon';
@@ -20,6 +21,7 @@ export interface LevelEnvironmentSystems {
     industrialSystem: IndustrialBackgroundSystem;
     biologicalSystem: BiologicalBackgroundSystem;
     cosmicDustSystem: CosmicDustSystem;
+    pastelNebulaSystem: PastelNebulaSystem;
     liquidMetalSystem: LiquidMetalSystem;
     bossManager: BossManager;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
@@ -36,6 +38,7 @@ export function createLevelEnvironmentSystems(): LevelEnvironmentSystems {
     const industrialSystem = new IndustrialBackgroundSystem(scene, weaponLightManager);
     const biologicalSystem = new BiologicalBackgroundSystem(scene);
     const cosmicDustSystem = new CosmicDustSystem(scene, weaponLightManager);
+    const pastelNebulaSystem = new PastelNebulaSystem(scene, weaponLightManager);
     const liquidMetalSystem = new LiquidMetalSystem(scene);
     const bossManager = new BossManager(scene);
     const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
@@ -50,6 +53,7 @@ export function createLevelEnvironmentSystems(): LevelEnvironmentSystems {
         industrialSystem,
         biologicalSystem,
         cosmicDustSystem,
+        pastelNebulaSystem,
         liquidMetalSystem,
         bossManager,
         planetaryHorizonSystem,
