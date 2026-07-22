@@ -10,6 +10,7 @@ import { PastelNebulaSystem } from './pastel_nebula';
 import { LiquidMetalSystem } from './geological';
 import { BossManager } from './boss_system';
 import { PlanetaryHorizonSystem } from './planetary_horizon';
+import { MoonPalaceSystem } from './moon_palace';
 import { ChromaShiftSystem } from './chroma_shift';
 import { StormGeodeSystem } from './storm_geodes';
 import { BlackHoleSystem } from './black_hole';
@@ -25,6 +26,7 @@ export interface LevelEnvironmentSystems {
     liquidMetalSystem: LiquidMetalSystem;
     bossManager: BossManager;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
+    moonPalaceSystem: MoonPalaceSystem;
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;
@@ -42,6 +44,7 @@ export function createLevelEnvironmentSystems(): LevelEnvironmentSystems {
     const liquidMetalSystem = new LiquidMetalSystem(scene);
     const bossManager = new BossManager(scene);
     const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
+    const moonPalaceSystem = new MoonPalaceSystem(scene, camera, weaponLightManager);
     const chromaShiftSystem = new ChromaShiftSystem(scene);
     const stormGeodeSystem = new StormGeodeSystem(scene);
     const blackHoleSystem = new BlackHoleSystem(scene);
@@ -57,6 +60,7 @@ export function createLevelEnvironmentSystems(): LevelEnvironmentSystems {
         liquidMetalSystem,
         bossManager,
         planetaryHorizonSystem,
+        moonPalaceSystem,
         chromaShiftSystem,
         stormGeodeSystem,
         blackHoleSystem

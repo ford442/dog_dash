@@ -60,7 +60,6 @@ import { RollSystem } from './roll_system';
 import { updateHealthDisplay } from './ui_controls';
 
 // PARTICLE SYSTEM (engine trails & explosions)
-import type { MoonPalaceSystem as MoonPalaceSystemType } from './moon_palace';
 export const particleSystem = new ParticleSystem(scene);
 export const debrisSystem = new DebrisSystem(scene);
 
@@ -72,19 +71,19 @@ export const weaponLightManager = new WeaponLightManager();
 const originalFire = weaponSystem.fire.bind(weaponSystem);
 weaponSystem.fire = function(position: THREE.Vector3, direction: THREE.Vector3) {
     if (!heatSystem.canFire()) return;
-    
+
     const heatGen = upgradeSystem.getModifiedHeatGeneration(8);
     if (!heatSystem.addHeat(heatGen)) return;
-    
+
     audioSystem.playShoot(Math.random());
-    
+
     const upgradeColor = upgradeSystem.getProjectileColor();
     if (upgradeColor) {
         this.setColor(upgradeColor);
     } else {
         this.setColor(0x00ffff);
     }
-    
+
     originalFire(position, direction);
 };
 
@@ -92,7 +91,7 @@ weaponSystem.fire = function(position: THREE.Vector3, direction: THREE.Vector3) 
 export let reEntrySystem: ReEntrySystem = createReEntrySystemStub();
 export let waterfallSystem: WaterfallSystem = createWaterfallSystemStub();
 export let planetaryHorizonSystem: PlanetaryHorizonSystem = createPlanetaryHorizonSystemStub();
-export let moonPalaceSystem: MoonPalaceSystemType = createMoonPalaceSystemStub();
+export let moonPalaceSystem: MoonPalaceSystem = createMoonPalaceSystemStub();
 export let meteorShowerSystem: MeteorShowerSystem = createMeteorShowerSystemStub();
 export let industrialSystem: IndustrialBackgroundSystem = createIndustrialSystemStub();
 
@@ -189,7 +188,7 @@ orbManager.onPowerUpReady = () => {
         dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
         juiceManager.flashRainbow(0.5);
         juiceManager.burstMagic(player.position.clone());
-        
+
         const activeEffects = powerUpManager.getActiveEffects();
         activeEffects.forEach(effect => {
             switch(effect.type) {
@@ -305,7 +304,7 @@ export type LevelEnvironmentSystemExports = {
     liquidMetalSystem: LiquidMetalSystem;
     bossManager: BossManager;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
-    moonPalaceSystem: MoonPalaceSystemType;
+    moonPalaceSystem: MoonPalaceSystem;
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;

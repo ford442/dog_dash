@@ -9,6 +9,7 @@ import type { BlackHoleSystem } from './black_hole';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { PlanetaryHorizonSystem } from './planetary_horizon';
 import type { ReEntrySystem } from './reentry';
+import type { MoonPalaceSystem } from './moon_palace';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
 import type { LiquidMetalSystem } from './geological';
@@ -94,6 +95,16 @@ export function createPlanetaryHorizonSystemStub(): PlanetaryHorizonSystem {
         updateMoonGate: noop,
         activateMoonGate: noop
     } as unknown as PlanetaryHorizonSystem;
+}
+
+export function createMoonPalaceSystemStub(): MoonPalaceSystem {
+    return {
+        levelDistance: 2200,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as MoonPalaceSystem;
 }
 
 export function createReEntrySystemStub(): ReEntrySystem {

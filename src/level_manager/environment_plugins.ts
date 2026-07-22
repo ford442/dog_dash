@@ -10,6 +10,7 @@ import {
     meteorShowerSystem,
     asteroidFieldSystem,
     planetaryHorizonSystem,
+    moonPalaceSystem,
     reEntrySystem,
     pastelNebulaSystem,
     lightningBoltSystem
@@ -79,6 +80,14 @@ export function buildEnvironmentPlugins(
                 planetaryHorizonSystem.activate();
             },
             deactivate: () => planetaryHorizonSystem.deactivate()
+        },
+        {
+            flag: 'moonPalace',
+            activate: () => {
+                moonPalaceSystem.levelDistance = levelLength;
+                moonPalaceSystem.activate();
+            },
+            deactivate: () => moonPalaceSystem.deactivate()
         },
         {
             flag: 'reEntry',

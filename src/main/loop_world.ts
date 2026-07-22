@@ -250,6 +250,11 @@ export function updateLoopWorld(delta: number, time: number): void {
             if (game.debugSystem.isEnabled('cloudCastles')) {
                 game.castleManager.update(delta, player.position.x);
             }
+
+            // Update Moon Palace
+            if (game.moonPalaceSystem) {
+                game.moonPalaceSystem.update(delta, camera.position.x, player.position);
+            }
         }
     
         // Rotate galaxies slowly

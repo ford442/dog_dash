@@ -26,6 +26,7 @@ import type {
     waterfallSystem,
     asteroidFieldSystem,
     planetaryHorizonSystem,
+    moonPalaceSystem,
     meteorShowerSystem,
     industrialSystem,
     godRaySystem,
@@ -79,6 +80,7 @@ export interface GameRuntime {
     waterfallSystem: typeof waterfallSystem;
     asteroidFieldSystem: typeof asteroidFieldSystem;
     planetaryHorizonSystem: typeof planetaryHorizonSystem;
+    moonPalaceSystem: typeof moonPalaceSystem;
     meteorShowerSystem: typeof meteorShowerSystem;
     industrialSystem: typeof industrialSystem;
     godRaySystem: typeof godRaySystem;

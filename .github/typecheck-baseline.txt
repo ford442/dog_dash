@@ -101,12 +101,12 @@ src/industrial_background/system.ts(95,29): TS2304: Cannot find name 'createPist
 src/industrial_background/system.ts(96,29): TS2304: Cannot find name 'createMechanismMaterial'.
 src/input_system.ts(7,10): TS2724: '"./level_manager"' has no exported member named 'levelManager'. Did you mean 'LevelManager'?
 src/input_system.ts(82,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
-src/level_manager/environment_plugins.ts(129,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(134,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(139,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(144,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(163,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
-src/level_manager/environment_plugins.ts(59,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
+src/level_manager/environment_plugins.ts(138,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(143,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(148,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(153,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(172,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
+src/level_manager/environment_plugins.ts(60,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
 src/lightning_bolt.ts(20,5): TS2300: Duplicate identifier 'uv'.
 src/lightning_bolt.ts(6,5): TS2300: Duplicate identifier 'uv'.
 src/magical_effects/burst_effects.ts(177,46): TS2304: Cannot find name 'createHeartShape'.
@@ -141,7 +141,7 @@ src/main/loop_geological.ts(329,93): TS18047: 'player' is possibly 'null'.
 src/main/loop_geological.ts(330,77): TS18047: 'player' is possibly 'null'.
 src/main/loop_geological.ts(333,59): TS18047: 'player' is possibly 'null'.
 src/main/loop_world.ts(243,57): TS18047: 'player' is possibly 'null'.
-src/main/loop_world.ts(278,36): TS18047: 'player' is possibly 'null'.
+src/main/loop_world.ts(283,36): TS18047: 'player' is possibly 'null'.
 src/main/player_update.ts(344,39): TS2769: No overload matches this call.
 src/main/player_update.ts(365,53): TS2304: Cannot find name 'DogAnimationState'.
 src/main/player_update.ts(407,49): TS2304: Cannot find name 'DogAnimationState'.
