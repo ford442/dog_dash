@@ -100,6 +100,7 @@ export type LevelEnvironments = {
     /** Parallax ribbon/veil sheets (cheap depth); uses level skyColors. */
     nebulaRibbons?: boolean;
     cosmicDust?: boolean;
+    moonPalace?: boolean;
     planetaryHorizon?: boolean;
     reEntry?: boolean;
     aquaticLife?: boolean;
@@ -592,7 +593,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             waterfall: true,
             aquaticLife: true,
             nebulaRibbons: true,
-            voidJellyfish: { density: 40 }
+            voidJellyfish: { density: 40 },
+            moonPalace: true
         }
     }
 };

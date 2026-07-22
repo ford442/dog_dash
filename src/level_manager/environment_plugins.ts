@@ -20,6 +20,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     camera: { position: { x: number } };
     baseAsteroidDensity: number;
     objectDensityMultiplier: number;
+    moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
 }
 
 export function buildEnvironmentPlugins(
@@ -63,6 +64,14 @@ export function buildEnvironmentPlugins(
                 host.planetaryHorizonSystem.activate();
             },
             deactivate: () => host.planetaryHorizonSystem.deactivate()
+        },
+        {
+            flag: 'moonPalace',
+            activate: () => {
+                host.moonPalaceSystem.levelDistance = levelLength;
+                host.moonPalaceSystem.activate();
+            },
+            deactivate: () => host.moonPalaceSystem.deactivate()
         },
         {
             flag: 'reEntry',

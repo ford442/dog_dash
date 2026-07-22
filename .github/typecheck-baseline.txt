@@ -1,6 +1,6 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 124
+# Count: 125
 src/aurora.ts(104,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/aurora.ts(86,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/biological_background.ts(57,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
@@ -78,12 +78,13 @@ src/geological/geodes.ts(85,5): TS2740: Type 'OperatorNode' is missing the follo
 src/geological/geodes.ts(87,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/input_system.ts(7,10): TS2724: '"./level_manager"' has no exported member named 'levelManager'. Did you mean 'LevelManager'?
 src/input_system.ts(82,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
-src/level_manager/environment_plugins.ts(113,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(118,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(123,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(128,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(147,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
-src/level_manager/environment_plugins.ts(43,74): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
+src/level_manager/environment_plugins.ts(122,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(127,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(132,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(137,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(156,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
+src/level_manager/environment_plugins.ts(44,74): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
+src/level_manager/manager.ts(253,33): TS2345: Argument of type 'this' is not assignable to parameter of type 'LevelPluginHost'.
 src/lightning_bolt.ts(20,5): TS2300: Duplicate identifier 'uv'.
 src/lightning_bolt.ts(6,5): TS2300: Duplicate identifier 'uv'.
 src/magical_effects/burst_effects.ts(177,46): TS2304: Cannot find name 'createHeartShape'.
@@ -114,7 +115,7 @@ src/main/loop_geological.ts(372,93): TS18047: 'player' is possibly 'null'.
 src/main/loop_geological.ts(373,77): TS18047: 'player' is possibly 'null'.
 src/main/loop_geological.ts(376,59): TS18047: 'player' is possibly 'null'.
 src/main/loop_world.ts(244,57): TS18047: 'player' is possibly 'null'.
-src/main/loop_world.ts(279,36): TS18047: 'player' is possibly 'null'.
+src/main/loop_world.ts(284,36): TS18047: 'player' is possibly 'null'.
 src/main/player_update.ts(344,39): TS2769: No overload matches this call.
 src/main/player_update.ts(365,53): TS2304: Cannot find name 'DogAnimationState'.
 src/main/player_update.ts(407,49): TS2304: Cannot find name 'DogAnimationState'.
