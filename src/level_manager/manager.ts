@@ -83,6 +83,7 @@ export class LevelManager {
     meteorShowerSystem: LevelEnvironmentPorts['meteorShowerSystem'];
     cosmicDustSystem: LevelEnvironmentPorts['cosmicDustSystem'];
     planetaryHorizonSystem: LevelEnvironmentPorts['planetaryHorizonSystem'];
+    moonPalaceSystem: LevelEnvironmentPorts['moonPalaceSystem'];
     blackHoleSystem: LevelEnvironmentPorts['blackHoleSystem'];
     reEntrySystem: LevelEnvironmentPorts['reEntrySystem'];
     chromaShiftSystem: LevelEnvironmentPorts['chromaShiftSystem'];
@@ -128,6 +129,7 @@ export class LevelManager {
         this.meteorShowerSystem = options.env.meteorShowerSystem;
         this.cosmicDustSystem = options.env.cosmicDustSystem;
         this.planetaryHorizonSystem = options.env.planetaryHorizonSystem;
+        this.moonPalaceSystem = options.env.moonPalaceSystem;
         this.blackHoleSystem = options.env.blackHoleSystem;
         this.reEntrySystem = options.env.reEntrySystem;
         this.chromaShiftSystem = options.env.chromaShiftSystem;

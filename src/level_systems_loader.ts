@@ -23,6 +23,7 @@ type SystemKey =
     | 'cosmicDust'
     | 'boss'
     | 'planetaryHorizon'
+    | 'moonPalace'
     | 'chromaShift'
     | 'stormGeode'
     | 'blackHole'
@@ -103,6 +104,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 const { PlanetaryHorizonSystem } = await import('./planetary_horizon');
                 installEnvPartial({
                     planetaryHorizonSystem: new PlanetaryHorizonSystem(scene, camera)
+                });
+                break;
+            }
+            case 'moonPalace': {
+                const { MoonPalaceSystem } = await import('./moon_palace');
+                installEnvPartial({
+                    moonPalaceSystem: new MoonPalaceSystem(scene, camera, game.weaponLightManager)
                 });
                 break;
             }
@@ -209,6 +217,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.biological)) keys.add('biological');
     if (isEnvironmentEnabled(env.cosmicDust)) keys.add('cosmicDust');
     if (isEnvironmentEnabled(env.planetaryHorizon)) keys.add('planetaryHorizon');
+    if (isEnvironmentEnabled(env.moonPalace)) keys.add('moonPalace');
     if (isEnvironmentEnabled(env.blackHole)) keys.add('blackHole');
     if (isEnvironmentEnabled(env.ghostDebris)) keys.add('ghostDebris');
     if (isEnvironmentEnabled(env.voidJellyfish)) keys.add('voidJellyfish');

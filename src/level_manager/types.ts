@@ -27,6 +27,7 @@ import type { BiologicalBackgroundSystem } from '../biological_background';
 import type { MeteorShowerSystem } from '../meteor_shower';
 import type { CosmicDustSystem } from '../cosmic_dust';
 import type { PlanetaryHorizonSystem } from '../planetary_horizon';
+import type { MoonPalaceSystem } from '../moon_palace';
 import type { BlackHoleSystem } from '../black_hole';
 import type { ReEntrySystem } from '../reentry';
 import type { ChromaShiftSystem } from '../chroma_shift';
@@ -82,6 +83,7 @@ export type LevelEnvironmentPorts = {
     meteorShowerSystem: MeteorShowerSystem;
     cosmicDustSystem: CosmicDustSystem;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
+    moonPalaceSystem: MoonPalaceSystem;
     blackHoleSystem: BlackHoleSystem;
     reEntrySystem: ReEntrySystem;
     chromaShiftSystem: ChromaShiftSystem;

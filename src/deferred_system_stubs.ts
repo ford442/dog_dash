@@ -6,6 +6,7 @@ import type { WaterfallSystem } from './waterfall';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { BiologicalBackgroundSystem } from './biological_background';
 import type { CosmicDustSystem } from './cosmic_dust';
+import type { MoonPalaceSystem } from './moon_palace';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
 import type { BossManager } from './boss_system';
@@ -91,6 +92,16 @@ export function createPlanetaryHorizonSystemStub(): PlanetaryHorizonSystem {
         updateMoonGate: noop,
         activateMoonGate: noop
     } as unknown as PlanetaryHorizonSystem;
+}
+
+export function createMoonPalaceSystemStub(): MoonPalaceSystem {
+    return {
+        levelDistance: 2200,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as MoonPalaceSystem;
 }
 
 export function createReEntrySystemStub(): ReEntrySystem {

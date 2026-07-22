@@ -19,6 +19,7 @@ import {
     createCosmicDustSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
+    createMoonPalaceSystemStub,
     createChromaShiftSystemStub,
     createStormGeodeSystemStub,
     createBlackHoleSystemStub
@@ -26,6 +27,7 @@ import {
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
 import type { PlanetaryHorizonSystem } from './planetary_horizon';
+import type { MoonPalaceSystem } from './moon_palace';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
@@ -70,6 +72,7 @@ export type GameSystems = {
     reEntrySystem: ReEntrySystem;
     waterfallSystem: WaterfallSystem;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
+    moonPalaceSystem: MoonPalaceSystem;
     meteorShowerSystem: MeteorShowerSystem;
     industrialSystem: IndustrialBackgroundSystem;
     asteroidFieldSystem: AsteroidFieldSystem;
@@ -116,6 +119,7 @@ export type LevelEnvironmentSystemExports = {
     cosmicDustSystem: CosmicDustSystem;
     bossManager: BossManager;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
+    moonPalaceSystem: MoonPalaceSystem;
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;
@@ -135,6 +139,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const reEntrySystem: ReEntrySystem = createReEntrySystemStub();
     const waterfallSystem: WaterfallSystem = createWaterfallSystemStub();
     const planetaryHorizonSystem: PlanetaryHorizonSystem = createPlanetaryHorizonSystemStub();
+    const moonPalaceSystem: MoonPalaceSystem = createMoonPalaceSystemStub();
     const meteorShowerSystem: MeteorShowerSystem = createMeteorShowerSystemStub();
     const industrialSystem: IndustrialBackgroundSystem = createIndustrialSystemStub();
 
@@ -339,6 +344,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         reEntrySystem,
         waterfallSystem,
         planetaryHorizonSystem,
+        moonPalaceSystem,
         meteorShowerSystem,
         industrialSystem,
         asteroidFieldSystem,

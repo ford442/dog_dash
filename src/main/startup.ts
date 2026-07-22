@@ -173,6 +173,7 @@ function createLevelManager(
             meteorShowerSystem: systems.meteorShowerSystem,
             cosmicDustSystem: systems.cosmicDustSystem,
             planetaryHorizonSystem: systems.planetaryHorizonSystem,
+            moonPalaceSystem: systems.moonPalaceSystem,
             blackHoleSystem: systems.blackHoleSystem,
             reEntrySystem: systems.reEntrySystem,
             chromaShiftSystem: systems.chromaShiftSystem,
