@@ -54,7 +54,6 @@ export function updateLoopCombat(_rawDelta: number, delta: number, time: number)
                             const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
                             if (objective?.type === 'boss') {
                                 game.hudManager.updateObjectiveProgress(objective.target, objective.target);
-                                game.hudManager.onObjectiveComplete?.();
 
                                 if (game.levelManager.currentLevel === 6 && !game.level6BossDefeated) {
                                     game.level6BossDefeated = true;
