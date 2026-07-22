@@ -1,6 +1,6 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 142
+# Count: 136
 src/aurora.ts(104,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/aurora.ts(86,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/biological_background.ts(57,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
@@ -69,12 +69,6 @@ src/foliage/grass_system.ts(30,35): TS7006: Parameter 'm' implicitly has an 'any
 src/foliage/grass_system.ts(340,5): TS2304: Cannot find name 'registerReactiveMaterial'.
 src/foliage/grass_system.ts(409,5): TS2304: Cannot find name 'registerReactiveMaterial'.
 src/foliage/grass_system.ts(8,5): TS2304: Cannot find name 'grassMeshes'.
-src/game_managers.ts(39,51): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'AudioSystem'.
-src/game_managers.ts(40,56): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'AudioSystem | null | undefined'.
-src/game_managers.ts(41,58): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ParticleSystem | null | undefined'.
-src/game_managers.ts(42,51): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'AudioSystem'.
-src/game_managers.ts(45,63): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ParticleSystem | null | undefined'.
-src/game_managers.ts(46,55): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ParticleSystem | null | undefined'.
 src/geological/geodes.ts(13,5): TS2300: Duplicate identifier 'vec3'.
 src/geological/geodes.ts(24,5): TS2300: Duplicate identifier 'vec3'.
 src/geological/geodes.ts(79,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
