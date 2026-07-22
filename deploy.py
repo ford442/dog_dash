@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
 """
-project_deploy_template.py
-
-Copy this file into your project as `deploy.py` (or deploy_contabo.py).
-Customize the constants at the top for your project.
+Deploy the production build via the Contabo storage manager API.
 
 Usage:
-  1. Build your project:  npm run build   (or python build, etc.)
-  2. python deploy.py
-
-This script contacts https://storage.noahcohn.com (your Contabo storage manager)
-to upload your entire build as a single zip archive.  The server extracts it and
-pushes all files over one persistent SFTP connection — much faster than uploading
-files individually.
-
-Actual FTP/SFTP credentials never leave the VPS.
+  1. Build: npm run build
+  2. export DEPLOY_TOKEN="..."   # required — see docs/DEPLOY.md
+  3. python deploy.py
 
 Requirements:
   pip install requests
@@ -30,16 +21,15 @@ from typing import Optional
 import requests
 
 # ============================================================
-# PER-PROJECT CONFIGURATION - EDIT THESE
+# PER-PROJECT CONFIGURATION (non-secret defaults only)
 # ============================================================
-PROJECT_NAME: str = 'dog-dash'
-BUILD_DIR: str = 'dist'
-CONTABO_BASE_URL: str = "https://storage.noahcohn.com"
-DEPLOY_FOLDER: str = ""  # override remote target folder; empty = use PROJECT_NAME
+PROJECT_NAME: str = os.environ.get('DEPLOY_PROJECT_NAME', 'dog-dash')
+BUILD_DIR: str = os.environ.get('DEPLOY_BUILD_DIR', 'dist')
+CONTABO_BASE_URL: str = os.environ.get('DEPLOY_CONTABO_URL', 'https://storage.noahcohn.com')
+DEPLOY_FOLDER: str = os.environ.get('DEPLOY_FOLDER', '')
 
-# Optional deploy token (recommended for security).
-# Set via environment: export DEPLOY_TOKEN="your_long_token_from_vps_env"
-DEPLOY_TOKEN: Optional[str] = "6de44dca5425348f2e2ef9456fc820bfe56a5ace68bddeb6da4a1c2a9d9cadc0"
+# Required secret — never commit tokens to the repository.
+DEPLOY_TOKEN: Optional[str] = os.environ.get('DEPLOY_TOKEN')
 # ============================================================
 
 
@@ -51,7 +41,6 @@ def build_zip(build_path: Path) -> bytes:
             if file.is_dir():
                 continue
             rel = file.relative_to(build_path)
-            # Skip common junk
             parts = rel.parts
             if any(p in (".git", "node_modules", "__pycache__") for p in parts):
                 continue
@@ -62,11 +51,13 @@ def build_zip(build_path: Path) -> bytes:
 
 def deploy_bundle(build_path: Path) -> bool:
     """Zip the build and upload it as a single bundle."""
+    if not DEPLOY_TOKEN:
+        print("Error: DEPLOY_TOKEN is required. See docs/DEPLOY.md.")
+        return False
+
     target_folder = DEPLOY_FOLDER or PROJECT_NAME
     url = f"{CONTABO_BASE_URL}/api/deploy/{PROJECT_NAME}/bundle"
-    headers = {}
-    if DEPLOY_TOKEN:
-        headers["X-Deploy-Token"] = DEPLOY_TOKEN
+    headers = {"X-Deploy-Token": DEPLOY_TOKEN}
 
     print("Building zip archive...")
     zip_bytes = build_zip(build_path)
@@ -99,7 +90,7 @@ def deploy_bundle(build_path: Path) -> bool:
 
 
 def main():
-    print(f"\n=== Deploying '{PROJECT_NAME}' via Contabo -> storage.1ink.us ===\n")
+    print(f"\n=== Deploying '{PROJECT_NAME}' via Contabo storage API ===\n")
 
     build_path = Path(BUILD_DIR)
     if not build_path.exists() or not build_path.is_dir():
@@ -110,9 +101,9 @@ def main():
     try:
         health = requests.get(f"{CONTABO_BASE_URL}/api/deploy/health", timeout=10)
         if health.status_code == 200:
-            print(f"Contabo deploy service: {health.json().get('status', 'unknown')}")
+            print(f"Deploy service: {health.json().get('status', 'unknown')}")
     except Exception:
-        print("Warning: Could not contact storage.noahcohn.com (continuing anyway).")
+        print(f"Warning: Could not contact {CONTABO_BASE_URL} (continuing anyway).")
 
     print()
     success = deploy_bundle(build_path)

@@ -1,19 +1,19 @@
 import os
+import sys
 import paramiko
 import getpass
 
-# --- Server Configuration ---
-# Replace these with your server's details.
-# It's better to use environment variables or a config file for sensitive data.
-HOSTNAME = "1ink.us"
-PORT = 22  # Default SFTP/SSH port
-USERNAME = "ford442"
+# --- Server Configuration (environment variables only) ---
+# Required: DEPLOY_HOST, DEPLOY_USER
+# Auth: DEPLOY_PASSWORD and/or DEPLOY_SSH_KEY_PATH
+HOSTNAME = os.environ.get('DEPLOY_HOST')
+PORT = int(os.environ.get('DEPLOY_PORT', '22'))
+USERNAME = os.environ.get('DEPLOY_USER')
+SSH_KEY_PATH = os.environ.get('DEPLOY_SSH_KEY_PATH')
 
 # --- Project Configuration ---
-# The local directory to upload from.
-LOCAL_DIRECTORY = "dist"
-# The directory on the server where the files should go (e.g., 'public_html/wasm-game').
-REMOTE_DIRECTORY = "test.1ink.us/dog-dash"
+LOCAL_DIRECTORY = os.environ.get('DEPLOY_LOCAL_DIR', 'dist')
+REMOTE_DIRECTORY = os.environ.get('DEPLOY_REMOTE_DIR')
 
 def upload_directory(sftp_client, local_path, remote_path):
     """
@@ -21,10 +21,8 @@ def upload_directory(sftp_client, local_path, remote_path):
     """
     print(f"Creating remote directory: {remote_path}")
     try:
-        # Create the target directory on the server if it doesn't exist.
         sftp_client.mkdir(remote_path)
     except IOError:
-        # Directory already exists, which is fine.
         print(f"Directory {remote_path} already exists.")
 
     for item in os.listdir(local_path):
@@ -35,37 +33,58 @@ def upload_directory(sftp_client, local_path, remote_path):
             print(f"Uploading file: {local_item_path} -> {remote_item_path}")
             sftp_client.put(local_item_path, remote_item_path)
         elif os.path.isdir(local_item_path):
-            # If it's a directory, recurse into it.
             upload_directory(sftp_client, local_item_path, remote_item_path)
+
+def connect_transport():
+    if not HOSTNAME or not USERNAME:
+        print("Error: set DEPLOY_HOST and DEPLOY_USER before running deploy.")
+        print("See docs/DEPLOY.md for required environment variables.")
+        sys.exit(1)
+
+    password = os.environ.get('DEPLOY_PASSWORD')
+    if not password and not SSH_KEY_PATH and sys.stdin.isatty():
+        password = getpass.getpass(f"Enter password for {USERNAME}@{HOSTNAME}: ")
+
+    transport = paramiko.Transport((HOSTNAME, PORT))
+
+    if SSH_KEY_PATH:
+        pkey = paramiko.RSAKey.from_private_key_file(SSH_KEY_PATH)
+        transport.connect(username=USERNAME, pkey=pkey)
+    elif password:
+        transport.connect(username=USERNAME, password=password)
+    else:
+        print("Error: provide DEPLOY_PASSWORD, DEPLOY_SSH_KEY_PATH, or run interactively.")
+        sys.exit(1)
+
+    return transport
 
 def main():
     """
     Main function to connect to the server and start the upload process.
     """
-    password = 'GoogleBez12!' # getpass.getpass(f"Enter password for {USERNAME}@{HOSTNAME}: ")
+    if not REMOTE_DIRECTORY:
+        print("Error: set DEPLOY_REMOTE_DIR to the target path on the server.")
+        print("See docs/DEPLOY.md for required environment variables.")
+        sys.exit(1)
 
     transport = None
     sftp = None
     try:
-        # Establish the SSH connection
-        transport = paramiko.Transport((HOSTNAME, PORT))
         print("Connecting to server...")
-        transport.connect(username=USERNAME, password=password)
+        transport = connect_transport()
         print("Connection successful!")
 
-        # Create an SFTP client from the transport
         sftp = paramiko.SFTPClient.from_transport(transport)
         print(f"Starting upload of '{LOCAL_DIRECTORY}' to '{REMOTE_DIRECTORY}'...")
 
-        # Start the recursive upload
         upload_directory(sftp, LOCAL_DIRECTORY, REMOTE_DIRECTORY)
 
         print("\n✅ Deployment complete!")
 
     except Exception as e:
         print(f"❌ An error occurred: {e}")
+        sys.exit(1)
     finally:
-        # Ensure the connection is closed
         if sftp:
             sftp.close()
         if transport:
@@ -75,5 +94,5 @@ def main():
 if __name__ == "__main__":
     if not os.path.exists(LOCAL_DIRECTORY):
         print(f"Error: Local directory '{LOCAL_DIRECTORY}' not found. Did you run 'npm run build' first?")
-    else:
-        main()
+        sys.exit(1)
+    main()

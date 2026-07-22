@@ -20,12 +20,16 @@ Dog Dash - A 3D world exploration game.
 
 ### Development
 
-1. Install dependencies:
+1. Install dependencies (use `npm ci` in CI or when you want a lockfile-exact install):
+
    ```bash
-   npm install
+   npm ci          # reproducible install from package-lock.json
+   # or
+   npm install     # local development
    ```
 
-2. Start the development server:
+2. Start the development server (`predev` rebuilds AssemblyScript WASM automatically):
+
    ```bash
    npm run dev
    ```
@@ -34,7 +38,8 @@ Dog Dash - A 3D world exploration game.
 
 ### Production Build
 
-Build the project for production:
+Build the project for production (`prebuild` runs brace check + WASM rebuild, then Vite bundles with `vite.config.ts`):
+
 ```bash
 npm run build
 ```
@@ -145,4 +150,4 @@ Navigate your rocket through 6 massive levels, blasting asteroids and dodging cr
 - **WASM Physics** - AssemblyScript for collision detection
 - **Mathematical Patterns** - Procedural enemy formations using parametric equations
 - Modern WebGPU API for next-generation graphics, with WebGL2 available for debugging and compatibility checks
-- Vite build system for fast development
+- Vite build system for fast development (`vite.config.ts` — ES2022 target, `public/` assets, optional code splitting)

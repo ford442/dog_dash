@@ -68,7 +68,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Environment & backgrounds | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts`, `aurora.ts`, `cosmic_dust.ts`, `meteor_shower.ts`, `ghost_debris.ts` |
 | Gameplay & obstacles | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
 | Visual effects | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
-| UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
+| UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `docs/touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
 | Performance guardrails | `decoration_budget.ts`, `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit.ts`, `space_friends.ts`, `player_loader.ts` |
@@ -90,4 +90,4 @@ New 3D props (flowers, creatures, ribbons, background layers) **must** register 
 
 ## Deployment
 
-`deploy.py` uploads `dist/` to `test.1ink.us/dog-dash` via SFTP (Paramiko). It contains hardcoded credentials — do not commit modified versions with credentials in plaintext, and avoid running it without explicit user instruction.
+Optional deploy helpers live in `deploy.py` (Contabo bundle API) and `scripts/deploy.py` (direct SFTP). **Credentials are environment variables only** — see `docs/DEPLOY.md`. Do not commit tokens, passwords, or host-specific secrets.
