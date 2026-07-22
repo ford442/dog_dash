@@ -131,7 +131,7 @@ enum ControlMode {
 |------|-------------|
 | `touch_controls.ts` | Main touch controls system |
 | `touch_settings.ts` | Settings UI and persistence |
-| `touch_integration_example.ts` | Integration examples |
+| `docs/touch_integration_example.ts` | Integration examples (documentation only) |
 
 ## Customization
 

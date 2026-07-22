@@ -156,7 +156,7 @@ When you need to find or add functionality, start in the module that matches the
 | **Environment & Backgrounds** | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts` |
 | **Gameplay & Obstacles** | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts` |
 | **Visual Effects** | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts` |
-| **UI / UX** | `ui_controls.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts` |
+| **UI / UX** | `ui_controls.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `docs/touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts` |
 | **Progression & Economy** | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `level_config.ts` |
 | **Characters** | `dog_cockpit.ts`, `space_friends.ts` |
 | **Movement & Abilities** | `boost_system.ts`, `roll_system.ts` |
