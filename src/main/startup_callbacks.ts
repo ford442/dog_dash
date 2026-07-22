@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 import { player } from '../player_loader';
-import { playerState } from '../game_config';
+import { playerState, CONFIG, setIsGamePaused, isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { updateHealthDisplay } from '../ui_controls';
 import { PowerUpType } from '../powerup_manager';
 import { MagicalEffectType } from '../magical_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { CONFIG } from '../game_config';
 import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPopup } from './hud_displays';
 import { getMaterialDisplayName, getMaterialColor } from '../resource_inventory';
+import { recordChapterComplete } from '../journey_map';
 
 export function reportComboObjectiveProgress(): void {
     const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
@@ -21,6 +21,13 @@ export function reportComboObjectiveProgress(): void {
 export function wireStartupCallbacks(): void {
     game.reportComboObjectiveProgress = reportComboObjectiveProgress;
     game.rewireSlingableCallbacks = wireSlingableCallbacks;
+    if (!game.completedChaptersThisRun) {
+        game.completedChaptersThisRun = [];
+    }
+
+    game.hudManager.getJourneyLevel = () => game.levelManager?.currentLevel ?? 1;
+    game.hudManager.getRescuedFriendCount = () => game.friendsManager?.getRescuedCount?.() ?? 0;
+    game.hudManager.getCompletedChapters = () => [...(game.completedChaptersThisRun || [])];
 
     game.resourceHarvester.onMaterialCollected = (evt) => {
         const name = getMaterialDisplayName(evt.id);
@@ -237,6 +244,12 @@ function wireFriendsCallbacks(): void {
 function wireObjectiveComplete(): void {
     game.hudManager.onObjectiveComplete = () => {
         if (!player) return;
+        const level = game.levelManager.currentLevel;
+        if (!game.completedChaptersThisRun.includes(level)) {
+            game.completedChaptersThisRun.push(level);
+        }
+        recordChapterComplete(game.saveManager, level);
+
         game.dogController.triggerAnimation(DogAnimationState.DELIGHTED, 2.5);
         game.juiceManager.showFloatingText('Chapter Complete!', player.position.clone(), '#ffcc00', 32);
         game.juiceManager.flashRainbow(1.0);
@@ -250,6 +263,16 @@ function wireObjectiveComplete(): void {
             const oy = (Math.random() - 0.5) * 10;
             game.orbManager.spawnRandomOrb(ox, oy, 0);
         }
+
+        // Moon journey map — 2D overlay after each chapter victory.
+        const wasPaused = isGamePaused;
+        if (!wasPaused) setIsGamePaused(true);
+        game.hudManager.showJourneyMapOverlay('chapter', {
+            completedChapter: level,
+            onClose: () => {
+                if (!wasPaused) setIsGamePaused(false);
+            }
+        });
     };
 }
 

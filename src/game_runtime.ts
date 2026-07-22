@@ -178,6 +178,8 @@ export interface GameRuntime {
     webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
 
     bestiaryUI: HTMLDivElement | null;
+    /** Chapters whose objectives were completed this run (1–6). */
+    completedChaptersThisRun: number[];
 
     reportComboObjectiveProgress: () => void;
     handleGameOver: () => void;

@@ -124,7 +124,7 @@ src/magical_effects/stardust_field.ts(21,3): TS2564: Property 'duration' has no 
 src/magical_effects/stardust_field.ts(21,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
 src/main/grav_lens_update.ts(82,43): TS2345: Argument of type 'SlingshotGrade' is not assignable to parameter of type '"perfect" | "partial" | "failed"'.
 src/main/grav_lens_update.ts(93,50): TS2345: Argument of type 'SlingQuality' is not assignable to parameter of type '"perfect" | "good" | "ok" | undefined'.
-src/main/input_bindings.ts(159,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
+src/main/input_bindings.ts(170,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
 src/main/loop_geological.ts(336,59): TS2345: Argument of type 'Group<Object3DEventMap>' is not assignable to parameter of type 'Mesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], Object3DEventMap>'.
 src/main/loop_geological.ts(345,78): TS18047: 'player' is possibly 'null'.
 src/main/loop_geological.ts(369,50): TS18047: 'player' is possibly 'null'.
