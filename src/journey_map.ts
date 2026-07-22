@@ -142,7 +142,21 @@ export function hideJourneyMap(): void {
 export function showJourneyMap(options: ShowJourneyMapOptions): HTMLDivElement {
     hideJourneyMap();
 
-    const { mode, snapshot, completedChapter, onClose, autoCloseMs } = options;
+    const { mode, completedChapter, onClose, autoCloseMs } = options;
+    const snapshot: JourneyMapSnapshot = {
+        ...options.snapshot,
+        completedLevels: [...options.snapshot.completedLevels]
+    };
+
+    // Victory mode: every chapter is completed for display.
+    if (mode === 'victory') {
+        for (let L = 1; L <= CHAPTER_COUNT; L++) {
+            if (!snapshot.completedLevels.includes(L)) snapshot.completedLevels.push(L);
+        }
+        snapshot.completedLevels.sort((a, b) => a - b);
+        snapshot.currentLevel = CHAPTER_COUNT;
+    }
+
     const focusLevel = completedChapter ?? snapshot.currentLevel;
     const dogLine =
         mode === 'chapter' && completedChapter
@@ -373,11 +387,15 @@ export function showJourneyMap(options: ShowJourneyMapOptions): HTMLDivElement {
     const chapterList = document.createElement('div');
     chapterList.style.cssText = `
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
         gap: 8px;
-        max-height: 26vh;
-        overflow-y: auto;
+        overflow-x: auto;
     `;
+    if (window.matchMedia('(max-width: 900px)').matches) {
+        chapterList.style.gridTemplateColumns = 'repeat(auto-fit, minmax(130px, 1fr))';
+        chapterList.style.maxHeight = '28vh';
+        chapterList.style.overflowY = 'auto';
+    }
     for (let level = 1; level <= CHAPTER_COUNT; level++) {
         const cfg = LEVEL_CONFIG[level];
         const done = isCompleted(level, snapshot.completedLevels);
@@ -387,10 +405,10 @@ export function showJourneyMap(options: ShowJourneyMapOptions): HTMLDivElement {
         card.dataset.level = String(level);
         card.style.cssText = chapterCardStyle(done, isCurrent, level === focusLevel);
         card.innerHTML = `
-            <div style="font-size:20px;">${OBJECTIVE_ICONS[obj?.type ?? 'scan']}${done ? ' ✅' : ''}</div>
-            <div style="font-weight:800; font-size:13px; color:${COLORS.textDark};">${cfg?.name ?? `Chapter ${level}`}</div>
-            <div style="font-size:11px; color:${COLORS.textLight}; margin-top:2px;">${obj?.description ?? ''}</div>
-            <div style="font-size:10px; color:${COLORS.textLight}; margin-top:4px; opacity:0.9;">${BIOME_TEASERS[level] ?? ''}</div>
+            <div style="font-size:18px;">${OBJECTIVE_ICONS[obj?.type ?? 'scan']}${done ? ' ✅' : ''}</div>
+            <div style="font-weight:800; font-size:12px; color:${COLORS.textDark}; line-height:1.2;">${cfg?.name ?? `Chapter ${level}`}</div>
+            <div style="font-size:10px; color:${COLORS.textLight}; margin-top:2px; line-height:1.25;">${obj?.description ?? ''}</div>
+            <div style="font-size:9px; color:${COLORS.textLight}; margin-top:4px; opacity:0.9; line-height:1.2;">${BIOME_TEASERS[level] ?? ''}</div>
         `;
         chapterList.appendChild(card);
     }
