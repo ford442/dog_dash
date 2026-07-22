@@ -68,7 +68,7 @@ Playwright smoke tests verify the **production build** on the WebGL2 fallback pa
 
 ```bash
 npm run build
-npm run test:smoke
+npm run test:smoke          # alias for: npx playwright test
 ```
 
 **Requirements:**

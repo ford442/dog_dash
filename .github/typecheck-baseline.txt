@@ -1,6 +1,6 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 136
+# Count: 124
 src/aurora.ts(104,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/aurora.ts(86,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
 src/biological_background.ts(57,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
@@ -66,8 +66,6 @@ src/foliage/grass_system.ts(23,9): TS2304: Cannot find name 'grassMeshes'.
 src/foliage/grass_system.ts(26,12): TS2304: Cannot find name 'grassMeshes'.
 src/foliage/grass_system.ts(30,18): TS2304: Cannot find name 'grassMeshes'.
 src/foliage/grass_system.ts(30,35): TS7006: Parameter 'm' implicitly has an 'any' type.
-src/foliage/grass_system.ts(340,5): TS2304: Cannot find name 'registerReactiveMaterial'.
-src/foliage/grass_system.ts(409,5): TS2304: Cannot find name 'registerReactiveMaterial'.
 src/foliage/grass_system.ts(8,5): TS2304: Cannot find name 'grassMeshes'.
 src/geological/geodes.ts(13,5): TS2300: Duplicate identifier 'vec3'.
 src/geological/geodes.ts(24,5): TS2300: Duplicate identifier 'vec3'.
@@ -78,16 +76,6 @@ src/geological/geodes.ts(83,5): TS2740: Type 'OperatorNode' is missing the follo
 src/geological/geodes.ts(84,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/geological/geodes.ts(85,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
 src/geological/geodes.ts(87,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
-src/industrial_background/system.ts(111,25): TS2304: Cannot find name 'createGearGeometry'.
-src/industrial_background/system.ts(112,25): TS2304: Cannot find name 'createMechanismMaterial'.
-src/industrial_background/system.ts(129,23): TS2304: Cannot find name 'createForegroundMaterial'.
-src/industrial_background/system.ts(145,26): TS2304: Cannot find name 'createSimpleIndustrialMaterial'.
-src/industrial_background/system.ts(47,25): TS2304: Cannot find name 'createConveyorMaterial'.
-src/industrial_background/system.ts(62,27): TS2304: Cannot find name 'createPistonGeometry'.
-src/industrial_background/system.ts(63,27): TS2304: Cannot find name 'createMechanismMaterial'.
-src/industrial_background/system.ts(79,24): TS2304: Cannot find name 'createSimpleIndustrialMaterial'.
-src/industrial_background/system.ts(95,29): TS2304: Cannot find name 'createPistonGeometry'.
-src/industrial_background/system.ts(96,29): TS2304: Cannot find name 'createMechanismMaterial'.
 src/input_system.ts(7,10): TS2724: '"./level_manager"' has no exported member named 'levelManager'. Did you mean 'LevelManager'?
 src/input_system.ts(82,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
 src/level_manager/environment_plugins.ts(129,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 6 more ... | undefined>) => void'.
@@ -104,7 +92,7 @@ src/magical_effects/butterfly_swarm_effect.ts(25,3): TS2612: Property 'duration'
 src/magical_effects/factories.ts(109,22): TS2304: Cannot find name 'SparkleFieldEffect'.
 src/magical_effects/factories.ts(61,22): TS2304: Cannot find name 'HeartRainEffect'.
 src/magical_effects/factories.ts(77,22): TS2304: Cannot find name 'StarCascadeEffect'.
-src/magical_effects/factories.ts(93,22): TS2304: Cannot find name 'RainbowSpiralEffect'.
+src/magical_effects/factories.ts(93,22): TS2552: Cannot find name 'RainbowSpiralEffect'. Did you mean 'RainbowTrailEffect'?
 src/magical_effects/glitter_beam.ts(12,3): TS2564: Property 'duration' has no initializer and is not definitely assigned in the constructor.
 src/magical_effects/glitter_beam.ts(12,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
 src/magical_effects/glitter_beam.ts(199,21): TS2304: Cannot find name 'PASTEL_RAINBOW'.

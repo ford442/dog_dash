@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createClayMaterial, foliageMaterials, reactiveMaterials } from '../foliage_shared';
+import { createClayMaterial, foliageMaterials, reactiveMaterials, registerReactiveMaterial } from '../foliage_shared';
 
 const dummy = new THREE.Object3D();
 const MAX_PER_MESH = 1000;

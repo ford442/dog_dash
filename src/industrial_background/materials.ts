@@ -2,7 +2,38 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
 import { time, positionLocal, positionWorld, uv, vec2, vec3, vec4, color, uniform, mix, sin, cos, float, length, smoothstep, distance, Loop, step, fract } from 'three/tsl';
 
+function shouldUseLiteMaterials(): boolean {
+    return typeof window !== 'undefined' && window.usingWebGL === true;
+}
+
+function createLiteIndustrialMaterial(
+    colorHex: number,
+    roughness: number,
+    metalness: number,
+    uPlayerPos?: unknown,
+    extraUserData?: Record<string, unknown>,
+    side: THREE.Side = THREE.FrontSide,
+): THREE.MeshStandardMaterial {
+    const mat = new THREE.MeshStandardMaterial({
+        color: colorHex,
+        roughness,
+        metalness,
+        side,
+    });
+    if (uPlayerPos) {
+        mat.userData.uPlayerPos = uPlayerPos;
+    }
+    if (extraUserData) {
+        Object.assign(mat.userData, extraUserData);
+    }
+    return mat;
+}
+
 export function createConveyorMaterial(speed: number, uPlayerPos: any, weaponLights: any) {
+    if (shouldUseLiteMaterials()) {
+        return createLiteIndustrialMaterial(0x888888, 0.7, 0.6, uPlayerPos);
+    }
+
     const mat = new MeshStandardNodeMaterial({
         color: 0x888888,
         roughness: 0.7,
@@ -68,6 +99,10 @@ export function createConveyorMaterial(speed: number, uPlayerPos: any, weaponLig
  * - Glowing core that pulses with sine wave
  */
 export function createPulsingConduitMaterial(baseColorHex: number, glowColorHex: number, pulseSpeed: number, uPlayerPos: any, weaponLights: any) {
+    if (shouldUseLiteMaterials()) {
+        return createLiteIndustrialMaterial(baseColorHex, 0.4, 0.9, uPlayerPos);
+    }
+
     const mat = new MeshStandardNodeMaterial({
         color: baseColorHex,
         roughness: 0.4,
@@ -185,6 +220,10 @@ export function createPistonGeometry(radius: number, height: number) {
  * Creates a rusty mechanical material using TSL.
  */
 export function createMechanismMaterial(colorHex: number, uPlayerPos: any, weaponLights: any) {
+    if (shouldUseLiteMaterials()) {
+        return createLiteIndustrialMaterial(colorHex, 0.8, 0.6, uPlayerPos);
+    }
+
     const mat = new MeshStandardNodeMaterial({
         color: colorHex,
         roughness: 0.8,
@@ -237,6 +276,10 @@ export function createMechanismMaterial(colorHex: number, uPlayerPos: any, weapo
  * - Slight rim light via metalness? Or just dark.
  */
 export function createForegroundMaterial(uPlayerPos: any, weaponLights: any) {
+    if (shouldUseLiteMaterials()) {
+        return createLiteIndustrialMaterial(0x1a1a1a, 0.9, 0.2, uPlayerPos);
+    }
+
     const mat = new MeshStandardNodeMaterial({
         color: 0x1a1a1a,
         roughness: 0.9,
@@ -273,6 +316,10 @@ export function createForegroundMaterial(uPlayerPos: any, weaponLights: any) {
  * Manages a layer of industrial background elements using InstancedMesh.
  */
 export function createSimpleIndustrialMaterial(colorHex: number, r: number, m: number, uPlayerPos: any, weaponLights: any) {
+    if (shouldUseLiteMaterials()) {
+        return createLiteIndustrialMaterial(colorHex, r, m, uPlayerPos);
+    }
+
     const mat = new MeshStandardNodeMaterial({
         color: colorHex,
         roughness: r,
@@ -306,6 +353,10 @@ export function createSimpleIndustrialMaterial(colorHex: number, r: number, m: n
 }
 
 export function createTunnelMaterial(speed: number, uPlayerPos: any, weaponLights: any) {
+    if (shouldUseLiteMaterials()) {
+        return createLiteIndustrialMaterial(0x332211, 0.8, 0.5, uPlayerPos, { uCameraX: { value: 0 } }, THREE.BackSide);
+    }
+
     const mat = new MeshStandardNodeMaterial({
         color: 0x332211,
         roughness: 0.8,
