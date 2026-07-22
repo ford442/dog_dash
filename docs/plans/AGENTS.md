@@ -61,7 +61,8 @@ The project uses a mostly flat `src/` module structure. Most TypeScript source f
 
 ### Notable files by size and importance
 
-- `main.ts` (~3,000 lines) — Scene setup, game loop, level progression, renderer config
+- `src/main/` — Bootstrap, game loop phases, input/HUD wiring (entry: thin `main.ts`)
+- `create_game_systems.ts` / `game_runtime.ts` — Composition root (`GameContext`); see `docs/GAME_CONTEXT.md`
 - `renderer_mode.ts` — WebGPU/WebGL2 renderer selection and runtime backend breadcrumbs
 - `render_debug_helpers.ts` — Wireframe, collision bounds, and WebGL node-material fallback helpers
 - `audio_system.ts` (~2,500 lines) — Procedural music and sound synthesis
@@ -152,7 +153,7 @@ When you need to find or add functionality, start in the module that matches the
 
 | Domain | Files |
 |--------|-------|
-| **Core Game Loop** | `main.ts` |
+| **Core Game Loop** | `src/main/`, `create_game_systems.ts`, `game_runtime.ts` |
 | **Environment & Backgrounds** | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts` |
 | **Gameplay & Obstacles** | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts` |
 | **Visual Effects** | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts` |
@@ -234,13 +235,14 @@ python deploy.py
 
 | Task | Where to look / What to run |
 |------|-----------------------------|
-| Add a new level | `level_config.ts` + `main.ts` (level-loading logic) |
-| Change player controls | `touch_controls.ts`, `ui_controls.ts`, or `main.ts` (keyboard handlers) |
+| Add a new level | `level_config.ts` + `level_manager/` / `src/main/startup.ts` |
+| Change player controls | `touch_controls.ts`, `ui_controls.ts`, or `src/main/input_bindings.ts` |
 | Add a new sound | `audio_system.ts` (Web Audio API synthesis) |
 | Add a new enemy pattern | `enemy_patterns.ts` + `obstacle_system.ts` |
 | Add a visual effect | `magical_effects.ts`, `juice_effects.ts`, or `particles.ts` |
+| Add a new gameplay system | `docs/GAME_CONTEXT.md` — construct in `createGameSystems`, put on `GameContext` |
 | Add a new shader material | `shaders/*.ts` and import into the relevant background module |
-| Change renderer selection | `renderer_mode.ts`, `render_debug_helpers.ts`, `main.ts`, `scene_setup.ts`, and `docs/RENDERER_FALLBACK.md` |
+| Change renderer selection | `renderer_mode.ts`, `render_debug_helpers.ts`, `src/main/`, `scene_setup.ts`, and `docs/RENDERER_FALLBACK.md` |
 | Change collision logic | `assembly/index.ts` → `npm run build:wasm` |
 | Update UI / HUD | `hud_system.ts` or `ui_controls.ts` |
 | Build for release | `npm run build` |

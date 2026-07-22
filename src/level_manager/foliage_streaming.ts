@@ -13,7 +13,6 @@ import {
 } from '../foliage';
 import { DEPTH_LAYERS, randomZInLayer, randomZInRange } from '../depth_layers';
 import { moonPlants } from '../visuals';
-import { chromaShiftSystem, crystalChimeManager } from '../game_systems';
 import { decorationBudget } from '../decoration_budget';
 import { STREAM_AHEAD_END, STREAM_AHEAD_START } from './constants';
 import type { LevelFoliageHost } from './foliage_host';
@@ -194,7 +193,7 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
             lm.solarSailFernManager.streamChunk(startX, width, density.solarSail, yRange);
         }
         if (levelConfig.chimeDensity && levelConfig.chimeDensity > 0) {
-            crystalChimeManager.streamChunk(startX, width, levelConfig.chimeDensity, yRange);
+            lm.crystalChimeManager.streamChunk(startX, width, levelConfig.chimeDensity, yRange);
         }
         spawnFoliageVignettes(lm, startX, width, density, yRange, treeYRange, foliageZ, geoZ, vignettes, vignetteCount, geodeClearings);
         if (density.cloud) {
@@ -251,7 +250,7 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
                 const x = startX + Math.random() * width;
                 const y = Math.random() * (yRange[1] - yRange[0]) + yRange[0];
                 const z = randomZInLayer('NEAR');
-                chromaShiftSystem.addRock(new THREE.Vector3(x, y, z), 2 + Math.random() * 2);
+                lm.chromaShiftSystem.addRock(new THREE.Vector3(x, y, z), 2 + Math.random() * 2);
             }
         }
         if (density.liquidMetal) {

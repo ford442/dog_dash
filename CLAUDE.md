@@ -52,10 +52,10 @@ WebGPU is unavailable headlessly, so runtime verification requires a browser wit
 All gameplay TypeScript lives in `src/` (~70 modules, flat — no further subdirectories). `assembly/index.ts` is AssemblyScript (separate from `src/`, excluded from `tsconfig.json`). `shaders/jelly-moss.ts` holds TSL node-based shader materials. `cpp/` contains an alternative/experimental C++ physics WASM build.
 
 ### Core loop
-`src/main.ts` (~3000 lines) wires together nearly every system: WebGPU renderer/scene setup, the rocket/player, game loop (`requestAnimationFrame`), level progression driven by `LEVEL_CONFIG` (`src/level_config.ts`, levels 1–6 with distance, speed, sky colors, foliage/asteroid density, tunnel params, boss spawn rates), input, collisions, and HUD updates. Most other modules export either classes (instantiated and `update()`-ed each frame from `main.ts`) or factory functions (`createX`/`updateX`/`destroyX` triplets) for procedurally generated objects.
+`src/main.ts` is a thin entry that calls `bootstrap()` in `src/main/`. Startup (`src/main/startup.ts`) builds a typed `GameContext` via `createGameSystems` / `createGameManagers` (no import-time gameplay singletons). The game loop lives under `src/main/game_loop.ts` and `loop_*.ts`, driven by `LEVEL_CONFIG` (`src/level_config.ts`, levels 1–6). Most other modules export classes (constructed in the composition root and `update()`-ed from the loop) or `createX`/`updateX`/`destroyX` factories. See [docs/GAME_CONTEXT.md](docs/GAME_CONTEXT.md).
 
 ### WASM physics
-`assembly/index.ts` exports buffer-allocation and collision-check functions consumed from `src/physics_utils.ts` and `main.ts`:
+`assembly/index.ts` exports buffer-allocation and collision-check functions consumed from `src/physics_utils.ts` and the main loop (`src/main/`):
 - `allocAsteroids(count)`, `allocSporeClouds(count)`, `allocBossHitboxes(count)` — allocate `Float32Array` views into WASM memory for circular/spherical hitboxes
 - `checkCollision`, `checkSporeCollision`, `checkBossCollision` — run collision checks against those buffers
 
@@ -64,7 +64,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 ### Domain map (where to make changes)
 | Domain | Files |
 |--------|-------|
-| Core game loop, renderer, level progression | `main.ts`, `level_config.ts`, `level_manager.ts` |
+| Core game loop, renderer, level progression | `src/main/`, `level_config.ts`, `level_manager/` |
 | Environment & backgrounds | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts`, `aurora.ts`, `cosmic_dust.ts`, `meteor_shower.ts`, `ghost_debris.ts` |
 | Gameplay & obstacles | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
 | Visual effects | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
@@ -74,7 +74,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Characters | `dog_cockpit.ts`, `space_friends.ts`, `player_loader.ts` |
 | Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `assembly/index.ts` |
 | Audio | `audio_system.ts` |
-| Game-wide config | `game_config.ts`, `game_systems.ts` |
+| Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |
 
 ## Code Style
 

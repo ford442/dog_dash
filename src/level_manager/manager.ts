@@ -1,5 +1,4 @@
 import { ShakeType } from '../juice_effects';
-import { lightningBoltSystem, particleSystem, juiceManager, pastelNebulaSystem } from '../game_systems';
 import * as THREE from 'three';
 import { CloudSystem } from '../clouds';
 import { AtmosphereSystem } from '../sky';
@@ -9,20 +8,6 @@ import { getLevelSpan } from '../depth_layers';
 import { playerState } from '../game_config';
 import { moonPlants } from '../visuals';
 import { disposeObject } from '../utils';
-import {
-    blackHoleSystem,
-    waterfallSystem,
-    industrialSystem,
-    chromaShiftSystem,
-    stormGeodeSystem,
-    biologicalSystem,
-    nebulaSystem,
-    cosmicDustSystem,
-    meteorShowerSystem,
-    asteroidFieldSystem,
-    planetaryHorizonSystem,
-    reEntrySystem
-} from '../game_systems';
 import { GodRaySystem } from '../godrays';
 import { AuroraSystem } from '../aurora';
 import { GhostDebrisSystem } from '../ghost_debris';
@@ -30,7 +15,6 @@ import { VoidJellyfishSystem } from '../void_jellyfish';
 import { DebugSystem } from '../debug_system';
 import { FriendsManager } from '../space_friends';
 import { ButterflySwarmSystem } from '../butterfly_swarm';
-import { WeaponLightManager } from '../lighting';
 import type { ConstellationManager } from '../flower_constellations';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
@@ -39,7 +23,6 @@ import type { CastleBackgroundManager } from '../cloud_castles';
 import type { CandyBeltManager } from '../candy_obstacles';
 import { applyLevelDecorationBudgets, decorationBudget } from '../decoration_budget';
 import { DEPTH_LAYERS } from '../depth_layers';
-import { crystalChimeManager } from '../game_systems';
 import {
     DEFAULT_FOG_FAR,
     DEFAULT_FOG_NEAR,
@@ -48,10 +31,9 @@ import {
     STREAM_AHEAD_END,
     STREAM_AHEAD_START
 } from './constants';
-import type { GeologicalSpawners, GeologicalCounts, LevelManagerOptions } from './types';
+import type { GeologicalSpawners, GeologicalCounts, LevelManagerOptions, LevelEnvironmentPorts } from './types';
 import { applyEnvironmentPlugins } from './environment_plugins';
 import { maybeStreamFoliage, populateZone } from './foliage_streaming';
-import type { LevelFoliageHost } from './foliage_host';
 import { ensureLevelSystemsForLevel } from '../level_systems_loader';
 
 export class LevelManager {
@@ -89,6 +71,24 @@ export class LevelManager {
     fastLaneActive = false;
     private fastLaneDensityFactor = 1.0;
 
+    particleSystem: LevelEnvironmentPorts['particleSystem'];
+    juiceManager: LevelEnvironmentPorts['juiceManager'];
+    lightningBoltSystem: LevelEnvironmentPorts['lightningBoltSystem'];
+    crystalChimeManager: LevelEnvironmentPorts['crystalChimeManager'];
+    nebulaSystem: LevelEnvironmentPorts['nebulaSystem'];
+    asteroidFieldSystem: LevelEnvironmentPorts['asteroidFieldSystem'];
+    waterfallSystem: LevelEnvironmentPorts['waterfallSystem'];
+    industrialSystem: LevelEnvironmentPorts['industrialSystem'];
+    biologicalSystem: LevelEnvironmentPorts['biologicalSystem'];
+    meteorShowerSystem: LevelEnvironmentPorts['meteorShowerSystem'];
+    cosmicDustSystem: LevelEnvironmentPorts['cosmicDustSystem'];
+    planetaryHorizonSystem: LevelEnvironmentPorts['planetaryHorizonSystem'];
+    blackHoleSystem: LevelEnvironmentPorts['blackHoleSystem'];
+    reEntrySystem: LevelEnvironmentPorts['reEntrySystem'];
+    chromaShiftSystem: LevelEnvironmentPorts['chromaShiftSystem'];
+    stormGeodeSystem: LevelEnvironmentPorts['stormGeodeSystem'];
+    pastelNebulaSystem: LevelEnvironmentPorts['pastelNebulaSystem'];
+
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
         voidRootBall: 8,
@@ -116,16 +116,34 @@ export class LevelManager {
         this.onLevelStart = options.onLevelStart;
         this.onUpdateLevelDisplay = options.onUpdateLevelDisplay;
 
+        this.particleSystem = options.env.particleSystem;
+        this.juiceManager = options.env.juiceManager;
+        this.lightningBoltSystem = options.env.lightningBoltSystem;
+        this.crystalChimeManager = options.env.crystalChimeManager;
+        this.nebulaSystem = options.env.nebulaSystem;
+        this.asteroidFieldSystem = options.env.asteroidFieldSystem;
+        this.waterfallSystem = options.env.waterfallSystem;
+        this.industrialSystem = options.env.industrialSystem;
+        this.biologicalSystem = options.env.biologicalSystem;
+        this.meteorShowerSystem = options.env.meteorShowerSystem;
+        this.cosmicDustSystem = options.env.cosmicDustSystem;
+        this.planetaryHorizonSystem = options.env.planetaryHorizonSystem;
+        this.blackHoleSystem = options.env.blackHoleSystem;
+        this.reEntrySystem = options.env.reEntrySystem;
+        this.chromaShiftSystem = options.env.chromaShiftSystem;
+        this.stormGeodeSystem = options.env.stormGeodeSystem;
+        this.pastelNebulaSystem = options.env.pastelNebulaSystem;
+
         this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
 
-        lightningBoltSystem.onBoltStrike = (pos, color) => {
+        this.lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
             this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
 
             // Add impact effects: subtle screen shake and spark particles
-            juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
-            particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
+            this.juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
+            this.particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
         };
         this.godRaySystem = options.godRaySystem;
         this.auroraSystem = options.auroraSystem;
@@ -142,10 +160,15 @@ export class LevelManager {
         this.objectDensityMultiplier = 1.0;
     }
 
+    /** Refresh deferred env system refs after async chunk install. */
+    installEnvironmentSystems(systems: Partial<LevelEnvironmentPorts>): void {
+        Object.assign(this, systems);
+    }
+
     setObjectDensityMultiplier(multiplier: number) {
         this.objectDensityMultiplier = Math.min(1.0, Math.max(0.25, multiplier));
         if (this.baseAsteroidDensity > 0) {
-            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
+            this.asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
         }
         const cfg = this.config[this.currentLevel];
         if (cfg) applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
@@ -156,12 +179,12 @@ export class LevelManager {
         this.fastLaneActive = true;
         this.fastLaneDensityFactor = 0.35;
         if (this.baseAsteroidDensity > 0) {
-            asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
+            this.asteroidFieldSystem.setDensity(this.baseAsteroidDensity * this.objectDensityMultiplier * this.fastLaneDensityFactor);
         }
     }
 
     setMagicActive(active: boolean) {
-        nebulaSystem.setMagicActive(active);
+        this.nebulaSystem.setMagicActive(active);
     }
 
 
@@ -189,7 +212,7 @@ export class LevelManager {
         }
 
         this.atmosphereSystem.transitionTo(cfg.skyColors.top, cfg.skyColors.bottom, transitionDuration);
-        nebulaSystem.setSkyColors(cfg.skyColors.top, cfg.skyColors.bottom);
+        this.nebulaSystem.setSkyColors(cfg.skyColors.top, cfg.skyColors.bottom);
 
         if (this.scene.fog) {
             if (this.scene.fog instanceof THREE.Fog) {
@@ -213,17 +236,17 @@ export class LevelManager {
 
         this.cloudSystem.setLevel(cfg);
 
-        chromaShiftSystem.clearRocks();
+        this.chromaShiftSystem.clearRocks();
         if (cfg.chromaShiftDensity && cfg.chromaShiftDensity > 0) {
-            chromaShiftSystem.activate();
+            this.chromaShiftSystem.activate();
         } else {
-            chromaShiftSystem.deactivate();
+            this.chromaShiftSystem.deactivate();
         }
 
-        if (cfg.stormGeodeDensity && cfg.stormGeodeDensity > 0 && stormGeodeSystem) {
-            stormGeodeSystem.activate(cfg.stormGeodeDensity);
-        } else if (stormGeodeSystem) {
-            stormGeodeSystem.deactivate();
+        if (cfg.stormGeodeDensity && cfg.stormGeodeDensity > 0 && this.stormGeodeSystem) {
+            this.stormGeodeSystem.activate(cfg.stormGeodeDensity);
+        } else if (this.stormGeodeSystem) {
+            this.stormGeodeSystem.deactivate();
         }
 
         const environments = cfg.environments || {};
@@ -272,7 +295,7 @@ export class LevelManager {
         this.pinwheelManager.clear();
         this.windChimeManager.clear();
         this.solarSailFernManager.clear();
-        crystalChimeManager.clear();
+        this.crystalChimeManager.clear();
         if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
             this.pinwheelManager.spawnField(
                 dreamyStart,
@@ -312,35 +335,35 @@ export class LevelManager {
         maybeStreamFoliage(this, cameraX);
         this.cleanupBehind(cameraX);
         this.atmosphereSystem.update(delta, new THREE.Vector3(cameraX, 0, 0));
-        nebulaSystem.setSkyColors(
+        this.nebulaSystem.setSkyColors(
             this.atmosphereSystem.getTopColor().getHex(),
             this.atmosphereSystem.getBottomColor().getHex()
         );
         this.cloudSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
-        lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
+        this.lightningBoltSystem.update(delta, cameraX, speed, this.getPlayer()?.position);
 
         const dbg = this.debugSystem;
         const enabled = (name: string) => !dbg || dbg.isEnabled(name);
         const playerPos = this.getPlayer()?.position;
 
-        waterfallSystem.update(delta, cameraX, playerPos);
-        industrialSystem.update(delta, cameraX, playerPos);
-        if (enabled('biological')) biologicalSystem.update(delta, cameraX);
-        if (enabled('pastelNebula')) pastelNebulaSystem.update(delta, cameraX, playerPos);
+        this.waterfallSystem.update(delta, cameraX, playerPos);
+        this.industrialSystem.update(delta, cameraX, playerPos);
+        if (enabled('biological')) this.biologicalSystem.update(delta, cameraX);
+        if (enabled('pastelNebula')) this.pastelNebulaSystem.update(delta, cameraX, playerPos);
         if (enabled('nebula') || enabled('nebulaRibbons') || enabled('cosmicDust')) {
-            nebulaSystem.update(delta, cameraX, playerPos, speed);
+            this.nebulaSystem.update(delta, cameraX, playerPos, speed);
         }
-        if (enabled('meteorShower')) meteorShowerSystem.update(delta, cameraX, playerPos);
-        if (enabled('cosmicDust')) cosmicDustSystem.update(delta, cameraX, playerPos);
-        if (enabled('asteroidField') && asteroidFieldSystem) asteroidFieldSystem.update(delta, cameraX, playerPos);
-        if (enabled('planetaryHorizon') && planetaryHorizonSystem) planetaryHorizonSystem.update(cameraX, delta);
+        if (enabled('meteorShower')) this.meteorShowerSystem.update(delta, cameraX, playerPos);
+        if (enabled('cosmicDust')) this.cosmicDustSystem.update(delta, cameraX, playerPos);
+        if (enabled('asteroidField') && this.asteroidFieldSystem) this.asteroidFieldSystem.update(delta, cameraX, playerPos);
+        if (enabled('planetaryHorizon') && this.planetaryHorizonSystem) this.planetaryHorizonSystem.update(cameraX, delta);
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
-        if (blackHoleSystem) blackHoleSystem.update(delta, cameraX, playerPos);
-        if (enabled('chromaShift')) chromaShiftSystem.update(delta, playerPos);
-        if (enabled('stormGeodes') && stormGeodeSystem) stormGeodeSystem.update(delta, cameraX, playerPos);
+        if (this.blackHoleSystem) this.blackHoleSystem.update(delta, cameraX, playerPos);
+        if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
+        if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
-        if (enabled('reEntry') && reEntrySystem) reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
+        if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
         if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed, playerPos);
     }

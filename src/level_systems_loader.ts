@@ -1,13 +1,10 @@
 import { game } from './game_runtime';
-import { particleSystem, debrisSystem } from './game_systems';
-import {
-    installLevelEnvironmentSystems,
-    type LevelEnvironmentSystemExports
-} from './game_systems';
+import type { LevelEnvironmentSystemExports } from './create_game_systems';
 import type { LevelEnvironmentSystems } from './level_environment_systems';
 import type { DeferredManagers } from './deferred_managers';
 import { getLevelSpan } from './depth_layers';
 import { LEVEL_DISTANCE_BOUNDARIES } from './level_config';
+import { bindEnvironmentSystems } from './environment';
 
 let environmentPromise: Promise<LevelEnvironmentSystems> | null = null;
 let managersPromise: Promise<DeferredManagers> | null = null;
@@ -17,9 +14,20 @@ const prefetchedLevels = new Set<number>();
 function loadEnvironmentSystems(): Promise<LevelEnvironmentSystems> {
     if (!environmentPromise) {
         environmentPromise = import('./level_environment_systems').then((mod) => {
-            const systems = mod.createLevelEnvironmentSystems();
-            installLevelEnvironmentSystems(systems as LevelEnvironmentSystemExports);
+            const systems = mod.createLevelEnvironmentSystems({
+                weaponLightManager: game.weaponLightManager,
+                audioSystem: game.audioSystem,
+                lightningBoltSystem: game.lightningBoltSystem
+            });
             Object.assign(game, systems);
+            bindEnvironmentSystems({
+                particleSystem: game.particleSystem,
+                weaponSystem: game.weaponSystem,
+                liquidMetalSystem: game.liquidMetalSystem
+            });
+            if (game.levelManager) {
+                game.levelManager.installEnvironmentSystems(systems);
+            }
             return systems;
         });
     }
@@ -29,7 +37,7 @@ function loadEnvironmentSystems(): Promise<LevelEnvironmentSystems> {
 function loadDeferredManagers(): Promise<DeferredManagers> {
     if (!managersPromise) {
         managersPromise = import('./deferred_managers').then((mod) => {
-            const managers = mod.createDeferredManagers(particleSystem, debrisSystem);
+            const managers = mod.createDeferredManagers(game.particleSystem, game.debrisSystem);
             game.ghostDebrisSystem = managers.ghostDebrisSystem;
             game.voidJellyfishSystem = managers.voidJellyfishSystem;
             game.industrialGeometryManager = managers.industrialGeometryManager;
@@ -95,3 +103,6 @@ export function maybePrefetchNextLevel(playerX: number, currentLevel: number): v
 export function isGameplayReady(): boolean {
     return gameplayReadyPromise !== null;
 }
+
+// Keep type available for deferred-chunk typing.
+export type { LevelEnvironmentSystemExports };

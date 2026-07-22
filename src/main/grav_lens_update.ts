@@ -6,7 +6,6 @@ import * as THREE from 'three';
 import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { gravLensManager, upgradeSystem } from '../game_systems';
 import { GravLensManager } from '../grav_lens';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
@@ -14,7 +13,7 @@ import { updateHealthDisplay } from '../ui_controls';
 import { handleGameOver } from './obstacle_setup';
 
 export function updateGravLensSystems(delta: number): void {
-    if (!player || gravLensManager.getLenses().length === 0) return;
+    if (!player || game.gravLensManager.getLenses().length === 0) return;
 
     if (playerState.gravLensBoostTimer > 0) {
         playerState.gravLensBoostTimer = Math.max(0, playerState.gravLensBoostTimer - delta);
@@ -25,13 +24,13 @@ export function updateGravLensSystems(delta: number): void {
 
     const projectiles = game.weaponSystem.getActiveProjectiles();
     if (projectiles.length > 0) {
-        gravLensManager.handleProjectileHits(projectiles, upgradeSystem.activeUpgrade, (position) => {
+        game.gravLensManager.handleProjectileHits(projectiles, game.upgradeSystem.activeUpgrade, (position) => {
             game.juiceManager.showFloatingText('Detuned!', position, '#00ffff', 20);
             game.particleSystem.emit(position, 0x00ffff, 10, 3.0, 0.5);
         });
     }
 
-    const result = gravLensManager.update(
+    const result = game.gravLensManager.update(
         delta,
         {
             position: player.position,
@@ -111,7 +110,7 @@ export function updateGravLensSystems(delta: number): void {
     );
     player.position.x += result.forceX * 0.15;
 
-    const crushIntensity = result.inCrushZone ? 0.85 : gravLensManager.isInInfluence() ? 0.12 : 0;
+    const crushIntensity = result.inCrushZone ? 0.85 : game.gravLensManager.isInInfluence() ? 0.12 : 0;
     game.juiceManager.setGravLensDistortion(crushIntensity);
 }
 
@@ -119,12 +118,12 @@ export function spawnGravLensCorridorsForLevel(
     levelIndex: number,
     cfg: { gravLensCorridors?: { startX: number; lenses: { offsetX: number; y: number; z?: number }[] }[] }
 ): void {
-    gravLensManager.clear();
+    game.gravLensManager.clear();
     game.hudManager.hideGravLensHud();
     game.juiceManager.setGravLensDistortion(0);
 
     if (!cfg.gravLensCorridors?.length) return;
     for (const corridor of cfg.gravLensCorridors) {
-        gravLensManager.spawnCorridor(corridor);
+        game.gravLensManager.spawnCorridor(corridor);
     }
 }

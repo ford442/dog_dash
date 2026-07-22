@@ -5,6 +5,8 @@ import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
 import type { GeologicalSpawners, GeologicalCounts } from './types';
+import type { ChromaShiftSystem } from '../chroma_shift';
+import type { CrystalChimeManager } from '../crystal_chimes';
 
 /** Surface needed by foliage populate/stream helpers. */
 export interface LevelFoliageHost {
@@ -18,6 +20,8 @@ export interface LevelFoliageHost {
     pinwheelManager: PinwheelFloraManager;
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
+    chromaShiftSystem: ChromaShiftSystem;
+    crystalChimeManager: CrystalChimeManager;
     spawners: GeologicalSpawners;
     geologicalCounts: GeologicalCounts;
     readonly GEOLOGICAL_SPAWN_CAPS: {

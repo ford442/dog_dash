@@ -2,7 +2,7 @@
 // ----------------------------------------------------------------------------
 // Previously this file created its own THREE.Scene + renderer + camera + lights
 // at module load time. That produced a SECOND invisible scene. Objects added
-// via environment.ts / game_systems.ts / player_loader.ts were never rendered.
+// via environment.ts / create_game_systems.ts / player_loader.ts were never rendered.
 //
 // All scene, camera, renderer, and light objects now come from the single
 // source of truth in scene_context.ts (created once, used by main.ts render loop).
