@@ -22,17 +22,19 @@ function resolveChromeExecutable(): string | undefined {
 
 const chromePath = resolveChromeExecutable();
 
+// Prefer system Chrome (cloud: /usr/local/bin/google-chrome) with SwiftShader flags.
+// Fall back to Playwright's `channel: 'chrome'` when Chrome is on PATH but not at a known path.
+const browserLaunch = chromePath
+    ? { browserName: 'chromium' as const, launchOptions: { executablePath: chromePath, args: SWIFT_SHADER_ARGS } }
+    : { channel: 'chrome' as const, launchOptions: { args: SWIFT_SHADER_ARGS } };
+
 export default defineConfig({
     testDir: './tests',
     timeout: 60_000,
     retries: process.env.CI ? 1 : 0,
     use: {
         baseURL: 'http://127.0.0.1:4173',
-        browserName: 'chromium',
-        launchOptions: {
-            ...(chromePath ? { executablePath: chromePath } : {}),
-            args: SWIFT_SHADER_ARGS,
-        },
+        ...browserLaunch,
     },
     webServer: {
         command: 'npm run preview -- --host 127.0.0.1 --port 4173',
