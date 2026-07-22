@@ -2,6 +2,13 @@
  * Save Manager - LocalStorage persistence for meta-progression
  */
 
+import {
+    type MaterialId,
+    type ResourceInventory,
+    createEmptyInventory,
+    normalizeInventory
+} from './resource_inventory';
+
 export interface PlayerUpgrades {
     maxHealthBonus: number;      // +0 to +2 (max 5 total health)
     fireRateBonus: number;       // 0 to 0.3 (+30%)
@@ -31,6 +38,8 @@ export interface SaveData {
     mapFragments: number;
     /** Quantum Compass HUD upgrade unlocked (full buoy network decoded). */
     quantumCompassUnlocked: boolean;
+    /** Crafting material bag (Plasma Caster economy Phase A). */
+    resources: ResourceInventory;
     version: string;
 }
 
@@ -70,7 +79,7 @@ export class SaveManager {
                 if (parsed.version !== CURRENT_VERSION) {
                     return this.migrateSave(parsed);
                 }
-                return parsed;
+                return this.normalizeSave(parsed);
             }
         } catch (e) {
             console.warn('Failed to load save:', e);
@@ -90,13 +99,33 @@ export class SaveManager {
             architectLoreUnlocked: [],
             mapFragments: 0,
             quantumCompassUnlocked: false,
+            resources: createEmptyInventory(),
+            version: CURRENT_VERSION
+        };
+    }
+
+    /** Fill missing fields on older localStorage payloads without wiping progress. */
+    private normalizeSave(raw: any): SaveData {
+        const base = this.createNewSave();
+        return {
+            ...base,
+            ...raw,
+            upgrades: { ...base.upgrades, ...(raw?.upgrades || {}) },
+            stats: { ...base.stats, ...(raw?.stats || {}) },
+            unlockedLevels: Array.isArray(raw?.unlockedLevels) ? raw.unlockedLevels : base.unlockedLevels,
+            discoveredSpecies: Array.isArray(raw?.discoveredSpecies) ? raw.discoveredSpecies : [],
+            catalogedCreatures: Array.isArray(raw?.catalogedCreatures) ? raw.catalogedCreatures : [],
+            architectLoreUnlocked: Array.isArray(raw?.architectLoreUnlocked) ? raw.architectLoreUnlocked : [],
+            mapFragments: typeof raw?.mapFragments === 'number' ? raw.mapFragments : 0,
+            quantumCompassUnlocked: raw?.quantumCompassUnlocked === true,
+            resources: normalizeInventory(raw?.resources),
             version: CURRENT_VERSION
         };
     }
 
     private migrateSave(oldData: any): SaveData {
-        // Handle version migrations here if needed
-        return this.createNewSave();
+        // Preserve known fields across version bumps; fill gaps via normalize.
+        return this.normalizeSave(oldData);
     }
 
     save(): boolean {
@@ -265,6 +294,45 @@ export class SaveManager {
     unlockQuantumCompass(): boolean {
         if (this.data.quantumCompassUnlocked) return false;
         this.data.quantumCompassUnlocked = true;
+        this.save();
+        return true;
+    }
+
+    // --- Crafting materials (Plasma Caster economy) ---
+    getResources(): ResourceInventory {
+        if (!this.data.resources) {
+            this.data.resources = createEmptyInventory();
+        }
+        return { ...this.data.resources };
+    }
+
+    getMaterialCount(id: MaterialId): number {
+        if (!this.data.resources) this.data.resources = createEmptyInventory();
+        return this.data.resources[id] || 0;
+    }
+
+    /**
+     * Adds crafting materials to the persistent bag.
+     * @returns new total for that material
+     */
+    addMaterial(id: MaterialId, amount: number): number {
+        if (!this.data.resources) this.data.resources = createEmptyInventory();
+        if (!Number.isFinite(amount) || amount === 0) {
+            return this.data.resources[id] || 0;
+        }
+        const next = Math.max(0, (this.data.resources[id] || 0) + Math.floor(amount));
+        this.data.resources[id] = next;
+        this.save();
+        return next;
+    }
+
+    /** Spends materials if the bag has enough. Returns false when short. */
+    spendMaterial(id: MaterialId, amount: number): boolean {
+        if (!this.data.resources) this.data.resources = createEmptyInventory();
+        const need = Math.floor(amount);
+        if (need <= 0) return true;
+        if ((this.data.resources[id] || 0) < need) return false;
+        this.data.resources[id] -= need;
         this.save();
         return true;
     }

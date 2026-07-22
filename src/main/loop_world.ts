@@ -101,12 +101,14 @@ export function updateLoopWorld(delta: number, time: number): void {
             game.levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
             const geoScannables = [
                 ...sporeClouds.map(cloud => cloud.spores),
+                ...jellyMosses,
                 ...vacuumKelps,
                 ...voidRootBalls,
                 ...magmaHearts,
                 ...iceNeedleClusters,
                 ...gravityAnchors,
                 ...liquidMetalBlobs,
+                ...geodes,
                 ...gravLensManager.getScannables(),
                 ...derelictBuoyManager.getScannables(),
                 ...dataMonolithManager.getScannables(),

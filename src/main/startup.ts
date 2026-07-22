@@ -21,6 +21,7 @@ import { playerState, showError } from '../game_config';
 import { LevelManager } from '../level_manager';
 import { CreatureManager } from '../creature_manager';
 import { DiscoveryManager, CreatureCatalogManager } from '../discovery_system';
+import { ResourceHarvester } from '../resource_harvester';
 import { SlingObjectiveManager } from '../sling_objective';
 import { SlingComboManager } from '../sling_combo';
 import { TetherSystem } from '../tether_system';
@@ -337,6 +338,7 @@ export function initializeStartup(): void {
     game.bubbleCoralManager = createBubbleCoralManagerStub();
     game.creatureManager = new CreatureManager({ scene, particleSystem, debrisSystem, audioSystem });
     game.discoveryManager = new DiscoveryManager(saveManager);
+    game.resourceHarvester = new ResourceHarvester(saveManager);
     game.creatureCatalogManager = new CreatureCatalogManager(saveManager);
     game.slingObjectiveManager = new SlingObjectiveManager();
     game.slingComboManager = new SlingComboManager({

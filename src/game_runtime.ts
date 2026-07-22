@@ -9,6 +9,7 @@ import type { TetherSystem } from './tether_system';
 import type { SlingComboManager } from './sling_combo';
 import type { SlingObjectiveManager } from './sling_objective';
 import type { DiscoveryManager, CreatureCatalogManager } from './discovery_system';
+import type { ResourceHarvester } from './resource_harvester';
 import type { CreatureManager } from './creature_manager';
 import type { AquaticLifeManager } from './aquatic_life';
 import type { StarlightKoiManager } from './starlight_koi';
@@ -127,6 +128,7 @@ export interface GameRuntime {
     slingComboManager: SlingComboManager;
     slingObjectiveManager: SlingObjectiveManager;
     discoveryManager: DiscoveryManager;
+    resourceHarvester: ResourceHarvester;
     creatureCatalogManager: CreatureCatalogManager;
     creatureManager: CreatureManager;
     aquaticLifeManager: AquaticLifeManager;
@@ -179,6 +181,8 @@ export interface GameRuntime {
 
     reportComboObjectiveProgress: () => void;
     handleGameOver: () => void;
+    /** Re-attach slingable callbacks after deferred manager swap. */
+    rewireSlingableCallbacks: () => void;
 
     wantsBoost: boolean;
     wasTouchBoosting: boolean;

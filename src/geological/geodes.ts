@@ -310,11 +310,13 @@ export function createNebulaJellyMoss(config: { size: number }) {
 
     mesh.userData = {
         type: 'nebulaJellyMoss',
+        speciesId: 'nebulaJellyMoss',
         radius: config.size,
         health: 10,
         maxHealth: 10,
         isHiding: false,
-        overloadValue: 0.0 // JS tracker
+        overloadValue: 0.0, // JS tracker
+        hitCount: 0
     };
 
     return mesh;
