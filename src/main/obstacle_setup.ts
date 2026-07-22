@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { scene } from '../scene_context';
 import { player } from '../player_loader';
 import { playerState } from '../game_config';
-import { game } from '../game_runtime';
+import { game, type GameContext } from '../game_runtime';
 import { ObstacleSystem } from '../obstacle_system';
 import { updateHealthDisplay } from '../ui_controls';
 import { CANDY_FLAVOR_COLORS } from '../candy_materials';
@@ -25,7 +25,11 @@ export function handleGameOver(): void {
     }, () => location.reload());
 }
 
-export function createObstacleSystem(): ObstacleSystem {
+export function createObstacleSystem(systems: {
+    particleSystem: GameContext['particleSystem'];
+    debrisSystem: GameContext['debrisSystem'];
+    waterfallSystem: GameContext['waterfallSystem'];
+}): ObstacleSystem {
     return new ObstacleSystem({
         scene,
         getPlayer: () => player,
@@ -48,9 +52,9 @@ export function createObstacleSystem(): ObstacleSystem {
         getWasm: () => ({ exports: game.wasmExports, memory: game.wasmMemory }),
         setWasmMemory: (memory) => { game.wasmMemory = memory; },
         sporeClouds,
-        particleSystem: game.particleSystem,
-        debrisSystem: game.debrisSystem,
-        waterfallSystem: game.waterfallSystem,
+        particleSystem: systems.particleSystem,
+        debrisSystem: systems.debrisSystem,
+        waterfallSystem: systems.waterfallSystem,
         getCurrentLevel: () => game.levelManager.currentLevel,
         updateHealthDisplay: () => updateHealthDisplay(playerState),
         gameOver: handleGameOver,

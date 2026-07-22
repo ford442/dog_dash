@@ -1,20 +1,3 @@
-import {
-    blackHoleSystem,
-    waterfallSystem,
-    industrialSystem,
-    chromaShiftSystem,
-    stormGeodeSystem,
-    biologicalSystem,
-    nebulaSystem,
-    cosmicDustSystem,
-    meteorShowerSystem,
-    asteroidFieldSystem,
-    planetaryHorizonSystem,
-    moonPalaceSystem,
-    reEntrySystem,
-    pastelNebulaSystem,
-    lightningBoltSystem
-} from '../game_systems';
 import type {
     LevelConfig,
     LevelEnvironments,
@@ -23,11 +6,11 @@ import type {
     LightningEnvironmentConfig,
     AsteroidFieldEnvironmentConfig
 } from '../level_config';
-import type { EnvironmentPlugin } from './types';
+import type { EnvironmentPlugin, LevelEnvironmentPorts } from './types';
 import { isEnvironmentEnabled } from './types';
 
 /** Systems registry host for environment plugin activation. */
-export interface LevelPluginHost {
+export interface LevelPluginHost extends LevelEnvironmentPorts {
     butterflySwarmSystem: { activate: () => void; deactivate: () => void };
     cloudSystem: { layers: { mesh: { visible: boolean } }[] };
     godRaySystem: { activate: (config: GodRaysEnvironmentConfig) => void; deactivate: () => void };
@@ -37,6 +20,7 @@ export interface LevelPluginHost {
     camera: { position: { x: number } };
     baseAsteroidDensity: number;
     objectDensityMultiplier: number;
+    moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
 }
 
 export function buildEnvironmentPlugins(
@@ -47,8 +31,8 @@ export function buildEnvironmentPlugins(
     return [
         {
             flag: 'pastelNebula',
-            activate: () => pastelNebulaSystem.activate(),
-            deactivate: () => pastelNebulaSystem.deactivate()
+            activate: () => host.pastelNebulaSystem.activate(),
+            deactivate: () => host.pastelNebulaSystem.deactivate()
         },
         {
             flag: 'butterflySwarm',
@@ -57,54 +41,54 @@ export function buildEnvironmentPlugins(
         },
         {
             flag: 'blackHole',
-            activate: (blackHoleConfig) => blackHoleSystem.activate(blackHoleConfig),
-            deactivate: () => blackHoleSystem.deactivate()
+            activate: (blackHoleConfig) => host.blackHoleSystem.activate(blackHoleConfig),
+            deactivate: () => host.blackHoleSystem.deactivate()
         },
         {
             flag: 'industrial',
-            activate: (config: any) => industrialSystem.activate(typeof config === 'object' ? config : undefined),
-            deactivate: () => industrialSystem.deactivate()
+            activate: (config: any) => host.industrialSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.industrialSystem.deactivate()
         },
         {
             flag: 'waterfall',
             activate: () => {
-                waterfallSystem.levelDistance = levelLength;
-                waterfallSystem.activate();
+                host.waterfallSystem.levelDistance = levelLength;
+                host.waterfallSystem.activate();
             },
-            deactivate: () => waterfallSystem.deactivate()
+            deactivate: () => host.waterfallSystem.deactivate()
         },
         {
             flag: 'planetaryHorizon',
             activate: () => {
-                planetaryHorizonSystem.levelDistance = levelLength;
-                planetaryHorizonSystem.activate();
+                host.planetaryHorizonSystem.levelDistance = levelLength;
+                host.planetaryHorizonSystem.activate();
             },
-            deactivate: () => planetaryHorizonSystem.deactivate()
+            deactivate: () => host.planetaryHorizonSystem.deactivate()
         },
         {
             flag: 'moonPalace',
             activate: () => {
-                moonPalaceSystem.levelDistance = levelLength;
-                moonPalaceSystem.activate();
+                host.moonPalaceSystem.levelDistance = levelLength;
+                host.moonPalaceSystem.activate();
             },
-            deactivate: () => moonPalaceSystem.deactivate()
+            deactivate: () => host.moonPalaceSystem.deactivate()
         },
         {
             flag: 'reEntry',
             activate: () => {
-                reEntrySystem.levelDistance = levelLength;
-                reEntrySystem.activate();
+                host.reEntrySystem.levelDistance = levelLength;
+                host.reEntrySystem.activate();
             },
-            deactivate: () => reEntrySystem.deactivate()
+            deactivate: () => host.reEntrySystem.deactivate()
         },
         {
             flag: 'biological',
             activate: () => {
-                biologicalSystem.activate();
+                host.biologicalSystem.activate();
                 host.cloudSystem.layers.forEach(l => { l.mesh.visible = false; });
             },
             deactivate: () => {
-                biologicalSystem.deactivate();
+                host.biologicalSystem.deactivate();
                 const cloudsVisible = (cfg.foliageDensity.cloud ?? 20) > 0;
                 host.cloudSystem.layers.forEach(l => { l.mesh.visible = cloudsVisible; });
             }
@@ -112,25 +96,25 @@ export function buildEnvironmentPlugins(
         {
             flag: 'nebula',
             activate: () => {
-                nebulaSystem.activate();
-                nebulaSystem.activateRibbons();
+                host.nebulaSystem.activate();
+                host.nebulaSystem.activateRibbons();
             },
-            deactivate: () => nebulaSystem.deactivate()
+            deactivate: () => host.nebulaSystem.deactivate()
         },
         {
             flag: 'nebulaRibbons',
-            activate: () => nebulaSystem.activateRibbons(),
-            deactivate: () => nebulaSystem.deactivateRibbons()
+            activate: () => host.nebulaSystem.activateRibbons(),
+            deactivate: () => host.nebulaSystem.deactivateRibbons()
         },
         {
             flag: 'cosmicDust',
             activate: () => {
-                cosmicDustSystem.activate();
-                nebulaSystem.activateRibbons();
+                host.cosmicDustSystem.activate();
+                host.nebulaSystem.activateRibbons();
             },
             deactivate: () => {
-                cosmicDustSystem.deactivate();
-                nebulaSystem.deactivateRibbons();
+                host.cosmicDustSystem.deactivate();
+                host.nebulaSystem.deactivateRibbons();
             }
         },
         {
@@ -145,21 +129,21 @@ export function buildEnvironmentPlugins(
         },
         {
             flag: 'lightning',
-            activate: (config: LightningEnvironmentConfig) => lightningBoltSystem.activate(config),
-            deactivate: () => lightningBoltSystem.deactivate()
+            activate: (config: LightningEnvironmentConfig) => host.lightningBoltSystem.activate(config),
+            deactivate: () => host.lightningBoltSystem.deactivate()
         },
         {
             flag: 'asteroidField',
             activate: (config: AsteroidFieldEnvironmentConfig) => {
-                asteroidFieldSystem.activate();
+                host.asteroidFieldSystem.activate();
                 host.baseAsteroidDensity = config.rate * 0.5;
-                asteroidFieldSystem.setDensity(host.baseAsteroidDensity * host.objectDensityMultiplier);
-                asteroidFieldSystem.setCandyChance(cfg.candyAsteroidChance ?? 0);
-                asteroidFieldSystem.resetPositions(host.camera.position.x);
+                host.asteroidFieldSystem.setDensity(host.baseAsteroidDensity * host.objectDensityMultiplier);
+                host.asteroidFieldSystem.setCandyChance(cfg.candyAsteroidChance ?? 0);
+                host.asteroidFieldSystem.resetPositions(host.camera.position.x);
             },
             deactivate: () => {
                 host.baseAsteroidDensity = 0;
-                asteroidFieldSystem.deactivate();
+                host.asteroidFieldSystem.deactivate();
             }
         },
         {
@@ -174,8 +158,8 @@ export function buildEnvironmentPlugins(
         },
         {
             flag: 'meteorShower',
-            activate: () => meteorShowerSystem.activate(),
-            deactivate: () => meteorShowerSystem.deactivate()
+            activate: () => host.meteorShowerSystem.activate(),
+            deactivate: () => host.meteorShowerSystem.deactivate()
         }
     ];
 }

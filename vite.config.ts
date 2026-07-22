@@ -30,7 +30,10 @@ function isLevelHeavyModule(id: string): boolean {
 }
 
 export default defineConfig({
+    root: '.',
+    publicDir: 'public',
     build: {
+        target: 'es2022',
         rollupOptions: {
             output: {
                 manualChunks(id) {

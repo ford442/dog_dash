@@ -20,8 +20,12 @@ import {
     normalLocal,
     dot
 } from 'three/tsl';
-import { lightningBoltSystem, audioSystem } from './game_systems';
 import { playerState } from './game_config';
+
+export type StormGeodeFxDeps = {
+    playHit?: () => void;
+    onBoltStrike?: ((pos: THREE.Vector3, color: THREE.Color) => void) | null;
+};
 
 /**
  * Creates a TSL material for Storm Geodes.
@@ -54,6 +58,7 @@ function createStormGeodeMaterial(baseColorHex: number, emissiveColorHex: number
 
 export class StormGeodeSystem {
     scene: THREE.Scene;
+    private readonly fx: StormGeodeFxDeps;
     active: boolean = false;
     mesh: THREE.InstancedMesh;
     dummy: THREE.Object3D;
@@ -66,8 +71,9 @@ export class StormGeodeSystem {
     rotations: Float32Array;
     timers: Float32Array; // Timer for lightning arcs
 
-    constructor(scene: THREE.Scene) {
+    constructor(scene: THREE.Scene, fx: StormGeodeFxDeps = {}) {
         this.scene = scene;
+        this.fx = fx;
 
         const geo = new THREE.IcosahedronGeometry(1, 1);
         const mat = createStormGeodeMaterial(0x222233, 0x4488ff);
@@ -202,16 +208,16 @@ export class StormGeodeSystem {
                         ));
                     }
 
-                    if (lightningBoltSystem && lightningBoltSystem.onBoltStrike) {
+                    if (this.fx.onBoltStrike) {
                          // Play a sound (if near)
                          if (pos.distanceTo(new THREE.Vector3(cameraX, 0, 0)) < 80) {
-                             audioSystem.play('hit'); // Reuse hit sound or lightning sound if available
+                             this.fx.playHit?.();
                          }
 
                          // Temporarily change bolt origin to the geode
                          // But LightningBoltSystem generates full V shapes in screen space
                          // Actually, we can just trigger a general strike near the geode
-                         lightningBoltSystem.onBoltStrike(pos, new THREE.Color(0x4488ff));
+                         this.fx.onBoltStrike(pos, new THREE.Color(0x4488ff));
                     }
                 }
             }

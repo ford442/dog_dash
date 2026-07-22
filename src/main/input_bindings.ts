@@ -102,6 +102,17 @@ export function setupInputBindings(): void {
                 document.body.appendChild(game.bestiaryUI);
             }
         }
+        if (e.code === 'KeyJ') {
+            if (game.hudManager.isJourneyMapOpen()) {
+                game.hudManager.hideJourneyMapOverlay();
+                setIsGamePaused(false);
+            } else {
+                setIsGamePaused(true);
+                game.hudManager.showJourneyMapOverlay('pause', {
+                    onClose: () => setIsGamePaused(false)
+                });
+            }
+        }
         if (e.code === 'KeyK') {
             if (architectCodexUI) {
                 architectCodexUI.remove();

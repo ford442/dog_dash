@@ -27,12 +27,27 @@ Useful URL flags:
 
 See `docs/RENDERER_FALLBACK.md` for the implementation details.
 
+## Typecheck gate
+
+Strict TypeScript is gated with a **baseline ratchet** (not zero-error yet):
+
+- `npm run typecheck` — raw `tsc --noEmit` (reports all current errors)
+- `npm run typecheck:ci` — fail only on errors newer than `.github/typecheck-baseline.txt`
+- `npm run typecheck:baseline:update` — after fixing errors, ratchet the baseline down
+- `npm run check` — local pre-PR gate: brace balance + typecheck ratchet
+
+CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci` then `npm run build` on PRs/pushes to `main`. Prefer `npm run check` locally before opening a PR.
+
+## Composition root
+
+Gameplay systems are constructed in `createGameSystems()` / bootstrap (`src/main/startup.ts`), not at import time. Shared state is the typed `GameContext` on `game` (`src/game_runtime.ts`). Domain modules take ports — see `docs/GAME_CONTEXT.md`.
+
 ## Cursor Cloud specific instructions
 
-Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, brace-check gate `node tools/check_braces.cjs`). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no lint or test suite.
+Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + typecheck ratchet). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint or unit-test suite; quality gates are brace check, typecheck baseline, production build, and Playwright smoke.
 
 Non-obvious caveats for headless/cloud verification:
 
 - The cloud VM has no GPU and no WebGPU adapter, so the default WebGPU path renders nothing. Always open the app with `?renderer=webgl` to force the WebGL2 fallback.
 - Even with `?renderer=webgl`, a normally-launched headless/virtual Chrome shows a black canvas. Launch Chrome with software-GL flags so WebGL2 actually rasterizes: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Confirm via `window.usingWebGL === true`. Under SwiftShader, TSL/node-material shaders fall back to plain standard materials (per `docs/RENDERER_FALLBACK.md`), so visuals look flatter/grayer than on a real GPU — this is expected, not a regression.
-- Playwright is already a dev dependency; for screenshots/video point `executablePath` at the system Chrome (`/usr/local/bin/google-chrome`) and pass the flags above. Video capture additionally needs `npx playwright install ffmpeg` (one-off, not part of the update script).
+- Playwright smoke tests (`npm run test:smoke` / `npx playwright test`) exercise the production build on `/?renderer=webgl` with the SwiftShader flags above — see [README.md — Testing](README.md#testing). `playwright.config.ts` prefers system Chrome (`/usr/local/bin/google-chrome` on cloud) via `PLAYWRIGHT_CHROME_PATH` or `channel: 'chrome'`. Video capture additionally needs `npx playwright install ffmpeg` (one-off, not part of the update script).

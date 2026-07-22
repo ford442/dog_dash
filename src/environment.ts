@@ -23,7 +23,29 @@ import {
 } from './geological';
 import { createSolarSail, updateSolarSail } from './foliage';
 import { createSubwooferLotus, createFiberOpticWillow, createGlowingFlower } from './foliage';
-import { particleSystem, weaponSystem, liquidMetalSystem } from './game_systems';
+import type { ParticleSystem } from './particles';
+import type { WeaponSystem } from './weapons';
+import type { LiquidMetalSystem } from './geological';
+
+/** Injected by bootstrap — environment never imports composition-root singletons. */
+export type EnvironmentSystems = {
+    particleSystem: ParticleSystem;
+    weaponSystem: WeaponSystem;
+    liquidMetalSystem: LiquidMetalSystem;
+};
+
+let envSystems: EnvironmentSystems | null = null;
+
+export function bindEnvironmentSystems(systems: EnvironmentSystems): void {
+    envSystems = systems;
+}
+
+function requireEnvSystems(): EnvironmentSystems {
+    if (!envSystems) {
+        throw new Error('Environment systems not bound — call bindEnvironmentSystems from bootstrap');
+    }
+    return envSystems;
+}
 
 // =============================================================================
 // GEOLOGICAL OBJECTS & ANOMALIES (single copy — see scene_context + main.ts)
@@ -49,6 +71,7 @@ export const geodes: THREE.Group[] = [];
 export function createGeodeAtPosition(x: number, y: number, z: number) {
     const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
     geode.position.set(x, y, z);
+    geode.userData.speciesId = 'fracturedGeode';
     scene.add(geode);
     geodes.push(geode);
     return geode;
@@ -58,11 +81,12 @@ export function createGeodeAtPosition(x: number, y: number, z: number) {
 export const chromaRocks: THREE.Group[] = [];
 
 // Nebula Jelly-Moss - floating gelatinous organisms with fractal moss
-export const jellyMosses: THREE.Group[] = [];
+export const jellyMosses: THREE.Mesh[] = [];
 
 export function createJellyMossAtPosition(x: number, y: number, z: number, size?: number) {
     const jellyMoss = createNebulaJellyMoss({ size: size || 2 + Math.random() * 8 });
     jellyMoss.position.set(x, y, z);
+    jellyMoss.userData.speciesId = 'nebulaJellyMoss';
     scene.add(jellyMoss);
     jellyMosses.push(jellyMoss);
     return jellyMoss;
@@ -124,7 +148,7 @@ export function createIceNeedleClusterAtPosition(x: number, y: number, z: number
 export const liquidMetalBlobs: THREE.Object3D[] = [];
 
 export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
-    const blob = liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
+    const blob = requireEnvSystems().liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
     blob.group.userData.speciesId = 'liquidMetalBlob';
     liquidMetalBlobs.push(blob.group);
     return blob;
@@ -318,7 +342,7 @@ export function updateGeologicalObjects(delta: number, time: number, cameraPos: 
                 // Check for Explosion
                 if (jellyMoss.userData.overloadValue >= 1.0) {
                     // BOOM
-                    destroyNebulaJellyMoss(jellyMoss, scene, particleSystem);
+                    destroyNebulaJellyMoss(jellyMoss, scene, requireEnvSystems().particleSystem);
 
                     // Remove from list
                     jellyMosses.splice(i, 1);
@@ -400,6 +424,7 @@ export function updateGeologicalObjects(delta: number, time: number, cameraPos: 
     iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
 
     // Update Liquid Metal System (Physics & Collisions)
+    const { liquidMetalSystem, weaponSystem } = requireEnvSystems();
     liquidMetalSystem.update(delta);
     if (player && weaponSystem) {
         liquidMetalSystem.checkCollisions(weaponSystem.getActiveProjectiles());

@@ -1,5 +1,7 @@
 import { scene, camera } from './scene_context';
-import { weaponLightManager } from './game_systems';
+import type { WeaponLightManager } from './lighting';
+import type { AudioSystem } from './audio_system';
+import type { LightningBoltSystem } from './lightning_bolt';
 import { ReEntrySystem } from './reentry';
 import { WaterfallSystem } from './waterfall';
 import { MeteorShowerSystem } from './meteor_shower';
@@ -14,6 +16,12 @@ import { MoonPalaceSystem } from './moon_palace';
 import { ChromaShiftSystem } from './chroma_shift';
 import { StormGeodeSystem } from './storm_geodes';
 import { BlackHoleSystem } from './black_hole';
+
+export type LevelEnvironmentSystemsDeps = {
+    weaponLightManager: WeaponLightManager;
+    audioSystem: AudioSystem;
+    lightningBoltSystem: LightningBoltSystem;
+};
 
 export interface LevelEnvironmentSystems {
     reEntrySystem: ReEntrySystem;
@@ -33,7 +41,8 @@ export interface LevelEnvironmentSystems {
 }
 
 /** Construct level-heavy environment systems (async chunk entry). */
-export function createLevelEnvironmentSystems(): LevelEnvironmentSystems {
+export function createLevelEnvironmentSystems(deps: LevelEnvironmentSystemsDeps): LevelEnvironmentSystems {
+    const { weaponLightManager, audioSystem, lightningBoltSystem } = deps;
     const reEntrySystem = new ReEntrySystem(scene, camera);
     const waterfallSystem = new WaterfallSystem(scene, camera, weaponLightManager);
     const meteorShowerSystem = new MeteorShowerSystem(scene, weaponLightManager);
@@ -46,7 +55,10 @@ export function createLevelEnvironmentSystems(): LevelEnvironmentSystems {
     const planetaryHorizonSystem = new PlanetaryHorizonSystem(scene, camera);
     const moonPalaceSystem = new MoonPalaceSystem(scene, camera, weaponLightManager);
     const chromaShiftSystem = new ChromaShiftSystem(scene);
-    const stormGeodeSystem = new StormGeodeSystem(scene);
+    const stormGeodeSystem = new StormGeodeSystem(scene, {
+        playHit: () => audioSystem.play('hit'),
+        onBoltStrike: (pos, color) => lightningBoltSystem.onBoltStrike?.(pos, color)
+    });
     const blackHoleSystem = new BlackHoleSystem(scene);
 
     return {

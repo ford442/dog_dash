@@ -23,7 +23,6 @@ import { updateCamera } from './camera_system';
 import { updateShadowQuality, updateShadowCulling } from './render_helpers';
 import { updateGravLensSystems } from './grav_lens_update';
 import { updateArtifacts } from './artifact_update';
-import { gravLensManager, derelictBuoyManager, dataMonolithManager } from '../game_systems';
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
@@ -101,15 +100,17 @@ export function updateLoopWorld(delta: number, time: number): void {
             game.levelManager.update(delta, camera.position.x, playerState.autoScrollSpeed, isFiringProxy, new THREE.Vector3(1, 0, 0));
             const geoScannables = [
                 ...sporeClouds.map(cloud => cloud.spores),
+                ...jellyMosses,
                 ...vacuumKelps,
                 ...voidRootBalls,
                 ...magmaHearts,
                 ...iceNeedleClusters,
                 ...gravityAnchors,
                 ...liquidMetalBlobs,
-                ...gravLensManager.getScannables(),
-                ...derelictBuoyManager.getScannables(),
-                ...dataMonolithManager.getScannables(),
+                ...geodes,
+                ...game.gravLensManager.getScannables(),
+                ...game.derelictBuoyManager.getScannables(),
+                ...game.dataMonolithManager.getScannables(),
             ];
             game.discoveryManager.update(player.position, [
                 ...game.levelManager.levelObjects,

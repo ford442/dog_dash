@@ -15,8 +15,23 @@ import type { SolarSailFernManager } from '../solar_sail_ferns';
 import type { CastleBackgroundManager } from '../cloud_castles';
 import type { CandyBeltManager } from '../candy_obstacles';
 import type { IndustrialGeometryManager } from '../industrial_geometry';
-import type { CloudSystem } from '../clouds';
-import type { AtmosphereSystem } from '../sky';
+import type { ParticleSystem } from '../particles';
+import type { JuiceManager } from '../juice_effects';
+import type { LightningBoltSystem } from '../lightning_bolt';
+import type { CrystalChimeManager } from '../crystal_chimes';
+import type { NebulaSystem } from '../nebula';
+import type { AsteroidFieldSystem } from '../asteroid_field';
+import type { WaterfallSystem } from '../waterfall';
+import type { IndustrialBackgroundSystem } from '../industrial_background';
+import type { BiologicalBackgroundSystem } from '../biological_background';
+import type { MeteorShowerSystem } from '../meteor_shower';
+import type { CosmicDustSystem } from '../cosmic_dust';
+import type { PlanetaryHorizonSystem } from '../planetary_horizon';
+import type { BlackHoleSystem } from '../black_hole';
+import type { ReEntrySystem } from '../reentry';
+import type { ChromaShiftSystem } from '../chroma_shift';
+import type { StormGeodeSystem } from '../storm_geodes';
+import type { PastelNebulaSystem } from '../pastel_nebula';
 
 export type EnvironmentPlugin<K extends keyof LevelEnvironments = keyof LevelEnvironments> = {
     flag: K;
@@ -53,6 +68,27 @@ export type GeologicalCounts = {
     geodes: () => number;
 };
 
+/** Level-environment systems injected from GameContext (not imported as singletons). */
+export type LevelEnvironmentPorts = {
+    particleSystem: ParticleSystem;
+    juiceManager: JuiceManager;
+    lightningBoltSystem: LightningBoltSystem;
+    crystalChimeManager: CrystalChimeManager;
+    nebulaSystem: NebulaSystem;
+    asteroidFieldSystem: AsteroidFieldSystem;
+    waterfallSystem: WaterfallSystem;
+    industrialSystem: IndustrialBackgroundSystem;
+    biologicalSystem: BiologicalBackgroundSystem;
+    meteorShowerSystem: MeteorShowerSystem;
+    cosmicDustSystem: CosmicDustSystem;
+    planetaryHorizonSystem: PlanetaryHorizonSystem;
+    blackHoleSystem: BlackHoleSystem;
+    reEntrySystem: ReEntrySystem;
+    chromaShiftSystem: ChromaShiftSystem;
+    stormGeodeSystem: StormGeodeSystem;
+    pastelNebulaSystem: PastelNebulaSystem;
+};
+
 export type LevelManagerOptions = {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
@@ -76,4 +112,5 @@ export type LevelManagerOptions = {
     geologicalCounts: GeologicalCounts;
     onLevelStart?: (cfg: LevelConfig) => void;
     onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
+    env: LevelEnvironmentPorts;
 };

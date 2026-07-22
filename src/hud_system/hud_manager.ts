@@ -14,12 +14,25 @@ import {
     updateHighScoreDisplay
 } from './hud_elements';
 import { HUDScreens } from './hud_screens';
+import {
+    showJourneyMap,
+    hideJourneyMap,
+    isJourneyMapOpen,
+    createJourneyMapSnapshot,
+    type JourneyMapMode,
+    type JourneyMapSnapshot
+} from '../journey_map';
 
 export class HUDManager {
     private saveManager: SaveManager;
     private audioSystem: AudioSystem;
     private elements: HUDElementsBuilder;
     private screens: HUDScreens;
+
+    /** Optional providers filled by game bootstrap for journey map data. */
+    getJourneyLevel?: () => number;
+    getRescuedFriendCount?: () => number;
+    getCompletedChapters?: () => number[];
 
     private score: number = 0;
     private distance: number = 0;
@@ -154,6 +167,34 @@ export class HUDManager {
         this.updateGravLensApproach(0, false);
         const el = this.elements.gravLensGrade;
         if (el) el.style.opacity = '0';
+    }
+
+    /**
+     * HUD Resource Pop — shows last collected craft material with juice animation
+     * (float up, scale 1→1.5→0.8, rotate 360° per plan §IV).
+     */
+    showResourcePop(materialName: string, amount: number, color: string = COLORS.gold): void {
+        const amountLabel = amount > 1 ? ` ×${amount}` : '';
+        const labelText = `${materialName}${amountLabel}`;
+
+        const last = this.elements.lastMaterialLabel;
+        if (last) {
+            last.textContent = `✦ ${labelText}`;
+            last.style.background = `linear-gradient(135deg, ${color}aa, ${COLORS.mint})`;
+            last.style.opacity = '1';
+            last.style.animation = 'none';
+            void last.offsetWidth;
+            last.style.animation = 'resource-pop-hud 1.6s ease-out forwards';
+        }
+
+        const pop = this.elements.resourcePopDisplay;
+        if (pop) {
+            pop.textContent = `+ ${labelText}`;
+            pop.style.color = color;
+            pop.style.animation = 'none';
+            void pop.offsetWidth;
+            pop.style.animation = 'resource-pop 1.35s ease-out forwards';
+        }
     }
 
     setObjectiveLabel(text: string): void {
@@ -398,7 +439,9 @@ export class HUDManager {
     }
 
     showPauseMenu(onResume: () => void, onRestart: () => void): void {
-        this.screens.showPauseMenu(onResume, onRestart);
+        this.screens.showPauseMenu(onResume, onRestart, {
+            onOpenJourneyMap: () => this.showJourneyMapOverlay('pause')
+        });
     }
 
     hidePauseMenu(): void {
@@ -406,7 +449,41 @@ export class HUDManager {
     }
 
     showVictoryScreen(stats: GameStats): void {
-        this.screens.showVictoryScreen(stats);
+        this.screens.showVictoryScreen(stats, {
+            onOpenJourneyMap: () => this.showJourneyMapOverlay('victory')
+        });
+        // Acceptance: map visible after victory (2D overlay above the card).
+        this.showJourneyMapOverlay('victory');
+    }
+
+    /** Open the Moon Journey Map (2D DOM overlay — safe for WebGL2 fallback). */
+    showJourneyMapOverlay(
+        mode: JourneyMapMode = 'pause',
+        opts?: { completedChapter?: number; autoCloseMs?: number; onClose?: () => void }
+    ): void {
+        const snapshot = this.buildJourneySnapshot();
+        showJourneyMap({
+            mode,
+            snapshot,
+            completedChapter: opts?.completedChapter,
+            autoCloseMs: opts?.autoCloseMs,
+            onClose: opts?.onClose
+        });
+    }
+
+    hideJourneyMapOverlay(): void {
+        hideJourneyMap();
+    }
+
+    isJourneyMapOpen(): boolean {
+        return isJourneyMapOpen();
+    }
+
+    buildJourneySnapshot(): JourneyMapSnapshot {
+        const currentLevel = this.getJourneyLevel?.() ?? 1;
+        const rescuedCount = this.getRescuedFriendCount?.() ?? 0;
+        const completedLevels = this.getCompletedChapters?.();
+        return createJourneyMapSnapshot(this.saveManager, currentLevel, rescuedCount, completedLevels);
     }
 
     showGameOverScreen(stats: GameStats, onRestart: () => void): void {
@@ -526,6 +603,7 @@ export class HUDManager {
         if (this.screens.pauseMenu) this.screens.hidePauseMenu();
         if (this.screens.victoryScreen) this.screens.victoryScreen.remove();
         if (this.screens.gameOverScreen) this.screens.gameOverScreen.remove();
+        hideJourneyMap();
     }
 }
 

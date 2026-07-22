@@ -1,8 +1,8 @@
 /**
  * Touch Controls Integration Example for Dog Dash
- * 
- * This file shows how to integrate touch controls into main.ts
- * Copy these code snippets into the appropriate locations in main.ts
+ *
+ * Documentation-only: copy snippets into `src/main.ts` as needed.
+ * See also `docs/TOUCH_CONTROLS.md`.
  */
 
 // =============================================================================
@@ -10,15 +10,15 @@
 // =============================================================================
 
 /*
-import { 
-    TouchControlsManager, 
-    ControlMode, 
+import {
+    TouchControlsManager,
+    ControlMode,
     TouchInput,
     detectTouchDevice,
     getRecommendedControlMode,
     isTouchPrimary
 } from './touch_controls';
-import { 
+import {
     createTouchSettingsButton,
     showTouchSettings,
     loadTouchSettings
@@ -70,11 +70,11 @@ let isMovingDown = keys.left;              // A or Left arrow
 if (touchControls) {
     const touchInput = touchControls.getInput();
     touchControls.update(); // Update touch controls each frame
-    
+
     // Combine keyboard and touch input
     if (touchInput.vertical > 0.1) isMovingUp = true;
     if (touchInput.vertical < -0.1) isMovingDown = true;
-    
+
     // Handle boost from touch
     if (touchInput.boost) {
         // Apply boost effect
@@ -83,13 +83,13 @@ if (touchControls) {
             CONFIG.player.maxSpeedY * 2
         );
     }
-    
+
     // Handle fire from touch
     if (touchInput.fire) {
         const fireDirection = new THREE.Vector3(1, 0, 0);
         weaponSystem.fire(player.position, fireDirection);
     }
-    
+
     // Handle pause from touch (long hold)
     if (touchInput.pause && !isGamePaused) {
         togglePause();
@@ -110,7 +110,7 @@ if (touchControls && player) {
     vector.project(camera);
     const screenX = (vector.x * 0.5 + 0.5) * window.innerWidth;
     const screenY = (-vector.y * 0.5 + 0.5) * window.innerHeight;
-    
+
     touchControls.setRocketPosition(
         player.position,
         new THREE.Vector2(screenX, screenY)
@@ -144,7 +144,7 @@ function cleanupTouchControls() {
 /*
 window.addEventListener('resize', () => {
     // Existing resize code...
-    
+
     // Update touch controls
     if (touchControls) {
         touchControls.hide();
@@ -174,11 +174,11 @@ touchControls.setMode(ControlMode.FOLLOW_FINGER);
 // 3. In animate loop, map touch to keyboard keys
 function animate() {
     // ... existing code ...
-    
+
     // Sync touch to keyboard keys
     const touchInput = touchControls.getInput();
     touchControls.update();
-    
+
     // Map touch vertical to keyboard keys
     if (touchInput.vertical > 0.2) {
         uiKeys.jump = true;
@@ -190,13 +190,7 @@ function animate() {
         uiKeys.jump = false;
         uiKeys.left = false;
     }
-    
+
     // ... rest of animate loop ...
 }
 */
-
-// =============================================================================
-// EXPORTS for TypeScript
-// =============================================================================
-
-export {};

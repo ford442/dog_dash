@@ -8,6 +8,7 @@ import { ButterflySwarmSystem } from './butterfly_swarm';
 import { SolarSailFernManager } from './solar_sail_ferns';
 import { WindChimeManager } from './wind_chimes';
 import type { ParticleSystem } from './particles';
+import type { AudioSystem } from './audio_system';
 
 export interface GameManagers {
     friendsManager: FriendsManager;
@@ -28,8 +29,8 @@ let createdManagers: GameManagers | null = null;
  */
 export function createGameManagers(
     scene: THREE.Scene,
-    audioSystem: unknown,
-    particleSystem: unknown
+    audioSystem: AudioSystem,
+    particleSystem: ParticleSystem
 ): GameManagers {
     if (createdManagers) {
         throw new Error('createGameManagers() must only be called once per runtime.');

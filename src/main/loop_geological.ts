@@ -74,6 +74,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                             const justDepleted = damageGeode(geode, 20); // 5 hits to deplete
                             if (justDepleted) {
                                 game.audioSystem.playCollect(); // Or a breaking sound
+                                // Craft materials from geode shatter (Void Gems)
+                                const geodeTag = (geode.userData.speciesId as string) || 'fracturedGeode';
+                                game.resourceHarvester.harvest(geodeTag, 'destroy', geode.position.clone());
                                 // Release gems (Void Gems) based on quality
                                 const gemCount = Math.floor(3 + Math.random() * 3 * geode.userData.quality);
                                 for (let i = 0; i < gemCount; i++) {
@@ -102,17 +105,49 @@ export function updateLoopGeological(delta: number, time: number): void {
                 if (!isFar || farUpdateFrame) {
                     updateNebulaJellyMoss(jellyMoss, delta, time);
                 }
-    
+
+                // Projectile hits — precision core shot can destroy for Pure Extract
+                if (jellyMoss.visible && jellyMoss.userData.radius) {
+                    const projectiles = game.weaponSystem.getActiveProjectiles();
+                    const hitRadius = jellyMoss.userData.radius * 0.55;
+                    for (const proj of projectiles) {
+                        if (!proj.active) continue;
+                        if (proj.mesh.position.distanceTo(jellyMoss.position) < hitRadius) {
+                            proj.deactivate();
+                            game.particleSystem.emit(proj.mesh.position.clone(), 0x00ff88, 8, 4.0, 0.4, 0.6);
+                            jellyMoss.userData.health = (jellyMoss.userData.health || 10) - 5;
+                            jellyMoss.userData.hitCount = (jellyMoss.userData.hitCount || 0) + 1;
+                            if (jellyMoss.userData.health <= 0) {
+                                const precision = jellyMoss.userData.hitCount <= 2;
+                                const pos = jellyMoss.position.clone();
+                                destroyNebulaJellyMoss(jellyMoss, scene, game.particleSystem);
+                                jellyMosses.splice(i, 1);
+                                game.resourceHarvester.harvest(
+                                    'nebulaJellyMoss',
+                                    'destroy',
+                                    pos,
+                                    { precision }
+                                );
+                                game.audioSystem.playCollect();
+                                break;
+                            }
+                        }
+                    }
+                    if (!jellyMosses[i] || jellyMosses[i] !== jellyMoss) {
+                        continue; // destroyed this frame
+                    }
+                }
+
                 // --- NEW: Jelly Moss Interaction (Stealth, Shield & Overload) ---
                 if (player && jellyMoss.visible && jellyMoss.userData.radius) {
                     const dist = player.position.distanceTo(jellyMoss.position);
                     const radius = jellyMoss.userData.radius;
-    
+
                     // Player inside membrane?
                     if (dist < radius) {
                         // 1. Viscosity
                         playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
-    
+
                         // 2. Stealth Effect
                         if (!jellyMoss.userData.isHiding) {
                             jellyMoss.userData.isHiding = true;
@@ -130,28 +165,36 @@ export function updateLoopGeological(delta: number, time: number): void {
                                  });
                             }
                         }
-    
+
                         // 3. Shield Leech & Overload
                         const normDist = dist / radius;
                         const leechIntensity = THREE.MathUtils.lerp(1.0, 0.0, normDist);
-    
+
                         // Build Overload! (Destruction Mechanic)
                         // Rate: 0.5 per second (takes ~2 seconds to explode)
                         jellyMoss.userData.overloadValue = (jellyMoss.userData.overloadValue || 0) + delta * 0.5;
-    
+
                         // Update Shader Uniform
                         const mat = jellyMoss.material as any;
                         if (mat.userData && mat.userData.uOverload) {
                             mat.userData.uOverload.value = Math.min(1.0, jellyMoss.userData.overloadValue);
                         }
-    
+
                         // Check for Explosion
                         if (jellyMoss.userData.overloadValue >= 1.0) {
-                            // BOOM
+                            // BOOM — sustained overload yields Tainted Extract
+                            const pos = jellyMoss.position.clone();
                             destroyNebulaJellyMoss(jellyMoss, scene, game.particleSystem);
-    
+
                             // Remove from list
                             jellyMosses.splice(i, 1);
+
+                            game.resourceHarvester.harvest(
+                                'nebulaJellyMoss',
+                                'destroy',
+                                pos,
+                                { precision: false }
+                            );
     
                             // Restore player state immediately (exit stealth)
                             const rocket = player.children[0];

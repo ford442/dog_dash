@@ -570,7 +570,58 @@ export class JuiceManager {
         const color = amount > 0 ? 'pink' : 'red';
         this.showFloatingText(text, position, color, 28);
     }
-    
+
+    /**
+     * Resource Pop juice — material name floats upward, scales 1→1.5→0.8,
+     * and rotates a full 360° (plan §IV Action Feedback Suite).
+     */
+    showResourcePop(
+        materialName: string,
+        amount: number,
+        position: THREE.Vector3,
+        color: string = 'gold'
+    ): void {
+        if (!this.enableFloatingText) return;
+
+        const label = amount > 1 ? `+${amount} ${materialName}` : materialName;
+
+        if (this.floatingTexts.length >= this.maxFloatingTexts) {
+            const oldest = this.floatingTexts.shift();
+            if (oldest) oldest.element.remove();
+        }
+
+        const element = document.createElement('div');
+        element.textContent = label;
+        element.style.position = 'absolute';
+        element.style.fontFamily = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+        element.style.fontSize = '26px';
+        element.style.fontWeight = 'bold';
+        element.style.pointerEvents = 'none';
+        element.style.textShadow = '0 0 12px rgba(0,0,0,0.55)';
+        element.style.whiteSpace = 'nowrap';
+        element.style.userSelect = 'none';
+
+        const colorValue = TEXT_COLORS[color as keyof typeof TEXT_COLORS] ?? color;
+        element.style.color = colorValue;
+
+        this.textContainer.appendChild(element);
+
+        const floatingText: FloatingText = {
+            element,
+            position: position.clone(),
+            velocity: new THREE.Vector3(0, 4.5, 0),
+            life: 1.4,
+            maxLife: 1.4,
+            scale: 1,
+            bounces: 99, // disable bounce — Resource Pop floats straight up
+            baseY: position.y - 100,
+            resourcePop: true
+        };
+
+        this.floatingTexts.push(floatingText);
+        this.updateFloatingTextPosition(floatingText);
+    }
+
     /**
      * Update floating text positions
      */
@@ -578,17 +629,37 @@ export class JuiceManager {
         for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
             const text = this.floatingTexts[i];
             text.life -= dt;
-            
+
             if (text.life <= 0) {
                 text.element.remove();
                 this.floatingTexts.splice(i, 1);
                 continue;
             }
-            
+
+            const lifeRatio = text.life / text.maxLife;
+            const elapsed = 1 - lifeRatio;
+
+            if (text.resourcePop) {
+                // Straight float up; scale 1 → 1.5 → 0.8; rotate 360°
+                text.velocity.y = 4.5;
+                text.position.add(text.velocity.clone().multiplyScalar(dt));
+                if (elapsed < 0.25) {
+                    text.scale = 1 + (elapsed / 0.25) * 0.5; // 1 → 1.5
+                } else {
+                    const t = (elapsed - 0.25) / 0.75;
+                    text.scale = 1.5 - t * 0.7; // 1.5 → 0.8
+                }
+                const rotation = elapsed * 360;
+                text.element.style.opacity = String(Math.min(1, lifeRatio * 2.2));
+                text.element.style.transform = `translate(-50%, -50%) scale(${text.scale}) rotate(${rotation}deg)`;
+                this.updateFloatingTextPosition(text, true);
+                continue;
+            }
+
             // Update physics
             text.velocity.y -= 4.0 * dt; // Gravity
             text.position.add(text.velocity.clone().multiplyScalar(dt));
-            
+
             // Bounce off "ground" for fun effect
             if (text.position.y < text.baseY && text.bounces < 2) {
                 text.position.y = text.baseY;
@@ -596,37 +667,38 @@ export class JuiceManager {
                 text.velocity.x *= 0.8;
                 text.bounces++;
             }
-            
+
             // Scale animation (pop in, then shrink)
-            const lifeRatio = text.life / text.maxLife;
             if (lifeRatio > 0.8) {
                 text.scale = 1 + (1 - lifeRatio) * 2; // Pop in
             } else {
                 text.scale = 0.8 + lifeRatio * 0.2; // Shrink out
             }
-            
+
             // Update visual
             text.element.style.opacity = String(Math.min(1, lifeRatio * 2));
             text.element.style.transform = `scale(${text.scale})`;
-            
+
             this.updateFloatingTextPosition(text);
         }
     }
-    
+
     /**
      * Update the screen position of a floating text element
      */
-    private updateFloatingTextPosition(text: FloatingText): void {
+    private updateFloatingTextPosition(text: FloatingText, skipTransform = false): void {
         // Project world position to screen space
         const screenPos = text.position.clone().project(this.camera);
-        
+
         // Convert to CSS coordinates
         const x = (screenPos.x * 0.5 + 0.5) * 100;
         const y = (-screenPos.y * 0.5 + 0.5) * 100;
-        
+
         text.element.style.left = `${x}%`;
         text.element.style.top = `${y}%`;
-        text.element.style.transform = `translate(-50%, -50%) scale(${text.scale})`;
+        if (!skipTransform) {
+            text.element.style.transform = `translate(-50%, -50%) scale(${text.scale})`;
+        }
     }
     
     private updateGravLensDistortion(): void {

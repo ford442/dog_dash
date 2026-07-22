@@ -87,8 +87,8 @@ export interface SpatialSound {
     gain: GainNode | null;
 }
 
-/** Shared `this` context for audio mixins merged onto AudioSystem. */
-export interface AudioSystemBase {
+/** Shared `this` context for audio mixins merged onto {@link AudioSystem}. */
+export interface AudioSystemHost {
     ctx: AudioContext | null;
     masterGain: GainNode | null;
     musicGain: GainNode | null;
@@ -174,10 +174,13 @@ export interface AudioSystemBase {
     updateEngineState(currentSpeedY: number, isMovingUp: boolean, isMovingDown: boolean, isBoosting?: boolean): void;
 }
 
-/** @deprecated Use AudioSystemBase */
-export type AudioMixinHost = AudioSystemBase;
+/** @deprecated Use AudioSystemHost */
+export type AudioSystemBase = AudioSystemHost;
 
-export function bindMixin<T extends Record<string, (this: AudioSystemBase, ...args: any[]) => any>>(mixin: T): T {
+/** @deprecated Use AudioSystemHost */
+export type AudioMixinHost = AudioSystemHost;
+
+export function bindMixin<T extends Record<string, (this: AudioSystemHost, ...args: any[]) => any>>(mixin: T): T {
     return mixin;
 }
 

@@ -16,79 +16,79 @@ import { hackingSoundsMixin } from './mixins/hacking_sounds';
 import { cleanupMixin } from './mixins/cleanup';
 
 export class AudioSystem {
-    private ctx: AudioContext | null = null;
-    private masterGain: GainNode | null = null;
-    private musicGain: GainNode | null = null;
-    private sfxGain: GainNode | null = null;
-    private engineActive: boolean = false;
+    protected ctx: AudioContext | null = null;
+    protected masterGain: GainNode | null = null;
+    protected musicGain: GainNode | null = null;
+    protected sfxGain: GainNode | null = null;
+    protected engineActive: boolean = false;
     
     // Volume settings (0-1)
-    private musicVolume: number = 0.7;
-    private sfxVolume: number = 0.8;
-    private masterVolume: number = 0.7;
-    private isMuted: boolean = false;
+    protected musicVolume: number = 0.7;
+    protected sfxVolume: number = 0.8;
+    protected masterVolume: number = 0.7;
+    protected isMuted: boolean = false;
     
     // ========== LAYERED MUSIC SYSTEM ==========
-    private musicLayers: Map<string, MusicLayer> = new Map();
-    private currentMusicState: MusicState = 'AMBIENT';
-    private bpm: number = 60; // Base BPM
-    private baseBpm: number = 60;
-    private musicStartTime: number = 0;
-    private musicInterval: number | null = null;
-    private magicMusicTimeout: number | null = null;
+    protected musicLayers: Map<string, MusicLayer> = new Map();
+    protected currentMusicState: MusicState = 'AMBIENT';
+    protected bpm: number = 60; // Base BPM
+    protected baseBpm: number = 60;
+    protected musicStartTime: number = 0;
+    protected musicInterval: number | null = null;
+    protected magicMusicTimeout: number | null = null;
     
     // ========== PROCEDURAL MUSIC ==========
-    private collectChain: number = 0;
-    private lastCollectTime: number = 0;
-    private chainTimeout: number = 1000; // ms between chain collects
-    private melodyQueue: number[] = [];
+    protected collectChain: number = 0;
+    protected lastCollectTime: number = 0;
+    protected chainTimeout: number = 1000; // ms between chain collects
+    protected melodyQueue: number[] = [];
     
     // ========== SPATIAL AUDIO ==========
-    private listenerPosition: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
-    private spatialSounds: Map<string, SpatialSound> = new Map();
-    private pannerNodes: PannerNode[] = [];
+    protected listenerPosition: { x: number; y: number; z: number } = { x: 0, y: 0, z: 0 };
+    protected spatialSounds: Map<string, SpatialSound> = new Map();
+    protected pannerNodes: PannerNode[] = [];
     
     // ========== HOVER SOUND ==========
-    private hoverNode: OscillatorNode | null = null;
-    private hoverGain: GainNode | null = null;
-    private hoverActive: boolean = false;
+    protected hoverNode: OscillatorNode | null = null;
+    protected hoverGain: GainNode | null = null;
+    protected hoverActive: boolean = false;
     
     // ========== VOICE LIMITER ==========
-    private activeVoices: number = 0;
-    private readonly maxVoices: number = 32;
-    private activeVoiceNodes: Array<{ osc?: OscillatorNode, source?: AudioBufferSourceNode, gain: GainNode, priority: number, endTime: number, timeoutId?: any }> = [];
+    protected activeVoices: number = 0;
+    protected readonly maxVoices: number = 32;
+    protected activeVoiceNodes: Array<{ osc?: OscillatorNode, source?: AudioBufferSourceNode, gain: GainNode, priority: number, endTime: number, timeoutId?: any }> = [];
     
     // ========== REVERB ==========
-    private reverbNode: DelayNode | null = null;
-    private reverbFeedback: GainNode | null = null;
-    private reverbFilter: BiquadFilterNode | null = null;
-    private reverbSend: GainNode | null = null;
+    protected reverbNode: DelayNode | null = null;
+    protected reverbFeedback: GainNode | null = null;
+    protected reverbFilter: BiquadFilterNode | null = null;
+    protected reverbSend: GainNode | null = null;
     
     // ========== ENHANCED ENGINE SYSTEM ==========
-    private engineDroneNode: OscillatorNode | null = null;
-    private engineThrustNode: OscillatorNode | null = null;
-    private engineWhooshNode: AudioBufferSourceNode | null = null;
-    private engineWhooshBuffer: AudioBuffer | null = null;
-    private engineBaseGain: GainNode | null = null;
-    private engineThrustGain: GainNode | null = null;
-    private engineWhooshGain: GainNode | null = null;
-    private engineFilter: BiquadFilterNode | null = null;
-    private engineMasterGain: GainNode | null = null;
-    private lastEngineState: { speedY: number; up: boolean; down: boolean } = { speedY: 0, up: false, down: false };
+    protected engineDroneNode: OscillatorNode | null = null;
+    protected engineThrustNode: OscillatorNode | null = null;
+    protected engineWhooshNode: AudioBufferSourceNode | null = null;
+    protected engineWhooshBuffer: AudioBuffer | null = null;
+    protected engineBaseGain: GainNode | null = null;
+    protected engineThrustGain: GainNode | null = null;
+    protected engineWhooshGain: GainNode | null = null;
+    protected engineFilter: BiquadFilterNode | null = null;
+    protected engineMasterGain: GainNode | null = null;
+    protected lastEngineState: { speedY: number; up: boolean; down: boolean } = { speedY: 0, up: false, down: false };
     
     // ========== DUCKING ==========
-    private isDucked: boolean = false;
+    protected isDucked: boolean = false;
     
     // ========== GRAVITY HUM ==========
-    private gravHumOsc: OscillatorNode | null = null;
-    private gravHumNoise: AudioBufferSourceNode | null = null;
-    private gravHumNoiseFilter: BiquadFilterNode | null = null;
-    private gravHumGain: GainNode | null = null;
-    private gravHumActive: boolean = false;
+    protected gravHumOsc: OscillatorNode | null = null;
+    protected gravHumNoise: AudioBufferSourceNode | null = null;
+    protected gravHumNoiseFilter: BiquadFilterNode | null = null;
+    protected gravHumGain: GainNode | null = null;
+    protected gravHumActive: boolean = false;
     
-    private droneNode: OscillatorNode | null = null;
-    private droneGain: GainNode | null = null;
-    private soundConfigs: Record<SoundType, SoundConfig> = SOUND_CONFIGS;
+    protected droneNode: OscillatorNode | null = null;
+    protected droneGain: GainNode | null = null;
+    protected soundConfigs: Record<SoundType, SoundConfig> = SOUND_CONFIGS;
 
     constructor() {
         // Lazy init - create context on first user interaction

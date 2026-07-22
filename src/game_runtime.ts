@@ -9,6 +9,7 @@ import type { TetherSystem } from './tether_system';
 import type { SlingComboManager } from './sling_combo';
 import type { SlingObjectiveManager } from './sling_objective';
 import type { DiscoveryManager, CreatureCatalogManager } from './discovery_system';
+import type { ResourceHarvester } from './resource_harvester';
 import type { CreatureManager } from './creature_manager';
 import type { AquaticLifeManager } from './aquatic_life';
 import type { StarlightKoiManager } from './starlight_koi';
@@ -17,47 +18,8 @@ import type { IndustrialGeometryManager } from './industrial_geometry';
 import type { DebugSystem } from './debug_system';
 import type { VideoTumblingStar } from './video_tumbling_star';
 import type { GameManagers } from './game_managers';
-import type {
-    particleSystem,
-    debrisSystem,
-    weaponSystem,
-    weaponLightManager,
-    reEntrySystem,
-    waterfallSystem,
-    asteroidFieldSystem,
-    planetaryHorizonSystem,
-    moonPalaceSystem,
-    meteorShowerSystem,
-    industrialSystem,
-    godRaySystem,
-    auroraSystem,
-    nebulaSystem,
-    cosmicDustSystem,
-    biologicalSystem,
-    liquidMetalSystem,
-    bossManager,
-    audioSystem,
-    upgradeSystem,
-    pickupManager,
-    heatSystem,
-    starfield,
-    orbManager,
-    powerUpManager,
-    dogController,
-    hudManager,
-    juiceManager,
-    boostSystem,
-    rollSystem,
-    effectManager,
-    victorySystem,
-    tutorialSystem,
-    saveManager,
-    lightningBoltSystem,
-    chromaShiftSystem,
-    stormGeodeSystem,
-    crystalChimeManager,
-    blackHoleSystem
-} from './game_systems';
+import type { GameSystems } from './create_game_systems';
+import type { WasmExports } from './wasm_loader';
 import { playerState } from './game_config';
 import type {
     CollisionDebugOverlay,
@@ -65,61 +27,12 @@ import type {
     WireframeDebugHelper
 } from './render_debug_helpers';
 
-/** Mutable runtime bag populated during bootstrap; submodules read shared refs from here. */
-export interface GameRuntime {
+/** Fully typed mutable runtime bag owned by bootstrap. */
+export interface GameContext extends GameSystems, GameManagers {
     playerState: typeof playerState;
 
-    wasmExports: unknown;
+    wasmExports: WasmExports | null;
     wasmMemory: Float32Array | null;
-
-    particleSystem: typeof particleSystem;
-    debrisSystem: typeof debrisSystem;
-    weaponSystem: typeof weaponSystem;
-    weaponLightManager: typeof weaponLightManager;
-    reEntrySystem: typeof reEntrySystem;
-    waterfallSystem: typeof waterfallSystem;
-    asteroidFieldSystem: typeof asteroidFieldSystem;
-    planetaryHorizonSystem: typeof planetaryHorizonSystem;
-    moonPalaceSystem: typeof moonPalaceSystem;
-    meteorShowerSystem: typeof meteorShowerSystem;
-    industrialSystem: typeof industrialSystem;
-    godRaySystem: typeof godRaySystem;
-    auroraSystem: typeof auroraSystem;
-    nebulaSystem: typeof nebulaSystem;
-    cosmicDustSystem: typeof cosmicDustSystem;
-    biologicalSystem: typeof biologicalSystem;
-    liquidMetalSystem: typeof liquidMetalSystem;
-    bossManager: typeof bossManager;
-    audioSystem: typeof audioSystem;
-    upgradeSystem: typeof upgradeSystem;
-    pickupManager: typeof pickupManager;
-    heatSystem: typeof heatSystem;
-    starfield: typeof starfield;
-    orbManager: typeof orbManager;
-    powerUpManager: typeof powerUpManager;
-    dogController: typeof dogController;
-    hudManager: typeof hudManager;
-    juiceManager: typeof juiceManager;
-    boostSystem: typeof boostSystem;
-    rollSystem: typeof rollSystem;
-    effectManager: typeof effectManager;
-    victorySystem: typeof victorySystem;
-    tutorialSystem: typeof tutorialSystem;
-    saveManager: typeof saveManager;
-    lightningBoltSystem: typeof lightningBoltSystem;
-    chromaShiftSystem: typeof chromaShiftSystem;
-    stormGeodeSystem: typeof stormGeodeSystem;
-    crystalChimeManager: typeof crystalChimeManager;
-    blackHoleSystem: typeof blackHoleSystem;
-
-    friendsManager: GameManagers['friendsManager'];
-    flowerManager: GameManagers['flowerManager'];
-    pinwheelManager: GameManagers['pinwheelManager'];
-    candyManager: GameManagers['candyManager'];
-    castleManager: GameManagers['castleManager'];
-    butterflySwarmSystem: GameManagers['butterflySwarmSystem'];
-    solarSailFernManager: GameManagers['solarSailFernManager'];
-    windChimeManager: GameManagers['windChimeManager'];
 
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
@@ -129,6 +42,7 @@ export interface GameRuntime {
     slingComboManager: SlingComboManager;
     slingObjectiveManager: SlingObjectiveManager;
     discoveryManager: DiscoveryManager;
+    resourceHarvester: ResourceHarvester;
     creatureCatalogManager: CreatureCatalogManager;
     creatureManager: CreatureManager;
     aquaticLifeManager: AquaticLifeManager;
@@ -178,9 +92,13 @@ export interface GameRuntime {
     webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
 
     bestiaryUI: HTMLDivElement | null;
+    /** Chapters whose objectives were completed this run (1–6). */
+    completedChaptersThisRun: number[];
 
     reportComboObjectiveProgress: () => void;
     handleGameOver: () => void;
+    /** Re-attach slingable callbacks after deferred manager swap. */
+    rewireSlingableCallbacks: () => void;
 
     wantsBoost: boolean;
     wasTouchBoosting: boolean;
@@ -190,8 +108,100 @@ export interface GameRuntime {
     wantsReleaseTether: boolean;
 }
 
-export const game: GameRuntime = {
-    playerState,
-    wasmExports: null,
-    wasmMemory: null,
-} as GameRuntime;
+/** @deprecated Use GameContext */
+export type GameRuntime = GameContext;
+
+/** Live binding assigned once by bootstrap via {@link installGameContext}. */
+export let game!: GameContext;
+
+export function installGameContext(ctx: GameContext): void {
+    game = ctx;
+}
+
+/** Frame / UI defaults shared by every GameContext instance. */
+export function createGameContextFrameState(): Pick<
+    GameContext,
+    | 'wasmExports'
+    | 'wasmMemory'
+    | 'clock'
+    | 'lastPlayerDamageTime'
+    | 'aquaticLifeSpawnedLevel'
+    | 'koiSpawnedLevel'
+    | 'coralSpawnedLevel'
+    | 'level6BossDefeated'
+    | 'whaleSongTimer'
+    | 'moonGateSequenceActive'
+    | 'moonGateSequenceTimer'
+    | 'krakenMemoryRewarded'
+    | 'wrenchChargeAvailable'
+    | 'scoreMultiplierUntil'
+    | 'scoreMultiplierValue'
+    | 'tetherSpriteSweep'
+    | 'tetherSpritePrevAngle'
+    | 'fpsFrameCount'
+    | 'fpsElapsedTime'
+    | 'fpsLowDuration'
+    | 'fpsHighDuration'
+    | 'currentRatioIndex'
+    | 'currentPixelRatio'
+    | 'objectDensityMultiplier'
+    | 'shadowCullingFrame'
+    | 'shadowCullingWarningIssued'
+    | 'renderDebugWarningIssued'
+    | 'geologicalUpdateFrame'
+    | 'bestiaryUI'
+    | 'completedChaptersThisRun'
+    | 'wantsBoost'
+    | 'wasTouchBoosting'
+    | 'wantsRoll'
+    | 'wasTouchRolling'
+    | 'wantsTether'
+    | 'wantsReleaseTether'
+    | 'reportComboObjectiveProgress'
+    | 'handleGameOver'
+    | 'rewireSlingableCallbacks'
+    | 'videoTumblingStars'
+> {
+    return {
+        wasmExports: null,
+        wasmMemory: null,
+        clock: new THREE.Clock(),
+        lastPlayerDamageTime: -999,
+        aquaticLifeSpawnedLevel: null,
+        koiSpawnedLevel: null,
+        coralSpawnedLevel: null,
+        level6BossDefeated: false,
+        whaleSongTimer: 30,
+        moonGateSequenceActive: false,
+        moonGateSequenceTimer: 0,
+        krakenMemoryRewarded: new WeakSet<object>(),
+        wrenchChargeAvailable: false,
+        scoreMultiplierUntil: 0,
+        scoreMultiplierValue: 1,
+        tetherSpriteSweep: 0,
+        tetherSpritePrevAngle: null,
+        fpsFrameCount: 0,
+        fpsElapsedTime: 0,
+        fpsLowDuration: 0,
+        fpsHighDuration: 0,
+        currentRatioIndex: 1,
+        currentPixelRatio: 1,
+        objectDensityMultiplier: 1.0,
+        shadowCullingFrame: 0,
+        shadowCullingWarningIssued: false,
+        renderDebugWarningIssued: false,
+        geologicalUpdateFrame: 0,
+        bestiaryUI: null,
+        completedChaptersThisRun: [],
+        wantsBoost: false,
+        wasTouchBoosting: false,
+        wantsRoll: false,
+        wasTouchRolling: false,
+        wantsTether: false,
+        wantsReleaseTether: false,
+        reportComboObjectiveProgress: () => {},
+        handleGameOver: () => {},
+        rewireSlingableCallbacks: () => {},
+        videoTumblingStars: []
+    };
+}

@@ -10,7 +10,6 @@ import * as THREE from 'three';
 import { player } from '../player_loader';
 import { playerState, setIsGamePaused } from '../game_config';
 import { game } from '../game_runtime';
-import { derelictBuoyManager, dataMonolithManager } from '../game_systems';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import {
@@ -196,14 +195,14 @@ function awardMonolithReward(monolith: DataMonolithInstance): void {
 
 /** Spawns the artifacts declared by a level config. Call on level start. */
 export function spawnArtifactsForLevel(cfg: LevelConfig, baseX: number): void {
-    derelictBuoyManager.clear();
-    dataMonolithManager.clear();
+    game.derelictBuoyManager.clear();
+    game.dataMonolithManager.clear();
     armed.clear();
     if (cfg.derelictBuoys?.length) {
-        derelictBuoyManager.spawnForLevel(cfg.derelictBuoys, baseX);
+        game.derelictBuoyManager.spawnForLevel(cfg.derelictBuoys, baseX);
     }
     if (cfg.dataMonoliths?.length) {
-        dataMonolithManager.spawnForLevel(cfg.dataMonoliths, baseX);
+        game.dataMonolithManager.spawnForLevel(cfg.dataMonoliths, baseX);
     }
 }
 
@@ -212,19 +211,19 @@ export function updateArtifacts(delta: number): void {
     // While a hack overlay is up the world is paused, so this won't be reached;
     // the local rAF ticker drives the overlay instead.
     if (activeHack || !player) return;
-    if (!derelictBuoyManager.hasBuoys() && !dataMonolithManager.hasMonoliths()) return;
+    if (!game.derelictBuoyManager.hasBuoys() && !game.dataMonolithManager.hasMonoliths()) return;
 
-    derelictBuoyManager.update(delta);
-    dataMonolithManager.update(delta);
+    game.derelictBuoyManager.update(delta);
+    game.dataMonolithManager.update(delta);
 
     // Buoys — arm on exit, trigger on entry.
-    for (const buoy of derelictBuoyManager.getBuoys()) {
+    for (const buoy of game.derelictBuoyManager.getBuoys()) {
         const id = buoy.uuid;
         const inDock = buoy.position.distanceTo(player.position) <= 3.0;
         if (!inDock) { armed.add(id); continue; }
         if (armed.has(id)) {
             armed.delete(id);
-            const inst = derelictBuoyManager.getDockableBuoy(player.position);
+            const inst = game.derelictBuoyManager.getDockableBuoy(player.position);
             if (inst && inst.group.uuid === id && !inst.consumed) {
                 beginBuoyHack(inst);
                 return;
@@ -233,13 +232,13 @@ export function updateArtifacts(delta: number): void {
     }
 
     // Monoliths — arm on exit, trigger on entry.
-    for (const slab of dataMonolithManager.getScannables()) {
+    for (const slab of game.dataMonolithManager.getScannables()) {
         const id = slab.uuid;
         const inRange = slab.position.distanceTo(player.position) <= 5.0;
         if (!inRange) { armed.add(id); continue; }
         if (armed.has(id)) {
             armed.delete(id);
-            const inst = dataMonolithManager.getInteractable(player.position);
+            const inst = game.dataMonolithManager.getInteractable(player.position);
             if (inst && inst.group.uuid === id && !inst.consumed) {
                 beginMonolithHack(inst);
                 return;

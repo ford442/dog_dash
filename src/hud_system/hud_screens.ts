@@ -25,7 +25,11 @@ export class HUDScreens {
 
     constructor(private deps: HUDScreensDeps) {}
 
-    showPauseMenu(onResume: () => void, onRestart: () => void): void {
+    showPauseMenu(
+        onResume: () => void,
+        onRestart: () => void,
+        extras?: { onOpenJourneyMap?: () => void }
+    ): void {
         if (this.pauseMenu) return;
 
         const overlay = document.createElement('div');
@@ -127,7 +131,12 @@ export class HUDScreens {
             }
         );
 
+        const mapBtn = this.createMenuButton('🗺️ Journey Map', COLORS.lemon, () => {
+            extras?.onOpenJourneyMap?.();
+        });
+
         buttons.appendChild(resumeBtn);
+        buttons.appendChild(mapBtn);
         buttons.appendChild(restartBtn);
         buttons.appendChild(soundBtn);
 
@@ -186,7 +195,10 @@ export class HUDScreens {
         }
     }
 
-    showVictoryScreen(stats: GameStats): void {
+    showVictoryScreen(
+        stats: GameStats,
+        extras?: { onOpenJourneyMap?: () => void }
+    ): void {
         this.celebrateVictory();
 
         const overlay = document.createElement('div');
@@ -239,13 +251,20 @@ export class HUDScreens {
             </div>
         `;
 
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex; flex-direction:column; gap:12px; align-items:stretch;';
+
+        const mapBtn = this.createMenuButton('🗺️ Journey Map', COLORS.lemon, () => {
+            extras?.onOpenJourneyMap?.();
+        });
+
         const playAgainBtn = this.createMenuButton('🎮 Play Again', COLORS.mint, () => {
             location.reload();
         });
-        playAgainBtn.style.margin = '0 auto';
-        playAgainBtn.style.display = 'block';
 
-        container.appendChild(playAgainBtn);
+        btnRow.appendChild(mapBtn);
+        btnRow.appendChild(playAgainBtn);
+        container.appendChild(btnRow);
         overlay.appendChild(container);
         document.body.appendChild(overlay);
 
