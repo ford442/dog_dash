@@ -10,6 +10,7 @@ import { ShakeType } from '../juice_effects';
 import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPopup } from './hud_displays';
 import { getMaterialDisplayName, getMaterialColor } from '../resource_inventory';
 import { recordChapterComplete } from '../journey_map';
+import { openHubScreen } from './hub_integration';
 
 export function reportComboObjectiveProgress(): void {
     const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
@@ -28,6 +29,7 @@ export function wireStartupCallbacks(): void {
     game.hudManager.getJourneyLevel = () => game.levelManager?.currentLevel ?? 1;
     game.hudManager.getRescuedFriendCount = () => game.friendsManager?.getRescuedCount?.() ?? 0;
     game.hudManager.getCompletedChapters = () => [...(game.completedChaptersThisRun || [])];
+    game.hudManager.openHub = (mode) => openHubScreen(mode);
 
     game.resourceHarvester.onMaterialCollected = (evt) => {
         const name = getMaterialDisplayName(evt.id);
