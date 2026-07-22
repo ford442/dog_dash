@@ -52,9 +52,10 @@ Run the TypeScript compiler in strict mode (no emit):
 npm run typecheck
 ```
 
-CI uses a **baseline ratchet** so existing known errors do not block PRs, but new strict-mode violations do:
+CI uses a **baseline ratchet** so existing known errors do not block PRs, but new strict-mode violations do. For a local pre-PR gate (brace balance + typecheck ratchet):
 
 ```bash
+npm run check                         # braces + typecheck:ci
 npm run typecheck:ci                  # compare against .github/typecheck-baseline.txt
 npm run typecheck:baseline:update     # after fixing errors, ratchet the baseline down
 ```

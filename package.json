@@ -21,6 +21,7 @@
     "typecheck": "tsc --noEmit",
     "typecheck:ci": "node tools/typecheck_baseline.cjs",
     "typecheck:baseline:update": "node tools/typecheck_baseline.cjs --update",
+    "check": "node tools/check_braces.cjs && npm run typecheck:ci",
     "test:smoke": "playwright test"
   },
   "keywords": [],
