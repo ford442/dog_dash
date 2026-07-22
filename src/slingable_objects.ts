@@ -79,6 +79,9 @@ export class SlingableObjectSystem {
     /** Fired for kind-specific moments (puffball pops, chroma slipstreams). */
     onSpecialEffect?: (effect: SlingableSpecialEffect) => void;
 
+    /** Fired when a slingable is destroyed (asteroid smash / health depleted). */
+    onDestroyed?: (kind: SlingableKind, position: THREE.Vector3, speciesId?: string) => void;
+
     constructor(
         private readonly scene: THREE.Scene,
         private readonly particleSystem: ParticleSystem,
@@ -614,12 +617,15 @@ export class SlingableObjectSystem {
 
     private destroyObjectAtIndex(index: number): void {
         const obj = this.objects[index];
+        const pos = obj.group.position.clone();
+        const speciesId = obj.group.userData?.speciesId as string | undefined;
         if (obj.kind === 'toyRocket') {
             this._resolveToyRocket(obj, false);
         } else {
             this.debrisSystem.emit(obj.group.position.clone(), 8, 5.5, obj.radius * 0.8);
             this.particleSystem.emit(obj.group.position.clone(), 0xffffff, 14, 6.0, 1.0, obj.radius);
         }
+        this.onDestroyed?.(obj.kind, pos, speciesId);
         this.removeObjectAtIndex(index);
     }
 

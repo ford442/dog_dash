@@ -156,6 +156,34 @@ export class HUDManager {
         if (el) el.style.opacity = '0';
     }
 
+    /**
+     * HUD Resource Pop — shows last collected craft material with juice animation
+     * (float up, scale 1→1.5→0.8, rotate 360° per plan §IV).
+     */
+    showResourcePop(materialName: string, amount: number, color: string = COLORS.gold): void {
+        const amountLabel = amount > 1 ? ` ×${amount}` : '';
+        const labelText = `${materialName}${amountLabel}`;
+
+        const last = this.elements.lastMaterialLabel;
+        if (last) {
+            last.textContent = `✦ ${labelText}`;
+            last.style.background = `linear-gradient(135deg, ${color}aa, ${COLORS.mint})`;
+            last.style.opacity = '1';
+            last.style.animation = 'none';
+            void last.offsetWidth;
+            last.style.animation = 'resource-pop-hud 1.6s ease-out forwards';
+        }
+
+        const pop = this.elements.resourcePopDisplay;
+        if (pop) {
+            pop.textContent = `+ ${labelText}`;
+            pop.style.color = color;
+            pop.style.animation = 'none';
+            void pop.offsetWidth;
+            pop.style.animation = 'resource-pop 1.35s ease-out forwards';
+        }
+    }
+
     setObjectiveLabel(text: string): void {
         const label = document.getElementById('hud-scan-label');
         if (label) label.textContent = text;

@@ -49,6 +49,7 @@ export const geodes: THREE.Group[] = [];
 export function createGeodeAtPosition(x: number, y: number, z: number) {
     const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
     geode.position.set(x, y, z);
+    geode.userData.speciesId = 'fracturedGeode';
     scene.add(geode);
     geodes.push(geode);
     return geode;
@@ -58,11 +59,12 @@ export function createGeodeAtPosition(x: number, y: number, z: number) {
 export const chromaRocks: THREE.Group[] = [];
 
 // Nebula Jelly-Moss - floating gelatinous organisms with fractal moss
-export const jellyMosses: THREE.Group[] = [];
+export const jellyMosses: THREE.Mesh[] = [];
 
 export function createJellyMossAtPosition(x: number, y: number, z: number, size?: number) {
     const jellyMoss = createNebulaJellyMoss({ size: size || 2 + Math.random() * 8 });
     jellyMoss.position.set(x, y, z);
+    jellyMoss.userData.speciesId = 'nebulaJellyMoss';
     scene.add(jellyMoss);
     jellyMosses.push(jellyMoss);
     return jellyMoss;

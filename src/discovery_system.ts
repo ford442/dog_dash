@@ -15,6 +15,8 @@ export const SPECIES_NAMES: Record<string, string> = {
     vine: 'Wisteria Vine',
     mushroom: 'Puffball Mushroom',
     orb: 'Floating Orb',
+    nebulaJellyMoss: 'Nebula Jelly-Moss',
+    fracturedGeode: 'Fractured Geode',
     // Geological species (now scannable for objectives)
     voidRootBall: 'Void Root Ball',
     magmaHeart: 'Magma Heart',

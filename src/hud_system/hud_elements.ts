@@ -21,6 +21,8 @@ export interface HUDElementRefs {
     gravLensMeter: HTMLDivElement | null;
     gravLensAngleBar: HTMLDivElement | null;
     gravLensGrade: HTMLDivElement | null;
+    resourcePopDisplay: HTMLDivElement | null;
+    lastMaterialLabel: HTMLDivElement | null;
 }
 
 export function injectHUDStyles(): void {
@@ -119,6 +121,8 @@ export class HUDElementsBuilder {
     gravLensMeter: HTMLDivElement | null = null;
     gravLensAngleBar: HTMLDivElement | null = null;
     gravLensGrade: HTMLDivElement | null = null;
+    resourcePopDisplay: HTMLDivElement | null = null;
+    lastMaterialLabel: HTMLDivElement | null = null;
 
     createAll(callbacks: HUDElementsCallbacks): void {
         this.createScoreDisplay(callbacks.updateHighScoreDisplay);
@@ -130,6 +134,7 @@ export class HUDElementsBuilder {
         this.createGrazeComboDisplay();
         this.createSlingComboDisplay();
         this.createGravLensDisplay();
+        this.createResourcePopDisplay();
         this.createJourneyMapDisplay();
     }
 
@@ -414,6 +419,53 @@ export class HUDElementsBuilder {
             pointer-events: none;
         `;
         document.body.appendChild(this.gravLensGrade);
+    }
+
+    /** Last-collected craft material + floating Resource Pop juice target. */
+    private createResourcePopDisplay(): void {
+        this.lastMaterialLabel = document.createElement('div');
+        this.lastMaterialLabel.id = 'hud-last-material';
+        this.lastMaterialLabel.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 110;
+            min-width: 160px;
+            text-align: center;
+            padding: 8px 18px;
+            border-radius: 18px;
+            font-size: 15px;
+            font-weight: bold;
+            color: ${COLORS.textDark};
+            background: linear-gradient(135deg, ${COLORS.lemon}, ${COLORS.mint});
+            box-shadow: 0 4px 16px ${COLORS.shadow}, inset 0 1px 0 rgba(255,255,255,0.55);
+            border: 3px solid ${COLORS.white};
+            opacity: 0;
+            pointer-events: none;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.5);
+        `;
+        this.lastMaterialLabel.textContent = '';
+        document.body.appendChild(this.lastMaterialLabel);
+
+        this.resourcePopDisplay = document.createElement('div');
+        this.resourcePopDisplay.id = 'hud-resource-pop';
+        this.resourcePopDisplay.style.cssText = `
+            position: fixed;
+            top: 28%;
+            left: 50%;
+            transform: translate(-50%, 0) scale(1);
+            z-index: 120;
+            font-size: 28px;
+            font-weight: bold;
+            color: ${COLORS.gold};
+            text-shadow: 0 0 12px rgba(0,0,0,0.45), 0 2px 0 rgba(255,255,255,0.35);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+        `;
+        this.resourcePopDisplay.textContent = '';
+        document.body.appendChild(this.resourcePopDisplay);
     }
 
     private createPowerUpDisplay(): void {

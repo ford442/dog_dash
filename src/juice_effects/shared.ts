@@ -137,6 +137,8 @@ export interface FloatingText {
     scale: number;
     bounces: number;
     baseY: number;
+    /** When set, uses Resource Pop motion (float + scale + 360° spin). */
+    resourcePop?: boolean;
 }
 
 /** Predefined text styles */

@@ -9,6 +9,7 @@ import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { CONFIG } from '../game_config';
 import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPopup } from './hud_displays';
+import { getMaterialDisplayName, getMaterialColor } from '../resource_inventory';
 
 export function reportComboObjectiveProgress(): void {
     const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
@@ -19,6 +20,18 @@ export function reportComboObjectiveProgress(): void {
 
 export function wireStartupCallbacks(): void {
     game.reportComboObjectiveProgress = reportComboObjectiveProgress;
+    game.rewireSlingableCallbacks = wireSlingableCallbacks;
+
+    game.resourceHarvester.onMaterialCollected = (evt) => {
+        const name = getMaterialDisplayName(evt.id);
+        const color = getMaterialColor(evt.id);
+        game.hudManager.showResourcePop(name, evt.amount, color);
+        const pos = evt.position ?? player?.position?.clone();
+        if (pos) {
+            game.juiceManager.showResourcePop(name, evt.amount, pos, color);
+        }
+        game.audioSystem.playCollect();
+    };
 
     game.orbManager.onPowerUpReady = () => {
         const triggered = game.powerUpManager.collectOrb();
@@ -68,10 +81,12 @@ export function wireStartupCallbacks(): void {
         originalAddScore(Math.round(points * mult));
     };
 
-    game.discoveryManager.onSpeciesDiscovered = (_speciesId, name, totalThisRun, _isNewEver) => {
+    game.discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, _isNewEver) => {
         if (player) {
             game.juiceManager.showFloatingText(`Scanned: ${name}!`, player.position.clone(), '#00ffcc', 22);
             game.juiceManager.burstMagic(player.position.clone());
+            // Scan-event craft material drops (Phase A drop tables)
+            game.resourceHarvester.harvest(speciesId, 'scan', player.position.clone());
         }
         game.dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
         game.audioSystem.playMagicSequence('star_collect');
@@ -239,6 +254,11 @@ function wireObjectiveComplete(): void {
 }
 
 function wireSlingableCallbacks(): void {
+    game.slingableObjectSystem.onDestroyed = (kind, position, speciesId) => {
+        const tag = speciesId || kind;
+        game.resourceHarvester.harvest(tag, 'sling', position);
+    };
+
     game.slingableObjectSystem.onSpecialEffect = (effect) => {
         if (effect.type === 'puffballPop') {
             if (player) {

@@ -38,6 +38,10 @@ function loadDeferredManagers(): Promise<DeferredManagers> {
             game.bubbleCoralManager = managers.bubbleCoralManager;
             game.slingableObjectSystem = managers.slingableObjectSystem;
             game.toyRocketSpawnManager = managers.toyRocketSpawnManager;
+            // Re-bind callbacks that were attached to the startup stub
+            if (typeof game.rewireSlingableCallbacks === 'function') {
+                game.rewireSlingableCallbacks();
+            }
             if (game.levelManager) {
                 game.levelManager.ghostDebrisSystem = managers.ghostDebrisSystem;
                 game.levelManager.voidJellyfishSystem = managers.voidJellyfishSystem;

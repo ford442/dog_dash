@@ -107,6 +107,34 @@ export const HUD_STYLES = `
     50% { transform: scale(1.1); box-shadow: 0 0 32px rgba(200,68,255,1.0), inset 0 1px 0 rgba(255,255,255,0.4); }
 }
 
+/* Resource Pop — craft material pickup juice (plan §IV Action Feedback) */
+@keyframes resource-pop {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(1) rotate(0deg);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -12px) scale(1.5) rotate(72deg);
+    }
+    55% {
+        opacity: 1;
+        transform: translate(-50%, -36px) scale(1.15) rotate(220deg);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -72px) scale(0.8) rotate(360deg);
+    }
+}
+
+@keyframes resource-pop-hud {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.85) rotate(-8deg); }
+    18% { opacity: 1; transform: translateX(-50%) scale(1.5) rotate(12deg); }
+    45% { opacity: 1; transform: translateX(-50%) scale(1.1) rotate(-4deg); }
+    70% { opacity: 1; transform: translateX(-50%) scale(1) rotate(360deg); }
+    100% { opacity: 0; transform: translateX(-50%) scale(0.8) rotate(360deg); }
+}
+
 
 
 .hud-element {

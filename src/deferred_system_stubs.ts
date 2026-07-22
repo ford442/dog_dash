@@ -182,6 +182,7 @@ export function createBubbleCoralManagerStub(): RainbowBubbleCoralManager {
 export function createSlingableObjectSystemStub(): SlingableObjectSystem {
     return {
         onSpecialEffect: undefined,
+        onDestroyed: undefined,
         objects: [],
         update: noop,
         handleAsteroidCollisions: noop,
