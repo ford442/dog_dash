@@ -127,6 +127,10 @@ export class CreatureCatalogManager {
         this.catalogedThisRun.clear();
     }
 
+    getCatalogedCountThisRun(): number {
+        return this.catalogedThisRun.size;
+    }
+
     /** Records a non-lethal encounter with a bestiary creature. */
     catalog(id: BestiaryEntryId): void {
         if (this.catalogedThisRun.has(id)) return;

@@ -13,13 +13,23 @@ import {
 } from './hud_displays';
 import { RESOLUTION_RATIOS } from './render_helpers';
 import { ensureGameplayReady } from '../level_systems_loader';
+import { consumePendingStartChapter } from '../hub_screen';
+import { getLevelSpan } from '../depth_layers';
 import { spawnDeferredPrototypeContent, spawnDeferredVideoStars } from './startup';
 
 async function beginGameplay(): Promise<void> {
     await ensureGameplayReady();
     void spawnDeferredPrototypeContent();
     void spawnDeferredVideoStars();
-    game.levelManager.startLevel(1);
+    // A hub "Go to chapter" request survives the reload via localStorage.
+    const pending = consumePendingStartChapter();
+    const startChapter = pending && game.saveManager.isLevelUnlocked(pending) ? pending : 1;
+    // The journey is one continuous run (player.x 0->5200), so launching a
+    // later chapter means placing the rocket at that chapter's start X.
+    if (startChapter > 1 && player) {
+        player.position.x = getLevelSpan(startChapter).startX;
+    }
+    game.levelManager.startLevel(startChapter);
 }
 
 export let lastSpaceTapTime = 0;

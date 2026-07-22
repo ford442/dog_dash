@@ -28,7 +28,7 @@ export class HUDScreens {
     showPauseMenu(
         onResume: () => void,
         onRestart: () => void,
-        extras?: { onOpenJourneyMap?: () => void }
+        extras?: { onOpenJourneyMap?: () => void; onOpenHub?: () => void }
     ): void {
         if (this.pauseMenu) return;
 
@@ -137,6 +137,13 @@ export class HUDScreens {
 
         buttons.appendChild(resumeBtn);
         buttons.appendChild(mapBtn);
+        if (extras?.onOpenHub) {
+            const hubBtn = this.createMenuButton('🏠 Space Base', COLORS.lavenderDark, () => {
+                this.hidePauseMenu();
+                extras.onOpenHub!();
+            });
+            buttons.appendChild(hubBtn);
+        }
         buttons.appendChild(restartBtn);
         buttons.appendChild(soundBtn);
 
@@ -197,7 +204,7 @@ export class HUDScreens {
 
     showVictoryScreen(
         stats: GameStats,
-        extras?: { onOpenJourneyMap?: () => void }
+        extras?: { onOpenJourneyMap?: () => void; onOpenHub?: () => void }
     ): void {
         this.celebrateVictory();
 
@@ -263,6 +270,12 @@ export class HUDScreens {
         });
 
         btnRow.appendChild(mapBtn);
+        if (extras?.onOpenHub) {
+            const hubBtn = this.createMenuButton('🏠 Space Base', COLORS.lavenderDark, () => {
+                extras.onOpenHub!();
+            });
+            btnRow.appendChild(hubBtn);
+        }
         btnRow.appendChild(playAgainBtn);
         container.appendChild(btnRow);
         overlay.appendChild(container);
@@ -271,7 +284,11 @@ export class HUDScreens {
         this.victoryScreen = overlay;
     }
 
-    showGameOverScreen(stats: GameStats, onRestart: () => void): void {
+    showGameOverScreen(
+        stats: GameStats,
+        onRestart: () => void,
+        extras?: { onOpenHub?: () => void }
+    ): void {
         const overlay = document.createElement('div');
         overlay.style.cssText = `
             position: fixed;
@@ -324,11 +341,20 @@ export class HUDScreens {
             </div>
         `;
 
-        const tryAgainBtn = this.createMenuButton('🚀 Try Again', COLORS.mint, onRestart);
-        tryAgainBtn.style.margin = '0 auto';
-        tryAgainBtn.style.display = 'block';
+        const btnCol = document.createElement('div');
+        btnCol.style.cssText = 'display:flex; flex-direction:column; gap:12px; align-items:stretch;';
 
-        container.appendChild(tryAgainBtn);
+        const tryAgainBtn = this.createMenuButton('🚀 Try Again', COLORS.mint, onRestart);
+        btnCol.appendChild(tryAgainBtn);
+
+        if (extras?.onOpenHub) {
+            const hubBtn = this.createMenuButton('🏠 Space Base', COLORS.lavenderDark, () => {
+                extras.onOpenHub!();
+            });
+            btnCol.appendChild(hubBtn);
+        }
+
+        container.appendChild(btnCol);
         overlay.appendChild(container);
         document.body.appendChild(overlay);
 

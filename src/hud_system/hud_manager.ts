@@ -33,6 +33,8 @@ export class HUDManager {
     getJourneyLevel?: () => number;
     getRescuedFriendCount?: () => number;
     getCompletedChapters?: () => number[];
+    /** Opens the between-run Space Base hub. Filled by bootstrap. */
+    openHub?: (mode: 'victory' | 'gameover' | 'pause') => void;
 
     private score: number = 0;
     private distance: number = 0;
@@ -440,7 +442,8 @@ export class HUDManager {
 
     showPauseMenu(onResume: () => void, onRestart: () => void): void {
         this.screens.showPauseMenu(onResume, onRestart, {
-            onOpenJourneyMap: () => this.showJourneyMapOverlay('pause')
+            onOpenJourneyMap: () => this.showJourneyMapOverlay('pause'),
+            onOpenHub: this.openHub ? () => this.openHub!('pause') : undefined
         });
     }
 
@@ -450,7 +453,8 @@ export class HUDManager {
 
     showVictoryScreen(stats: GameStats): void {
         this.screens.showVictoryScreen(stats, {
-            onOpenJourneyMap: () => this.showJourneyMapOverlay('victory')
+            onOpenJourneyMap: () => this.showJourneyMapOverlay('victory'),
+            onOpenHub: this.openHub ? () => this.openHub!('victory') : undefined
         });
         // Acceptance: map visible after victory (2D overlay above the card).
         this.showJourneyMapOverlay('victory');
@@ -487,7 +491,9 @@ export class HUDManager {
     }
 
     showGameOverScreen(stats: GameStats, onRestart: () => void): void {
-        this.screens.showGameOverScreen(stats, onRestart);
+        this.screens.showGameOverScreen(stats, onRestart, {
+            onOpenHub: this.openHub ? () => this.openHub!('gameover') : undefined
+        });
     }
 
     checkAndSaveHighScore(): boolean {
