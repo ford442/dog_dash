@@ -1,23 +1,25 @@
-## 🌌 Architect: Volumetric Rim Lighting (Silver Lining) in Nebula
+## 🌌 Architect: Moon Palace Approach – Magical Crystal Finish
 
 ### Concept
-> "The player's exhaust and weapons cast a subtle glow on nearby nebula clouds, creating a dynamic interplay of light." (From future-plan.md §7)
+> "Near the end, the moon becomes a giant glowing crystal palace with heart-shaped craters and silver slide ladders." (From Magical Whimsical Edition → Moon Palace Approach + future-plan.md §3)
 
 ### Implementation
-- Implemented Volumetric Rim Lighting (Silver Lining) on the Nebula clouds in `src/nebula.ts`.
-- Calculated the dot product between the view direction (`cameraPosition`) and light direction (`uPlayerPos`).
-- Applied a smoothstep edge factor based on density to ensure the rim lighting emphasizes the edges.
-- Blended the rim lighting strongly into the emissive node to make the edges pop without washing out the alpha channel.
-- Modifies `createNebulaMaterial()` and does not require new properties in level config.
+- Upgraded the final Moon Palace approach visuals in `src/moon_palace.ts`.
+- **Crystalline Surface**: Replaced the basic glowing sphere with a procedural TSL material featuring `fbm` noise for crystal facets and a mathematical heart SDF for craters.
+- **Silver Slides**: Transformed the ladders into elegant, flat silver slides with a pulsing, scrolling shimmer using TSL.
+- **Particle Reaction**: Added a lightweight, performant `THREE.InstancedMesh` sparkle system that spawns floating light orbs when the player gets within 300 units of the palace.
+- **Approach Drama**: Deepened the initial Z depth to `-400` but brought the final approach distance up to `-80`, utilizing an exponential curve (`Math.pow(progress, 2.0)`) for dramatic, sudden scale as the level concludes.
 
 ### Visuals
-- Dynamic lighting: Player engine glow strongly illuminates the edges of the cloud when flying behind a nebula puff, creating a highly realistic volumetric depth cue.
+- Deep procedural crystalline texture (`aaccff` to `ffffff`) dotted with vibrant pink (`ff69b4`) heart craters.
+- Scrolling TSL energy waves rolling up `ddddff` silver slides.
+- Dozens of `ffffff` additive-blended sparkles drifting off the sphere geometry when the player breaches the proximity threshold.
 
 ### Integration
-- `src/nebula.ts`: Replaces proximity logic inside `createNebulaMaterial` to combine basic proximity glow and the new directional backlight silver lining.
-- Fits perfectly into existing Level 5 nebula logic (environments.nebula).
+- `src/moon_palace.ts`: Self-contained TSL and instantiation logic.
+- Maintained exact `update(delta, cameraX, playerPos)` and `cleanup()` contracts.
 
 ### Testing
-- [x] `npm run build` passes
-- [x] Tested in Level 5
-- [x] Mobile/touch controls unaffected
+- [x] `npx tsc --noEmit` passes cleanly.
+- [x] `npm run build` succeeds perfectly.
+- [x] All interactions (glow, approach distance, proximity) function correctly within the established level hooks.
