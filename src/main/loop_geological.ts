@@ -10,8 +10,12 @@ import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { VictoryState } from '../victory_system';
 import { getLevelSpan } from '../depth_layers';
-import { shouldSpawnStarlightKoi } from '../starlight_koi';
-import { shouldSpawnBubbleCoral, getBubbleCoralPlacement, resolveBubbleCoralClusterCount } from '../bubble_coral';
+import {
+    shouldSpawnStarlightKoi,
+    shouldSpawnBubbleCoral,
+    getBubbleCoralPlacement,
+    resolveBubbleCoralClusterCount
+} from '../level_spawn_rules';
 import { animateFoliage, updateSolarSail } from '../foliage';
 import { moonPlants } from '../visuals';
 import {

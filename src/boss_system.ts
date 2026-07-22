@@ -3,7 +3,7 @@ import { decorationBudget } from './decoration_budget';
 
 export type BossPhase = 'entering' | 'phase1' | 'phase2' | 'phase3' | 'defeated';
 
-export const BOSS_DISPLAY_NAME = 'STAR-EATER PITCHER';
+export { STAR_EATER_PITCHER_NAME as BOSS_DISPLAY_NAME } from './boss_display_names';
 
 const PHASE_NAMES: Record<BossPhase, string> = {
     entering: 'APPROACH',

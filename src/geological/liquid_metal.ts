@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { time, positionLocal, normalLocal, color, sin, mix, float } from 'three/tsl';
 import { fbm } from './geodes';
+import { disposeGeometryIfOwned } from '../gpu_resources';
 
 // 7. LIQUID METAL BLOBS (Advanced Splitting/Recombining)
 
@@ -115,7 +116,8 @@ export class LiquidMetalBlob {
         // Clean up droplets
         this.droplets.forEach(d => {
             this.group.remove(d.mesh);
-            // d.mesh.geometry.dispose(); // Handled by GC/Pooling usually, but good practice if high churn
+            // Geometry is per-droplet; material is shared with the parent blob
+            disposeGeometryIfOwned(d.mesh.geometry);
         });
         this.droplets = [];
     }

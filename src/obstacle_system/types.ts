@@ -1,14 +1,23 @@
+import type { WasmExports } from '../wasm_loader';
 import * as THREE from 'three';
 import type { LevelConfig } from '../level_config';
 import type { SporeCloud } from '../geological';
+import { markShared, noteGeometryCreated } from '../gpu_resources';
 
 /** Shared unit geometry — scaled per instance (pooled, not reallocated). */
-export const SHARED_ASTEROID_GEOMETRY = new THREE.IcosahedronGeometry(1, 0);
-export const SHARED_CANDY_GEOMETRY = new THREE.IcosahedronGeometry(1, 1);
+export const SHARED_ASTEROID_GEOMETRY = markShared(new THREE.IcosahedronGeometry(1, 0));
+export const SHARED_CANDY_GEOMETRY = markShared(new THREE.IcosahedronGeometry(1, 1));
+noteGeometryCreated();
+noteGeometryCreated();
 
 export type GameplayModifiers = {
     shieldActive: boolean;
     shieldBouncesAsteroids: boolean;
+};
+
+export type ObstacleWasmHandle = {
+    exports: WasmExports | null;
+    memory: Float32Array | null;
 };
 
 export type ObstacleSystemOptions = {
@@ -16,7 +25,7 @@ export type ObstacleSystemOptions = {
     getPlayer: () => THREE.Group | null;
     getCurrentConfig: () => LevelConfig | undefined;
     playerState: { health: number; invincible: boolean; inSafeHarbor?: boolean; velocity: THREE.Vector3 };
-    getWasm: () => { exports: any; memory: Float32Array | null };
+    getWasm: () => ObstacleWasmHandle;
     setWasmMemory: (memory: Float32Array | null) => void;
     sporeClouds: SporeCloud[];
     particleSystem: {

@@ -19,6 +19,7 @@ import {
 } from '../candy_materials';
 import { SHARED_ASTEROID_GEOMETRY, SHARED_CANDY_GEOMETRY } from './types';
 import type { ObstacleSystemHost } from './host';
+import { disposeObject } from '../utils';
 
 export function splitAsteroid(host: ObstacleSystemHost, asteroid: THREE.Mesh) {
         const wasCandy = !!asteroid.userData.isCandyAsteroid;
@@ -68,6 +69,7 @@ export function splitAsteroid(host: ObstacleSystemHost, asteroid: THREE.Mesh) {
         }
 
         host.scene.remove(asteroid);
+        disposeObject(asteroid);
         const idx = host.obstacles.indexOf(asteroid);
         if (idx > -1) host.obstacles.splice(idx, 1);
     }

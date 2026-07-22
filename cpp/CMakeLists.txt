@@ -66,20 +66,6 @@ if (EMSCRIPTEN)
     endif()
 endif()
 
-# ---------------------------------------------------------------------------
-# Native test/benchmark target (host compiler, no Emscripten)
-# ---------------------------------------------------------------------------
-option(BUILD_NATIVE_TESTS "Build native unit-test binary" OFF)
-
-if (BUILD_NATIVE_TESTS AND NOT EMSCRIPTEN)
-    add_executable(dog_dash_test
-        src/collision.cpp
-        src/physics.cpp
-        src/noise.cpp
-        tests/test_collision.cpp
-        tests/test_physics.cpp
-        tests/test_noise.cpp
-    )
-    target_include_directories(dog_dash_test PRIVATE src)
-    target_compile_options(dog_dash_test PRIVATE -O2)
-endif()
+# Native host tests were referenced historically (BUILD_NATIVE_TESTS) but the
+# cpp/tests/*.cpp sources were never checked in. Re-add that option only when
+# real native tests land; until then keep the Emscripten target only.

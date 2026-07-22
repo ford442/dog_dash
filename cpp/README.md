@@ -1,14 +1,14 @@
-# Dog Dash — C++ WASM Module
+# Dog Dash — C++ WASM Module (experimental)
 
-Optional WebAssembly backend compiled with [Emscripten](https://emscripten.org/). It mirrors the AssemblyScript collision API and adds **Verlet physics** (`stepPhysics`, body accessors) and **fractal noise** (`fractalNoise2D`, `fractalNoise3D`) for procedural terrain and sling gameplay.
+> **Product status:** AssemblyScript is the supported collision backend. This tree is optional and not required for `npm run dev` / `npm run build`. See [docs/WASM_BACKENDS.md](../docs/WASM_BACKENDS.md).
 
-The default game build uses AssemblyScript only. Enable the C++ backend at runtime with `VITE_CPP_WASM=true` after building and copying `game_cpp.wasm`.
+Optional WebAssembly backend compiled with [Emscripten](https://emscripten.org/). It mirrors the AssemblyScript collision API and also exports **Verlet physics** (`stepPhysics`, body accessors) and **fractal noise** (`fractalNoise2D`, `fractalNoise3D`). Those extras are **not** wired into TypeScript gameplay yet.
 
-See [docs/WASM_BACKENDS.md](../docs/WASM_BACKENDS.md) for when to choose each backend.
+The default game build uses AssemblyScript only. Enable the C++ backend at runtime with `VITE_CPP_WASM=true` after building and copying `game_cpp.wasm` (falls back to AS if the binary is missing).
 
 ## Quick start
 
-### Option A — Local emsdk (recommended for active C++ work)
+### Local emsdk
 
 ```bash
 git clone https://github.com/emscripten-core/emsdk.git
@@ -35,7 +35,7 @@ npm run build:cpp-wasm
 
 `cpp/build.sh` also picks up `emcc` when it is already on `PATH` after you `source emsdk_env.sh`.
 
-### Option B — Docker (no local emsdk)
+### Docker (no local emsdk)
 
 Requires Docker. Builds inside the official `emscripten/emsdk` image:
 
@@ -43,64 +43,32 @@ Requires Docker. Builds inside the official `emscripten/emsdk` image:
 npm run build:cpp-wasm:docker
 ```
 
-Equivalent one-liner:
+## Scripts
 
-```bash
-./cpp/build.sh --docker --release
-```
-
-### Option C — CMake (alternative to build.sh)
-
-```bash
-cd cpp
-emcmake cmake -B build -DCMAKE_BUILD_TYPE=Release
-emmake cmake --build build
-cp build/game_cpp.wasm ../public/build/
-```
-
-## npm scripts
-
-| Script | Description |
-|--------|-------------|
+| Script | Purpose |
+|--------|---------|
 | `npm run build:cpp-wasm` | Release build via `cpp/build.sh --release` |
 | `npm run build:cpp-wasm:debug` | Debug/unoptimised build |
 | `npm run build:cpp-wasm:docker` | Docker build (no local emsdk) |
 | `npm run copy:cpp-wasm` | Copy `build/game_cpp.wasm` → `public/build/` |
-| `npm run build:all-wasm` | AssemblyScript (always) + C++ (when emsdk is present) |
 | `npm run verify:cpp-wasm` | Node smoke-check of `public/build/game_cpp.wasm` |
+| `npm run build:all-wasm` | AS always; C++ only if emsdk/docker available |
 
-## Runtime opt-in
+## Runtime
 
-Create `.env.development.local`:
-
-```
-VITE_CPP_WASM=true
-```
-
-Or force in code:
-
-```ts
-import { loadWasm, WasmBackend } from './wasm_loader';
-const wasm = await loadWasm(WasmBackend.Cpp);
+```bash
+VITE_CPP_WASM=true npm run dev
 ```
 
 If `game_cpp.wasm` is missing or fails to load, `wasm_loader.ts` falls back to AssemblyScript automatically.
-
-## Source layout
-
-| File | Role |
-|------|------|
-| `src/main.cpp` | Entry point (includes subsystems) |
-| `src/collision.cpp` | Asteroid/spore/boss collision (AS parity) |
-| `src/physics.cpp` | Verlet integrator |
-| `src/noise.cpp` | Simplex + fractal noise |
-| `build.sh` | Single-command Emscripten build |
-| `CMakeLists.txt` | CMake/Emscripten alternative |
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
-| `emcc not found` | `source /path/to/emsdk/emsdk_env.sh` or use `--docker` |
 | `loadWasm(Cpp)` falls back to AS | Run `npm run build:cpp-wasm` and confirm `public/build/game_cpp.wasm` exists |
-| Docker permission errors | Ensure your user can run `docker` (or use local emsdk) |
+| emsdk not found | `source emsdk_env.sh` or use `build:cpp-wasm:docker` |
+
+## Future
+
+Wire Verlet/noise from TS (or drop this tree) before treating C++ as a supported production path.

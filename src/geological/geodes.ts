@@ -32,6 +32,7 @@ import {
     pow
 } from 'three/tsl';
 import { ParticleSystem } from '../particles';
+import { disposeObject } from '../utils';
 
 // --- TSL Noise Functions (3D) ---
 
@@ -371,10 +372,7 @@ export function destroyNebulaJellyMoss(mesh: THREE.Mesh, scene: THREE.Scene, par
 
     // 3. Remove Main Mesh
     scene.remove(mesh);
-
-    // Dispose resources if needed (geometry/material)
-    // Three.js usually handles this if we drop references, but good practice to dispose if dynamic
-    // (mesh.geometry as THREE.BufferGeometry).dispose();
+    disposeObject(mesh);
 }
 
 

@@ -14,7 +14,7 @@
     "build:cpp-wasm:debug": "bash cpp/build.sh",
     "build:cpp-wasm:docker": "bash cpp/build.sh --docker --release",
     "build:all-wasm": "npm run build:wasm && npm run copy:wasm && bash scripts/build-cpp-wasm-if-available.sh",
-    "copy:cpp-wasm": "node -e \"const fs=require('fs'); const src='build/game_cpp.wasm'; const dest='public/build/game_cpp.wasm'; if(fs.existsSync(src)){fs.mkdirSync('public/build',{recursive:true}); fs.copyFileSync(src,dest); console.log('Copied',dest);}\"",
+    "copy:cpp-wasm": "node -e \"const fs=require('fs'); const src='build/game_cpp.wasm'; const dest='public/build/game_cpp.wasm'; if(fs.existsSync(src)){fs.mkdirSync('public/build',{recursive:true}); fs.copyFileSync(src,dest); console.log('Copied',dest);} else { console.log('Skip copy:cpp-wasm — build/game_cpp.wasm missing (experimental; AS-only default).'); }\"",
     "verify:cpp-wasm": "node scripts/verify-cpp-wasm.mjs",
     "predev": "npm run build:wasm && npm run copy:wasm",
     "watch:wasm": "node scripts/watch-wasm.cjs",

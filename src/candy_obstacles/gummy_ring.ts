@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CandyFlavor, CANDY_COLORS } from './shared';
+import { disposeObject } from '../utils';
 
 function createGummyStripeTexture(primary: number, secondary: number): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -173,16 +174,7 @@ export class GummyRing {
         if (!this.active) return;
         this.active = false;
         this.scene.remove(this.group);
-        this.group.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                child.geometry?.dispose();
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(m => m.dispose());
-                } else {
-                    child.material?.dispose();
-                }
-            }
-        });
+        disposeObject(this.group);
     }
 }
 

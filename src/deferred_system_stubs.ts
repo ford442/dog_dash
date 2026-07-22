@@ -1,17 +1,14 @@
-import * as THREE from 'three';
-import type { BossManager } from './boss_system';
-import type { WaterfallSystem } from './waterfall';
-import type { IndustrialBackgroundSystem } from './industrial_background';
-import type { BiologicalBackgroundSystem } from './biological_background';
-import type { CosmicDustSystem } from './cosmic_dust';
-import type { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { PlanetaryHorizonSystem } from './planetary_horizon';
 import type { ReEntrySystem } from './reentry';
+import type { WaterfallSystem } from './waterfall';
+import type { IndustrialBackgroundSystem } from './industrial_background';
+import type { BiologicalBackgroundSystem } from './biological_background';
+import type { CosmicDustSystem } from './cosmic_dust';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
-import type { LiquidMetalSystem } from './geological';
+import type { BossManager } from './boss_system';
 import type { GhostDebrisSystem } from './ghost_debris';
 import type { VoidJellyfishSystem } from './void_jellyfish';
 import type { IndustrialGeometryManager } from './industrial_geometry';
@@ -123,14 +120,6 @@ export function createStormGeodeSystemStub(): StormGeodeSystem {
     } as unknown as StormGeodeSystem;
 }
 
-export function createLiquidMetalSystemStub(): LiquidMetalSystem {
-    return {
-        createBlob: () => new THREE.Group(),
-        update: noop,
-        checkCollisions: noop
-    } as unknown as LiquidMetalSystem;
-}
-
 export function createGhostDebrisSystemStub(): GhostDebrisSystem {
     return {
         active: false,
@@ -199,12 +188,4 @@ export function createToyRocketSpawnManagerStub(): ToyRocketSpawnManager {
     return {
         spawnForLevel: noop
     } as unknown as ToyRocketSpawnManager;
-}
-
-export function createPastelNebulaSystemStub(): PastelNebulaSystem {
-    return {
-        activate: () => {},
-        deactivate: () => {},
-        update: () => {}
-    } as unknown as PastelNebulaSystem;
 }

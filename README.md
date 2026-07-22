@@ -28,7 +28,7 @@ Dog Dash - A 3D world exploration game.
    npm install     # local development
    ```
 
-2. Start the development server (`predev` rebuilds AssemblyScript WASM automatically):
+2. Start the development server (`predev` rebuilds AssemblyScript WASM automatically — no Emscripten required; see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md)):
 
    ```bash
    npm run dev
@@ -147,7 +147,7 @@ Navigate your rocket through 6 massive levels, blasting asteroids and dodging cr
 ## Technical Details
 
 - Built with Three.js, WebGPU renderer, and a WebGL2 fallback renderer
-- **WASM Physics** - AssemblyScript for collision detection
+- **WASM Physics** - AssemblyScript for collision detection ([docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md); C++ tree is experimental)
 - **Mathematical Patterns** - Procedural enemy formations using parametric equations
 - Modern WebGPU API for next-generation graphics, with WebGL2 available for debugging and compatibility checks
-- Vite build system for fast development (`vite.config.ts` — ES2022 target, `public/` assets, optional code splitting)
+- Vite build system for fast development (`vite.config.ts` — ES2022 target, `public/` assets, vendor + per-level code splitting — see [docs/PERFORMANCE_BUDGETS.md](docs/PERFORMANCE_BUDGETS.md))

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CandyType, CandyFlavor, CANDY_COLORS, LOLLIPOP_SWIRLS } from './shared';
+import { disposeObject } from '../utils';
 
 export class CandyAsteroid {
     mesh: THREE.Mesh;
@@ -527,19 +528,7 @@ export class CandyAsteroid {
         if (this.mesh.parent) {
             this.mesh.parent.remove(this.mesh);
         }
-        this.mesh.traverse((child) => {
-            if ((child as THREE.Mesh).geometry) {
-                (child as THREE.Mesh).geometry.dispose();
-            }
-            if ((child as THREE.Mesh).material) {
-                const mat = (child as THREE.Mesh).material;
-                if (Array.isArray(mat)) {
-                    mat.forEach(m => m.dispose());
-                } else {
-                    mat.dispose();
-                }
-            }
-        });
+        disposeObject(this.mesh);
         this.active = false;
     }
 }

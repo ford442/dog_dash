@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import type { SlingableObjectSystem } from './slingable_objects';
 import { getLevelSpan } from './depth_layers';
 import type { LevelConfig } from './level_config';
+import { markSharedMaterials, noteMaterialCreated } from './gpu_resources';
 
 export type ToyRocketVariant = 'bentFin' | 'missingPiece' | 'littleFlag';
 
@@ -52,6 +53,12 @@ export const TOY_ROCKET_MATERIALS = {
         flatShading: true
     })
 };
+
+markSharedMaterials(TOY_ROCKET_MATERIALS);
+noteMaterialCreated();
+noteMaterialCreated();
+noteMaterialCreated();
+noteMaterialCreated();
 
 const VARIANTS: ToyRocketVariant[] = ['bentFin', 'missingPiece', 'littleFlag'];
 

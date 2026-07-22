@@ -22,7 +22,12 @@ import {
     pow,
     dot
 } from 'three/tsl';
-import type { ParticleSystem } from './particles';
+import {
+    retainMaterial,
+    releaseMaterial,
+    disposeMaterialIfOwned,
+    noteMaterialCreated
+} from '../gpu_resources';
 
 /**
  * Shared candy / crystal / pastel materials for props across Dog Dash.
@@ -119,6 +124,7 @@ export type CandyMaterial = THREE.Material & { userData: { candyUniforms?: Candy
 // ---------------------------------------------------------------------------
 
 const materialCache = new Map<string, CandyMaterial>();
+const cachedMaterialSet = new Set<CandyMaterial>();
 const uncachedMaterials = new Set<CandyMaterial>();
 
 export function shouldUseLiteMaterials(forceLite?: boolean): boolean {
@@ -131,8 +137,13 @@ export function trackMaterial(mat: CandyMaterial, cacheKey?: string): CandyMater
         const existing = materialCache.get(cacheKey);
         if (existing) return existing;
         materialCache.set(cacheKey, mat);
+        cachedMaterialSet.add(mat);
+        noteMaterialCreated();
+        // Process-lifetime shared — immortal until disposeCandyMaterialCache
+        retainMaterial(mat);
     } else {
         uncachedMaterials.add(mat);
+        noteMaterialCreated();
     }
     return mat;
 }
@@ -141,25 +152,36 @@ export function getCachedCandyMaterial(cacheKey: string): CandyMaterial | undefi
     return materialCache.get(cacheKey);
 }
 
+/** Safe dispose: no-ops for cacheKey-shared mats; frees uncached/owned mats + maps. */
 export function disposeCandyMaterial(mat: THREE.Material): void {
-    if (materialCache.has(mat as CandyMaterial)) return;
-    if (!uncachedMaterials.delete(mat as CandyMaterial)) return;
-    mat.dispose();
+    if (cachedMaterialSet.has(mat as CandyMaterial)) return;
+    if (uncachedMaterials.delete(mat as CandyMaterial)) {
+        disposeMaterialIfOwned(mat);
+        return;
+    }
+    disposeMaterialIfOwned(mat);
 }
 
+/** App-teardown only — frees the entire candy material cache. */
 export function disposeCandyMaterialCache(): void {
     for (const mat of materialCache.values()) {
-        mat.dispose();
+        // Drop retain so maps + material can free
+        releaseMaterial(mat);
     }
     materialCache.clear();
+    cachedMaterialSet.clear();
     for (const mat of uncachedMaterials) {
-        mat.dispose();
+        disposeMaterialIfOwned(mat);
     }
     uncachedMaterials.clear();
 }
 
 export function getCandyMaterialCacheSize(): number {
     return materialCache.size;
+}
+
+export function isCachedCandyMaterial(mat: THREE.Material): boolean {
+    return cachedMaterialSet.has(mat as CandyMaterial);
 }
 
 /** Rough GPU cost hint for budgeting new props. */

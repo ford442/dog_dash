@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Renderer**: Three.js + WebGPU (`three/webgpu` renderer, `three/tsl` for node-based shader materials)
 - **Language**: TypeScript, ES2022, ES modules, strict mode
 - **Build Tool**: Vite v7
-- **Physics**: AssemblyScript compiled to WASM for collision detection (also a parallel C++/Emscripten WASM build under `cpp/`)
+- **Physics**: AssemblyScript WASM for collision detection (supported). Experimental C++/Emscripten tree under `cpp/` — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
 - **Audio**: 100% procedural synthesis via Web Audio API (`audio_system.ts`) — no external audio files
 - **Entry point**: `index.html` → `src/main.ts`
 
@@ -26,9 +26,11 @@ npm run build:wasm             # compile assembly/index.ts to build/optimized.wa
 npm run copy:wasm               # copy optimized.wasm(.map) into public/build/
 npm run watch:wasm               # watch assembly/ and rebuild WASM on change
 
+# Experimental C++ WASM (optional; not required for onboarding — docs/WASM_BACKENDS.md)
 npm run build:cpp-wasm           # release build of cpp/ via cpp/build.sh --release
-npm run build:cpp-wasm:debug     # debug build of cpp/ via cpp/build.sh
-npm run copy:cpp-wasm             # copy build/game_cpp.wasm into public/build/
+npm run build:cpp-wasm:docker    # Docker build when emsdk is unavailable locally
+npm run copy:cpp-wasm             # copy build/game_cpp.wasm into public/build/ (if present)
+npm run verify:cpp-wasm          # Node instantiate check for game_cpp.wasm
 
 npm run typecheck                 # strict TypeScript check (see baseline ratchet below)
 npm run typecheck:ci              # CI gate: fail only on new errors vs .github/typecheck-baseline.txt
@@ -59,21 +61,21 @@ All gameplay TypeScript lives in `src/` (~70 modules, flat — no further subdir
 - `allocAsteroids(count)`, `allocSporeClouds(count)`, `allocBossHitboxes(count)` — allocate `Float32Array` views into WASM memory for circular/spherical hitboxes
 - `checkCollision`, `checkSporeCollision`, `checkBossCollision` — run collision checks against those buffers
 
-JS writes object positions directly into the `Float32Array` views, then calls the check functions. After editing `assembly/index.ts`, run `npm run build:wasm && npm run copy:wasm` (or `npm run watch:wasm` during dev) to regenerate `public/build/optimized.wasm`.
+JS writes object positions directly into the `Float32Array` views, then calls the check functions. After editing `assembly/index.ts`, run `npm run build:wasm && npm run copy:wasm` (or `npm run watch:wasm` during dev) to regenerate `public/build/optimized.wasm`. If WASM is unavailable at runtime, obstacle checks fall back to JS circle/sphere tests (see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md)).
 
 ### Domain map (where to make changes)
 | Domain | Files |
 |--------|-------|
-| Core game loop, renderer, level progression | `src/main/`, `level_config.ts`, `level_manager/` |
-| Environment & backgrounds | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts`, `aurora.ts`, `cosmic_dust.ts`, `meteor_shower.ts`, `ghost_debris.ts` |
-| Gameplay & obstacles | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
-| Visual effects | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
+| Core game loop, renderer, level progression | `src/main/` (incl. `main/loop_combat/`), `level_config.ts`, `level_manager/` |
+| Environment & backgrounds | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula/`, `biological_background.ts`, `industrial_background/`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts`, `aurora.ts`, `cosmic_dust.ts`, `meteor_shower.ts`, `ghost_debris.ts` |
+| Gameplay & obstacles | `obstacle_system/`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
+| Visual effects | `particles.ts`, `juice_effects/`, `magical_effects.ts`, `lighting.ts`, `flower_constellations/`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
 | UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `docs/touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
 | Performance guardrails | `decoration_budget.ts`, `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
-| Characters | `dog_cockpit.ts`, `space_friends.ts`, `player_loader.ts` |
-| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `assembly/index.ts` |
-| Audio | `audio_system.ts` |
+| Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
+| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `assembly/index.ts` (supported); `cpp/` experimental — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
+| Audio | `audio_system/` |
 | Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |
 
 ## Code Style

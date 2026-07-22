@@ -12,8 +12,12 @@ import { FlotillaMember } from '../space_friends';
 import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../candy_materials';
 import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
 import { getLevelSpan } from '../depth_layers';
-import { shouldSpawnStarlightKoi } from '../starlight_koi';
-import { shouldSpawnBubbleCoral, getBubbleCoralPlacement, resolveBubbleCoralClusterCount } from '../bubble_coral';
+import {
+    shouldSpawnStarlightKoi,
+    shouldSpawnBubbleCoral,
+    getBubbleCoralPlacement,
+    resolveBubbleCoralClusterCount
+} from '../level_spawn_rules';
 import { animateFoliage, updateSolarSail } from '../foliage';
 import { moonPlants } from '../visuals';
 import { keys, updateHealthDisplay } from '../ui_controls';
@@ -29,6 +33,7 @@ import {
 
 import { updatePlayer } from './player_update';
 import { renderGameFrame, getCollisionDebugTargets, RESOLUTION_RATIOS } from './render_helpers';
+import { updateGpuLeakDetector } from '../gpu_leak_detector';
 
 
 export function updateLoopCore(rawDelta: number, delta: number, _time: number): boolean {
@@ -37,6 +42,7 @@ export function updateLoopCore(rawDelta: number, delta: number, _time: number): 
     
         // --- Debug System ---
         game.debugSystem.update(rawDelta);
+        updateGpuLeakDetector(rawDelta);
         try {
             game.wireframeDebugHelper.update(scene, game.debugSystem.isEnabled('wireframe'));
             game.collisionDebugOverlay.update(

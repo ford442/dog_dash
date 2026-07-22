@@ -12,6 +12,7 @@ import { AudioSystem } from './audio_system';
 import { CreatureInteractionResult } from './creature_types';
 import { PowerUpType } from './powerup_manager';
 import { createGummyTranslucent, createIridescentCrystal } from './candy_materials';
+import { markShared, noteGeometryCreated } from './gpu_resources';
 
 type SnailState = 'drifting' | 'blessing' | 'blessed';
 
@@ -75,7 +76,8 @@ function getSpiralShellGeometry(): THREE.BufferGeometry {
     lip.translate(0, -0.15, 0);
     parts.push(lip);
 
-    sharedShellGeometry = mergeGeometries(parts);
+    sharedShellGeometry = markShared(mergeGeometries(parts));
+    noteGeometryCreated();
     return sharedShellGeometry;
 }
 

@@ -16,11 +16,16 @@ import {
 } from 'three/tsl';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import type { ParticleSystem } from './particles';
-import type { LevelEnvironments, BubbleCoralEnvironmentConfig } from './level_config';
+import type { BubbleCoralEnvironmentConfig } from './level_config';
+import type { BubbleCoralPlacement } from './level_spawn_rules';
 
 export type { BubbleCoralEnvironmentConfig };
-
-export type BubbleCoralPlacement = 'wall' | 'reef' | 'tunnel';
+export type { BubbleCoralPlacement };
+export {
+    shouldSpawnBubbleCoral,
+    getBubbleCoralPlacement,
+    resolveBubbleCoralClusterCount
+} from './level_spawn_rules';
 
 const MAX_CLUSTERS = 12;
 const BUBBLES_PER_CLUSTER = 10;
@@ -462,33 +467,4 @@ export class RainbowBubbleCoralManager {
         }
         this.clusters = [];
     }
-}
-
-export function shouldSpawnBubbleCoral(
-    environments: LevelEnvironments | undefined,
-    density: number | undefined
-): boolean {
-    if (!density || density <= 0) return false;
-    const env = environments || {};
-    if (env.bubbleCoral) return true;
-    return !!(env.waterfall || env.aquaticLife || env.biological);
-}
-
-export function getBubbleCoralPlacement(
-    environments: LevelEnvironments | undefined,
-    levelType?: string
-): BubbleCoralPlacement {
-    const env = environments || {};
-    if (env.waterfall) return 'wall';
-    if (levelType === 'tunnel' || levelType === 'organic_tunnel') return 'tunnel';
-    if (env.aquaticLife || env.biological) return 'reef';
-    return 'reef';
-}
-
-export function resolveBubbleCoralClusterCount(
-    baseDensity: number,
-    envConfig?: BubbleCoralEnvironmentConfig | boolean
-): number {
-    const mult = typeof envConfig === 'object' ? (envConfig.density ?? 1) : 1;
-    return Math.min(MAX_CLUSTERS, Math.max(1, Math.floor(baseDensity * mult)));
 }

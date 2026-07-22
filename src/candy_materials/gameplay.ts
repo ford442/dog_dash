@@ -19,6 +19,7 @@ import type { ParticleSystem } from '../particles';
 import type { CandyFlavor, CandyAsteroidVariant } from './shared';
 import { FLAVORS, CANDY_FLAVOR_COLORS, candyMaterialUniforms, updateCandyMaterialGlobals } from './shared';
 import { createCandyGloss, createGummyTranslucent } from './factories';
+import { retainMaterial, noteMaterialCreated } from '../gpu_resources';
 
 export function pickCandyFlavor(): CandyFlavor {
     return FLAVORS[Math.floor(Math.random() * FLAVORS.length)];
@@ -59,6 +60,8 @@ export function createCandyObstacleMaterial(
     });
 
     obstacleMaterialCache.set(key, mat);
+    noteMaterialCreated();
+    retainMaterial(mat);
     return mat;
 }
 

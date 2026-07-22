@@ -172,6 +172,12 @@ export class NebulaSystem {
         this.deactivate();
     }
 
+    /** Re-sync fixed-pool budget counters after decorationBudget.resetCounts(). */
+    resyncBudgetCounts(): void {
+        decorationBudget.syncCount('nebula_cloud_puffs', 45);
+        decorationBudget.syncCount('nebula_energy_motes', 50);
+        decorationBudget.syncCount('nebula_ribbons', 24);
+    }
 
     setMagicActive(isActive: boolean) {
         this.targetMagicIntensity = isActive ? 1.0 : 0.0;

@@ -13,6 +13,7 @@ import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import { createIridescentCrystal, createCandyGloss } from './candy_materials';
 import type { AudioSystem } from './audio_system';
 import { decorationBudget } from './decoration_budget';
+import { markShared, noteGeometryCreated, noteMaterialCreated } from './gpu_resources';
 
 const MAX_CHIMES = 8;
 const MAX_PENDANTS = 6;
@@ -31,29 +32,36 @@ const CRYSTAL_COLORS = [0x88ccff, 0xaa88ff, 0x66eeff, 0xcc99ff] as const;
 const CANDY_COLOR = 0xffb6e6;
 
 /** Shared meshes — one draw material variant per geometry type. */
-const HUB_GEOMETRY = new THREE.SphereGeometry(0.16, 8, 8);
-const RING_GEOMETRY = new THREE.TorusGeometry(0.34, 0.028, 6, 14);
-const STRING_GEOMETRY = (() => {
+const HUB_GEOMETRY = markShared(new THREE.SphereGeometry(0.16, 8, 8));
+const RING_GEOMETRY = markShared(new THREE.TorusGeometry(0.34, 0.028, 6, 14));
+const STRING_GEOMETRY = markShared((() => {
     const geo = new THREE.CylinderGeometry(0.006, 0.006, 1, 4);
     geo.translate(0, -0.5, 0);
     return geo;
-})();
-const PRISM_GEOMETRY = new THREE.OctahedronGeometry(0.11, 0);
-const CANDY_DROP_GEOMETRY = new THREE.ConeGeometry(0.09, 0.16, 5);
+})());
+const PRISM_GEOMETRY = markShared(new THREE.OctahedronGeometry(0.11, 0));
+const CANDY_DROP_GEOMETRY = markShared(new THREE.ConeGeometry(0.09, 0.16, 5));
+noteGeometryCreated();
+noteGeometryCreated();
+noteGeometryCreated();
+noteGeometryCreated();
+noteGeometryCreated();
 
-const HUB_MATERIAL = new THREE.MeshStandardMaterial({
+const HUB_MATERIAL = markShared(new THREE.MeshStandardMaterial({
     color: 0xffe4b5,
     emissive: 0xffd89b,
     emissiveIntensity: 0.35,
     roughness: 0.35,
     metalness: 0.55
-});
+}));
 
-const STRING_MATERIAL = new THREE.MeshBasicMaterial({
+const STRING_MATERIAL = markShared(new THREE.MeshBasicMaterial({
     color: 0xdde8ff,
     transparent: true,
     opacity: 0.55
-});
+}));
+noteMaterialCreated();
+noteMaterialCreated();
 
 const CRYSTAL_MATERIALS = CRYSTAL_COLORS.map((hex, i) =>
     createIridescentCrystal(hex, 1.1, { opacity: 0.86, cacheKey: `wind_chime_crystal_${i}` })

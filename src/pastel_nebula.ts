@@ -2,6 +2,23 @@ import * as THREE from 'three';
 import { time, color, uniform, sin, mix, positionWorld, float, uv, length, smoothstep } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
+function shouldUseLiteMaterials(): boolean {
+    return typeof window !== 'undefined' && window.usingWebGL === true;
+}
+
+function createLitePastelMaterial(colorHex: number, opacity: number, uPlayerPos: any): THREE.MeshBasicMaterial {
+    const mat = new THREE.MeshBasicMaterial({
+        color: colorHex,
+        transparent: true,
+        opacity: opacity * 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.FrontSide,
+    });
+    mat.userData.uPlayerPos = uPlayerPos;
+    return mat;
+}
+
 // Utility for creating materials inside the system
 function createPastelNebulaMaterial(
     color1: number,
@@ -9,6 +26,10 @@ function createPastelNebulaMaterial(
     opacity: number,
     uPlayerPos: any
 ) {
+    if (shouldUseLiteMaterials()) {
+        return createLitePastelMaterial(color1, opacity, uPlayerPos);
+    }
+
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -41,6 +62,10 @@ function createPastelNebulaMaterial(
 function createGlitterMaterial(
     uPlayerPos: any
 ) {
+    if (shouldUseLiteMaterials()) {
+        return createLitePastelMaterial(0xffffff, 0.6, uPlayerPos);
+    }
+
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,

@@ -24,6 +24,8 @@ import {
     handleBounce,
     processGrazeDetection
 } from './collision_hooks';
+import { disposeObject } from '../utils';
+import { checkCircleCollisionJs, checkSphereCollisionJs } from '../physics_utils';
 
 export class ObstacleSystem implements ObstacleSystemHost {
     readonly scene: THREE.Scene;
@@ -164,6 +166,7 @@ export class ObstacleSystem implements ObstacleSystemHost {
 
             if (obs.position.x < playerX - 30 || Math.abs(obs.position.z) > 50) {
                 this.scene.remove(obs);
+                disposeObject(obs);
                 this.obstacles.splice(i, 1);
             }
         }
@@ -172,6 +175,7 @@ export class ObstacleSystem implements ObstacleSystemHost {
             const enemy = this.patternEnemies[i];
             if (enemy.mesh.position.x < playerX - 50) {
                 this.scene.remove(enemy.mesh);
+                disposeObject(enemy.mesh);
                 this.patternEnemies.splice(i, 1);
             }
         }
@@ -209,32 +213,47 @@ export class ObstacleSystem implements ObstacleSystemHost {
             if (squid.isDestroyed || squid.getPosition().x < playerX - 50) {
                 if (!squid.isDestroyed) {
                     this.scene.remove(squid.group);
+                    disposeObject(squid.group);
                 }
                 this.squids.splice(i, 1);
             }
         }
 
         const wasm = this.options.getWasm();
-        if (!wasm.exports) return;
-
         const activeObstacles = this.obstacles.filter(o => Math.abs(o.position.z) < 2.0);
+        let hitIndex = -1;
+
         if (activeObstacles.length > 0) {
-            const ptr = wasm.exports.allocAsteroids(activeObstacles.length);
-            let memory = wasm.memory;
-            if (!memory || memory.buffer !== wasm.exports.memory.buffer) {
-                memory = new Float32Array(wasm.exports.memory.buffer);
-                this.options.setWasmMemory(memory);
-            }
-            const startIdx = ptr >>> 2;
-            for (let i = 0; i < activeObstacles.length; i++) {
-                const obs = activeObstacles[i];
-                const offset = startIdx + (i * 3);
-                memory[offset] = obs.position.x;
-                memory[offset + 1] = obs.position.y;
-                memory[offset + 2] = obs.userData.radius || 1.0;
+            if (wasm.exports) {
+                const ptr = wasm.exports.allocAsteroids(activeObstacles.length);
+                let memory = wasm.memory;
+                if (!memory || memory.buffer !== wasm.exports.memory.buffer) {
+                    memory = new Float32Array(wasm.exports.memory.buffer);
+                    this.options.setWasmMemory(memory);
+                }
+                const startIdx = ptr >>> 2;
+                for (let i = 0; i < activeObstacles.length; i++) {
+                    const obs = activeObstacles[i];
+                    const offset = startIdx + (i * 3);
+                    memory[offset] = obs.position.x;
+                    memory[offset + 1] = obs.position.y;
+                    memory[offset + 2] = obs.userData.radius || 1.0;
+                }
+
+                hitIndex = wasm.exports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
+            } else {
+                hitIndex = checkCircleCollisionJs(
+                    playerX,
+                    playerY,
+                    0.5,
+                    activeObstacles.map((obs) => ({
+                        x: obs.position.x,
+                        y: obs.position.y,
+                        radius: obs.userData.radius || 1.0
+                    }))
+                );
             }
 
-            const hitIndex = wasm.exports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
             if (hitIndex !== -1) {
                 const hitObs = activeObstacles[hitIndex];
                 const hitRadius = hitObs.userData.radius || 1.0;
@@ -271,23 +290,40 @@ export class ObstacleSystem implements ObstacleSystemHost {
 
         const nearbyClouds = this.options.sporeClouds.filter(c => c.active && Math.abs(c.position.x - playerX) < 20);
         if (nearbyClouds.length > 0) {
-            const cloudPtr = wasm.exports.allocSporeClouds(nearbyClouds.length);
-            let memory = wasm.memory;
-            if (!memory || memory.buffer !== wasm.exports.memory.buffer) {
-                memory = new Float32Array(wasm.exports.memory.buffer);
-                this.options.setWasmMemory(memory);
-            }
-            const cloudStartIdx = cloudPtr >>> 2;
-            for (let i = 0; i < nearbyClouds.length; i++) {
-                const c = nearbyClouds[i];
-                const offset = cloudStartIdx + (i * 4);
-                memory[offset] = c.position.x;
-                memory[offset + 1] = c.position.y;
-                memory[offset + 2] = c.position.z;
-                memory[offset + 3] = 5.0;
+            let cloudHitIndex = -1;
+            if (wasm.exports) {
+                const cloudPtr = wasm.exports.allocSporeClouds(nearbyClouds.length);
+                let memory = wasm.memory;
+                if (!memory || memory.buffer !== wasm.exports.memory.buffer) {
+                    memory = new Float32Array(wasm.exports.memory.buffer);
+                    this.options.setWasmMemory(memory);
+                }
+                const cloudStartIdx = cloudPtr >>> 2;
+                for (let i = 0; i < nearbyClouds.length; i++) {
+                    const c = nearbyClouds[i];
+                    const offset = cloudStartIdx + (i * 4);
+                    memory[offset] = c.position.x;
+                    memory[offset + 1] = c.position.y;
+                    memory[offset + 2] = c.position.z;
+                    memory[offset + 3] = 5.0;
+                }
+
+                cloudHitIndex = wasm.exports.checkSporeCollision(playerX, playerY, 0, 1.0, nearbyClouds.length);
+            } else {
+                cloudHitIndex = checkSphereCollisionJs(
+                    playerX,
+                    playerY,
+                    0,
+                    1.0,
+                    nearbyClouds.map((c) => ({
+                        x: c.position.x,
+                        y: c.position.y,
+                        z: c.position.z,
+                        radius: 5.0
+                    }))
+                );
             }
 
-            const cloudHitIndex = wasm.exports.checkSporeCollision(playerX, playerY, 0, 1.0, nearbyClouds.length);
             if (cloudHitIndex !== -1) {
                 const hitCloud = nearbyClouds[cloudHitIndex];
                 if (!hitCloud.spores.userData.playerInside) {

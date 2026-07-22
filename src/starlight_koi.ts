@@ -453,12 +453,6 @@ export class StarlightKoiManager {
     }
 }
 
-/** True when koi should appear for this level's environment mix. */
-export function shouldSpawnStarlightKoi(
-    environments: { biological?: boolean; aquaticLife?: boolean; nebula?: boolean } | undefined,
-    density: number | undefined
-): boolean {
-    if (!density || density <= 0) return false;
-    const env = environments || {};
-    return !!(env.biological || env.aquaticLife || env.nebula);
-}
+export {
+    shouldSpawnStarlightKoi
+} from './level_spawn_rules';

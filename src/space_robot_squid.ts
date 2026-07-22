@@ -67,7 +67,7 @@ const COLOR_INK_CLOUD = 0x440088;
 const COLOR_EYE_GLOW = 0xff00ff;
 
 /** Display name shown in the boss health bar UI */
-export const BOSS_DISPLAY_NAME = 'NEBULA KRAKEN';
+export { NEBULA_KRAKEN_NAME as BOSS_DISPLAY_NAME } from './boss_display_names';
 
 /**
  * NebulaKraken: A giant biomechanical space robot squid boss entity.

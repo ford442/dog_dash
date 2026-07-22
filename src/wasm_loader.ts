@@ -2,26 +2,19 @@
  * wasm_loader.ts
  * Unified WASM loader for Dog Dash.
  *
- * Supports two backends:
- *   - AssemblyScript (default)  — build/optimized.wasm
- *   - C++            (opt-in)   — build/game_cpp.wasm  (compiled via Emscripten)
+ * Supported product backend:
+ *   - AssemblyScript (default)  — public/build/optimized.wasm
  *
- * Feature flag
- * ─────────────
- * Set the Vite env variable VITE_CPP_WASM=true to opt into the C++ backend
- * (e.g. in a .env.development.local file or CI environment).
- * The loader automatically falls back to AssemblyScript if the C++ binary is
- * not found or fails to instantiate.
+ * Experimental (not required for onboarding; see docs/WASM_BACKENDS.md):
+ *   - C++ / Emscripten          — public/build/game_cpp.wasm
+ *     Opt-in via VITE_CPP_WASM=true; falls back to AssemblyScript if missing.
  *
  * Usage
  * ─────
- * import { loadWasm, WasmBackend, type WasmHandle } from './wasm_loader';
+ * import { loadWasm, type WasmHandle, type WasmExports } from './wasm_loader';
  *
- * const wasm = await loadWasm();          // respects VITE_CPP_WASM flag
- * const wasm = await loadWasm(WasmBackend.Cpp); // force C++
- *
- * // wasm.exports mirrors the AssemblyScript module API plus optional C++ extras
- * const ptr = wasm.exports.allocAsteroids(10);
+ * const wasm = await loadWasm();          // AssemblyScript by default
+ * const ptr = wasm?.exports.allocAsteroids(10);
  */
 
 // ---------------------------------------------------------------------------
@@ -47,7 +40,7 @@ export interface CoreWasmExports {
     getObjectPtr(): number;
 }
 
-/** Extra exports available only in the C++ backend. */
+/** Extra exports available only in the experimental C++ backend (unused by gameplay today). */
 export interface CppExtrasExports {
     // Verlet physics
     allocPhysicsBodies(count: number): number;
@@ -120,7 +113,7 @@ async function loadAssemblyScript(): Promise<WasmHandle> {
 async function loadCpp(): Promise<WasmHandle> {
     const { instance } = await fetchAndInstantiate('./build/game_cpp.wasm', cppImports());
     const exports = instance.exports as unknown as WasmExports;
-    console.log('✅ C++ WASM loaded');
+    console.log('✅ C++ WASM loaded (experimental)');
     return {
         exports,
         memory: new Float32Array((exports.memory as WebAssembly.Memory).buffer),
@@ -136,13 +129,12 @@ async function loadCpp(): Promise<WasmHandle> {
  * Load the WASM backend.
  *
  * @param backend  Override the backend to use.  Defaults to:
- *                 - C++            if `import.meta.env.VITE_CPP_WASM === 'true'`
- *                 - AssemblyScript otherwise
+ *                 - C++ (experimental) if `import.meta.env.VITE_CPP_WASM === 'true'`
+ *                 - AssemblyScript otherwise (supported product path)
  *
- * If the requested backend fails to load, the loader falls back to
- * AssemblyScript automatically (C++ → AS fallback only).
- *
- * Returns `null` if both backends fail.
+ * If the requested C++ backend fails to load, the loader falls back to
+ * AssemblyScript. Returns `null` if AssemblyScript also fails (callers must
+ * tolerate null exports — obstacle checks use a JS fallback).
  */
 export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null> {
     const useCpp =
@@ -155,7 +147,7 @@ export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null
         try {
             return await loadCpp();
         } catch (err) {
-            console.warn('⚠️ C++ WASM unavailable, falling back to AssemblyScript:', err);
+            console.warn('⚠️ Experimental C++ WASM unavailable, falling back to AssemblyScript:', err);
         }
     }
 

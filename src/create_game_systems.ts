@@ -17,8 +17,6 @@ import {
     createIndustrialSystemStub,
     createBiologicalSystemStub,
     createCosmicDustSystemStub,
-    createPastelNebulaSystemStub,
-    createLiquidMetalSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createChromaShiftSystemStub,
@@ -31,13 +29,13 @@ import type { PlanetaryHorizonSystem } from './planetary_horizon';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
-import type { PastelNebulaSystem } from './pastel_nebula';
+import { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
 import type { BiologicalBackgroundSystem } from './biological_background';
-import type { LiquidMetalSystem } from './geological';
+import { LiquidMetalSystem } from './geological/liquid_metal';
 import type { BossManager } from './boss_system';
 import { getAudioSystem, initAudioOnInteraction, type AudioSystem } from './audio_system';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
@@ -116,8 +114,6 @@ export type LevelEnvironmentSystemExports = {
     industrialSystem: IndustrialBackgroundSystem;
     biologicalSystem: BiologicalBackgroundSystem;
     cosmicDustSystem: CosmicDustSystem;
-    pastelNebulaSystem: PastelNebulaSystem;
-    liquidMetalSystem: LiquidMetalSystem;
     bossManager: BossManager;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
     chromaShiftSystem: ChromaShiftSystem;
@@ -147,11 +143,11 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const auroraSystem = new AuroraSystem(scene, weaponLightManager);
     const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
     const cosmicDustSystem: CosmicDustSystem = createCosmicDustSystemStub();
-    const pastelNebulaSystem: PastelNebulaSystem = createPastelNebulaSystemStub();
+    const pastelNebulaSystem = new PastelNebulaSystem(scene, weaponLightManager);
     nebulaSystem.setCamera(camera);
 
     const biologicalSystem: BiologicalBackgroundSystem = createBiologicalSystemStub();
-    const liquidMetalSystem: LiquidMetalSystem = createLiquidMetalSystemStub();
+    const liquidMetalSystem = new LiquidMetalSystem(scene);
     const bossManager: BossManager = createBossManagerStub();
 
     const audioSystem = getAudioSystem();

@@ -1,69 +1,81 @@
 # WASM Backends
 
-Dog Dash ships two WebAssembly backends for physics and procedural helpers. Only one is active at runtime; the loader in `src/wasm_loader.ts` selects it.
+## Decision (2026-07): AssemblyScript is the supported product backend
 
-## Decision matrix
+**Dog Dash ships and documents AssemblyScript collision WASM as the only supported physics path for development, production, and CI.**
 
-| | **AssemblyScript (default)** | **C++ (opt-in)** |
-|---|------------------------------|------------------|
-| **Binary** | `public/build/optimized.wasm` | `public/build/game_cpp.wasm` |
-| **Build** | `npm run build:wasm` (automatic in `predev` / `npm run build`) | `npm run build:cpp-wasm` (requires Emscripten) |
-| **Extra deps** | None (`asc` via npm) | [Emscripten emsdk](https://emscripten.org/) or Docker |
-| **Collision** | ✅ Asteroids, spores, bosses | ✅ Same API |
-| **Verlet physics** | ❌ | ✅ `stepPhysics`, body accessors |
-| **Fractal noise** | ❌ | ✅ `fractalNoise2D` / `fractalNoise3D` |
-| **CI default** | ✅ Built on every PR | Optional job when emsdk is installed |
-| **Runtime flag** | (default) | `VITE_CPP_WASM=true` or `loadWasm(WasmBackend.Cpp)` |
+The C++/Emscripten tree under [`cpp/`](../cpp/) is **experimental / parked**. It mirrors the collision API and also exports Verlet physics and fractal noise, but:
 
-### When to use AssemblyScript
+- Those extras are **not** called from TypeScript gameplay today
+- `game_cpp.wasm` is **not** part of the default `public/build/` tree
+- Emscripten is **not** required to clone, `npm run dev`, or `npm run build`
 
-- Normal development and production builds
-- You only need WASM collision checks (`checkCollision`, `checkSporeCollision`, `checkBossCollision`)
-- Zero native toolchain beyond Node.js
+Revisit dual-backend product integration only if a concrete gameplay feature needs Verlet or WASM noise (see “Future” below).
 
-### When to use C++
+| | **AssemblyScript (supported)** | **C++ (experimental)** |
+|---|------------------------------|------------------------|
+| **Binary** | `public/build/optimized.wasm` (~3 KB) | `public/build/game_cpp.wasm` (optional) |
+| **Default build** | Yes — `predev` / `prebuild` | No |
+| **Toolchain** | `asc` via npm | Emscripten emsdk or Docker |
+| **Collision API** | Asteroids, spores, boss hitboxes | Same symbols (parity) |
+| **Verlet / noise** | — | Present in C++ only; unused by TS |
+| **Onboarding** | Required | Not required |
 
-- Experimenting with sling/gravity gameplay (`stepPhysics`)
-- Procedural terrain or asteroid fields driven by `fractalNoise2D`
-- You already have Emscripten installed or are fine using the Docker one-liner
-
-Gameplay code is not wired to C++-only exports yet; see `docs/plans/plan.md` for the planned integration. The loader and build pipeline are ready so those features can land behind the same opt-in flag.
-
-## Build commands
+## Default path (what you need day-to-day)
 
 ```bash
-# Default pipeline (AssemblyScript only)
-npm run dev
-npm run build
-
-# AssemblyScript + C++ when emsdk is on PATH / EMSDK is set
-npm run build:all-wasm
-
-# C++ only
-npm run build:cpp-wasm              # local emsdk
-npm run build:cpp-wasm:docker       # Docker, no local emsdk
-
-# Verify C++ artifact instantiates correctly
-npm run verify:cpp-wasm
+npm install
+npm run dev      # predev → build:wasm + copy:wasm
+npm run build    # prebuild → brace check + AS WASM + Vite
 ```
 
-`prebuild` runs the brace checker only — it does **not** require C++ or Emscripten.
+No Emscripten. Collision runs through [`assembly/index.ts`](../assembly/index.ts) → [`src/wasm_loader.ts`](../src/wasm_loader.ts) → [`ObstacleSystem`](../src/obstacle_system/).
 
-## Runtime selection
+If WASM fails to load, obstacle checks use a **JavaScript circle/sphere fallback** so gameplay does not crash (see `checkCircleCollisionJs` / `checkSphereCollisionJs` in [`src/physics_utils.ts`](../src/physics_utils.ts)).
 
-1. Set `VITE_CPP_WASM=true` in `.env.development.local`, **or**
-2. Call `loadWasm(WasmBackend.Cpp)` explicitly.
+## Experimental C++ backend
 
-If `game_cpp.wasm` is absent or fails to instantiate, the loader logs a warning and falls back to AssemblyScript.
+Kept for portable builds and future experiments. Details: [`cpp/README.md`](../cpp/README.md).
+
+```bash
+# Only if you intentionally want the C++ artifact
+npm run build:cpp-wasm              # local emsdk
+npm run build:cpp-wasm:docker       # Docker, no local emsdk
+npm run verify:cpp-wasm
+
+# Optional: AS + C++ when emsdk is available (skips C++ if missing)
+npm run build:all-wasm
+```
+
+Runtime opt-in (still falls back to AssemblyScript if the C++ binary is missing):
+
+```bash
+VITE_CPP_WASM=true npm run dev
+```
+
+**Do not** treat `VITE_CPP_WASM` as a supported production configuration until a gameplay consumer of Verlet/noise lands and CI smoke covers that flag.
+
+C++-only exports (`allocPhysicsBodies`, `stepPhysics`, `fractalNoise2D`, …) remain typed as `Partial<CppExtrasExports>` on `WasmExports` for the loader; they are **not** wired into the game loop.
 
 ## CI
 
-- **typecheck-and-build** / **smoke**: AssemblyScript WASM + Vite (unchanged).
-- **cpp-wasm** (optional): installs Emscripten, runs `npm run build:cpp-wasm`, and `npm run verify:cpp-wasm`. Does not block the smoke job.
+- **typecheck-and-build** / **smoke**: AssemblyScript WASM only (required path).
+- **cpp-wasm**: optional job (Emscripten). Failures do not block merge; confirms the experimental tree still builds when runners have emsdk.
+
+## Null WASM
+
+`game.wasmExports` is typed `WasmExports | null`. Load failure leaves it `null`; obstacle collision must not assume exports exist.
+
+## Future (when Option B would make sense)
+
+1. Wire at least one gameplay caller of Verlet or noise.
+2. Ensure `npm run build:cpp-wasm && npm run copy:cpp-wasm` is verified in an optional CI job (already sketched).
+3. Document production opt-in and smoke under `VITE_CPP_WASM=true`.
+
+Until then, expand **AssemblyScript** if new collision primitives are needed.
 
 ## Further reading
 
-- `cpp/README.md` — emsdk setup, Docker, CMake
-- `src/wasm_loader.ts` — loader API and export types
-- `assembly/index.ts` — AssemblyScript collision source
-- `cpp/src/` — C++ collision, physics, and noise
+- [`cpp/README.md`](../cpp/README.md) — emsdk / Docker for experimental builds
+- [`src/wasm_loader.ts`](../src/wasm_loader.ts) — loader API and export types
+- [`assembly/index.ts`](../assembly/index.ts) — supported collision source

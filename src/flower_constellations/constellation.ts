@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { FlowerType, FLOWER_CONFIGS } from './types';
 import { HeartPollenSystem } from './pollen';
+import { createPetalForType, createFlowerCenter } from './constellation_geometry';
 
 export class FlowerConstellation {
     type: FlowerType;
@@ -59,41 +60,18 @@ export class FlowerConstellation {
         for (let i = 0; i < petalCount; i++) {
             const angle = (i / petalCount) * Math.PI * 2;
             const color = config.petalColors[i % config.petalColors.length];
+            const petal = createPetalForType(this.type, color, i);
 
-            let petal: THREE.Mesh;
-
-            switch (this.type) {
-                case FlowerType.DAISY:
-                    petal = this.createDaisyPetal(color);
-                    break;
-                case FlowerType.TULIP:
-                    petal = this.createTulipPetal(color, i);
-                    break;
-                case FlowerType.LOTUS:
-                    petal = this.createLotusPetal(color, i);
-                    break;
-                case FlowerType.SUNFLOWER:
-                    petal = this.createSunflowerPetal(color);
-                    break;
-                default:
-                    petal = this.createDaisyPetal(color);
-            }
-
-            // Position and rotate petal
-            const radius = this.type === FlowerType.LOTUS ? 
+            const radius = this.type === FlowerType.LOTUS ?
                 (i < 8 ? 0.6 : 1.0) : 0.8;
-            
+
             petal.position.x = Math.cos(angle) * radius * 0.3;
             petal.position.y = Math.sin(angle) * radius * 0.3;
             petal.position.z = this.type === FlowerType.TULIP ? 0.2 : 0;
 
-            // Store base rotation for animation
             this.petalBaseRotations[i] = angle;
-
-            // Rotate to face outward
             petal.rotation.z = angle - Math.PI / 2;
-            
-            // Initial tilt
+
             if (this.type === FlowerType.DAISY || this.type === FlowerType.SUNFLOWER) {
                 petal.rotation.x = 0.3;
             } else if (this.type === FlowerType.TULIP) {
@@ -107,123 +85,8 @@ export class FlowerConstellation {
         }
     }
 
-    private createDaisyPetal(color: number): THREE.Mesh {
-        // Long oval petal shape
-        const geometry = new THREE.SphereGeometry(0.25, 16, 16);
-        geometry.scale(1, 2.5, 0.3);
-
-        const material = new THREE.MeshStandardMaterial({
-            color: color,
-            emissive: color,
-            emissiveIntensity: 0.3,
-            transparent: true,
-            opacity: 0.9,
-            roughness: 0.4,
-            metalness: 0.1
-        });
-
-        return new THREE.Mesh(geometry, material);
-    }
-
-    private createTulipPetal(color: number, index: number): THREE.Mesh {
-        // Cup/tulip shape using scaled sphere
-        const geometry = new THREE.SphereGeometry(0.4, 16, 16);
-        geometry.scale(0.8, 1.5, 0.6);
-
-        // Gradient-like colors based on position
-        const colorVariation = new THREE.Color(color);
-        colorVariation.offsetHSL(0, 0, (index % 3 - 1) * 0.1);
-
-        const material = new THREE.MeshStandardMaterial({
-            color: colorVariation,
-            emissive: color,
-            emissiveIntensity: 0.4,
-            transparent: true,
-            opacity: 0.85,
-            roughness: 0.5,
-            metalness: 0.2,
-            side: THREE.DoubleSide
-        });
-
-        return new THREE.Mesh(geometry, material);
-    }
-
-    private createLotusPetal(color: number, index: number): THREE.Mesh {
-        // Elegant pointed petal
-        const geometry = new THREE.ConeGeometry(0.25, 1.8, 16);
-        geometry.scale(1, 1, 0.2);
-
-        // Inner petals are lighter
-        const colorVariation = new THREE.Color(color);
-        if (index < 8) {
-            colorVariation.offsetHSL(0, -0.2, 0.2);
-        }
-
-        const material = new THREE.MeshStandardMaterial({
-            color: colorVariation,
-            emissive: color,
-            emissiveIntensity: 0.35,
-            transparent: true,
-            opacity: 0.9,
-            roughness: 0.3,
-            metalness: 0.15,
-            side: THREE.DoubleSide
-        });
-
-        return new THREE.Mesh(geometry, material);
-    }
-
-    private createSunflowerPetal(color: number): THREE.Mesh {
-        // Golden crystalline petal
-        const geometry = new THREE.BoxGeometry(0.3, 2.0, 0.1);
-        
-        // Taper the geometry
-        const positions = geometry.attributes.position.array as Float32Array;
-        for (let i = 0; i < positions.length; i += 3) {
-            const y = positions[i + 1];
-            if (y > 0) {
-                positions[i] *= 0.5; // Taper top
-            }
-        }
-        geometry.attributes.position.needsUpdate = true;
-
-        const material = new THREE.MeshStandardMaterial({
-            color: color,
-            emissive: color,
-            emissiveIntensity: 0.5,
-            transparent: true,
-            opacity: 0.95,
-            roughness: 0.2,
-            metalness: 0.6 // Crystal-like
-        });
-
-        return new THREE.Mesh(geometry, material);
-    }
-
     private createCenter() {
-        const config = this.config;
-        
-        let geometry: THREE.BufferGeometry;
-        
-        if (this.type === FlowerType.SUNFLOWER) {
-            // Detailed center for sunflower
-            geometry = new THREE.SphereGeometry(0.5, 24, 24);
-        } else if (this.type === FlowerType.DAISY) {
-            // Smooth dome for daisy
-            geometry = new THREE.SphereGeometry(0.4, 20, 20);
-        } else {
-            geometry = new THREE.SphereGeometry(0.35, 16, 16);
-        }
-
-        const material = new THREE.MeshStandardMaterial({
-            color: config.centerColor,
-            emissive: config.centerColor,
-            emissiveIntensity: 0.8,
-            roughness: 0.6,
-            metalness: 0.3
-        });
-
-        this.center = new THREE.Mesh(geometry, material);
+        this.center = createFlowerCenter(this.type, this.config);
         this.group.add(this.center);
     }
 

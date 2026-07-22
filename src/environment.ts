@@ -26,6 +26,7 @@ import { createSubwooferLotus, createFiberOpticWillow, createGlowingFlower } fro
 import type { ParticleSystem } from './particles';
 import type { WeaponSystem } from './weapons';
 import type { LiquidMetalSystem } from './geological';
+import { disposeObject } from './utils';
 
 /** Injected by bootstrap — environment never imports composition-root singletons. */
 export type EnvironmentSystems = {
@@ -178,20 +179,6 @@ export function createMagmaHeartAtPosition(x: number, y: number, z: number) {
     return heart;
 }
 
-// Phase 1 FPS Fixes - Quick Wins: safely dispose geometry when removing objects
-// (moonPlants lives in visuals.ts; use the import from there)
-// Materials are intentionally skipped because foliage uses shared material pools
-export function disposeObject(obj: THREE.Object3D) {
-    obj.traverse((child) => {
-        if ((child as THREE.Mesh).isMesh) {
-            const mesh = child as THREE.Mesh;
-            if (mesh.geometry) {
-                mesh.geometry.dispose();
-            }
-        }
-    });
-}
-
 // Cleanup geological objects that have fallen behind the camera
 export function cleanupGeologicalObjects(cameraX: number) {
     const cutoff = cameraX - 100;
@@ -201,6 +188,7 @@ export function cleanupGeologicalObjects(cameraX: number) {
         const cloud = sporeClouds[i];
         if (cloud.position.x < cutoff) {
             scene.remove(cloud.spores);
+            disposeObject(cloud.spores);
             sporeClouds.splice(i, 1);
         }
     }
@@ -272,6 +260,47 @@ export function cleanupGeologicalObjects(cameraX: number) {
             scene.remove(anchor);
             disposeObject(anchor);
             gravityAnchors.splice(i, 1);
+        }
+    }
+
+    // Nebula jelly moss
+    for (let i = jellyMosses.length - 1; i >= 0; i--) {
+        const jellyMoss = jellyMosses[i];
+        if (jellyMoss.position.x < cutoff) {
+            scene.remove(jellyMoss);
+            disposeObject(jellyMoss);
+            jellyMosses.splice(i, 1);
+        }
+    }
+
+    // Solar sails
+    for (let i = solarSails.length - 1; i >= 0; i--) {
+        const sail = solarSails[i];
+        if (sail.position.x < cutoff) {
+            scene.remove(sail);
+            disposeObject(sail);
+            solarSails.splice(i, 1);
+        }
+    }
+
+    // Liquid metal blobs
+    for (let i = liquidMetalBlobs.length - 1; i >= 0; i--) {
+        const blobGroup = liquidMetalBlobs[i];
+        if (blobGroup.position.x < cutoff) {
+            const parent = blobGroup.userData.parent as {
+                active?: boolean;
+                recombine?: () => void;
+            } | undefined;
+            if (parent) {
+                parent.recombine?.();
+                parent.active = false;
+            }
+            const { liquidMetalSystem } = requireEnvSystems();
+            const blobIdx = liquidMetalSystem.blobs.findIndex((b) => b.group === blobGroup);
+            if (blobIdx >= 0) liquidMetalSystem.blobs.splice(blobIdx, 1);
+            scene.remove(blobGroup);
+            disposeObject(blobGroup);
+            liquidMetalBlobs.splice(i, 1);
         }
     }
 }

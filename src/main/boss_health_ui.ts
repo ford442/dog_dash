@@ -1,7 +1,6 @@
 import type { NebulaKraken } from '../space_robot_squid';
-import { BOSS_DISPLAY_NAME as KRAKEN_NAME } from '../space_robot_squid';
 import type { StarEaterBoss } from '../boss_system';
-import { BOSS_DISPLAY_NAME as PITCHER_NAME } from '../boss_system';
+import { NEBULA_KRAKEN_NAME as KRAKEN_NAME, STAR_EATER_PITCHER_NAME as PITCHER_NAME } from '../boss_display_names';
 
 // BOSS HEALTH BAR UI
 // =============================================================================

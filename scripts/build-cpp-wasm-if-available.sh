@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # build-cpp-wasm-if-available.sh
-# Build the C++ WASM module when Emscripten is available; otherwise skip quietly.
+# Experimental: build the C++ WASM module when Emscripten is available; otherwise skip.
 #
-# Used by `npm run build:all-wasm` and optional CI/local workflows so the
-# default AssemblyScript pipeline never requires emsdk.
+# Used by `npm run build:all-wasm`. The default AssemblyScript pipeline
+# (predev / prebuild) never requires emsdk — see docs/WASM_BACKENDS.md.
 
 set -euo pipefail
 

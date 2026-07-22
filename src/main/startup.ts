@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { createGameSystems } from '../create_game_systems';
 import { createGameManagers } from '../game_managers';
-import { generateEnvironment, bindEnvironmentSystems } from '../environment';
+import { generateEnvironment, bindEnvironmentSystems, cleanupGeologicalObjects } from '../environment';
 import {
     scene, camera, rendererBackend, requestedRendererBackend, rendererFallbackReason,
     initializeSceneAndRenderer, attachLightsAndEnv
@@ -19,6 +19,8 @@ import { spawnGravLensCorridorsForLevel } from './grav_lens_update';
 import { spawnArtifactsForLevel } from './artifact_update';
 import { DebugSystem } from '../debug_system';
 import { decorationBudget, registerDefaultDecorationBudgets } from '../decoration_budget';
+import { attachGpuLeakDetector } from '../gpu_leak_detector';
+import { disposeObject } from '../utils';
 import { createGalaxy, createMoon } from '../visuals';
 import { shouldShowTutorial } from '../tutorial_system';
 import { ShakeType } from '../juice_effects';
@@ -71,13 +73,13 @@ import {
 } from './spawn_helpers';
 import { wireStartupCallbacks } from './startup_callbacks';
 import { createObstacleSystem, handleGameOver } from './obstacle_setup';
-import { ensureGameplayReady } from '../level_systems_loader';
+import { ensureSlingableSystems } from '../level_systems_loader';
 import type { GameSystems } from '../create_game_systems';
 import type { GameManagers } from '../game_managers';
 
 /** Prototype sling/geological content — deferred until first gameplay click. */
 export async function spawnDeferredPrototypeContent(): Promise<void> {
-    await ensureGameplayReady();
+    await ensureSlingableSystems();
 
     createGravityAnchorWithTarsiers(80, 5, -25, 1);
     createGravityAnchorWithTarsiers(180, -6, -20, 1);
@@ -420,6 +422,21 @@ export function initializeStartup(): void {
     };
 
     installGameContext(ctx);
+
+    attachGpuLeakDetector(debugSystem, () => {
+        const camX = camera.position.x;
+        const playerX = player?.position.x ?? camX;
+        game.levelManager.cleanupBehind(camX + 500);
+        cleanupGeologicalObjects(camX + 500);
+        for (let i = game.obstacleSystem.obstacles.length - 1; i >= 0; i--) {
+            const obs = game.obstacleSystem.obstacles[i];
+            if (obs.position.x < playerX - 5) {
+                scene.remove(obs);
+                disposeObject(obs);
+                game.obstacleSystem.obstacles.splice(i, 1);
+            }
+        }
+    });
 
     void loadWasm();
 

@@ -54,6 +54,8 @@ jobs:
 
   cpp-wasm:
     runs-on: ubuntu-latest
+    # Experimental backend — failures must not block the AS default path.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

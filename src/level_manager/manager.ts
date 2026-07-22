@@ -3,15 +3,15 @@ import * as THREE from 'three';
 import { CloudSystem } from '../clouds';
 import { AtmosphereSystem } from '../sky';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from '../level_config';
-import { IndustrialGeometryManager } from '../industrial_geometry';
+import type { IndustrialGeometryManager } from '../industrial_geometry';
 import { getLevelSpan } from '../depth_layers';
 import { playerState } from '../game_config';
 import { moonPlants } from '../visuals';
 import { disposeObject } from '../utils';
 import { GodRaySystem } from '../godrays';
 import { AuroraSystem } from '../aurora';
-import { GhostDebrisSystem } from '../ghost_debris';
-import { VoidJellyfishSystem } from '../void_jellyfish';
+import type { GhostDebrisSystem } from '../ghost_debris';
+import type { VoidJellyfishSystem } from '../void_jellyfish';
 import { DebugSystem } from '../debug_system';
 import { FriendsManager } from '../space_friends';
 import { ButterflySwarmSystem } from '../butterfly_swarm';
@@ -296,6 +296,17 @@ export class LevelManager {
         this.windChimeManager.clear();
         this.solarSailFernManager.clear();
         this.crystalChimeManager.clear();
+
+        // Re-baseline decoration counters after clears; re-sync still-live streams/pools
+        decorationBudget.resetCounts();
+        decorationBudget.syncCount('foliage_scatter', this.levelObjects.length);
+        decorationBudget.syncCount(
+            'void_root_ball',
+            this.geologicalCounts.voidRootBalls()
+        );
+        this.butterflySwarmSystem.resyncBudgetCounts();
+        this.nebulaSystem.resyncBudgetCounts();
+
         if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
             this.pinwheelManager.spawnField(
                 dreamyStart,

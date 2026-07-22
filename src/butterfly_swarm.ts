@@ -217,6 +217,14 @@ export class ButterflySwarmSystem {
         this.deactivate();
     }
 
+    /** Re-sync fixed-pool budget counters after decorationBudget.resetCounts(). */
+    resyncBudgetCounts(): void {
+        decorationBudget.syncCount('butterfly_swarm', this.count);
+        let escortLive = 0;
+        for (const group of this.escortGroups) escortLive += group.count;
+        decorationBudget.syncCount('butterfly_escort', escortLive);
+    }
+
     /** Wire juice / particles / audio for escort moments (call once from main). */
     bindEffects(
         particles: ParticleSystem | null,
@@ -533,10 +541,15 @@ export class ButterflySwarmSystem {
     }
 
     private _clearEscorts(): void {
+        let escortCount = 0;
         for (const group of this.escortGroups) {
+            escortCount += group.count;
             for (let i = 0; i < group.count; i++) {
                 this._hideEscortInstance(group.instanceStart + i);
             }
+        }
+        if (escortCount > 0) {
+            decorationBudget.reportDestroy('butterfly_escort', escortCount);
         }
         this.escortGroups = [];
         this.escortMesh.count = 0;

@@ -1,12 +1,15 @@
 import * as THREE from 'three';
+import { markSharedMaterials, noteMaterialCreated } from './gpu_resources';
 
 export function createClayMaterial(color: number | string) {
-    return new THREE.MeshStandardMaterial({
+    const mat = new THREE.MeshStandardMaterial({
         color,
         metalness: 0.0,
         roughness: 0.8,
         flatShading: false,
     });
+    noteMaterialCreated();
+    return mat;
 }
 
 export const foliageMaterials = {
@@ -36,6 +39,12 @@ export const foliageMaterials = {
     }),
     opticTip: new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
 };
+
+markSharedMaterials(foliageMaterials);
+noteMaterialCreated(); // lightBeam
+noteMaterialCreated(); // blackPlastic
+noteMaterialCreated(); // opticCable
+noteMaterialCreated(); // opticTip
 
 export const reactiveMaterials: THREE.Material[] = [];
 

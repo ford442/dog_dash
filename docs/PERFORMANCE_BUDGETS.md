@@ -54,9 +54,48 @@ Production builds keep counter enforcement with **no DOM overlay** unless `?debu
 1. **Prefer `InstancedMesh`** for anything that repeats (flowers in a field, bubbles, nebula puffs, butterfly swarms).
 2. **Hero objects (1–3)** can be heavier — merged meshes, unique materials, interaction logic (e.g. toy rockets, moon snail).
 3. **Background scrollers** must be instanced or merged — no per-chunk `new Mesh()` loops for dozens of copies.
-4. **Share materials** — use `candy_materials.ts` cache keys; aim for &lt;5 material variants per system.
+4. **Share materials** — use `candy_materials.ts` `cacheKey` / `trackMaterial`, or `markShared()` from `gpu_resources.ts`; aim for &lt;5 material variants per system.
 5. **Measure before/after** — toggle the debug panel FPS readout and enable **Wireframe** to see draw-call pressure.
 6. **Register early** — add your budget in `registerDefaultDecorationBudgets()` so the overlay and caps are visible from boot.
+7. **Pair spawn/destroy** — every `reportSpawn` path must `reportDestroy` on all exit paths (stream cull, deactivate, clear, expire).
+
+## Dispose / GPU lifetime
+
+Streaming systems create and destroy many meshes. Incomplete teardown leaks WebGL/WebGPU memory across long runs and restarts.
+
+### Owned vs shared
+
+| Kind | How marked | On mesh teardown (`disposeObject`) |
+|------|------------|--------------------------------------|
+| **Owned** | Created for one mesh/system; unmarked | Dispose geometry, material(s), and owned texture maps |
+| **Shared / cached** | `markShared(resource)` or candy `cacheKey` via `retainMaterial` | **No-op** — leave alive for other users |
+| **Owned clone** | `.clone()` of a shared prototype (e.g. toy rocket hull) | Dispose the clone only |
+
+Rules:
+
+1. Call `disposeObject(obj)` after `scene.remove` on streaming/recycle paths (foliage, geological, obstacles, candy belt, slingables).
+2. Never `material.dispose()` on `foliageMaterials`, candy `cacheKey` mats, module singletons, or `SHARED_*_GEOMETRY` — mark them shared at creation instead.
+3. `disposeCandyMaterial` / `disposeMaterialIfOwned` are safe for mixed trees; they no-op on shared mats.
+4. `disposeCandyMaterialCache()` is **app-teardown only** (process-lifetime cache).
+5. Level start calls `decorationBudget.resetCounts()` then re-syncs live foliage / void roots / butterfly / nebula fixed pools.
+
+### Debug leak detector
+
+In **dev** or **`?debug`**: open the debug panel (`` ` ``) → **GPU Resources**.
+
+- Live approximate geometry/material create−dispose counters
+- **Force stream cleanup** — runs foliage + geological + obstacle behind-camera culls, then samples counts for ~60 frames
+
+Expect owned counts to drop after forced cleanup and stabilize (shared mats/geos remain).
+
+### Manual Chrome GPU memory band
+
+After a full 6-level run + restart ×2–3, check Chrome Task Manager → **GPU memory**:
+
+- Expect **no monotonic climb** across restart cycles beyond ~noise
+- Documented acceptance band (manual spot-check, WebGL path): **within ~±80 MB** of the post-first-run steady value across subsequent restarts (record your machine’s baseline when validating a change)
+
+Use `?renderer=webgl` on headless/cloud; real GPU + WebGPU is preferred for the memory check.
 
 ## Systems already on the registrar
 
@@ -76,26 +115,49 @@ Production builds keep counter enforcement with **no DOM overlay** unless `?debu
 
 - `src/decoration_budget.ts` — registry, helpers, overlay
 - `src/debug_system.ts` — FPS + system toggles (`\` key)
+- `src/gpu_resources.ts` — `markShared` / `retainMaterial` / `disposeMaterialIfOwned`
+- `src/utils.ts` — ownership-aware `disposeObject`
+- `src/gpu_leak_detector.ts` — debug GPU counters + force cleanup
 - `src/level_config.ts` — per-level density knobs
-- `src/candy_materials.ts` — `PROP_COST_HINTS` for new materials
+- `src/candy_materials.ts` — `trackMaterial` / `cacheKey` / `estimateCandyMaterialCost` / `disposeCandyMaterial`
 
 ## JavaScript bundle budgets (production)
 
-Vite splits the production build into async chunks so Level 1 only pulls core gameplay code at startup; level-heavy systems load on the first gameplay click or during level transitions.
+Vite splits the production build so the title screen and Level 1 do not download later-level modules. Vendor libraries use stable `manualChunks`; level systems use per-module dynamic `import()` from [`src/level_systems_loader.ts`](../src/level_systems_loader.ts).
 
-| Chunk | Role | Budget (minified) | Notes |
-|-------|------|-------------------|-------|
-| `index-*.js` | Core boot + L1 gameplay loop | **< 1 MB** (currently ~265 KB) | Entry script referenced from `index.html` |
-| `three-*.js` | Three.js vendor | ~1.1 MB | Cached vendor chunk; shared across sessions |
-| `audio-*.js` | Procedural audio mixins | ~51 KB | Separate chunk via `vite.config.ts` `manualChunks` |
-| `level-heavy-*.js` | Waterfall, industrial, boss, biological, slingables, etc. | ~443 KB | Dynamic `import()` — **not** part of L1 initial parse |
-| `deferred_managers-*.js` | Ghost debris, void jellyfish, koi, coral, toy rockets | ~0.5 KB entry | Facade; implementation lives in `level-heavy` |
-| `level_environment_systems-*.js` | Environment system factory | ~0.7 KB entry | Facade; implementation lives in `level-heavy` |
+### Cold-load chunks (title → Level 1)
 
-**Level 1 initial JS (entry + vendor):** ~1.35 MB minified (~378 KB gzip) — down from a single 1.85 MB bundle. The former monolith warning is resolved because the entry chunk is under Vite’s 500 KB advisory.
+| Chunk | Role | Typical size (minified) | Notes |
+|-------|------|-------------------------|-------|
+| `index-*.js` | Boot, L1 loop, eager décor / pastel nebula / liquid metal | ~700 KB | Entry from `index.html`; Vite may warn (>500 KB) — still a clear multi-chunk split vs the former 1.85 MB monolith |
+| `three-*.js` | Three.js + WebGPU/TSL | ~1.1 MB | Cached vendor; `manualChunks` in `vite.config.ts` |
+| `audio-*.js` | Procedural audio | ~54 KB | Cached vendor split |
 
-**Level transition hitch:** `level_systems_loader.ts` prefetches the next level’s async chunks when the player is ~75% through the current segment (and again near the boundary), keeping level loads under ~200 ms on mid-tier mobile when cached.
+**Cold path:** ~1.85 MB minified / ~490 KB gzip for `index` + `three` + `audio`. Level 4–6 modules (waterfall, industrial, biological, boss, aquatic, …) are **not** downloaded until those levels are prefetched or entered.
 
-**Measure:** `npm run build` prints chunk sizes; in dev, use the debug FPS panel (`\``) and the browser Network tab (filter JS) after `npm run preview`.
+WASM collision (`public/build/optimized.wasm`, ~3 KB) stays on the critical path.
 
-Configuration lives in `vite.config.ts`; lazy wiring in `src/level_systems_loader.ts`, `src/level_environment_systems.ts`, and `src/deferred_managers.ts`.
+### Per-level async chunks
+
+[`ensureLevelSystemsForLevel(n)`](../src/level_systems_loader.ts) reads `LEVEL_CONFIG[n]` and loads only missing systems **before** `startLevel`. Prefetch runs at ~75% of the current segment (`maybePrefetchNextLevel`).
+
+| Level | Example async modules |
+|-------|------------------------|
+| 1 Neon Garden | *(none — pastel nebula + liquid metal are eager)* |
+| 2 Asteroid Belt | `ghost_debris`, `black_hole`, `chroma_shift`, `storm_geodes`, `slingable_objects` |
+| 3 Orbital Descent | `meteor_shower`, `planetary_horizon`, `reentry`, `bubble_coral` |
+| 4 Rusty Gauntlet | `industrial_background`, `industrial_geometry`, `bubble_coral`, slingables |
+| 5 Astral Leviathan | `biological_background`, `cosmic_dust`, `void_jellyfish`, `starlight_koi`, `bubble_coral`, industrial geometry (whale ribs) |
+| 6 Aqua Expanse | `waterfall`, `aquatic_life`, `boss_system`, plus koi / coral / jellyfish as flagged |
+
+Typical async chunk sizes (minified): 2–11 KB each (e.g. `waterfall` ~8 KB, `boss_system` ~10 KB, `industrial_background` ~11 KB).
+
+Slingable prototype props load in the background after first click via `ensureSlingableSystems()` — they do not block Level 1 start.
+
+### Measure
+
+1. `npm run build` — inspect the chunk list; entry must only sync-import `three` and `audio`.
+2. `npm run preview`, Network → JS: title load should show `index` + `three` + `audio` only; later levels pull their modules at prefetch / transition.
+3. In-game: debug FPS panel (`` ` ``).
+
+Configuration: [`vite.config.ts`](../vite.config.ts) (`three` + `audio` only). Lazy wiring: [`src/level_systems_loader.ts`](../src/level_systems_loader.ts). Loop spawn predicates without pulling heavy managers: [`src/level_spawn_rules.ts`](../src/level_spawn_rules.ts).
