@@ -27,9 +27,20 @@ Useful URL flags:
 
 See `docs/RENDERER_FALLBACK.md` for the implementation details.
 
+## Typecheck gate
+
+Strict TypeScript is gated with a **baseline ratchet** (not zero-error yet):
+
+- `npm run typecheck` — raw `tsc --noEmit` (reports all current errors)
+- `npm run typecheck:ci` — fail only on errors newer than `.github/typecheck-baseline.txt`
+- `npm run typecheck:baseline:update` — after fixing errors, ratchet the baseline down
+- `npm run check` — local pre-PR gate: brace balance + typecheck ratchet
+
+CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci` then `npm run build` on PRs/pushes to `main`. Prefer `npm run check` locally before opening a PR.
+
 ## Cursor Cloud specific instructions
 
-Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, brace-check gate `node tools/check_braces.cjs`). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no lint or test suite.
+Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + typecheck ratchet). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint or unit-test suite; quality gates are brace check, typecheck baseline, production build, and Playwright smoke.
 
 Non-obvious caveats for headless/cloud verification:
 
