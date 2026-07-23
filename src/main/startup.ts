@@ -178,7 +178,8 @@ function createLevelManager(
             reEntrySystem: systems.reEntrySystem,
             chromaShiftSystem: systems.chromaShiftSystem,
             stormGeodeSystem: systems.stormGeodeSystem,
-            pastelNebulaSystem: systems.pastelNebulaSystem
+            pastelNebulaSystem: systems.pastelNebulaSystem,
+            wishLanternSystem: systems.wishLanternSystem
         },
         spawners: {
             createSporeCloudAtPosition,

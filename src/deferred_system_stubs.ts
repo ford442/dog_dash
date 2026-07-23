@@ -18,6 +18,7 @@ import type { StarlightKoiManager } from './starlight_koi';
 import type { RainbowBubbleCoralManager } from './bubble_coral';
 import type { SlingableObjectSystem } from './slingable_objects';
 import type { ToyRocketSpawnManager } from './toy_rockets';
+import type { WishLanternSystem } from './wish_lanterns';
 
 const noop = () => undefined;
 
@@ -199,4 +200,14 @@ export function createToyRocketSpawnManagerStub(): ToyRocketSpawnManager {
     return {
         spawnForLevel: noop
     } as unknown as ToyRocketSpawnManager;
+}
+
+export function createWishLanternSystemStub(): WishLanternSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as WishLanternSystem;
 }

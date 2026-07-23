@@ -112,6 +112,7 @@ export type LevelEnvironments = {
     voidJellyfish?: VoidJellyfishEnvironmentConfig;
     meteorShower?: MeteorShowerEnvironmentConfig;
     bubbleCoral?: BubbleCoralEnvironmentConfig | boolean;
+    wishLanterns?: boolean;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -263,7 +264,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true,
-            pastelNebula: true
+            pastelNebula: true,
+            wishLanterns: true
         },
         vignettes: {
             treeGroves: 1.5,

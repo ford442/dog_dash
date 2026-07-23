@@ -21,6 +21,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     baseAsteroidDensity: number;
     objectDensityMultiplier: number;
     moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
+    wishLanternSystem: { activate: () => void; deactivate: () => void };
 }
 
 export function buildEnvironmentPlugins(
@@ -33,6 +34,11 @@ export function buildEnvironmentPlugins(
             flag: 'pastelNebula',
             activate: () => host.pastelNebulaSystem.activate(),
             deactivate: () => host.pastelNebulaSystem.deactivate()
+        },
+        {
+            flag: 'wishLanterns',
+            activate: () => host.wishLanternSystem.activate(),
+            deactivate: () => host.wishLanternSystem.deactivate()
         },
         {
             flag: 'butterflySwarm',

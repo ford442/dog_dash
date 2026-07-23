@@ -22,7 +22,8 @@ import {
     createMoonPalaceSystemStub,
     createChromaShiftSystemStub,
     createStormGeodeSystemStub,
-    createBlackHoleSystemStub
+    createBlackHoleSystemStub,
+    createWishLanternSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -33,6 +34,7 @@ import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
 import { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
+import type { WishLanternSystem } from './wish_lanterns';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -108,6 +110,7 @@ export type GameSystems = {
     gravLensManager: GravLensManager;
     derelictBuoyManager: DerelictBuoyManager;
     dataMonolithManager: DataMonolithManager;
+    wishLanternSystem: WishLanternSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -123,6 +126,7 @@ export type LevelEnvironmentSystemExports = {
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;
+    wishLanternSystem: WishLanternSystem;
 };
 
 /**
@@ -332,6 +336,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const stormGeodeSystem: StormGeodeSystem = createStormGeodeSystemStub();
     const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
     const blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
+    const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -377,6 +382,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         stormGeodeSystem,
         crystalChimeManager,
         blackHoleSystem,
+        wishLanternSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager
