@@ -22,6 +22,7 @@ export interface PowerUpManagerVisualContext {
     butterflies: THREE.Group[];
     cometGlowMesh?: THREE.Mesh;
     cometTrailParticles: THREE.Mesh[];
+    fairyWingsMesh?: THREE.Group;
     shieldBounceTime: number;
     activeEffects: Map<PowerUpType, PowerUpEffect>;
     hasPowerUp: (type: PowerUpType) => boolean;
@@ -48,6 +49,9 @@ export function createEffectVisuals(ctx: PowerUpManagerVisualContext, type: Powe
             break;
         case PowerUpType.STARLIGHT_TIARA:
             createStarlightTiara(ctx, config);
+            break;
+        case PowerUpType.FAIRY_DOG_WINGS:
+            createFairyDogWings(ctx, config);
             break;
     }
 
@@ -158,6 +162,54 @@ export function createButterflyEscort(ctx: PowerUpManagerVisualContext, config: 
     }
 }
 
+// Cache geometry and material for fairy wings to prevent VRAM leaks
+let sharedFairyWingGeometry: THREE.ShapeGeometry | null = null;
+let sharedFairyWingMaterial: THREE.MeshBasicMaterial | null = null;
+
+export function createFairyDogWings(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const wingsGroup = new THREE.Group();
+    wingsGroup.position.set(-0.5, 0.5, 0); // Position slightly behind and above
+
+    if (!sharedFairyWingGeometry) {
+        // Basic procedural butterfly wing shapes
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0);
+        shape.quadraticCurveTo(1.5, 1.5, 1.5, 0.5);
+        shape.quadraticCurveTo(2.0, -0.5, 1.0, -1.0);
+        shape.quadraticCurveTo(0.2, -1.5, 0, 0);
+        sharedFairyWingGeometry = new THREE.ShapeGeometry(shape);
+    }
+
+    if (!sharedFairyWingMaterial) {
+        sharedFairyWingMaterial = new THREE.MeshBasicMaterial({
+            color: config.color,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false
+        });
+    }
+
+    // Left wing
+    const leftWing = new THREE.Mesh(sharedFairyWingGeometry, sharedFairyWingMaterial);
+    leftWing.position.set(0, 0, 0.5);
+    leftWing.rotation.x = Math.PI / 4;
+    leftWing.scale.set(0.6, 0.6, 0.6);
+    wingsGroup.add(leftWing);
+
+    // Right wing
+    const rightWing = new THREE.Mesh(sharedFairyWingGeometry, sharedFairyWingMaterial);
+    rightWing.position.set(0, 0, -0.5);
+    rightWing.rotation.x = -Math.PI / 4;
+    rightWing.scale.set(0.6, 0.6, 0.6);
+    wingsGroup.add(rightWing);
+
+    ctx.fairyWingsMesh = wingsGroup;
+    ctx.rocket.add(wingsGroup);
+}
+
 export function createStarlightTiara(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
     if (!ctx.rocket) return;
 
@@ -260,6 +312,20 @@ export function updateEffectPosition(ctx: PowerUpManagerVisualContext, type: Pow
                 butterfly.children[0].rotation.y = 0.3 + Math.sin(Date.now() * 0.01 * data.wingSpeed) * 0.3;
                 butterfly.children[1].rotation.y = -0.3 - Math.sin(Date.now() * 0.01 * data.wingSpeed) * 0.3;
             });
+            break;
+        case PowerUpType.FAIRY_DOG_WINGS:
+            if (ctx.fairyWingsMesh) {
+                // Animate wing flapping
+                const now = Date.now() * 0.008;
+                const leftWing = ctx.fairyWingsMesh.children[0];
+                const rightWing = ctx.fairyWingsMesh.children[1];
+
+                if (leftWing && rightWing) {
+                    const flapAngle = Math.sin(now) * 0.6;
+                    leftWing.rotation.x = Math.PI / 4 + flapAngle;
+                    rightWing.rotation.x = -(Math.PI / 4 + flapAngle);
+                }
+            }
             break;
     }
 }
@@ -388,6 +454,12 @@ export function removeEffectVisuals(ctx: PowerUpManagerVisualContext, type: Powe
                 if (b.parent) b.parent.remove(b);
             });
             ctx.butterflies = [];
+            break;
+        case PowerUpType.FAIRY_DOG_WINGS:
+            if (ctx.fairyWingsMesh && ctx.fairyWingsMesh.parent) {
+                ctx.fairyWingsMesh.parent.remove(ctx.fairyWingsMesh);
+            }
+            ctx.fairyWingsMesh = undefined;
             break;
     }
 }
