@@ -34,6 +34,7 @@ import type { ChromaShiftSystem } from '../chroma_shift';
 import type { StormGeodeSystem } from '../storm_geodes';
 import type { PastelNebulaSystem } from '../pastel_nebula';
 import type { WishLanternSystem } from '../wish_lanterns';
+import type { WeatherSystem } from '../weather_system';
 
 export type EnvironmentPlugin<K extends keyof LevelEnvironments = keyof LevelEnvironments> = {
     flag: K;
@@ -91,6 +92,7 @@ export type LevelEnvironmentPorts = {
     stormGeodeSystem: StormGeodeSystem;
     pastelNebulaSystem: PastelNebulaSystem;
     wishLanternSystem: WishLanternSystem;
+    weatherSystem: WeatherSystem;
 };
 
 export type LevelManagerOptions = {

@@ -19,6 +19,7 @@ import type { RainbowBubbleCoralManager } from './bubble_coral';
 import type { SlingableObjectSystem } from './slingable_objects';
 import type { ToyRocketSpawnManager } from './toy_rockets';
 import type { WishLanternSystem } from './wish_lanterns';
+import type { WeatherSystem } from './weather_system';
 
 const noop = () => undefined;
 
@@ -210,4 +211,14 @@ export function createWishLanternSystemStub(): WishLanternSystem {
         update: noop,
         cleanup: noop
     } as unknown as WishLanternSystem;
+}
+
+export function createWeatherSystemStub(): WeatherSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as WeatherSystem;
 }

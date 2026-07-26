@@ -113,6 +113,7 @@ export type LevelEnvironments = {
     meteorShower?: MeteorShowerEnvironmentConfig;
     bubbleCoral?: BubbleCoralEnvironmentConfig | boolean;
     wishLanterns?: boolean;
+    weather?: boolean;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -596,7 +597,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             aquaticLife: true,
             nebulaRibbons: true,
             voidJellyfish: { density: 40 },
-            moonPalace: true
+            moonPalace: true,
+            weather: true
         }
     }
 };

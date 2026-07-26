@@ -90,6 +90,7 @@ export class LevelManager {
     stormGeodeSystem: LevelEnvironmentPorts['stormGeodeSystem'];
     pastelNebulaSystem: LevelEnvironmentPorts['pastelNebulaSystem'];
     wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'];
+    weatherSystem: LevelEnvironmentPorts['weatherSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -137,6 +138,7 @@ export class LevelManager {
         this.stormGeodeSystem = options.env.stormGeodeSystem;
         this.pastelNebulaSystem = options.env.pastelNebulaSystem;
         this.wishLanternSystem = options.env.wishLanternSystem;
+        this.weatherSystem = options.env.weatherSystem;
 
         this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
@@ -378,6 +380,7 @@ export class LevelManager {
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
+        this.weatherSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
