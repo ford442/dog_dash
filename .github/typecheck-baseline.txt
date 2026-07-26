@@ -114,9 +114,9 @@ src/main/loop_geological.ts(377,77): TS18047: 'player' is possibly 'null'.
 src/main/loop_geological.ts(380,59): TS18047: 'player' is possibly 'null'.
 src/main/loop_world.ts(248,57): TS18047: 'player' is possibly 'null'.
 src/main/loop_world.ts(288,36): TS18047: 'player' is possibly 'null'.
-src/main/player_update.ts(344,39): TS2769: No overload matches this call.
-src/main/player_update.ts(365,53): TS2304: Cannot find name 'DogAnimationState'.
-src/main/player_update.ts(407,49): TS2304: Cannot find name 'DogAnimationState'.
+src/main/player_update.ts(353,39): TS2769: No overload matches this call.
+src/main/player_update.ts(374,53): TS2304: Cannot find name 'DogAnimationState'.
+src/main/player_update.ts(416,49): TS2304: Cannot find name 'DogAnimationState'.
 src/main/render_helpers.ts(69,26): TS7006: Parameter 'jellyMoss' implicitly has an 'any' type.
 src/main/render_helpers.ts(69,5): TS2304: Cannot find name 'jellyMosses'.
 src/main/startup.ts(448,45): TS2345: Argument of type 'Object3D<Object3DEventMap>' is not assignable to parameter of type 'Group<Object3DEventMap>'.
