@@ -23,7 +23,8 @@ import {
     createChromaShiftSystemStub,
     createStormGeodeSystemStub,
     createBlackHoleSystemStub,
-    createWishLanternSystemStub
+    createWishLanternSystemStub,
+    createWeatherSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -35,6 +36,7 @@ import type { CosmicDustSystem } from './cosmic_dust';
 import { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
 import type { WishLanternSystem } from './wish_lanterns';
+import type { WeatherSystem } from './weather_system';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -111,6 +113,7 @@ export type GameSystems = {
     derelictBuoyManager: DerelictBuoyManager;
     dataMonolithManager: DataMonolithManager;
     wishLanternSystem: WishLanternSystem;
+    weatherSystem: WeatherSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -337,6 +340,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
     const blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
     const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
+    const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -383,6 +387,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         crystalChimeManager,
         blackHoleSystem,
         wishLanternSystem,
+        weatherSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager

@@ -1,22 +1,26 @@
-## 🌌 Architect: Waterfall Splash Lighting Enhancement
+## 🌌 Architect: Weather Warzone (Rain/Snow)
 
 ### Concept
-> "Water is rendered as multiple transparent layers moving at different speeds, with foreground spray effects that pass in front of the ship. The water isn't just a background; it's an animated environment that reacts to your presence."
-> From `future-plan.md` "2. Diving Into Waterfalls and Vertical Water Sections". Additionally, "Dynamic Lighting — Objects should react to the player's engine glow and weapon fire" from the Depth is King standard.
+> "Dynamic weather changes mid-run (rain → snow)" - §18.2 New Mechanics & Level Concepts (ideas.md)
 
 ### Implementation
-- Added a new `createSplashMaterial` TSL shader to `src/waterfall.ts` using `MeshBasicNodeMaterial`.
-- Upgraded the `SplashSystem` to evaluate its distance to the player and smoothly mix the base water droplet color with the player's glowing engine color on proximity.
-- Plumbed `uPlayerPos` and `weaponLights` references down from `WaterfallSystem` through to the `SplashSystem`.
+- Added `weather_system.ts` implementing `WeatherSystem` to render procedurally animated rain and snow particles.
+- Uses `InstancedMesh` with TSL shaders for high-performance physics-less falling animation.
+- Hooked into `LevelManager` and activated for Level 6 via `level_config.ts`.
 
 ### Visuals
-- Dynamic lighting: Evaluates proximity via `length(positionWorld.sub(uPlayerPos))` and applies a fading mix via `smoothstep` to illuminate splashes passing directly in front of the ship.
+- Parallax depth distribution covering the camera frustum z-range.
+- Shader effects: TSL noise-based swaying (wind effect) mixed with vertical falling.
+- Dynamic lighting: Particles softly glow and react to the player's engine proximity (`uPlayerPos`).
 
 ### Integration
-- `src/waterfall.ts`: Rewrote the `SplashSystem` constructor and `update` loop to accept and apply the new `uPlayerPos` uniform node accurately.
-- Replaced the standard `MeshBasicMaterial` with the fully procedural Node material logic.
+- `src/weather_system.ts`: The core feature module.
+- `src/level_config.ts`: Added `weather` flag and toggled for Level 6.
+- `src/level_manager/environment_plugins.ts`: Mapped `weather` flag to `weatherSystem.activate()`.
+- `src/create_game_systems.ts`, `src/deferred_system_stubs.ts`, `src/level_systems_loader.ts`: Added for deferred system loading support.
+- `src/level_manager/manager.ts`: Hooked up `weatherSystem.update()`.
 
 ### Testing
 - [x] `npm run build` passes
-- [x] `npx tsc --noEmit` verifies TSL integrations
-- [x] Tested in level transitions where `WaterfallSystem` is instantiated.
+- [x] Tested in Level 6 at `npm run dev`
+- [x] Mobile/touch controls still work
