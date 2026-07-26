@@ -24,6 +24,7 @@ export enum PowerUpType {
     DREAM_CLOUD_CARPET = 'dream_cloud_carpet',
     LULLABY_LANTERN = 'lullaby_lantern',
     PUPPY_HUG_HUG = 'puppy_hug_hug',
+    FAIRY_DOG_WINGS = 'fairy_dog_wings',
     
     // Tier 3 - Wow-Factor Magic (rare/powerful)
     MOONBEAM_SLIDE = 'moonbeam_slide',
@@ -142,6 +143,17 @@ export const POWER_UP_CONFIGS: Record<PowerUpType, PowerUpConfig> = {
         soundEffect: 'powerup_hug',
         tier: 2,
         icon: '🤗'
+    },
+    [PowerUpType.FAIRY_DOG_WINGS]: {
+        type: PowerUpType.FAIRY_DOG_WINGS,
+        name: 'Fairy Dog Wings',
+        description: 'Temporary rainbow butterfly wings! Press SHIFT for a floaty glide.',
+        duration: 10,
+        color: 0xe6e6fa, // soft lilac
+        secondaryColor: 0xffb6c1, // pastel pink
+        soundEffect: 'powerup_fairy',
+        tier: 2,
+        icon: '🪽'
     },
     
     // Tier 3
@@ -383,6 +395,15 @@ export const TRAIL_CONFIGS: Record<PowerUpType, TrailConfig> = {
         particleSize: 0.25,
         lifetime: 1.0,
         rainbow: false,
+        sparkle: true
+    },
+    [PowerUpType.FAIRY_DOG_WINGS]: {
+        color: 0xe6e6fa,
+        secondaryColor: 0xffb6c1,
+        particleCount: 20,
+        particleSize: 0.3,
+        lifetime: 1.0,
+        rainbow: true,
         sparkle: true
     },
     [PowerUpType.MOONBEAM_SLIDE]: {

@@ -9,6 +9,8 @@ import { LEVEL_DISTANCE_BOUNDARIES } from '../level_config';
 import { gravityAnchors } from '../environment';
 import { showRollPopup } from './hud_displays';
 import { maybePrefetchNextLevel } from '../level_systems_loader';
+import { PowerUpType } from '../powerup_manager';
+
 export function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
@@ -49,6 +51,9 @@ export function updatePlayer(delta: number) {
         }
     }
     
+    const modifiers = game.powerUpManager.getCombinedModifiers();
+    const hasFairyWings = game.powerUpManager.hasPowerUp(PowerUpType.FAIRY_DOG_WINGS);
+
     if (isMovingUp) {
         targetSpeed = CONFIG.player.maxSpeedY;
     } else if (isMovingDown) {
@@ -58,6 +63,7 @@ export function updatePlayer(delta: number) {
         if (playerState.penguinSlideAssistTimer > 0) {
             targetSpeed *= 0.45;
         }
+        targetSpeed *= (modifiers.gravityMultiplier ?? 1.0);
     }
     
     const accel = (targetSpeed !== -CONFIG.player.gravity && targetSpeed !== 0)
@@ -151,7 +157,10 @@ export function updatePlayer(delta: number) {
     const isBoosting = game.boostSystem.isBoosting();
 
     // Keyboard: Shift hold or double-tap Space
-    if (canActivateBoost) {
+    if (hasFairyWings && keys.run) {
+        // Float instead of boosting
+        targetSpeed = CONFIG.player.gravity * 0.15; // Positive lift
+    } else if (canActivateBoost) {
         if (keys.run) {
             game.boostSystem.activate();
         } else if (game.wantsBoost) {

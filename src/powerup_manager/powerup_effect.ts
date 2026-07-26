@@ -105,6 +105,11 @@ export class PowerUpEffect {
                 return {
                     doubleValue: true
                 };
+            case PowerUpType.FAIRY_DOG_WINGS:
+                return {
+                    gravityMultiplier: 0.35,
+                    speedMultiplier: 1.1
+                };
             case PowerUpType.MOONBEAM_SLIDE:
                 return {
                     speedMultiplier: 1.5,
