@@ -91,6 +91,7 @@ export class LevelManager {
     pastelNebulaSystem: LevelEnvironmentPorts['pastelNebulaSystem'];
     wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'];
     weatherSystem: LevelEnvironmentPorts['weatherSystem'];
+    dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -139,6 +140,7 @@ export class LevelManager {
         this.pastelNebulaSystem = options.env.pastelNebulaSystem;
         this.wishLanternSystem = options.env.wishLanternSystem;
         this.weatherSystem = options.env.weatherSystem;
+        this.dancingJellyMossSystem = options.env.dancingJellyMossSystem;
 
         this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
@@ -381,6 +383,7 @@ export class LevelManager {
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
         this.weatherSystem.update(delta, cameraX, playerPos);
+        this.dancingJellyMossSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 

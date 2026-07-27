@@ -113,6 +113,7 @@ export type LevelEnvironments = {
     meteorShower?: MeteorShowerEnvironmentConfig;
     bubbleCoral?: BubbleCoralEnvironmentConfig | boolean;
     wishLanterns?: boolean;
+    dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
 };
 
@@ -266,7 +267,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true,
             pastelNebula: true,
-            wishLanterns: true
+            wishLanterns: true,
+            dancingJellyMoss: true
         },
         vignettes: {
             treeGroves: 1.5,
@@ -531,7 +533,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebula: true,
             nebulaRibbons: true,
             cosmicDust: true,
-            voidJellyfish: { density: 45 }
+            voidJellyfish: { density: 45 },
+            dancingJellyMoss: { density: 1.5 }
         },
         vignettes: {
             treeGroves: 0.8,

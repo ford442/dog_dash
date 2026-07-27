@@ -180,7 +180,8 @@ function createLevelManager(
             stormGeodeSystem: systems.stormGeodeSystem,
             pastelNebulaSystem: systems.pastelNebulaSystem,
             wishLanternSystem: systems.wishLanternSystem,
-            weatherSystem: systems.weatherSystem
+            weatherSystem: systems.weatherSystem,
+            dancingJellyMossSystem: systems.dancingJellyMossSystem
         },
         spawners: {
             createSporeCloudAtPosition,
