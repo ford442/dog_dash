@@ -35,7 +35,8 @@ type SystemKey =
     | 'bubbleCoral'
     | 'slingables'
     | 'wishLanterns'
-    | 'weather';
+    | 'weather'
+    | 'dancingJellyMoss';
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -68,6 +69,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 const { WaterfallSystem } = await import('./waterfall');
                 installEnvPartial({
                     waterfallSystem: new WaterfallSystem(scene, camera, game.weaponLightManager)
+                });
+                break;
+            }
+            case 'dancingJellyMoss': {
+                const { DancingJellyMossSystem } = await import('./dancing_jelly_moss');
+                installEnvPartial({
+                    dancingJellyMossSystem: new DancingJellyMossSystem(scene)
                 });
                 break;
             }
@@ -240,6 +248,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.aquaticLife)) keys.add('aquaticLife');
     if (isEnvironmentEnabled(env.wishLanterns)) keys.add('wishLanterns');
     if (isEnvironmentEnabled(env.weather)) keys.add('weather');
+    if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');
     if ((cfg.stormGeodeDensity ?? 0) > 0) keys.add('stormGeode');

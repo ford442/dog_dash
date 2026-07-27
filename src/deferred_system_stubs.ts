@@ -20,6 +20,7 @@ import type { SlingableObjectSystem } from './slingable_objects';
 import type { ToyRocketSpawnManager } from './toy_rockets';
 import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
+import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 
 const noop = () => undefined;
 
@@ -221,4 +222,14 @@ export function createWeatherSystemStub(): WeatherSystem {
         update: noop,
         cleanup: noop
     } as unknown as WeatherSystem;
+}
+
+export function createDancingJellyMossSystemStub(): DancingJellyMossSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as DancingJellyMossSystem;
 }

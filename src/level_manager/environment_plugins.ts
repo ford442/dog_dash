@@ -23,6 +23,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
     wishLanternSystem: { activate: () => void; deactivate: () => void };
     weatherSystem: { activate: () => void; deactivate: () => void };
+    dancingJellyMossSystem: { activate: (config?: any) => void; deactivate: () => void };
 }
 
 export function buildEnvironmentPlugins(
@@ -167,6 +168,11 @@ export function buildEnvironmentPlugins(
             flag: 'meteorShower',
             activate: () => host.meteorShowerSystem.activate(),
             deactivate: () => host.meteorShowerSystem.deactivate()
+        },
+        {
+            flag: 'dancingJellyMoss',
+            activate: (config: any) => host.dancingJellyMossSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.dancingJellyMossSystem.deactivate()
         },
         {
             flag: 'weather',

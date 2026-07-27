@@ -8,6 +8,7 @@ import type { DebugSystem } from '../debug_system';
 import type { FriendsManager } from '../space_friends';
 import type { ButterflySwarmSystem } from '../butterfly_swarm';
 import type { WeaponLightManager } from '../lighting';
+import type { DancingJellyMossSystem } from '../dancing_jelly_moss';
 import type { ConstellationManager } from '../flower_constellations';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
@@ -93,6 +94,7 @@ export type LevelEnvironmentPorts = {
     pastelNebulaSystem: PastelNebulaSystem;
     wishLanternSystem: WishLanternSystem;
     weatherSystem: WeatherSystem;
+    dancingJellyMossSystem: DancingJellyMossSystem;
 };
 
 export type LevelManagerOptions = {
