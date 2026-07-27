@@ -24,6 +24,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     wishLanternSystem: { activate: () => void; deactivate: () => void };
     weatherSystem: { activate: () => void; deactivate: () => void };
     dancingJellyMossSystem: { activate: (config?: any) => void; deactivate: () => void };
+    dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void };
 }
 
 export function buildEnvironmentPlugins(
@@ -32,6 +33,11 @@ export function buildEnvironmentPlugins(
     levelLength: number
 ): EnvironmentPlugin[] {
     return [
+        {
+            flag: 'dynamicStarfield',
+            activate: (config: any) => host.dynamicStarfieldSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.dynamicStarfieldSystem.deactivate()
+        },
         {
             flag: 'pastelNebula',
             activate: () => host.pastelNebulaSystem.activate(),

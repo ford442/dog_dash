@@ -21,6 +21,7 @@ import type { ToyRocketSpawnManager } from './toy_rockets';
 import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
+import type { DynamicStarfieldSystem } from './dynamic_starfield';
 
 const noop = () => undefined;
 
@@ -232,4 +233,14 @@ export function createDancingJellyMossSystemStub(): DancingJellyMossSystem {
         update: noop,
         cleanup: noop
     } as unknown as DancingJellyMossSystem;
+}
+
+export function createDynamicStarfieldSystemStub(): DynamicStarfieldSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as DynamicStarfieldSystem;
 }

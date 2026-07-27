@@ -181,7 +181,8 @@ function createLevelManager(
             pastelNebulaSystem: systems.pastelNebulaSystem,
             wishLanternSystem: systems.wishLanternSystem,
             weatherSystem: systems.weatherSystem,
-            dancingJellyMossSystem: systems.dancingJellyMossSystem
+            dancingJellyMossSystem: systems.dancingJellyMossSystem,
+            dynamicStarfieldSystem: systems.dynamicStarfieldSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -238,7 +239,8 @@ function createLevelManager(
         onUpdateLevelDisplay: (levelIndex, name) => {
             const levelDiv = document.getElementById('level-display');
             if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
-        }
+        },
+        dynamicStarfieldSystem: systems.dynamicStarfieldSystem
     });
 }
 

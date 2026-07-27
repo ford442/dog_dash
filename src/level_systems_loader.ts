@@ -36,7 +36,8 @@ type SystemKey =
     | 'slingables'
     | 'wishLanterns'
     | 'weather'
-    | 'dancingJellyMoss';
+    | 'dancingJellyMoss'
+    | 'dynamicStarfield';
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -76,6 +77,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 const { DancingJellyMossSystem } = await import('./dancing_jelly_moss');
                 installEnvPartial({
                     dancingJellyMossSystem: new DancingJellyMossSystem(scene)
+                });
+                break;
+            }
+            case 'dynamicStarfield': {
+                const { DynamicStarfieldSystem } = await import('./dynamic_starfield');
+                installEnvPartial({
+                    dynamicStarfieldSystem: new DynamicStarfieldSystem(scene)
                 });
                 break;
             }
@@ -249,6 +257,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.wishLanterns)) keys.add('wishLanterns');
     if (isEnvironmentEnabled(env.weather)) keys.add('weather');
     if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
+    if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');
     if ((cfg.stormGeodeDensity ?? 0) > 0) keys.add('stormGeode');

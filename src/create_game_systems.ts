@@ -25,7 +25,8 @@ import {
     createBlackHoleSystemStub,
     createWishLanternSystemStub,
     createWeatherSystemStub,
-    createDancingJellyMossSystemStub
+    createDancingJellyMossSystemStub,
+    createDynamicStarfieldSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -39,6 +40,7 @@ import type { BlackHoleSystem } from './black_hole';
 import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
+import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -117,6 +119,7 @@ export type GameSystems = {
     wishLanternSystem: WishLanternSystem;
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
+    dynamicStarfieldSystem: DynamicStarfieldSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -133,6 +136,7 @@ export type LevelEnvironmentSystemExports = {
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;
     wishLanternSystem: WishLanternSystem;
+    dynamicStarfieldSystem: DynamicStarfieldSystem;
 };
 
 /**
@@ -345,6 +349,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
     const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const dancingJellyMossSystem: DancingJellyMossSystem = createDancingJellyMossSystemStub();
+    const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -393,6 +398,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         wishLanternSystem,
         weatherSystem,
         dancingJellyMossSystem,
+        dynamicStarfieldSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager
