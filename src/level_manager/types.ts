@@ -1,3 +1,4 @@
+import type { DynamicStarfieldSystem } from '../dynamic_starfield';
 import type { LevelConfig, LevelEnvironments } from '../level_config';
 import type * as THREE from 'three';
 import type { GodRaySystem } from '../godrays';
@@ -95,6 +96,7 @@ export type LevelEnvironmentPorts = {
     wishLanternSystem: WishLanternSystem;
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
+    dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
 };
 
 export type LevelManagerOptions = {
@@ -121,4 +123,5 @@ export type LevelManagerOptions = {
     onLevelStart?: (cfg: LevelConfig) => void;
     onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
     env: LevelEnvironmentPorts;
+    dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
 };

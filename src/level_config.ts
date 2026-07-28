@@ -115,6 +115,7 @@ export type LevelEnvironments = {
     wishLanterns?: boolean;
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
+    dynamicStarfield?: boolean | { speedScaling?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -262,6 +263,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         lunarLemurRate: 0.28,
         enemyTintColor: 0x66ff99,
         environments: {
+            dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.0 },
@@ -318,6 +320,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         pinwheelDensity: 0.07,
         enemyTintColor: 0x8844ff,
         environments: {
+            dynamicStarfield: true,
             asteroidField: { rate: 0.8 },
             ghostDebris: { density: 100 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
@@ -388,6 +391,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         bubbleCoralDensity: 3,
         enemyTintColor: 0xff5500,
         environments: {
+            dynamicStarfield: true,
             asteroidField: { rate: 1.8 },
             meteorShower: true,
             lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
@@ -458,6 +462,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         toyRocketCount: 1,
         enemyTintColor: 0xcc6633,
         environments: {
+            dynamicStarfield: true,
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
             bubbleCoral: { density: 0.85 }
@@ -526,6 +531,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         koiSchoolDensity: 4,
         bubbleCoralDensity: 5,
         environments: {
+            dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
             lightning: { enabled: true, density: 2.5, color: 0xff00ff },
@@ -594,6 +600,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         toyRocketCount: 2,
         enemyTintColor: 0x66ccff,
         environments: {
+            dynamicStarfield: true,
             asteroidField: { rate: 1.5 },
             aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 },
             waterfall: true,
