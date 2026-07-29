@@ -85,6 +85,7 @@ export class LevelManager {
     planetaryHorizonSystem: LevelEnvironmentPorts['planetaryHorizonSystem'];
     moonPalaceSystem: LevelEnvironmentPorts['moonPalaceSystem'];
     blackHoleSystem: LevelEnvironmentPorts['blackHoleSystem'];
+    galacticCoreSystem: LevelEnvironmentPorts['galacticCoreSystem'];
     reEntrySystem: LevelEnvironmentPorts['reEntrySystem'];
     chromaShiftSystem: LevelEnvironmentPorts['chromaShiftSystem'];
     stormGeodeSystem: LevelEnvironmentPorts['stormGeodeSystem'];
@@ -135,6 +136,7 @@ export class LevelManager {
         this.planetaryHorizonSystem = options.env.planetaryHorizonSystem;
         this.moonPalaceSystem = options.env.moonPalaceSystem;
         this.blackHoleSystem = options.env.blackHoleSystem;
+        this.galacticCoreSystem = options.env.galacticCoreSystem;
         this.reEntrySystem = options.env.reEntrySystem;
         this.chromaShiftSystem = options.env.chromaShiftSystem;
         this.stormGeodeSystem = options.env.stormGeodeSystem;
@@ -381,6 +383,7 @@ export class LevelManager {
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
         if (this.blackHoleSystem) this.blackHoleSystem.update(delta, cameraX, playerPos);
+        if (this.galacticCoreSystem) this.galacticCoreSystem.update(delta, cameraX, playerPos);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);

@@ -54,8 +54,21 @@ export const playerState = {
     gravLensBoostMultiplier: 1,
     // Artifact hacking (Derelict Buoy extraction): shields drop, thruster to 30%.
     hackExtractionTimer: 0,
-    hackThrusterEfficiency: 1
+    hackThrusterEfficiency: 1,
+    /**
+     * Vertical origin the player's soft flight bounds are measured against.
+     * 0 during the main run; raised to DREAM_ROOM_Y while a Dream Portal bonus
+     * room is open (see `dream_portal.ts`).
+     */
+    worldOriginY: 0
 };
+
+/**
+ * Vertical offset of the Dream Portal bonus pocket (see `dream_portal.ts`).
+ * Lives here so the eager loop can reason about the pocket without pulling the
+ * deferred portal chunk into the entry bundle.
+ */
+export const DREAM_ROOM_Y = 4000;
 
 export let isGamePaused = false;
 export let gameStarted = false;

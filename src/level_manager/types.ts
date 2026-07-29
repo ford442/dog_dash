@@ -31,6 +31,7 @@ import type { CosmicDustSystem } from '../cosmic_dust';
 import type { PlanetaryHorizonSystem } from '../planetary_horizon';
 import type { MoonPalaceSystem } from '../moon_palace';
 import type { BlackHoleSystem } from '../black_hole';
+import type { GalacticCoreSystem } from '../galactic_core';
 import type { ReEntrySystem } from '../reentry';
 import type { ChromaShiftSystem } from '../chroma_shift';
 import type { StormGeodeSystem } from '../storm_geodes';
@@ -89,6 +90,7 @@ export type LevelEnvironmentPorts = {
     planetaryHorizonSystem: PlanetaryHorizonSystem;
     moonPalaceSystem: MoonPalaceSystem;
     blackHoleSystem: BlackHoleSystem;
+    galacticCoreSystem: GalacticCoreSystem;
     reEntrySystem: ReEntrySystem;
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;

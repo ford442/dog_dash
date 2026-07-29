@@ -27,6 +27,8 @@ import { updateCamera } from './camera_system';
 import { updateShadowQuality, updateShadowCulling } from './render_helpers';
 import { updateGravLensSystems } from './grav_lens_update';
 import { updateArtifacts } from './artifact_update';
+import { updateDreamPortals } from './dream_portal_update';
+import { updateGalacticCoreEffects } from './galactic_core_update';
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
@@ -97,6 +99,12 @@ export function updateLoopWorld(delta: number, time: number): void {
         if (player) {
             updateArtifacts(delta);
         }
+
+        // Dream Portal doors + bonus rooms (levels 2–3)
+        updateDreamPortals(delta, time);
+
+        // Galactic Core finale: projectile lensing + approach rumble (level 6)
+        updateGalacticCoreEffects(delta);
     
         // Update Level Manager (and Clouds)
         if (player) {
@@ -121,7 +129,8 @@ export function updateLoopWorld(delta: number, time: number): void {
                 ...geoScannables,
                 ...game.friendsManager.getScannables(),
                 ...game.creatureManager.getScannables(),
-                ...game.slingableObjectSystem.getScannables()
+                ...game.slingableObjectSystem.getScannables(),
+                ...game.dreamPortalSystem.getScannables()
             ]);
             if (game.debugSystem.isEnabled('butterflySwarm')) {
                 const nowSec = performance.now() * 0.001;

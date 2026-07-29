@@ -23,6 +23,8 @@ import {
     createChromaShiftSystemStub,
     createStormGeodeSystemStub,
     createBlackHoleSystemStub,
+    createGalacticCoreSystemStub,
+    createDreamPortalSystemStub,
     createWishLanternSystemStub,
     createWeatherSystemStub,
     createDancingJellyMossSystemStub,
@@ -37,6 +39,8 @@ import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
 import { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
+import type { GalacticCoreSystem } from './galactic_core';
+import type { DreamPortalSystem } from './dream_portal';
 import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
@@ -115,6 +119,8 @@ export type GameSystems = {
     stormGeodeSystem: StormGeodeSystem;
     crystalChimeManager: CrystalChimeManager;
     blackHoleSystem: BlackHoleSystem;
+    galacticCoreSystem: GalacticCoreSystem;
+    dreamPortalSystem: DreamPortalSystem;
     gravLensManager: GravLensManager;
     derelictBuoyManager: DerelictBuoyManager;
     dataMonolithManager: DataMonolithManager;
@@ -137,6 +143,7 @@ export type LevelEnvironmentSystemExports = {
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;
+    galacticCoreSystem: GalacticCoreSystem;
     wishLanternSystem: WishLanternSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
 };
@@ -310,6 +317,8 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const stormGeodeSystem: StormGeodeSystem = createStormGeodeSystemStub();
     const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
     const blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
+    const galacticCoreSystem: GalacticCoreSystem = createGalacticCoreSystemStub();
+    const dreamPortalSystem: DreamPortalSystem = createDreamPortalSystemStub();
     const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
     const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const dancingJellyMossSystem: DancingJellyMossSystem = createDancingJellyMossSystemStub();
@@ -360,6 +369,8 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         stormGeodeSystem,
         crystalChimeManager,
         blackHoleSystem,
+        galacticCoreSystem,
+        dreamPortalSystem,
         wishLanternSystem,
         weatherSystem,
         dancingJellyMossSystem,

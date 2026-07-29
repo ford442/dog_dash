@@ -58,6 +58,11 @@ export function buildEnvironmentPlugins(
             deactivate: () => host.blackHoleSystem.deactivate()
         },
         {
+            flag: 'galacticCore',
+            activate: (coreConfig) => host.galacticCoreSystem.activate(coreConfig),
+            deactivate: () => host.galacticCoreSystem.deactivate()
+        },
+        {
             flag: 'industrial',
             activate: (config: any) => host.industrialSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => host.industrialSystem.deactivate()

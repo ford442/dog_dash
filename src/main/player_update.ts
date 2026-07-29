@@ -98,12 +98,14 @@ export function updatePlayer(delta: number) {
 
     player.position.y += playerState.currentSpeedY * delta;
     
-    // Soft boundaries - keep player on screen (Y: -10 to +15)
-    if (player.position.y > 15) {
-        player.position.y = 15;
+    // Soft boundaries - keep player on screen (Y: origin-10 to origin+15).
+    // `worldOriginY` is 0 in the main run and DREAM_ROOM_Y inside a bonus room.
+    const originY = playerState.worldOriginY;
+    if (player.position.y > originY + 15) {
+        player.position.y = originY + 15;
         playerState.currentSpeedY = Math.min(0, playerState.currentSpeedY);
-    } else if (player.position.y < -10) {
-        player.position.y = -10;
+    } else if (player.position.y < originY - 10) {
+        player.position.y = originY - 10;
         playerState.currentSpeedY = Math.max(0, playerState.currentSpeedY);
     }
     
@@ -448,9 +450,13 @@ export function updatePlayer(delta: number) {
     // --- AUDIO SYSTEM ---
     game.audioSystem.updateEngineState(playerState.currentSpeedY, isMovingUp, isMovingDown, isBoosting);
 
-    // Level Checking — prefetch next level chunk before boundary crossing
-    maybePrefetchNextLevel(player.position.x, game.levelManager.currentLevel);
-    game.levelManager.checkProgress(player.position.x);
+    // Level Checking — prefetch next level chunk before boundary crossing.
+    // Frozen while a Dream Portal room is open: the main run is paused in place,
+    // so neither streaming nor a level transition should fire.
+    if (!game.dreamPortalSystem?.isInRoom()) {
+        maybePrefetchNextLevel(player.position.x, game.levelManager.currentLevel);
+        game.levelManager.checkProgress(player.position.x);
+    }
 
     // "Survive" objectives (e.g. L4 Rusty Gauntlet) don't have a running
     // counter - treat reaching 80% of the level's span as "survived" and

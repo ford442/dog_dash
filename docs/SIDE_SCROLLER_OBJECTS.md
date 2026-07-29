@@ -165,6 +165,8 @@ Supported flags (add only the ones a level needs; absent/false means deactivate)
 | `cosmicDust`        | CosmicDustSystem       | 5                | Independent flag; Level 5 composes it with biological |
 | `waterfall`         | WaterfallSystem        | 6                | Aqua Expanse vertical effects |
 | `aquaticLife`       | AquaticLifeManager     | 6                | Jellyfish/kelp/plankton; spawns/clears from the current level flag |
+| `dreamPortals`      | DreamPortalSystem      | 2–3              | Bonus-room doorways: `{ enabled, portals: [{ x, y, z?, durationSeconds?, toyCount?, orbCount?, hazardCount?, theme? }] }` |
+| `galacticCore`      | GalacticCoreSystem     | 6                | Finale backdrop: `{ enabled, approachStartX, approachEndX, startOffsetX, endOffsetX, startZ, endZ, baseY?, intensity?, innerColor?, outerColor? }` |
 
 Example for a new level that mixes:
 
@@ -181,6 +183,70 @@ Example for a new level that mixes:
 ```
 
 In `LevelManager` the plugin table is iterated so enabling systems is just data. Special setup (levelDistance, black-hole placement, cloud hiding) happens inside the activate/deactivate closures for the relevant plugins. Aquatic life uses the same `environments.aquaticLife` flag from the main loop because it also emits HUD/audio encounter events.
+
+## Dream Portals (bonus rooms)
+
+`src/dream_portal.ts` — secret cloud doorways that drop the player into a short
+bonus room and hand them back to the main run.
+
+**Placement.** Doors are declared per level in `environments.dreamPortals.portals`
+with **absolute world X** (same space as `gravLensCorridors.startX` and
+`LEVEL_DISTANCE_BOUNDARIES`). `spawnDreamPortalsForLevel()` runs from
+`onLevelStart`, mirroring how grav-lens corridors and artifacts are placed.
+Each door is one-shot per run.
+
+**The pocket.** The bonus room is *not* a second scene. It is a pocket of the
+same scene parked at `DREAM_ROOM_Y` (4000, exported from `game_config.ts`).
+Entering:
+
+1. saves the player's Y and `autoScrollSpeed`, then teleports the player to the pocket;
+2. sets `playerState.worldOriginY = DREAM_ROOM_Y` — `player_update.ts` measures the
+   soft flight clamp against that origin, so the ±(-10, +15) band travels with the player;
+3. parks `autoScrollSpeed` at 0 and snaps the camera.
+
+Because the LevelManager stream, obstacle spawner and orb cleanup are all keyed
+off camera/player **X**, freezing X freezes the main run in place — nothing is
+torn down, so `hub → continue → portal → exit → hub` stays coherent. Level
+progression and chunk prefetch are additionally gated on
+`dreamPortalSystem.isInRoom()`.
+
+Inside the pocket the player's X is frozen, so the *room* scrolls past them:
+`roomGroup` (static anchor: backdrop + exit ring) holds a `roomScroll` child
+that slides left at `ROOM_SCROLL_SPEED`, carrying the instanced toys, the drifting
+dream jellies and the hero lantern.
+
+**Exit is always available** — the exit ring is pinned directly above the player
+(arms after 2 s), and the room timer is a hard backstop, so there is no soft-lock.
+
+**Rewards reuse existing systems** (no parallel economy): star orbs come from
+`OrbManager`, cores from `SaveManager.addCores`, score from `HUDManager.addScore`,
+and both the door (`speciesId: 'dreamPortal'`) and the room's hero lantern
+(`speciesId: 'dreamLantern'`) are fed to `DiscoveryManager` as scan targets.
+Pocket orbs are cleaned up on exit via `OrbManager.cleanupOrbsAboveY()`.
+
+Interaction tests are measured in the **XY plane** (`distanceXY`): the player never
+leaves `z = 0`, so anything gated on 3D distance at a decorative depth would be
+unreachable.
+
+## Galactic Core (finale backdrop)
+
+`src/galactic_core.ts` — event-horizon sphere, TSL accretion disk (`RingGeometry`
+with layered radial/angular noise, additive), photon halo and a spiral "swirl
+veil" that fakes mild lensing without any postprocessing pass.
+
+It is a **camera-relative parallax backdrop**, not a world-anchored prop: the
+core sits `offsetX` ahead of the camera at depth `z`, and the approach ramp —
+driven by the player's world X between `approachStartX` and `approachEndX`,
+eased — walks both toward their "end" values. That is what makes the finale read
+as a slow fall toward something enormous.
+
+Gameplay hooks are deliberately small (`src/main/galactic_core_update.ts`):
+plasma bolts bend toward the core inside 240 units, and the ship trembles once
+the ramp passes 0.7. `getStarfieldWarp()` is exposed for parallax layers that
+want to smear on the approach.
+
+WebGL2 (`?renderer=webgl`) gets simpler `MeshBasicMaterial` stand-ins and lower
+geometry segment counts instead of the node materials.
 
 ## Wiring checklist (important)
 
