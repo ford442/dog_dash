@@ -28,6 +28,7 @@ import { applyCraftedLoadout } from './loadout';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
+import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -56,7 +57,11 @@ async function loadWasm(): Promise<void> {
     if (handle) {
         game.wasmExports = handle.exports;
         game.wasmMemory = handle.memory;
+        game.wasmBackend = handle.backend;
+    } else {
+        game.wasmBackend = null;
     }
+    jellyMossSoftBody.bindWasm(handle);
 }
 
 import {
@@ -65,7 +70,8 @@ import {
     createSporeCloudAtPosition, createVoidRootBallAtPosition,
     createVacuumKelpAtPosition, createIceNeedleClusterAtPosition,
     createLiquidMetalBlobAtPosition, createMagmaHeartAtPosition,
-    createGravityAnchorAtPosition, createGeodeAtPosition
+    createGravityAnchorAtPosition, createGeodeAtPosition,
+    createJellyMossAtPosition
 } from '../environment';
 import {
     createGravityAnchorWithTarsiers,
@@ -122,6 +128,11 @@ export async function spawnDeferredPrototypeContent(): Promise<void> {
         radius: 1.8, mass: 4.5,
         velocity: new THREE.Vector3(-0.9, 0.2, 0), kind: 'wreckingBall'
     });
+
+    // Hero Nebula Jelly-Moss (1–3). With VITE_CPP_WASM + game_cpp.wasm, cores use Verlet soft-body.
+    createJellyMossAtPosition(120, 4, -22, 5.5);
+    createJellyMossAtPosition(210, -3, -20, 4.2);
+    createJellyMossAtPosition(340, 6, -24, 6.0);
 }
 
 export async function spawnDeferredVideoStars(): Promise<void> {

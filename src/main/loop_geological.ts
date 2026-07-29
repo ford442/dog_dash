@@ -30,6 +30,8 @@ import {
 import type { VoidRootBallUpdateContext } from '../void_root_ball';
 import { isVoidRootTethered } from '../void_root_ball';
 import { CONFIG } from '../game_config';
+import { jellyMossSoftBody } from '../jelly_moss_softbody';
+
 export function updateLoopGeological(delta: number, time: number): void {
         // --- NEW: Update Geological Objects ---
         if (game.debugSystem.isEnabled('geologicalObjects')) {
@@ -119,6 +121,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                         if (proj.mesh.position.distanceTo(jellyMoss.position) < hitRadius) {
                             proj.deactivate();
                             game.particleSystem.emit(proj.mesh.position.clone(), 0x00ff88, 8, 4.0, 0.4, 0.6);
+                            // C++ Verlet impulse (no-op on AS); direction from moss center toward hit
+                            const hitDir = proj.mesh.position.clone().sub(jellyMoss.position);
+                            jellyMossSoftBody.applyImpulse(jellyMoss, hitDir.x, hitDir.y);
                             jellyMoss.userData.health = (jellyMoss.userData.health || 10) - 5;
                             jellyMoss.userData.hitCount = (jellyMoss.userData.hitCount || 0) + 1;
                             if (jellyMoss.userData.health <= 0) {
@@ -151,6 +156,13 @@ export function updateLoopGeological(delta: number, time: number): void {
                     if (dist < radius) {
                         // 1. Viscosity
                         playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
+
+                        // Soft-body push from player (C++ only)
+                        jellyMossSoftBody.applyPlayerProximity(
+                            jellyMoss,
+                            player.position.x - jellyMoss.position.x,
+                            player.position.y - jellyMoss.position.y
+                        );
 
                         // 2. Stealth Effect
                         if (!jellyMoss.userData.isHiding) {
@@ -268,6 +280,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                     }
                 }
             }
+
+            // C++ Verlet soft-body step for hero Jelly-Moss cores (no-op on AS)
+            jellyMossSoftBody.update(delta);
     
             // Update solar sails (iridescent rippling, unfold near player)
             if (player) {

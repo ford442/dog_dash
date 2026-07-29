@@ -19,7 +19,7 @@ import type { DebugSystem } from './debug_system';
 import type { VideoTumblingStar } from './video_tumbling_star';
 import type { GameManagers } from './game_managers';
 import type { GameSystems } from './create_game_systems';
-import type { WasmExports } from './wasm_loader';
+import type { WasmBackend, WasmExports } from './wasm_loader';
 import { playerState } from './game_config';
 import type {
     CollisionDebugOverlay,
@@ -33,6 +33,8 @@ export interface GameContext extends GameSystems, GameManagers {
 
     wasmExports: WasmExports | null;
     wasmMemory: Float32Array | null;
+    /** Active WASM backend after load (null if both backends failed). */
+    wasmBackend: WasmBackend | null;
 
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
@@ -127,6 +129,7 @@ export function createGameContextFrameState(): Pick<
     GameContext,
     | 'wasmExports'
     | 'wasmMemory'
+    | 'wasmBackend'
     | 'clock'
     | 'lastPlayerDamageTime'
     | 'aquaticLifeSpawnedLevel'
@@ -171,6 +174,7 @@ export function createGameContextFrameState(): Pick<
     return {
         wasmExports: null,
         wasmMemory: null,
+        wasmBackend: null,
         clock: new THREE.Clock(),
         lastPlayerDamageTime: -999,
         aquaticLifeSpawnedLevel: null,

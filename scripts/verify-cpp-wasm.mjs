@@ -58,4 +58,15 @@ if (!(exports.memory instanceof WebAssembly.Memory)) {
     process.exit(1);
 }
 
+// Light call smoke: alloc + step (same symbols jelly_moss_softbody uses)
+exports.allocPhysicsBodies(2);
+exports.setBodyPosition(0, 1, 2);
+exports.addBodyAcceleration(0, 10, 0);
+exports.stepPhysics(2, 0.016, 0);
+const x = exports.getBodyPositionX(0);
+if (!Number.isFinite(x)) {
+    console.error('❌ stepPhysics produced non-finite position');
+    process.exit(1);
+}
+
 console.log(`✅ C++ WASM verified (${wasmPath})`);
