@@ -291,6 +291,11 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'background3d',
         maxActive: 24
     });
+    decorationBudget.register('magic_paintbrush_path', {
+        label: 'Rainbow paint path',
+        category: 'effects',
+        maxActive: 36
+    });
     decorationBudget.register('star_eater_boss', {
         label: 'Star-Eater Pitcher (boss)',
         category: 'creatures',

@@ -52,11 +52,12 @@ import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upg
 import { getSaveManager, type SaveManager } from './save_manager';
 import { StarfieldSystem } from './stars';
 import { OrbManager } from './collectibles';
-import { PowerUpManager, PowerUpType } from './powerup_manager';
+import { PowerUpManager, PowerUpType, handlePowerUpStart, handlePowerUpEnd, syncMagicalEffectsFromActive } from './powerup_manager';
 import { DogCockpitController, DogAnimationState } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType } from './juice_effects';
-import { EffectManager, MagicalEffectType } from './magical_effects';
+import { EffectManager } from './magical_effects';
+import { MagicPaintbrushSystem } from './magic_paintbrush';
 import { VictorySystem } from './victory_system';
 import { TutorialSystem, shouldShowTutorial } from './tutorial_system';
 import { BoostSystem } from './boost_system';
@@ -106,6 +107,7 @@ export type GameSystems = {
     boostSystem: BoostSystem;
     rollSystem: RollSystem;
     effectManager: EffectManager;
+    magicPaintbrushSystem: MagicPaintbrushSystem;
     victorySystem: VictorySystem;
     tutorialSystem: TutorialSystem;
     lightningBoltSystem: LightningBoltSystem;
@@ -214,6 +216,19 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
     const tempTarget = new THREE.Group();
     const effectManager = new EffectManager(scene, audioSystem, tempTarget);
+    const magicPaintbrushSystem = new MagicPaintbrushSystem(scene);
+
+    const powerUpHookCtx = {
+        effectManager,
+        audioSystem,
+        dogController,
+        juiceManager,
+        powerUpManager: null as unknown as PowerUpManager,
+        getPlayerPosition: () => player?.position,
+        onHudHealthUpdate: () => {
+            hudManager.updateHealth(playerState.health, playerState.maxHealth);
+        },
+    };
 
     const powerUpManager = new PowerUpManager({
         scene,
@@ -222,75 +237,24 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         rocket: undefined,
         onPowerUpStart: (type, config) => {
             console.log(`Power-up started: ${config.name}`);
-            switch (type) {
-                case PowerUpType.RAINBOW_COMET_TAIL:
-                    effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, config.duration);
-                    audioSystem.playCometActivate();
-                    dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
-                    juiceManager.flashRainbow(0.8);
-                    break;
-                case PowerUpType.FLOWER_CROWN_BOOST:
-                    effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
-                    audioSystem.playBoost();
-                    break;
-                case PowerUpType.TWINKLE_STAR_MAGNET:
-                    effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
-                    audioSystem.playCollect();
-                    break;
-                case PowerUpType.BUBBLEGUM_SHIELD:
-                    effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, config.duration);
-                    audioSystem.playShieldActivate();
-                    break;
-                case PowerUpType.BUTTERFLY_ESCORT:
-                    effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, config.duration);
-                    audioSystem.playCollect();
-                    break;
-                case PowerUpType.UNICORN_HORN_BLAST:
-                    effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, config.duration);
-                    audioSystem.playBoost();
-                    break;
-            }
+            handlePowerUpStart(powerUpHookCtx, type, config);
         },
         onPowerUpEnd: (type, config) => {
             console.log(`Power-up ended: ${config.name}`);
-            if (type === PowerUpType.BUBBLEGUM_SHIELD && player) {
-                audioSystem.playShieldBreak();
-                juiceManager.showFloatingText('Pop!', player.position, '#ff69b4', 24);
-                juiceManager.burstMagic(player.position.clone());
+            handlePowerUpEnd(powerUpHookCtx, type, config);
+            if (type === PowerUpType.MAGIC_PAINTBRUSH) {
+                magicPaintbrushSystem.clear();
             }
         }
     });
+    powerUpHookCtx.powerUpManager = powerUpManager;
 
     orbManager.onPowerUpReady = () => {
         const triggered = powerUpManager.collectOrb();
         if (triggered && player) {
-            dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
             juiceManager.flashRainbow(0.5);
             juiceManager.burstMagic(player.position.clone());
-
-            const activeEffects = powerUpManager.getActiveEffects();
-            activeEffects.forEach((effect) => {
-                switch (effect.type) {
-                    case PowerUpType.RAINBOW_COMET_TAIL:
-                        effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, effect.duration);
-                        break;
-                    case PowerUpType.FLOWER_CROWN_BOOST:
-                        effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
-                        break;
-                    case PowerUpType.BUBBLEGUM_SHIELD:
-                        effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, effect.duration);
-                        break;
-                    case PowerUpType.TWINKLE_STAR_MAGNET:
-                        effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
-                        break;
-                    case PowerUpType.BUTTERFLY_ESCORT:
-                        effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, effect.duration);
-                        break;
-                    case PowerUpType.UNICORN_HORN_BLAST:
-                        effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, effect.duration);
-                        break;
-                }
-            });
+            syncMagicalEffectsFromActive(powerUpHookCtx);
         }
     };
 
@@ -388,6 +352,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         boostSystem,
         rollSystem,
         effectManager,
+        magicPaintbrushSystem,
         victorySystem,
         tutorialSystem,
         lightningBoltSystem,

@@ -171,14 +171,7 @@ export class PowerUpManager {
         
         createEffectVisuals(this.getVisualContext(), type);
         
-        if (this.audioSystem) {
-            this.audioSystem.play('powerup');
-        }
-
         const powerUpCfg = POWER_UP_CONFIGS[type];
-        if (this.dogController) {
-            this.dogController.triggerAnimation('power_up', 2.0);
-        }
         if (this.rocket) {
             this.particleSystem.emit(
                 this.rocket.position.clone(),

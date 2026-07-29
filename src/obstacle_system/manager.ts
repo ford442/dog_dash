@@ -130,8 +130,19 @@ export class ObstacleSystem implements ObstacleSystemHost {
             obs.rotation.y += obs.userData.rotationSpeedY * delta;
             obs.rotation.z += obs.userData.rotationSpeedZ * delta;
 
+            const puMods = this.options.getPowerUpModifiers?.();
+            const slowMult = puMods?.obstaclesSlowed ? (puMods.obstacleSlowFactor ?? 1) : 1;
+
             if (obs.userData.velocity) {
-                obs.position.addScaledVector(obs.userData.velocity, delta);
+                obs.position.addScaledVector(obs.userData.velocity, delta * slowMult);
+            }
+
+            if (puMods?.obstaclesSlowed) {
+                const dx = obs.position.x - playerX;
+                const dy = obs.position.y - playerY;
+                if (Math.abs(dx) < 22 && Math.abs(dy) < 10) {
+                    obs.position.y -= dy * 0.025 * delta * 60;
+                }
             }
 
             if (obs.userData.isCandyAsteroid) {
@@ -262,7 +273,11 @@ export class ObstacleSystem implements ObstacleSystemHost {
                     : { shieldActive: false, shieldBouncesAsteroids: false };
                 if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
                     handleBounce(this, hitObs);
-                } else if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
+                } else if (
+                    !this.options.playerState.invincible
+                    && !modifiers.invincible
+                    && !this.options.playerState.inSafeHarbor
+                ) {
                     if (this.bounceCooldown <= 0 && this.options.tryConsumeButterflyCharge?.()) {
                         this.options.onButterflySave?.(hitObs.position);
                     } else if (this.options.tryConsumeSwarmEscort?.(hitObs.position.clone(), hitRadius)) {
