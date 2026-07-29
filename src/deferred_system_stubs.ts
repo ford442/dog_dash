@@ -1,4 +1,6 @@
 import type { BlackHoleSystem } from './black_hole';
+import type { GalacticCoreSystem } from './galactic_core';
+import type { DreamPortalSystem } from './dream_portal';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { PlanetaryHorizonSystem } from './planetary_horizon';
 import type { ReEntrySystem } from './reentry';
@@ -76,6 +78,32 @@ export function createBlackHoleSystemStub(): BlackHoleSystem {
         getPlayerPullForce: () => 0,
         handleProjectileInteractions: noop
     } as unknown as BlackHoleSystem;
+}
+
+export function createGalacticCoreSystemStub(): GalacticCoreSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop,
+        getApproachIntensity: () => 0,
+        getStarfieldWarp: () => 0,
+        getProjectilePull: (_pos: unknown, _delta: number, out?: unknown) => out
+    } as unknown as GalacticCoreSystem;
+}
+
+export function createDreamPortalSystemStub(): DreamPortalSystem {
+    return {
+        spawnPortals: noop,
+        clear: noop,
+        update: noop,
+        cleanup: noop,
+        getScannables: () => [],
+        isActive: () => false,
+        isInRoom: () => false,
+        getRoomOriginY: () => 0
+    } as unknown as DreamPortalSystem;
 }
 
 export function createMeteorShowerSystemStub(): MeteorShowerSystem {

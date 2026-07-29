@@ -59,6 +59,45 @@ export type BubbleCoralEnvironmentConfig = {
 
 export type MeteorShowerEnvironmentConfig = boolean;
 
+/** Galactic Core / accretion-disk finale backdrop (see `galactic_core.ts`). */
+export type GalacticCoreEnvironmentConfig = {
+    enabled: boolean;
+    /** World X where the approach ramp starts / completes. */
+    approachStartX?: number;
+    approachEndX?: number;
+    /** Camera-relative X offset at ramp 0 / ramp 1. */
+    startOffsetX?: number;
+    endOffsetX?: number;
+    /** Depth at ramp 0 / ramp 1 (more negative = further away). */
+    startZ?: number;
+    endZ?: number;
+    baseY?: number;
+    scale?: number;
+    /** Disk brightness multiplier (0.6–1.6 reads well). */
+    intensity?: number;
+    innerColor?: number;
+    outerColor?: number;
+};
+
+/** Dream Portal doors + their bonus rooms (see `dream_portal.ts`). */
+export type DreamPortalsEnvironmentConfig = {
+    enabled: boolean;
+    portals: DreamPortalPlacementConfig[];
+};
+
+export type DreamPortalPlacementConfig = {
+    /** Absolute world X of the door (same space as `gravLensCorridors.startX`). */
+    x: number;
+    y?: number;
+    z?: number;
+    /** Seconds inside the bonus room (defaults to 35). */
+    durationSeconds?: number;
+    toyCount?: number;
+    orbCount?: number;
+    hazardCount?: number;
+    theme?: 'pastel' | 'candy' | 'aurora';
+};
+
 export type GravLensPlacement = {
     offsetX: number;
     y: number;
@@ -116,6 +155,10 @@ export type LevelEnvironments = {
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
+    /** Finale backdrop: singularity + accretion disk (deferred chunk). */
+    galacticCore?: GalacticCoreEnvironmentConfig;
+    /** Secret bonus-room doorways (deferred chunk). */
+    dreamPortals?: DreamPortalsEnvironmentConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -325,7 +368,14 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             ghostDebris: { density: 100 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
-            blackHole: { enabled: true, baseX: 3000, baseY: 100 }
+            blackHole: { enabled: true, baseX: 3000, baseY: 100 },
+            // Dream Portal door tucked between the two grav-lens corridors.
+            dreamPortals: {
+                enabled: true,
+                portals: [
+                    { x: 820, y: 7, z: -1, theme: 'candy', durationSeconds: 32 }
+                ]
+            }
         },
         vignettes: {
             geodeClearings: 0.5
@@ -397,7 +447,14 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
             planetaryHorizon: true,
             reEntry: true,
-            bubbleCoral: { density: 0.7 }
+            bubbleCoral: { density: 0.7 },
+            // Second Dream Portal, before the level-3 grav-lens corridor.
+            dreamPortals: {
+                enabled: true,
+                portals: [
+                    { x: 1660, y: -3, z: -1, theme: 'aurora', durationSeconds: 38, toyCount: 16 }
+                ]
+            }
         },
         vignettes: {
             roseArches: 1.2
@@ -608,7 +665,22 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebulaRibbons: true,
             voidJellyfish: { density: 40 },
             moonPalace: true,
-            weather: true
+            weather: true,
+            // Finale beat: the Galactic Core swells across the last stretch of
+            // the run (level 6 spans x 4200 → 5200, the Moon threshold).
+            galacticCore: {
+                enabled: true,
+                approachStartX: 4300,
+                approachEndX: 5200,
+                startOffsetX: 340,
+                endOffsetX: 95,
+                startZ: -1150,
+                endZ: -470,
+                baseY: 95,
+                intensity: 1.15,
+                innerColor: 0xffb066,
+                outerColor: 0x7a3fb5
+            }
         }
     }
 };

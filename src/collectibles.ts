@@ -605,6 +605,20 @@ export class OrbManager {
         }
     }
     
+    /**
+     * Remove orbs parked above a Y threshold. Used to tear down the Dream
+     * Portal bonus-room fountain without touching main-run orbs.
+     */
+    cleanupOrbsAboveY(y: number): void {
+        for (let i = this.orbs.length - 1; i >= 0; i--) {
+            const orb = this.orbs[i];
+            if (orb.mesh.position.y > y) {
+                orb.destroy(this.scene);
+                this.orbs.splice(i, 1);
+            }
+        }
+    }
+
     /** Get all active orb positions (for debugging or AI) */
     getOrbPositions(): { position: THREE.Vector3; type: OrbType }[] {
         return this.orbs

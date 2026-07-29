@@ -16,6 +16,7 @@ import { SlingObjectiveManager } from '../sling_objective';
 import { SlingComboManager } from '../sling_combo';
 import { TetherSystem } from '../tether_system';
 import { spawnGravLensCorridorsForLevel } from './grav_lens_update';
+import { spawnDreamPortalsForLevel } from './dream_portal_update';
 import { spawnArtifactsForLevel } from './artifact_update';
 import { DebugSystem } from '../debug_system';
 import { decorationBudget, registerDefaultDecorationBudgets } from '../decoration_budget';
@@ -176,6 +177,7 @@ function createLevelManager(
             planetaryHorizonSystem: systems.planetaryHorizonSystem,
             moonPalaceSystem: systems.moonPalaceSystem,
             blackHoleSystem: systems.blackHoleSystem,
+            galacticCoreSystem: systems.galacticCoreSystem,
             reEntrySystem: systems.reEntrySystem,
             chromaShiftSystem: systems.chromaShiftSystem,
             stormGeodeSystem: systems.stormGeodeSystem,
@@ -212,6 +214,7 @@ function createLevelManager(
             game.friendsManager.resetLevelLemurCap();
             game.toyRocketSpawnManager.spawnForLevel(game.levelManager.currentLevel, cfg);
             spawnGravLensCorridorsForLevel(game.levelManager.currentLevel, cfg);
+            spawnDreamPortalsForLevel(cfg);
             spawnArtifactsForLevel(cfg, player?.position.x ?? 0);
             game.wrenchChargeAvailable = game.saveManager.hasMemory('mine_robot');
             game.slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
@@ -461,4 +464,11 @@ export function initializeStartup(): void {
     }
 
     wireStartupCallbacks();
+
+    // Dev / `?debug` only: a handle on the composition root so set-pieces that
+    // sit deep in a run (Dream Portals, the Galactic Core approach) can be
+    // driven from the console or a browser test without playing to them.
+    if (import.meta.env.DEV || hasDebugUrlFlag('debug')) {
+        (window as unknown as { dogDash?: unknown }).dogDash = { game, playerState, scene, camera };
+    }
 }
