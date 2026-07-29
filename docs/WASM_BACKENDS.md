@@ -45,6 +45,9 @@ npm run build:cpp-wasm:docker       # Docker, no local emsdk
 npm run verify:cpp-wasm
 npm run verify:cpp-softbody         # exercises Verlet consumer path
 
+# Optional: AS + C++ when emsdk is available (skips C++ if missing)
+npm run build:all-wasm
+
 # Optional browser breadcrumb check (preview must serve dist with VITE_CPP_WASM=true):
 #   VITE_CPP_WASM=true npm run build && npx vite preview --port 4173
 #   npm run smoke:cpp-softbody
