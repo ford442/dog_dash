@@ -14,7 +14,6 @@ import type { ConstellationManager } from '../flower_constellations';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
-import type { CastleBackgroundManager } from '../cloud_castles';
 import type { CandyBeltManager } from '../candy_obstacles';
 import type { IndustrialGeometryManager } from '../industrial_geometry';
 import type { ParticleSystem } from '../particles';
@@ -99,6 +98,7 @@ export type LevelEnvironmentPorts = {
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
+    cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
 };
 
 export type LevelManagerOptions = {
@@ -117,7 +117,6 @@ export type LevelManagerOptions = {
     pinwheelManager: PinwheelFloraManager;
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
-    castleManager: CastleBackgroundManager;
     candyManager: CandyBeltManager;
     getPlayer: () => THREE.Group | null;
     spawners: GeologicalSpawners;
@@ -126,4 +125,5 @@ export type LevelManagerOptions = {
     onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
     env: LevelEnvironmentPorts;
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
+    cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
 };
