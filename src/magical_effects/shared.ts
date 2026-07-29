@@ -37,6 +37,20 @@ export const PASTEL_RAINBOW = [
     0xe6baff,
 ];
 
+/** Shared heart shape used by heart-themed effects. */
+export function createHeartShape(size: number = 1): THREE.Shape {
+  const shape = new THREE.Shape();
+  const x = 0, y = 0;
+
+  shape.moveTo(x, y);
+  shape.bezierCurveTo(x, y + size * 0.3, x - size * 0.5, y + size * 0.7, x - size * 0.5, y + size);
+  shape.bezierCurveTo(x - size * 0.5, y + size * 1.4, x, y + size * 1.7, x, y + size * 2);
+  shape.bezierCurveTo(x, y + size * 1.7, x + size * 0.5, y + size * 1.4, x + size * 0.5, y + size);
+  shape.bezierCurveTo(x + size * 0.5, y + size * 0.7, x, y + size * 0.3, x, y);
+
+  return shape;
+}
+
 export const BUTTERFLY_COLORS = [
     0xffb6c1,
     0xdda0dd,

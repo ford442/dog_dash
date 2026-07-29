@@ -22,7 +22,6 @@ interface Butterfly {
 export class ButterflySwarmEffect extends MagicalEffect {
   type = MagicalEffectType.BUTTERFLY_SWARM;
   isActive = true;
-  duration: number;
   
   private target: THREE.Object3D;
   private scene: THREE.Scene;

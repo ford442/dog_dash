@@ -23,6 +23,7 @@ import { attachGpuLeakDetector } from '../gpu_leak_detector';
 import { disposeObject } from '../utils';
 import { createGalaxy, createMoon } from '../visuals';
 import { shouldShowTutorial } from '../tutorial_system';
+import { applyCraftedLoadout } from './loadout';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
@@ -429,6 +430,8 @@ export function initializeStartup(): void {
 
     installGameContext(ctx);
 
+    applyCraftedLoadout(game, playerState);
+
     attachGpuLeakDetector(debugSystem, () => {
         const camX = camera.position.x;
         const playerX = player?.position.x ?? camX;
@@ -448,7 +451,7 @@ export function initializeStartup(): void {
 
     onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: unknown) => {
         game.effectManager.setTarget(loadedPlayer);
-        const dogTarget = (rocketModelOrGroup as THREE.Object3D) || loadedPlayer;
+        const dogTarget = (rocketModelOrGroup as THREE.Group) || loadedPlayer;
         try { game.dogController.initialize(dogTarget); } catch { game.dogController.initialize(loadedPlayer); }
         console.log('🚀 Rocket loaded via player_loader onto canonical scene');
     });

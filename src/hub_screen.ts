@@ -8,6 +8,8 @@
  */
 
 import { SaveManager, type PlayerUpgrades } from './save_manager';
+import { RECIPES, canCraft, craftRecipe } from './crafting_system';
+import { ALL_MATERIAL_IDS, getMaterialColor, getMaterialDisplayName } from './resource_inventory';
 import { createBestiaryGrid, BESTIARY_ENTRIES } from './bestiary';
 import { SPECIES_NAMES } from './discovery_system';
 import { LEVEL_CONFIG } from './level_config';
@@ -88,7 +90,7 @@ const SHOP_ITEMS: ShopItem[] = [
     { key: 'speedBonus', icon: '🚀', name: 'Super Thrusters', desc: 'Fly 10% faster' }
 ];
 
-type HubTab = 'home' | 'shop' | 'log' | 'journey';
+type HubTab = 'home' | 'shop' | 'craft' | 'log' | 'journey';
 
 export function createHubScreen(saveManager: SaveManager, options: HubScreenOptions): HTMLDivElement {
     const play = options.playSound ?? (() => {});
@@ -162,6 +164,7 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
     const tabs: { id: HubTab; label: string }[] = [
         { id: 'home', label: '🏠 Home' },
         { id: 'shop', label: '⚡ Shop' },
+        { id: 'craft', label: '🔨 Craft' },
         { id: 'log', label: '📖 Life Log' },
         { id: 'journey', label: '🗺️ Chapters' }
     ];
@@ -292,6 +295,7 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
         switch (activeTab) {
             case 'home': renderHome(); break;
             case 'shop': renderShop(); break;
+            case 'craft': renderCraft(); break;
             case 'log': renderLog(); break;
             case 'journey': renderJourney(); break;
         }
@@ -402,6 +406,96 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
                 buyBtn.style.cursor = 'not-allowed';
             }
             row.appendChild(buyBtn);
+            panel.appendChild(row);
+        }
+    }
+
+    function materialChip(id: Parameters<typeof getMaterialColor>[0], label: string, ok: boolean): string {
+        const color = ok ? getMaterialColor(id) : '#ff9999';
+        return `<span style="display:inline-block; padding:4px 10px; border-radius:12px; font-size:13px; font-weight:bold; border:2px solid ${color}; background:${HUB_COLORS.white}; opacity:${ok ? 1 : 0.65};">${label}</span>`;
+    }
+
+    function renderCraft(): void {
+        const inv = saveManager.getResources();
+
+        const intro = card();
+        intro.innerHTML = `
+            <div style="font-size:18px; font-weight:bold;">🔨 Craft Bay</div>
+            <div style="color:${HUB_COLORS.textLight}; font-size:14px; margin-top:4px;">
+                Turn space treasures into goodies for your next flight!
+            </div>
+        `;
+        panel.appendChild(intro);
+
+        // Bag summary — every material with count > 0
+        const bag = card();
+        const bagChips = ALL_MATERIAL_IDS
+            .filter(id => (inv[id] || 0) > 0)
+            .map(id => materialChip(id, `${getMaterialDisplayName(id)} ×${inv[id]}`, true))
+            .join(' ');
+        bag.innerHTML = `
+            <div style="font-size:15px; font-weight:bold; margin-bottom:6px;">🎒 Your Bag</div>
+            ${bagChips
+                ? `<div style="display:flex; flex-wrap:wrap; gap:6px;">${bagChips}</div>`
+                : `<div style="color:${HUB_COLORS.textLight}; font-size:14px;">Empty for now — scan and zap things out there to fill it up!</div>`}
+        `;
+        panel.appendChild(bag);
+
+        // Pending loadout queued for the next run
+        const loadout = saveManager.getLoadout();
+        const queued = RECIPES.filter(r => (loadout[r.id] || 0) > 0);
+        if (queued.length > 0) {
+            const q = card();
+            q.innerHTML = `
+                <div style="font-size:15px; font-weight:bold; color:#2eaa72;">✅ Ready for your next run</div>
+                <div style="font-size:14px; margin-top:4px;">${queued.map(r => `${r.icon} ${r.name} ×${loadout[r.id]}`).join(' · ')}</div>
+            `;
+            panel.appendChild(q);
+        }
+
+        for (const recipe of RECIPES) {
+            const affordable = canCraft(inv, recipe);
+            const pending = loadout[recipe.id] || 0;
+
+            const row = card();
+            row.style.display = 'flex';
+            row.style.alignItems = 'center';
+            row.style.gap = '12px';
+
+            const costChips = recipe.cost.map(c => {
+                const have = inv[c.id] || 0;
+                return materialChip(c.id, `${getMaterialDisplayName(c.id)} ${have}/${c.amount}`, have >= c.amount);
+            }).join(' ');
+
+            row.innerHTML = `
+                <div style="font-size:34px;">${recipe.icon}</div>
+                <div style="flex:1; min-width:0;">
+                    <div style="font-size:17px; font-weight:bold;">
+                        ${recipe.name}${pending > 0 ? ` <span style="color:#2eaa72; font-size:13px;">×${pending} packed</span>` : ''}
+                    </div>
+                    <div style="font-size:13px; color:${HUB_COLORS.textLight};">${recipe.desc}</div>
+                    <div style="font-size:13px; color:#2eaa72; margin-top:2px;">${recipe.effectText}</div>
+                    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;">${costChips}</div>
+                </div>
+            `;
+
+            const craftBtn = bigButton(
+                affordable ? 'Craft!' : 'Need more',
+                affordable ? HUB_COLORS.lemon : HUB_COLORS.lavender,
+                () => {
+                    if (!affordable) return;
+                    if (craftRecipe(saveManager, recipe.id)) {
+                        play('twinkle');
+                        renderPanel();
+                    }
+                }
+            );
+            craftBtn.style.minWidth = '110px';
+            if (!affordable) {
+                craftBtn.style.opacity = '0.6';
+                craftBtn.style.cursor = 'not-allowed';
+            }
+            row.appendChild(craftBtn);
             panel.appendChild(row);
         }
     }

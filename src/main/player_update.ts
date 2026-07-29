@@ -10,6 +10,7 @@ import { gravityAnchors } from '../environment';
 import { showRollPopup } from './hud_displays';
 import { maybePrefetchNextLevel } from '../level_systems_loader';
 import { PowerUpType } from '../powerup_manager';
+import { DogAnimationState } from '../dog_cockpit';
 
 export function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
@@ -350,7 +351,7 @@ export function updatePlayer(delta: number) {
         game.wantsTether = false;
         if (game.tetherSystem.canTether() && !game.rollSystem.isRolling()) {
             game.tetherSystem.activate(
-                gravityAnchors.concat(game.slingableObjectSystem.getTetherTargets()),
+                [...gravityAnchors, ...game.slingableObjectSystem.getTetherTargets()],
                 player.position
             );
         }

@@ -21,7 +21,6 @@ import {
     texture,
     normalMap,
     instanceIndex,
-    vec3,
     distance,
     smoothstep,
     dot,
@@ -33,6 +32,7 @@ import {
 } from 'three/tsl';
 import { ParticleSystem } from '../particles';
 import { disposeObject } from '../utils';
+import type { TSLNode } from '../tsl_types';
 
 // --- TSL Noise Functions (3D) ---
 
@@ -72,9 +72,9 @@ const valueNoise3D = (v: any) => {
 };
 
 export const fbm = (v: any) => {
-    let total = float(0.0);
-    let amplitude = float(0.5);
-    let frequency = float(1.0);
+    let total: TSLNode = float(0.0);
+    let amplitude: TSLNode = float(0.5);
+    let frequency: TSLNode = float(1.0);
 
     // 3 Octaves
     total = total.add(valueNoise3D(v.mul(frequency)).mul(amplitude));

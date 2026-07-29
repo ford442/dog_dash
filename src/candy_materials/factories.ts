@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
-import { time, positionLocal, positionWorld, normalWorld, normalView, normalLocal, cameraPosition, vec3, vec4, color, uniform, mix, sin, cos, float, pow, length, smoothstep, dot, fract, step, attribute } from 'three/tsl';
+import { time, positionLocal, positionWorld, normalWorld, normalView, normalLocal, cameraPosition, uv, vec3, vec4, color, uniform, mix, sin, cos, float, pow, length, smoothstep, dot, fract, step, attribute } from 'three/tsl';
+import type { TSLNode } from '../tsl_types';
 import {
     candyMaterialUniforms, updateCandyMaterialGlobals, type CandyMaterial, type CandyMaterialHandle,
     shouldUseLiteMaterials, trackMaterial, getCachedCandyMaterial, buildFresnelRim, buildSparkleGlitter, buildWeaponGlowContribution, attachCandyUniforms,
@@ -165,7 +166,7 @@ export function createIridescentCrystal(
     const iridescent = mix(iridA, iridB, shift.mul(0.5).add(0.5));
     const iridescent2 = mix(iridescent, iridC, cos(huePhase.mul(1.3)).mul(0.5).add(0.5));
 
-    let pulse = float(1.0);
+    let pulse: TSLNode = float(1.0);
     if (instancePhaseAttribute) {
         const phase = attribute(instancePhaseAttribute, 'float');
         pulse = sin(time.mul(1.8).add(phase)).mul(0.5).add(0.5);
@@ -278,10 +279,10 @@ export interface FluffyPastelOptions {
     cacheKey?: string;
 }
 
-const _fluffyNoise = (p: ReturnType<typeof uv>) => {
+const _fluffyNoise = (p: TSLNode) => {
     const i = p.floor();
     const f = p.fract();
-    const rand = (v: ReturnType<typeof uv>) =>
+    const rand = (v: TSLNode) =>
         sin(dot(v, vec3(12.9898, 78.233, 0))).mul(43758.5453).fract();
     const a = rand(i);
     const b = rand(i.add(vec3(1, 0, 0)));

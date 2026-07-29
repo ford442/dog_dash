@@ -28,7 +28,7 @@ gltfLoader.load(
         
         // Enable shadows for all meshes in the model
         rocketModel.traverse((child) => {
-            if (child.isMesh) {
+            if (child instanceof THREE.Mesh) {
                 child.castShadow = true;
                 // Don't set receiveShadow to avoid self-shadowing artifacts
             }

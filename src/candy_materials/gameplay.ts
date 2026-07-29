@@ -15,6 +15,7 @@ import {
     vec3,
     attribute
 } from 'three/tsl';
+import type { TSLNode } from '../tsl_types';
 import type { ParticleSystem } from '../particles';
 import type { CandyFlavor, CandyAsteroidVariant } from './shared';
 import { FLAVORS, CANDY_FLAVOR_COLORS, candyMaterialUniforms, updateCandyMaterialGlobals } from './shared';
@@ -90,15 +91,15 @@ export function createAsteroidFieldMaterial(
     const weaponGlow = float(0.0).toVar();
 
     Loop({ start: 0, end: 20 }, ({ i }) => {
-        const lightData = (weaponLights as { element: (idx: number) => unknown }).element(i);
-        const lightPos = (lightData as { xyz: unknown }).xyz;
-        const lightIntensity = (lightData as { w: unknown }).w;
+        const lightData = (weaponLights as { element: (idx: TSLNode) => TSLNode }).element(i);
+        const lightPos = (lightData as { xyz: TSLNode }).xyz;
+        const lightIntensity = (lightData as { w: TSLNode }).w;
         const distToLight = distance(positionWorld, lightPos);
         const falloff = smoothstep(float(20.0), float(0.0), distToLight);
-        weaponGlow.addAssign(falloff.mul(lightIntensity as ReturnType<typeof float>));
+        weaponGlow.addAssign(falloff.mul(lightIntensity));
     });
 
-    let finalPlayerGlow = float(0.0);
+    let finalPlayerGlow: TSLNode = float(0.0);
     if (uPlayerPos) {
         const distToPlayer = distance(positionWorld, uPlayerPos);
         finalPlayerGlow = smoothstep(float(30.0), float(0.0), distToPlayer).mul(0.6);

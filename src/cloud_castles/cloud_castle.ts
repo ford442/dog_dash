@@ -99,7 +99,7 @@ export class ShootingStarSystem {
 
 export class CloudCastle {
     group: THREE.Group;
-    cloudBase: THREE.Mesh;
+    cloudBase!: THREE.Mesh;
     towers: THREE.Mesh[] = [];
     bridges: THREE.Mesh[] = [];
     decorations: THREE.Object3D[] = [];

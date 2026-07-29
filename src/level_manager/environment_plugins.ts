@@ -20,18 +20,17 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     camera: { position: { x: number } };
     baseAsteroidDensity: number;
     objectDensityMultiplier: number;
-    moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
-    wishLanternSystem: { activate: () => void; deactivate: () => void };
-    weatherSystem: { activate: () => void; deactivate: () => void };
-    dancingJellyMossSystem: { activate: (config?: any) => void; deactivate: () => void };
-    dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void };
 }
+
+/** Discriminated union of plugins keyed by environment flag, so each
+ * `activate` receives its own config type. */
+type AnyEnvironmentPlugin = { [K in keyof LevelEnvironments]-?: EnvironmentPlugin<K> }[keyof LevelEnvironments];
 
 export function buildEnvironmentPlugins(
     host: LevelPluginHost,
     cfg: LevelConfig,
     levelLength: number
-): EnvironmentPlugin[] {
+): AnyEnvironmentPlugin[] {
     return [
         {
             flag: 'dynamicStarfield',

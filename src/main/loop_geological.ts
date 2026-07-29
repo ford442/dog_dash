@@ -300,6 +300,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                             game.particleSystem.emit(interaction.hitPoint, 0xcc44ff, 2, 2.0, 0.5);
                         }
                     }
+                    if (interaction.vineSevered) {
+                        game.resourceHarvester.harvest('voidRootBall', 'destroy', rootBall.position.clone());
+                    }
                     if (interaction.impactDamage > 0 && !playerState.invincible) {
                         playerState.health = Math.max(0, playerState.health - 1);
                         playerState.vineBleedTimer = 10;
@@ -344,9 +347,10 @@ export function updateLoopGeological(delta: number, time: number): void {
             let nearestGravAngularSpeed = 0;
             let anyInfluencing = false;
     
-            if (player) gravityAnchors.forEach(anchor => {
+            const gravAnchorPlayer = player;
+            if (gravAnchorPlayer) gravityAnchors.forEach(anchor => {
                 if (!anchor) return;
-                const interaction = updateGravityAnchor(anchor, delta, time, player.position);
+                const interaction = updateGravityAnchor(anchor, delta, time, gravAnchorPlayer.position);
                 if (interaction.isInfluencing) {
                     anyInfluencing = true;
     
@@ -370,14 +374,14 @@ export function updateLoopGeological(delta: number, time: number): void {
                             playerState.currentSpeedY + GA_SLING_BONUS,
                             CONFIG.player.maxSpeedY
                         );
-                        game.particleSystem.emit(player.position.clone(), 0x44aaff, 12, 3.0, 0.6);
+                        game.particleSystem.emit(gravAnchorPlayer.position.clone(), 0x44aaff, 12, 3.0, 0.6);
     
                         // Record a perfect gravity-arc sling in the combo chain
-                        const gaSlipstreamBonus = game.slingableObjectSystem.isInSlipstream(player.position) ? 2 : 1;
-                        game.slingComboManager.recordSlingAction('perfect', player.position.clone(), gaSlipstreamBonus);
+                        const gaSlipstreamBonus = game.slingableObjectSystem.isInSlipstream(gravAnchorPlayer.position) ? 2 : 1;
+                        game.slingComboManager.recordSlingAction('perfect', gravAnchorPlayer.position.clone(), gaSlipstreamBonus);
                         game.slingObjectiveManager.recordSling('perfect');
                         game.reportComboObjectiveProgress();
-                        game.friendsManager.cheerFlotilla(player.position.clone());
+                        game.friendsManager.cheerFlotilla(gravAnchorPlayer.position.clone());
     
                         // Sling release doppler whoosh
                         game.audioSystem.playGravitySlingRelease('perfect', game.slingComboManager.getCombo());

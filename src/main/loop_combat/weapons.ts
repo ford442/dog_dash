@@ -7,6 +7,26 @@ import type { CandyFlavor } from '../../candy_materials';
 import { updateCombatBossKraken } from './boss';
 import { onBarnacleOpened, updateProjectileAnchorPanic } from './friends';
 
+/** Destroy one obstacle with the standard projectile-hit effects (also used by Glitch Grenades). */
+export function blastObstacle(obs: THREE.Object3D): void {
+    if (obs.userData.isCandyAsteroid) {
+        const flavor = obs.userData.candyFlavor as CandyFlavor;
+        const sparkle = CANDY_FLAVOR_COLORS[flavor]?.sparkle ?? 0xffffff;
+        game.particleSystem.emit(obs.position, sparkle, 14, 5.5, 0.9, 1.2);
+        game.obstacleSystem.triggerCandySquash(obs as THREE.Mesh, 1.2);
+    } else {
+        game.particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0);
+    }
+
+    game.audioSystem.play('explode');
+
+    onBarnacleOpened(obs);
+
+    game.pickupManager.trySpawn(obs.position.clone());
+
+    game.obstacleSystem.splitAsteroid(obs as THREE.Mesh);
+}
+
 /** Weapons update, projectile↔obstacles/field/meteors, kraken + anchor panic. */
 export function updateCombatWeapons(delta: number): void {
     if (!player) return;
@@ -28,22 +48,7 @@ export function updateCombatWeapons(delta: number): void {
 
             const dist = proj.mesh.position.distanceTo(obs.position);
             if (dist < obsRadius + 0.5) {
-                if (obs.userData.isCandyAsteroid) {
-                    const flavor = obs.userData.candyFlavor as CandyFlavor;
-                    const sparkle = CANDY_FLAVOR_COLORS[flavor]?.sparkle ?? 0xffffff;
-                    game.particleSystem.emit(obs.position, sparkle, 14, 5.5, 0.9, 1.2);
-                    game.obstacleSystem.triggerCandySquash(obs as THREE.Mesh, 1.2);
-                } else {
-                    game.particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0);
-                }
-
-                game.audioSystem.play('explode');
-
-                onBarnacleOpened(obs);
-
-                game.pickupManager.trySpawn(obs.position.clone());
-
-                game.obstacleSystem.splitAsteroid(obs as THREE.Mesh);
+                blastObstacle(obs);
 
                 proj.deactivate();
                 break;

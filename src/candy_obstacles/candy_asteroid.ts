@@ -3,14 +3,14 @@ import { CandyType, CandyFlavor, CANDY_COLORS, LOLLIPOP_SWIRLS } from './shared'
 import { disposeObject } from '../utils';
 
 export class CandyAsteroid {
-    mesh: THREE.Mesh;
+    mesh!: THREE.Mesh;
     candyType: CandyType;
     flavor: CandyFlavor;
     position: THREE.Vector3;
     velocity: THREE.Vector3;
     rotation: THREE.Vector3;
     rotationSpeed: THREE.Vector3;
-    scale: number;
+    scale!: number;
     
     // Animation states
     wobblePhase: number = 0;
@@ -31,7 +31,7 @@ export class CandyAsteroid {
     // Lollipop specific
     swirlRotation: number = 0;
     
-    private originalScale: THREE.Vector3;
+    private originalScale!: THREE.Vector3;
     private wobbleDirection: THREE.Vector3;
     private scene: THREE.Scene;
 

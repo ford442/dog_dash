@@ -17,7 +17,6 @@ import {
     abs,
     normalView,
     dot,
-    uv,
     vec2,
     floor,
     positionWorld,

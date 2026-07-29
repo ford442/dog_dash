@@ -1,3 +1,0 @@
-ci: fix invalid setup-emsdk action repository
-
-The repository `mychalom/workflow-setup-emsdk` is invalid and cannot be found, which breaks the CI `cpp-wasm` job. This commit changes the action to use the correct repository, `mymindstorm/setup-emsdk@v3`, so the CI workflow successfully sets up Emscripten and builds the C++ WASM target.

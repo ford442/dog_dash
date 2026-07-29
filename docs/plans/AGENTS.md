@@ -10,7 +10,7 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 
 - **Primary language**: English (all code comments and documentation are in English)
 - **Target runtime**: Modern browsers with WebGPU support (Chrome 113+, Edge 113+) and a WebGL2 fallback for debugging/compatibility checks
-- **Entry point**: `index.html` loads `main.ts`
+- **Entry point**: `index.html` loads `src/main.ts`
 
 ---
 
@@ -23,7 +23,7 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 | **Build Tool** | Vite v7 | Zero-config; handles bundling, dev server, and production builds |
 | **WASM** | AssemblyScript (`asc`) | Collision-detection physics compiled to `.wasm` |
 | **Audio** | Web Audio API | 100% procedural synthesis — no external audio files |
-| **Testing** | Playwright (installed) | No active test suite, test files, or `playwright.config.*` exists |
+| **Testing** | Playwright | Smoke suite in `tests/smoke.spec.ts` (`npm run test:smoke`); config in `playwright.config.ts`; CI in `.github/workflows/ci.yml` |
 | **Deployment** | Python + Paramiko | SFTP upload script (`deploy.py`) |
 
 ---
@@ -55,8 +55,11 @@ The project uses a mostly flat `src/` module structure. Most TypeScript source f
 │   ├── optimized.wasm            # Compiled WASM output
 │   ├── optimized.wat             # WAT text output
 │   └── optimized.wasm.map        # Source map
+├── playwright.config.ts          # Playwright smoke-test config (WebGL/SwiftShader flags)
+├── tests/
+│   └── smoke.spec.ts             # Production-build smoke tests (`npm run test:smoke`)
 ├── dist/                         # Vite production build output
-└── test-results/                 # Stub Playwright result file only
+└── test-results/                 # Playwright run artifacts
 ```
 
 ### Notable files by size and importance
@@ -192,8 +195,8 @@ The JavaScript side writes object positions into `Float32Array` views backed by 
 
 ## Testing Instructions
 
-- **There is no active automated test suite.** `@playwright/test` is installed as a devDependency, but there are no test files, no `playwright.config.*`, and no CI pipeline.
-- The only automated quality gate is **`tools/check_braces.cjs`**, which runs automatically before `npm run build`.
+- **Playwright smoke suite is active**: `npm run test:smoke` runs `tests/smoke.spec.ts` against the production build on `/?renderer=webgl` with software-GL (SwiftShader) flags — see `playwright.config.ts` and the root `AGENTS.md` (source of truth) for the headless/cloud caveats.
+- **Quality gates**: `npm run check` (brace balance + typecheck baseline ratchet), `npm run build`, and the smoke suite. CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci` then `npm run build` on PRs/pushes to `main`.
 - **WebGPU is often unavailable in headless/automated environments.** Use `?renderer=webgl` for browser smoke tests that do not require WebGPU, and use a real WebGPU-enabled browser to verify the primary renderer.
 - **Manual testing workflow**:
   1. `npm run dev`

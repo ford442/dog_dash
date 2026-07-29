@@ -9,8 +9,9 @@ import { createBestiaryUI } from '../bestiary';
 import { createArchitectCodexUI } from '../architect_lore';
 import {
     createHeatBar, createBoostDisplay, createRollDisplay,
-    createTetherDisplay, createCoresDisplay
+    createTetherDisplay, createCoresDisplay, createGrenadeDisplay
 } from './hud_displays';
+import { throwGrenade } from './grenade';
 import { RESOLUTION_RATIOS } from './render_helpers';
 import { ensureGameplayReady } from '../level_systems_loader';
 import { consumePendingStartChapter } from '../hub_screen';
@@ -63,6 +64,7 @@ export function setupInputBindings(): void {
             createBoostDisplay();
             createRollDisplay();
             createTetherDisplay();
+            createGrenadeDisplay(() => throwGrenade());
 
             const rollStyle = document.createElement('style');
             rollStyle.textContent = `
@@ -177,12 +179,13 @@ export function setupInputBindings(): void {
 
         sporeClouds.forEach(cloud => {
             if (!cloud.active) return;
-            const intersects = raycaster.intersectObjects(cloud.spores, false);
+            const intersects = raycaster.intersectObject(cloud.spores, false);
             if (intersects.length > 0) {
                 const hitPoint = intersects[0].point;
                 const triggered = cloud.triggerChainReaction(hitPoint);
                 if (triggered > 0) {
                     game.particleSystem.emit(hitPoint, 0x88ff88, 20, 8.0, 1.0, 2.0);
+                    game.resourceHarvester.harvest('sporeCloud', 'destroy', hitPoint);
                 }
             }
         });
@@ -195,6 +198,12 @@ export function setupInputBindings(): void {
                 playerState.cores += 5;
             }
         });
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyG' && !e.repeat && gameStarted) {
+            throwGrenade();
+        }
     });
 
     window.addEventListener('keydown', (e) => {

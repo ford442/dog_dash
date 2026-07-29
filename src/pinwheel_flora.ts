@@ -37,7 +37,7 @@ export interface PinwheelInteraction {
 }
 
 interface BladePart {
-    mesh: THREE.Mesh;
+    mesh: THREE.Mesh<THREE.BufferGeometry, THREE.Material>;
     baseColor: number;
     tipColor: number;
 }

@@ -13,7 +13,7 @@
 | **Future-Plan Section** | `[e.g., §7 Drifting Through Nebulae]` |
 | **Priority** | `[P0 Critical / P1 High / P2 Polish]` |
 | **Level(s)** | `[e.g., Level 5]` |
-| **Existing File(s)** | `[e.g., nebula.ts, main.ts]` |
+| **Existing File(s)** | `[e.g., src/nebula.ts, src/main/startup.ts]` |
 | **New File(s)** | `[e.g., cosmic_dust.ts]` (or `N/A` if modifying existing) |
 
 ---
@@ -23,13 +23,13 @@
 Before writing code, understand what's already there:
 
 1. **Read `future-plan.md`** — Find the section describing your feature. Copy the key requirements.
-2. **Read existing file(s)** — If a file already exists (e.g., `nebula.ts`), assess its status:
+2. **Read existing file(s)** — If a file already exists (e.g., `src/nebula.ts`), assess its status:
    - **NOT STARTED** — No file exists, or file is a stub.
    - **PARTIAL** — Has basic structure but missing key aspects from `future-plan.md`.
    - **MOSTLY COMPLETE** — Has most elements, needs polish or integration fixes.
    - **COMPLETE** — Fully implemented and integrated.
-3. **Read `level_config.ts`** — Note which levels have config fields relevant to your feature.
-4. **Read `main.ts`** — Search for how similar systems are integrated (see patterns below).
+3. **Read `src/level_config.ts`** — Note which levels have config fields relevant to your feature.
+4. **Read the composition root** — Gameplay systems are constructed in `createGameSystems()` (`src/create_game_systems.ts`) and bootstrap (`src/main/startup.ts`); shared state is the typed `GameContext` (`src/game_runtime.ts`). See `docs/GAME_CONTEXT.md` for how domain modules receive ports. Search for how similar systems are integrated (see patterns below).
 
 **Audit Result:**
 ```
@@ -40,10 +40,10 @@ Before writing code, understand what's already there:
 
 ## 🏗️ STEP 1: CREATE / MODIFY THE FEATURE MODULE
 
-Dog Dash uses a **flat module structure** — all `.ts` files live in the repository root. No `src/` folder.
+Dog Dash keeps all TypeScript modules under **`src/`** (mostly flat inside `src/`, with domain subfolders like `src/main/`, `src/level_manager/`, `src/candy_materials/`).
 
 ### If creating a new file:
-Create `YOUR_FEATURE.ts` in `/root/dog_dash/` following this exact pattern:
+Create `src/YOUR_FEATURE.ts` (or `src/<domain>/your_feature.ts` when a matching domain folder exists) following this exact pattern:
 
 ```typescript
 import * as THREE from 'three';
@@ -101,32 +101,34 @@ export class YourFeatureSystem {
 
 ---
 
-## 🔌 STEP 2: INTEGRATE INTO `main.ts`
+## 🔌 STEP 2: INTEGRATE VIA THE COMPOSITION ROOT
 
-`main.ts` is the central hub. You must touch 4 areas:
+There is no monolithic `main.ts`. Systems are wired through the `GameContext` composition root (see `docs/GAME_CONTEXT.md`). You must touch up to 4 areas:
 
-### 2A: Instantiate your system (near the bottom, ~line 840+)
+### 2A: Instantiate your system
 
-Find where other systems are created and add yours:
+Add construction in `createGameSystems()` (`src/create_game_systems.ts`) or bootstrap (`src/main/startup.ts`) near similar systems, and expose it on the typed `GameContext` (`src/game_runtime.ts`):
 
 ```typescript
 // YOUR FEATURE SYSTEM
 const yourFeatureSystem = new YourFeatureSystem(scene /*, deps */);
 ```
 
-### 2B: Activate/deactivate per level in `LevelManager.startLevel()` (~line 456+)
+### 2B: Activate/deactivate per level
 
-Find the `if/else` block for level-specific effects and add your logic:
+Level-conditional environment systems are registered as plugins in `src/level_manager/environment_plugins.ts` (flag in `LevelEnvironments`, `activate`/`deactivate`). Add a plugin entry (or extend an existing one) instead of hand-editing level `if/else` chains:
 
 ```typescript
-if (levelIndex === YOUR_LEVEL) {
-    yourFeatureSystem.activate();
-} else {
-    yourFeatureSystem.deactivate();
-}
+{
+    flag: 'yourFeature',
+    activate: () => host.yourFeatureSystem.activate(),
+    deactivate: () => host.yourFeatureSystem.deactivate()
+},
 ```
 
-### 2C: Add to `LevelManager.update()` (~line 574+)
+### 2C: Add to the per-frame update loop
+
+Hook `update()` from the appropriate loop module under `src/main/` (e.g. `loop_world.ts`, `loop_geological.ts`) alongside similar systems:
 
 ```typescript
 yourFeatureSystem.update(delta, cameraX, player ? player.position : undefined);
@@ -138,7 +140,7 @@ Search for where `levelObjects` are cleaned up or where other systems call `clea
 
 ---
 
-## ⚙️ STEP 3: UPDATE `level_config.ts` (if needed)
+## ⚙️ STEP 3: UPDATE `src/level_config.ts` (if needed)
 
 If your feature needs per-level tuning (density, speed, colors, etc.), add fields to `LevelConfig`:
 
@@ -158,12 +160,12 @@ Then set values in `LEVEL_CONFIG` for each level.
 
 Before declaring done, verify:
 
-- [ ] **File created** at repository root (e.g., `your_feature.ts`)
+- [ ] **File created** under `src/` (e.g., `src/your_feature.ts`)
 - [ ] **Imports use `three/tsl` and `three/webgpu`** (not vanilla Three.js materials for custom shaders)
 - [ ] **`activate()` / `deactivate()` / `update()`** pattern followed
-- [ ] **`main.ts` instantiation** added near other systems (~line 840+)
-- [ ] **`startLevel()` hook** added with correct level condition
-- [ ] **`LevelManager.update()` hook** added
+- [ ] **Instantiation** added to the composition root (`createGameSystems()` / `src/main/startup.ts`) and exposed on `GameContext`
+- [ ] **Level-activation plugin** added in `src/level_manager/environment_plugins.ts` (if level-conditional)
+- [ ] **Per-frame update hook** added in the matching `src/main/loop_*.ts` module
 - [ ] **Level config updated** (if new fields were added)
 - [ ] **Cleanup handled** — objects don't leak between levels
 - [ ] **Performance** — uses `InstancedMesh` for high counts
@@ -179,7 +181,7 @@ Every feature must create a sense of **vastness** and **depth**:
 1. **Parallax Layers** — If applicable, use 3-5 layers at different Z-depths scrolling at different speeds. Foreground = fast, detailed, opaque. Background = slow, faint, silhouettes.
 2. **Dynamic Lighting** — Objects should react to the player's engine glow and weapon fire. Use TSL `uniform()` for player position and update it in `update()`.
 3. **Player Interaction** — The environment should feel alive. Clouds billow, nebulae pulse, waterfalls splash when explosions occur.
-4. **Color Harmony** — Match the level's sky colors and bgColor. Use `level_config.ts` as your palette guide.
+4. **Color Harmony** — Match the level's sky colors and bgColor. Use `src/level_config.ts` as your palette guide.
 5. **Progressive Intensity** — Effects should build up or change over the course of a level (e.g., re-entry heat intensifies), not just binary on/off.
 
 ---
@@ -205,8 +207,8 @@ When submitting, use this format:
 - [Dynamic lighting: e.g., reacts to player engine glow]
 
 ### Integration
-- `main.ts`: [Where and how it's hooked in]
-- `level_config.ts`: [Any new config fields]
+- Composition root / loop module: [Where and how it's hooked in]
+- `src/level_config.ts`: [Any new config fields]
 
 ### Testing
 - [ ] `npm run build` passes
@@ -219,7 +221,7 @@ When submitting, use this format:
 ## 📚 CODE PATTERNS (Copy-Paste Reference)
 
 ### Pattern A: InstancedMesh with TSL Material
-From `nebula.ts`:
+From `src/nebula.ts`:
 ```typescript
 const geo = new THREE.SphereGeometry(1, 8, 8);
 const mat = createNebulaMaterial(config.color1, config.color2, config.opacity, ...);
@@ -237,7 +239,7 @@ const noiseVal = fbm(noiseUv.add(scroll));
 ```
 
 ### Pattern C: Player Glow Interaction
-From `nebula.ts`:
+From `src/nebula.ts`:
 ```typescript
 const distToPlayer = length(positionWorld.sub(uPlayerPos));
 const glowIntensity = smoothstep(uInteractionRadius, 0.0, distToPlayer);
@@ -245,7 +247,7 @@ finalColor = finalColor.add(uGlowColor.mul(glowIntensity.mul(0.8)));
 ```
 
 ### Pattern D: Wrapping InstancedMesh Positions
-From `asteroid_field.ts` / `nebula.ts`:
+From `src/asteroid_field.ts` / `src/nebula.ts`:
 ```typescript
 const margin = 50;
 const limitBack = cameraX - (this.width / 2) - margin;
@@ -255,7 +257,7 @@ if (x > limitFront) x -= this.width + margin * 2;
 ```
 
 ### Pattern E: Full-Screen Overlay (Additive)
-From `nebula.ts` PulseOverlay:
+From `src/nebula.ts` PulseOverlay:
 ```typescript
 const geo = new THREE.PlaneGeometry(2, 2);
 this.mesh = new THREE.Mesh(geo, createPulseOverlayMaterial(uPulse));
@@ -263,16 +265,17 @@ this.mesh.position.set(0, 0, -1.01); // Just in front of camera far plane
 camera.add(this.mesh); // Moves with camera
 ```
 
-### Pattern F: Level-Conditional Activation in `main.ts`
-From `main.ts` `startLevel()`:
+### Pattern F: Level-Conditional Activation via Environment Plugins
+From `src/level_manager/environment_plugins.ts`:
 ```typescript
-if (levelIndex === 3) {
-    planetaryHorizonSystem.activate();
-    reEntrySystem.activate();
-} else {
-    planetaryHorizonSystem.deactivate();
-    if (levelIndex !== 3) reEntrySystem.deactivate();
-}
+{
+    flag: 'planetaryHorizon',
+    activate: () => {
+        host.planetaryHorizonSystem.levelDistance = levelLength;
+        host.planetaryHorizonSystem.activate();
+    },
+    deactivate: () => host.planetaryHorizonSystem.deactivate()
+},
 ```
 
 ---
@@ -288,37 +291,30 @@ if (levelIndex === 3) {
 | **Future-Plan Section** | §7 Drifting Through Nebulae and Energy Fields |
 | **Priority** | P1 High |
 | **Level(s)** | Level 5 (The Astral Leviathan) |
-| **Existing File(s)** | `nebula.ts` (~490 lines, fully implemented) |
+| **Existing File(s)** | `src/nebula.ts` (~490 lines, fully implemented) |
 | **New File(s)** | N/A |
 
 ### Audit Result
-`nebula.ts` is **COMPLETE** — it has 3 parallax cloud layers with TSL shaders, energy particles, a pulse overlay, weapon-light interaction, and player-engine glow response. However, `LevelManager.startLevel()` in `main.ts` **only ever calls `nebulaSystem.deactivate()`** — even in Level 5 where it should be active. This is a one-line integration bug.
+`src/nebula.ts` is **COMPLETE** — it has 3 parallax cloud layers with TSL shaders, energy particles, a pulse overlay, weapon-light interaction, and player-engine glow response. However, level activation **only ever calls `nebulaSystem.deactivate()`** — even in Level 5 where it should be active. This is a one-line integration bug.
 
 ### Implementation
-1. **Modify `main.ts`** — In `LevelManager.startLevel()`, change Level 5's nebula handling from `deactivate()` to `activate()`.
-2. **Verify `LevelManager.update()`** — `nebulaSystem.update()` is already called every frame.
+1. **Wire activation** — Make Level 5 activate the nebula (today: via the `nebula` plugin in `src/level_manager/environment_plugins.ts` + the level's `environments` entry in `src/level_config.ts`).
+2. **Verify the per-frame hook** — `nebulaSystem.update()` is already called every frame from the update loop.
 3. **No new files needed** — The system is fully built.
 
 ### Code Change
 ```typescript
-// In main.ts, inside startLevel():
-if (levelIndex === 5) {
-    biologicalSystem.activate();
-    nebulaSystem.activate(); // WAS: nebulaSystem.deactivate()
-    this.cloudSystem.layers.forEach(l => l.mesh.visible = false);
-} else {
-    biologicalSystem.deactivate();
-    nebulaSystem.deactivate();
-    if (levelIndex !== 4) {
-        this.cloudSystem.layers.forEach(l => l.mesh.visible = true);
-    }
+// In src/level_config.ts, the Level 5 config:
+environments: {
+    biological: true,
+    nebula: true, // WAS: missing — plugin only ever deactivated
 }
 ```
 
 ### Integration Checklist
 - [x] `activate()` / `deactivate()` / `update()` pattern followed
-- [x] `main.ts` `startLevel()` hook fixed
-- [x] `LevelManager.update()` already calls `nebulaSystem.update()`
+- [x] Level-activation wiring fixed (environment plugin + level config)
+- [x] Update loop already calls `nebulaSystem.update()`
 - [x] No new config fields needed
 - [x] Build passes
 
@@ -330,8 +326,8 @@ if (levelIndex === 5) {
 > "The entire level is set inside a glowing purple and pink nebula... Multiple transparent cloud layers drift in different directions... The nebula pulses with a slow, rhythmic brightness change."
 
 ### Implementation
-- `nebula.ts` was already fully implemented with TSL shaders, 3 cloud layers, energy particles, and interactive lighting.
-- Bug fix: `LevelManager.startLevel()` now activates the nebula in Level 5 instead of deactivating it.
+- `src/nebula.ts` was already fully implemented with TSL shaders, 3 cloud layers, energy particles, and interactive lighting.
+- Bug fix: Level 5 now activates the nebula via its `environments` config instead of leaving it deactivated.
 
 ### Visuals
 - 3 cloud layers at Z: -60, -40, -20 with varying opacity (0.4, 0.3, 0.15)
@@ -340,7 +336,7 @@ if (levelIndex === 5) {
 - Player engine glow and weapon fire dynamically light up nearby clouds
 
 ### Integration
-- `main.ts` line ~546: `nebulaSystem.activate()` in Level 5 block
+- `src/level_config.ts` Level 5 `environments.nebula: true` → `nebula` plugin in `src/level_manager/environment_plugins.ts`
 ```
 
 ---

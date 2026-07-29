@@ -39,6 +39,22 @@ export class BoostSystem {
 
     getCharges(): number { return this.charges; }
     getMaxCharges(): number { return this.maxCharges; }
+
+    /** Crafted Stellar Fuel: permanently raise the charge cap for this run. */
+    addMaxCharge(amount: number = 1): void {
+        this.maxCharges += amount;
+        this.charges += amount;
+    }
+
+    /** Crafted Stellar Fuel: lengthen each boost for this run. */
+    extendDuration(seconds: number): void {
+        this.duration += seconds;
+    }
+
+    /** Crafted Phase Shifter: top up all charges immediately. */
+    refillCharges(): void {
+        this.charges = this.maxCharges;
+    }
     isBoosting(): boolean { return this.isActive; }
     getActiveRatio(): number { return this.isActive ? 1 - (this.activeTimer / this.duration) : 0; }
     getCooldownRatio(): number { return this.isCooldown ? 1 - (this.cooldownTimer / this.cooldown) : 0; }

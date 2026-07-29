@@ -9,7 +9,6 @@ import { MagicalEffect, MagicalEffectType, randomRange } from './shared';
 export class HeartBubbleEffect extends MagicalEffect {
   type = MagicalEffectType.HEART_BUBBLE;
   isActive = true;
-  duration: number;
   
   private target: THREE.Object3D;
   private scene: THREE.Scene;

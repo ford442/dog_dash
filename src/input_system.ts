@@ -4,7 +4,6 @@ import { player } from './player_loader';
 import { playerState } from './game_config';
 import { createUI, setupKeyboardControls, updateHealthDisplay } from './ui_controls';
 import { createHeatBar, createBoostDisplay, createRollDisplay, createCoresDisplay } from './ui_factory';
-import { levelManager } from './level_manager';
 import { sporeClouds } from './environment';
 
 // =============================================================================
@@ -79,7 +78,7 @@ export function setupCanvasClickHandler(
         sporeClouds.forEach(cloud => {
             if (!cloud.active) return;
 
-            const intersects = raycaster.intersectObjects(cloud.spores, false);
+            const intersects = raycaster.intersectObject(cloud.spores, false);
             if (intersects.length > 0) {
                 const hitPoint = intersects[0].point;
 

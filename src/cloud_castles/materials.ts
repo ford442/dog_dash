@@ -22,6 +22,7 @@ import {
     positionLocal,
     length
 } from 'three/tsl';
+import type { TSLNode } from '../tsl_types';
 
 export const PASTEL_COLORS = {
     cottonCandy: 0xFFB6E6,
@@ -72,9 +73,9 @@ const valueNoise = (v: any) => {
 };
 
 const fbm = (v: any) => {
-    let total = float(0.0);
-    let amplitude = float(0.5);
-    let frequency = float(1.0);
+    let total: TSLNode = float(0.0);
+    let amplitude: TSLNode = float(0.5);
+    let frequency: TSLNode = float(1.0);
     total = total.add(valueNoise(v.mul(frequency)).mul(amplitude));
     frequency = frequency.mul(2.0);
     amplitude = amplitude.mul(0.5);
@@ -175,7 +176,7 @@ export function createRainbowMaterial() {
 
     const hue = vUv.x.add(sin(uTime.mul(0.5)).mul(0.1));
 
-    let rainbow = vec3(0.0, 0.0, 0.0);
+    let rainbow: TSLNode = vec3(0.0, 0.0, 0.0);
 
     const r = sin(hue.mul(Math.PI * 2.0)).mul(0.5).add(0.5);
     const g = sin(hue.mul(Math.PI * 2.0).add(2.0)).mul(0.5).add(0.5);
@@ -235,7 +236,7 @@ export function createGlowFlowerMaterial(colorHex: number) {
     const uTime = time;
 
     const pulse = sin(uTime.mul(1.5)).add(1.0).mul(0.5).mul(0.3).add(0.7);
-    mat.emissiveIntensity = 0.5 * pulse.value;
+    mat.emissiveNode = color(new THREE.Color(colorHex)).mul(pulse.mul(0.5));
 
     return mat;
 }

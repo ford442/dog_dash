@@ -237,6 +237,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                 
                 // Check candy collisions (bouncy gummies!)
                 const candyCollisions = game.candyManager.checkCollisions(player.position, 2.0);
+                const playerPos = player.position;
                 candyCollisions.forEach(collision => {
                     if (collision.type === 'bouncy') {
                         // Bouncy gummies make the dog giggle!
@@ -245,7 +246,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                         game.audioSystem.playMagicSound('happy');
                     } else if (collision.type === 'collectible') {
                         // Cotton candy dissolves into sugar sparkles
-                        game.juiceManager.spawnSparkles(player.position, new THREE.Color(0xffb6c1), 10);
+                        game.juiceManager.spawnSparkles(playerPos, new THREE.Color(0xffb6c1), 10);
                         game.audioSystem.playMagicSound('collect');
                     }
                 });
@@ -285,7 +286,7 @@ export function updateLoopWorld(delta: number, time: number): void {
         // --- NEW: Pilot/Player Animations ---
         if (game.debugSystem.isEnabled('pilotAnim')) {
             try {
-                const rocketRoot = player.children[0];
+                const rocketRoot = player?.children[0];
                 if (rocketRoot) {
                     // Pitch and roll are now driven by updatePlayer's upgraded flight model.
     

@@ -151,7 +151,7 @@ export function updateCombatBoss(delta: number): boolean {
                         return;
                     }
 
-                    const damage = entry.target === 'boss' ? 10 : 15;
+                    const damage = (entry.target === 'boss' ? 10 : 15) * game.weaponDamageMult;
                     if (boss.takeDamage(damage, entry.target)) {
                         game.audioSystem.play('hit');
                         game.particleSystem.emit(

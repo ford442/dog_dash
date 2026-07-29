@@ -61,7 +61,7 @@ export function createUI(options: UIOptions) {
 export function updateHealthDisplay(playerState: { health: number; maxHealth: number }) {
     const healthDiv = document.getElementById('health-display');
     if (healthDiv) {
-        const hearts = '❤️'.repeat(playerState.health) + '🖤'.repeat(playerState.maxHealth - playerState.health);
+        const hearts = '❤️'.repeat(Math.max(0, playerState.health)) + '🖤'.repeat(Math.max(0, playerState.maxHealth - playerState.health));
         healthDiv.innerHTML = `Health: ${hearts}`;
         if (playerState.health < playerState.maxHealth) {
             healthDiv.style.animation = 'none';

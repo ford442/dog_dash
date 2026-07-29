@@ -70,6 +70,10 @@ export interface GameContext extends GameSystems, GameManagers {
     moonGateSequenceTimer: number;
     krakenMemoryRewarded: WeakSet<object>;
     wrenchChargeAvailable: boolean;
+    /** Glitch Grenade ammo for this run (crafted in the Space Base craft bay). */
+    grenadeAmmo: number;
+    /** Magma Lance crafted damage multiplier for this run. */
+    weaponDamageMult: number;
     scoreMultiplierUntil: number;
     scoreMultiplierValue: number;
     tetherSpriteSweep: number;
@@ -134,6 +138,8 @@ export function createGameContextFrameState(): Pick<
     | 'moonGateSequenceTimer'
     | 'krakenMemoryRewarded'
     | 'wrenchChargeAvailable'
+    | 'grenadeAmmo'
+    | 'weaponDamageMult'
     | 'scoreMultiplierUntil'
     | 'scoreMultiplierValue'
     | 'tetherSpriteSweep'
@@ -176,6 +182,8 @@ export function createGameContextFrameState(): Pick<
         moonGateSequenceTimer: 0,
         krakenMemoryRewarded: new WeakSet<object>(),
         wrenchChargeAvailable: false,
+        grenadeAmmo: 0,
+        weaponDamageMult: 1,
         scoreMultiplierUntil: 0,
         scoreMultiplierValue: 1,
         tetherSpriteSweep: 0,

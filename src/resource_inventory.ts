@@ -126,6 +126,8 @@ const DROP_TABLES: Record<string, Partial<Record<HarvestEvent, EventDropTable>>>
         scan: [{ id: 'voidGem', min: 1, max: 1, chance: 0.2 }]
     },
     magmaHeart: {
+        // NOTE: magma hearts have no destruction mechanic yet — destroy table
+        // is dormant until one exists; scan still works via DiscoveryManager.
         destroy: [
             { id: 'pyroclastOre', min: 1, max: 3 },
             { id: 'magmaCore', min: 1, max: 1, chance: 0.08 }
@@ -145,7 +147,11 @@ const DROP_TABLES: Record<string, Partial<Record<HarvestEvent, EventDropTable>>>
     },
     // Fractured geodes (not always species-tagged — also keyed by type)
     fracturedGeode: {
-        destroy: [{ id: 'voidGem', min: 2, max: 4 }]
+        destroy: [
+            { id: 'voidGem', min: 2, max: 4 },
+            // Legendary jackpot — the only Architect Key source (crafts the chapter unlock).
+            { id: 'architectKey', min: 1, max: 1, chance: 0.03 }
+        ]
     },
     // Slingable kinds used as fallback when speciesId is absent
     puffball: {

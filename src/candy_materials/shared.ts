@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
+import type { UniformNode } from 'three/src/nodes/Nodes.js';
 import {
     time,
     positionWorld,
@@ -22,6 +23,7 @@ import {
     pow,
     dot
 } from 'three/tsl';
+import type { TSLNode } from '../tsl_types';
 import {
     retainMaterial,
     releaseMaterial,
@@ -112,12 +114,18 @@ export function updateCandyMaterialGlobals(partial: Partial<CandyMaterialGlobals
 }
 
 export interface CandyMaterialHandle {
-    baseColor: ReturnType<typeof uniform>;
-    emissiveColor: ReturnType<typeof uniform>;
-    emissiveIntensity: ReturnType<typeof uniform>;
+    baseColor: UniformNode<THREE.Color>;
+    emissiveColor: UniformNode<THREE.Color>;
+    emissiveIntensity: UniformNode<number>;
 }
 
-export type CandyMaterial = THREE.Material & { userData: { candyUniforms?: CandyMaterialHandle; candyRecipe?: string } };
+/**
+ * Node-material based candy material. `MeshPhysicalNodeMaterial` extends
+ * `MeshStandardNodeMaterial`, so this alias covers both. The WebGL2 "lite"
+ * fallback (`createLitePhysical`) duck-types a plain `MeshPhysicalMaterial`
+ * into this shape at a single cast site.
+ */
+export type CandyMaterial = MeshStandardNodeMaterial & { userData: { candyUniforms?: CandyMaterialHandle; candyRecipe?: string } };
 
 // ---------------------------------------------------------------------------
 // Cache + dispose
@@ -224,12 +232,12 @@ export function buildWeaponGlowContribution() {
     const weaponGlow = float(0.0).toVar();
     if (_weaponLightsNode) {
         Loop({ start: 0, end: 20 }, ({ i }) => {
-            const lightData = (_weaponLightsNode as { element: (idx: number) => unknown }).element(i);
-            const lightPos = (lightData as { xyz: unknown }).xyz;
-            const lightIntensity = (lightData as { w: unknown }).w;
+            const lightData = (_weaponLightsNode as { element: (idx: TSLNode) => TSLNode }).element(i);
+            const lightPos = (lightData as { xyz: TSLNode }).xyz;
+            const lightIntensity = (lightData as { w: TSLNode }).w;
             const distToLight = distance(positionWorld, lightPos);
             const falloff = smoothstep(float(20.0), float(0.0), distToLight);
-            weaponGlow.addAssign(falloff.mul(lightIntensity as ReturnType<typeof float>));
+            weaponGlow.addAssign(falloff.mul(lightIntensity));
         });
     }
     return weaponGlow.mul(candyMaterialUniforms.playerLightInfluence);
@@ -312,7 +320,7 @@ export function createLitePhysical(
         opacity: opts.opacity ?? 0.94,
         side: opts.side ?? THREE.FrontSide,
         depthWrite: opts.depthWrite ?? true
-    }) as CandyMaterial;
+    }) as unknown as CandyMaterial;
     mat.userData.candyRecipe = recipe;
     return trackMaterial(mat, cacheKey);
 }

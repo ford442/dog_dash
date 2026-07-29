@@ -168,7 +168,7 @@ export function createGravityAnchorAtPosition(x: number, y: number, z: number, b
 }
 
 // Magma Hearts - eruption cycle mechanics
-export const magmaHearts: THREE.Group[] = [];
+export const magmaHearts: THREE.Mesh[] = [];
 
 export function createMagmaHeartAtPosition(x: number, y: number, z: number) {
     const heart = createMagmaHeart({ size: 3 + Math.random() * 2 });

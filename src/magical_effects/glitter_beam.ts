@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { AudioSystem } from '../audio_system';
-import { MagicalEffect, MagicalEffectType, getRainbowColor, randomRange } from './shared';
+import { MagicalEffect, MagicalEffectType, getRainbowColor, randomRange, PASTEL_RAINBOW } from './shared';
 
 // =============================================================================
 // GLITTER BEAM EFFECT
@@ -9,7 +9,6 @@ import { MagicalEffect, MagicalEffectType, getRainbowColor, randomRange } from '
 export class GlitterBeamEffect extends MagicalEffect {
   type = MagicalEffectType.GLITTER_BEAM;
   isActive = true;
-  duration: number;
   
   private target: THREE.Object3D;
   private scene: THREE.Scene;

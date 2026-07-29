@@ -102,6 +102,7 @@ CI runs the smoke job on PRs (currently `continue-on-error: true` while the suit
 - **A / S / Down Arrow** - Move down  
 - **Mouse Click** - Shoot plasma bolts
 - **K / Enter** - Fire weapon
+- **G** - Throw Glitch Grenade (when crafted — see [docs/CRAFTING.md](docs/CRAFTING.md))
 - **H** - Toggle heat effects (debug)
 - **`** - Toggle debug panel
 
@@ -134,6 +135,7 @@ Navigate your rocket through 6 massive levels, blasting asteroids and dodging cr
 - **Survival** - Your ship can survive 3 asteroid collisions
 - **Journey** - Travel 3500+ meters through Level 1 alone
 - **Exploration** - Discover alien flora and geological objects
+- **Crafting** - Harvest materials, then craft next-run goodies at the Space Base Craft Bay ([docs/CRAFTING.md](docs/CRAFTING.md))
 
 ## Level Overview
 
