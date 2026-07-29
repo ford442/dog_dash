@@ -74,9 +74,17 @@ function main() {
     const current = parseErrors(output);
     const baseline = readBaseline();
 
-    if (update || baseline.size === 0) {
+    if (update) {
         writeBaseline(current);
         console.log(`Typecheck baseline updated: ${current.size} error(s) recorded at ${path.relative(ROOT, BASELINE_PATH)}`);
+        process.exit(0);
+    }
+
+    // Missing baseline file: seed once so the ratchet has something to compare.
+    // An intentional empty baseline (Count: 0) means "strict clean" — do not auto-write.
+    if (!fs.existsSync(BASELINE_PATH)) {
+        writeBaseline(current);
+        console.log(`Typecheck baseline created: ${current.size} error(s) recorded at ${path.relative(ROOT, BASELINE_PATH)}`);
         process.exit(0);
     }
 

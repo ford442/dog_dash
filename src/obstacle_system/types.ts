@@ -13,6 +13,9 @@ noteGeometryCreated();
 export type GameplayModifiers = {
     shieldActive: boolean;
     shieldBouncesAsteroids: boolean;
+    invincible?: boolean;
+    obstaclesSlowed?: boolean;
+    obstacleSlowFactor?: number;
 };
 
 export type ObstacleWasmHandle = {

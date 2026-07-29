@@ -77,3 +77,6 @@ jobs:
 
       - name: Verify C++ WASM instantiates
         run: npm run verify:cpp-wasm
+
+      - name: Verify soft-body Verlet consumer (Option A)
+        run: npm run verify:cpp-softbody
