@@ -170,7 +170,6 @@ function createLevelManager(
         pinwheelManager: managers.pinwheelManager,
         windChimeManager: managers.windChimeManager,
         solarSailFernManager: managers.solarSailFernManager,
-        castleManager: managers.castleManager,
         candyManager: managers.candyManager,
         debugSystem: deferred.debugSystem,
         env: {
@@ -196,7 +195,8 @@ function createLevelManager(
             wishLanternSystem: systems.wishLanternSystem,
             weatherSystem: systems.weatherSystem,
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
-            dynamicStarfieldSystem: systems.dynamicStarfieldSystem
+            dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
+            cloudCastlesSystem: systems.cloudCastlesSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -255,7 +255,8 @@ function createLevelManager(
             const levelDiv = document.getElementById('level-display');
             if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
         },
-        dynamicStarfieldSystem: systems.dynamicStarfieldSystem
+        dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
+        cloudCastlesSystem: systems.cloudCastlesSystem
     });
 }
 
