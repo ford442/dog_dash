@@ -23,6 +23,7 @@ import {
     normalView,
     positionLocal
 } from 'three/tsl';
+import type { TSLNode } from './tsl_types';
 
 // --- TSL Noise Helpers (Shared Logic) ---
 
@@ -49,9 +50,9 @@ const valueNoise = (v: any) => {
 };
 
 const fbm = (v: any) => {
-    let total = float(0.0);
-    let amplitude = float(0.5);
-    let frequency = float(1.0);
+    let total: TSLNode = float(0.0);
+    let amplitude: TSLNode = float(0.5);
+    let frequency: TSLNode = float(1.0);
 
     // 3 Octaves
     total = total.add(valueNoise(v.mul(frequency)).mul(amplitude));

@@ -1,0 +1,39 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2] [cursor=pointer]:
+    - heading "SPACE DASH" [level=1] [ref=f1e3]
+    - generic [ref=f1e4]: Journey to the Moon
+    - paragraph [ref=f1e5]: Navigate your rocket through the asteroid field to reach the distant moon!
+    - paragraph [ref=f1e6]: ⚠️ Your ship can only survive 3 collisions!
+    - generic [ref=f1e7]:
+      - generic [ref=f1e8]:
+        - generic [ref=f1e9]: Thrust Up
+        - generic [ref=f1e10]: SPACE
+      - generic [ref=f1e12]:
+        - generic [ref=f1e13]: Dive Down
+        - generic [ref=f1e14]: A
+    - generic [ref=f1e16]: ▼ Click or tap to start ▼
+  - generic:
+    - generic: ⭐ Score
+    - generic: "630"
+    - generic: "🏆 Best: 4,510"
+  - generic:
+    - generic: 🚀 Distance
+    - generic: 0m
+  - generic:
+    - generic: Hearts 💕
+    - generic:
+      - generic: 💖
+      - generic: 💖
+      - generic: 🤍
+  - generic: Next Power-Up
+  - generic:
+    - generic: 🔍 Catalog
+    - generic: 4/8
+  - generic: ×12
+  - generic: ⚡
+  - generic: ∠
+  - generic:
+    - generic: 🌍
+    - generic: 🚀
+    - generic: 🌕
+    - generic: Lvl 1/6

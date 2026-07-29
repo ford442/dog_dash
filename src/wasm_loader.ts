@@ -40,7 +40,11 @@ export interface CoreWasmExports {
     getObjectPtr(): number;
 }
 
-/** Extra exports available only in the experimental C++ backend (unused by gameplay today). */
+/**
+ * Extra exports available only in the experimental C++ backend.
+ * Gameplay consumer: `jelly_moss_softbody.ts` (Verlet soft-body Jelly-Moss cores)
+ * when `VITE_CPP_WASM=true` and `game_cpp.wasm` is present.
+ */
 export interface CppExtrasExports {
     // Verlet physics
     allocPhysicsBodies(count: number): number;
@@ -97,6 +101,17 @@ async function fetchAndInstantiate(
 // Backend loaders
 // ---------------------------------------------------------------------------
 
+function publishWasmBackendBreadcrumb(backend: WasmBackend | null): void {
+    if (typeof window === 'undefined') return;
+    window.wasmBackend = backend;
+}
+
+declare global {
+    interface Window {
+        wasmBackend?: string | null;
+    }
+}
+
 async function loadAssemblyScript(): Promise<WasmHandle> {
     const { instance } = await fetchAndInstantiate('./build/optimized.wasm', {
         env: { abort: () => console.warn('[WASM-AS] abort() called') },
@@ -145,16 +160,21 @@ export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null
 
     if (useCpp) {
         try {
-            return await loadCpp();
+            const handle = await loadCpp();
+            publishWasmBackendBreadcrumb(handle.backend);
+            return handle;
         } catch (err) {
             console.warn('⚠️ Experimental C++ WASM unavailable, falling back to AssemblyScript:', err);
         }
     }
 
     try {
-        return await loadAssemblyScript();
+        const handle = await loadAssemblyScript();
+        publishWasmBackendBreadcrumb(handle.backend);
+        return handle;
     } catch (err) {
         console.error('❌ Failed to load AssemblyScript WASM:', err);
+        publishWasmBackendBreadcrumb(null);
         return null;
     }
 }

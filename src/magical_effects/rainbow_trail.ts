@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { AudioSystem } from '../audio_system';
-import { MagicalEffect, MagicalEffectType, getRainbowColor, lerp, randomRange } from './shared';
+import { MagicalEffect, MagicalEffectType, getRainbowColor, lerp, randomRange, createHeartShape } from './shared';
 
 // =============================================================================
 // RAINBOW TRAIL EFFECT
@@ -17,7 +17,6 @@ interface TrailSegment {
 export class RainbowTrailEffect extends MagicalEffect {
   type = MagicalEffectType.RAINBOW_TRAIL;
   isActive = true;
-  duration: number;
   
   private target: THREE.Object3D;
   private scene: THREE.Scene;

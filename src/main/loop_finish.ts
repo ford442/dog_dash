@@ -4,7 +4,7 @@ import { game } from '../game_runtime';
 import { keys, updateDistanceDisplay } from '../ui_controls';
 import { VictoryState } from '../victory_system';
 import { DogAnimationState } from '../dog_cockpit';
-import { updateHeatBar, updateCoresDisplay, updateBoostDisplay, updateRollDisplay, updateTetherDisplay } from './hud_displays';
+import { updateHeatBar, updateCoresDisplay, updateBoostDisplay, updateRollDisplay, updateTetherDisplay, updateGrenadeDisplay } from './hud_displays';
 import { renderGameFrame } from './render_helpers';
 
 export function updateLoopFinish(_time: number): void {
@@ -18,6 +18,7 @@ export function updateLoopFinish(_time: number): void {
         updateBoostDisplay();
         updateRollDisplay();
         updateTetherDisplay();
+        updateGrenadeDisplay();
         
         // Check if player reached the moon (or defeated boss in level 1)
         if (player && player.position.x >= playerState.distanceToMoon - 10 && !playerState.hasWon && !playerState.bossActive) {

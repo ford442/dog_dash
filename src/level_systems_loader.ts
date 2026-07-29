@@ -13,6 +13,7 @@ import {
     shouldSpawnBubbleCoral
 } from './level_spawn_rules';
 import { scene, camera } from './scene_context';
+import { createDreamPortalCallbacks } from './main/dream_portal_update';
 
 type SystemKey =
     | 'reEntry'
@@ -27,6 +28,8 @@ type SystemKey =
     | 'chromaShift'
     | 'stormGeode'
     | 'blackHole'
+    | 'galacticCore'
+    | 'dreamPortals'
     | 'ghostDebris'
     | 'voidJellyfish'
     | 'industrialGeometry'
@@ -174,6 +177,19 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 installEnvPartial({ blackHoleSystem: new BlackHoleSystem(scene) });
                 break;
             }
+            case 'galacticCore': {
+                const { GalacticCoreSystem } = await import('./galactic_core');
+                installEnvPartial({ galacticCoreSystem: new GalacticCoreSystem(scene) });
+                break;
+            }
+            case 'dreamPortals': {
+                const { DreamPortalSystem } = await import('./dream_portal');
+                assignGameSystem(
+                    'dreamPortalSystem',
+                    new DreamPortalSystem(scene, createDreamPortalCallbacks())
+                );
+                break;
+            }
             case 'ghostDebris': {
                 const { GhostDebrisSystem } = await import('./ghost_debris');
                 game.ghostDebrisSystem = new GhostDebrisSystem(scene);
@@ -259,6 +275,8 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.planetaryHorizon)) keys.add('planetaryHorizon');
     if (isEnvironmentEnabled(env.moonPalace)) keys.add('moonPalace');
     if (isEnvironmentEnabled(env.blackHole)) keys.add('blackHole');
+    if (isEnvironmentEnabled(env.galacticCore)) keys.add('galacticCore');
+    if (isEnvironmentEnabled(env.dreamPortals)) keys.add('dreamPortals');
     if (isEnvironmentEnabled(env.ghostDebris)) keys.add('ghostDebris');
     if (isEnvironmentEnabled(env.voidJellyfish)) keys.add('voidJellyfish');
     if (isEnvironmentEnabled(env.aquaticLife)) keys.add('aquaticLife');

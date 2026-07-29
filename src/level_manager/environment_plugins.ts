@@ -26,13 +26,18 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     dancingJellyMossSystem: { activate: (config?: any) => void; deactivate: () => void };
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void };
     dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void };
+    cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void };
 }
+
+/** Discriminated union of plugins keyed by environment flag, so each
+ * `activate` receives its own config type. */
+type AnyEnvironmentPlugin = { [K in keyof LevelEnvironments]-?: EnvironmentPlugin<K> }[keyof LevelEnvironments];
 
 export function buildEnvironmentPlugins(
     host: LevelPluginHost,
     cfg: LevelConfig,
     levelLength: number
-): EnvironmentPlugin[] {
+): AnyEnvironmentPlugin[] {
     return [
         {
             flag: 'dynamicStarfield',
@@ -63,6 +68,11 @@ export function buildEnvironmentPlugins(
             flag: 'blackHole',
             activate: (blackHoleConfig) => host.blackHoleSystem.activate(blackHoleConfig),
             deactivate: () => host.blackHoleSystem.deactivate()
+        },
+        {
+            flag: 'galacticCore',
+            activate: (coreConfig) => host.galacticCoreSystem.activate(coreConfig),
+            deactivate: () => host.galacticCoreSystem.deactivate()
         },
         {
             flag: 'industrial',

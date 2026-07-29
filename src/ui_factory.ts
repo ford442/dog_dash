@@ -259,7 +259,7 @@ export function createCoresDisplay(saveManager: ReturnType<typeof getSaveManager
     document.body.appendChild(coresDiv);
 }
 
-export function updateCoresDisplay(ps: PlayerState) {
+export function updateCoresDisplay(ps: typeof playerState) {
     const count = document.getElementById('cores-count');
     if (count) count.textContent = ps.cores.toString();
 }

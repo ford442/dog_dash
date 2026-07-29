@@ -100,7 +100,7 @@ stopGravityHum(): void {
     this.gravHumGain = null;
 },
 
-playGravitySlingRelease(quality: 'perfect' | 'good' | 'ok' = 'good', combo: number = 1): void {
+playGravitySlingRelease(quality: 'perfect' | 'good' | 'ok' | 'messy' = 'good', combo: number = 1): void {
     this.init();
     if (!this.ctx || !this.sfxGain) return;
 

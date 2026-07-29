@@ -23,11 +23,14 @@ import {
     createChromaShiftSystemStub,
     createStormGeodeSystemStub,
     createBlackHoleSystemStub,
+    createGalacticCoreSystemStub,
+    createDreamPortalSystemStub,
     createWishLanternSystemStub,
     createWeatherSystemStub,
     createDancingJellyMossSystemStub,
     createDynamicStarfieldSystemStub,
-    createDayNightCycleSystemStub
+    createDayNightCycleSystemStub,
+    createCloudCastlesSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -38,11 +41,14 @@ import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
 import { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
+import type { GalacticCoreSystem } from './galactic_core';
+import type { DreamPortalSystem } from './dream_portal';
 import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
+import type { CloudCastlesSystem } from './cloud_castles_system';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -54,11 +60,12 @@ import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upg
 import { getSaveManager, type SaveManager } from './save_manager';
 import { StarfieldSystem } from './stars';
 import { OrbManager } from './collectibles';
-import { PowerUpManager, PowerUpType } from './powerup_manager';
+import { PowerUpManager, PowerUpType, handlePowerUpStart, handlePowerUpEnd, syncMagicalEffectsFromActive } from './powerup_manager';
 import { DogCockpitController, DogAnimationState } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType } from './juice_effects';
-import { EffectManager, MagicalEffectType } from './magical_effects';
+import { EffectManager } from './magical_effects';
+import { MagicPaintbrushSystem } from './magic_paintbrush';
 import { VictorySystem } from './victory_system';
 import { TutorialSystem, shouldShowTutorial } from './tutorial_system';
 import { BoostSystem } from './boost_system';
@@ -108,6 +115,7 @@ export type GameSystems = {
     boostSystem: BoostSystem;
     rollSystem: RollSystem;
     effectManager: EffectManager;
+    magicPaintbrushSystem: MagicPaintbrushSystem;
     victorySystem: VictorySystem;
     tutorialSystem: TutorialSystem;
     lightningBoltSystem: LightningBoltSystem;
@@ -115,6 +123,8 @@ export type GameSystems = {
     stormGeodeSystem: StormGeodeSystem;
     crystalChimeManager: CrystalChimeManager;
     blackHoleSystem: BlackHoleSystem;
+    galacticCoreSystem: GalacticCoreSystem;
+    dreamPortalSystem: DreamPortalSystem;
     gravLensManager: GravLensManager;
     derelictBuoyManager: DerelictBuoyManager;
     dataMonolithManager: DataMonolithManager;
@@ -123,6 +133,7 @@ export type GameSystems = {
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
+    cloudCastlesSystem: CloudCastlesSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -138,9 +149,11 @@ export type LevelEnvironmentSystemExports = {
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     blackHoleSystem: BlackHoleSystem;
+    galacticCoreSystem: GalacticCoreSystem;
     wishLanternSystem: WishLanternSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
+    cloudCastlesSystem: CloudCastlesSystem;
 };
 
 /**
@@ -218,6 +231,19 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
     const tempTarget = new THREE.Group();
     const effectManager = new EffectManager(scene, audioSystem, tempTarget);
+    const magicPaintbrushSystem = new MagicPaintbrushSystem(scene);
+
+    const powerUpHookCtx = {
+        effectManager,
+        audioSystem,
+        dogController,
+        juiceManager,
+        powerUpManager: null as unknown as PowerUpManager,
+        getPlayerPosition: () => player?.position,
+        onHudHealthUpdate: () => {
+            hudManager.updateHealth(playerState.health, playerState.maxHealth);
+        },
+    };
 
     const powerUpManager = new PowerUpManager({
         scene,
@@ -226,75 +252,24 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         rocket: undefined,
         onPowerUpStart: (type, config) => {
             console.log(`Power-up started: ${config.name}`);
-            switch (type) {
-                case PowerUpType.RAINBOW_COMET_TAIL:
-                    effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, config.duration);
-                    audioSystem.playCometActivate();
-                    dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
-                    juiceManager.flashRainbow(0.8);
-                    break;
-                case PowerUpType.FLOWER_CROWN_BOOST:
-                    effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
-                    audioSystem.playBoost();
-                    break;
-                case PowerUpType.TWINKLE_STAR_MAGNET:
-                    effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, config.duration);
-                    audioSystem.playCollect();
-                    break;
-                case PowerUpType.BUBBLEGUM_SHIELD:
-                    effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, config.duration);
-                    audioSystem.playShieldActivate();
-                    break;
-                case PowerUpType.BUTTERFLY_ESCORT:
-                    effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, config.duration);
-                    audioSystem.playCollect();
-                    break;
-                case PowerUpType.UNICORN_HORN_BLAST:
-                    effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, config.duration);
-                    audioSystem.playBoost();
-                    break;
-            }
+            handlePowerUpStart(powerUpHookCtx, type, config);
         },
         onPowerUpEnd: (type, config) => {
             console.log(`Power-up ended: ${config.name}`);
-            if (type === PowerUpType.BUBBLEGUM_SHIELD && player) {
-                audioSystem.playShieldBreak();
-                juiceManager.showFloatingText('Pop!', player.position, '#ff69b4', 24);
-                juiceManager.burstMagic(player.position.clone());
+            handlePowerUpEnd(powerUpHookCtx, type, config);
+            if (type === PowerUpType.MAGIC_PAINTBRUSH) {
+                magicPaintbrushSystem.clear();
             }
         }
     });
+    powerUpHookCtx.powerUpManager = powerUpManager;
 
     orbManager.onPowerUpReady = () => {
         const triggered = powerUpManager.collectOrb();
         if (triggered && player) {
-            dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
             juiceManager.flashRainbow(0.5);
             juiceManager.burstMagic(player.position.clone());
-
-            const activeEffects = powerUpManager.getActiveEffects();
-            activeEffects.forEach((effect) => {
-                switch (effect.type) {
-                    case PowerUpType.RAINBOW_COMET_TAIL:
-                        effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, effect.duration);
-                        break;
-                    case PowerUpType.FLOWER_CROWN_BOOST:
-                        effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
-                        break;
-                    case PowerUpType.BUBBLEGUM_SHIELD:
-                        effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, effect.duration);
-                        break;
-                    case PowerUpType.TWINKLE_STAR_MAGNET:
-                        effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
-                        break;
-                    case PowerUpType.BUTTERFLY_ESCORT:
-                        effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, effect.duration);
-                        break;
-                    case PowerUpType.UNICORN_HORN_BLAST:
-                        effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, effect.duration);
-                        break;
-                }
-            });
+            syncMagicalEffectsFromActive(powerUpHookCtx);
         }
     };
 
@@ -350,11 +325,14 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const stormGeodeSystem: StormGeodeSystem = createStormGeodeSystemStub();
     const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
     const blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
+    const galacticCoreSystem: GalacticCoreSystem = createGalacticCoreSystemStub();
+    const dreamPortalSystem: DreamPortalSystem = createDreamPortalSystemStub();
     const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
     const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const dancingJellyMossSystem: DancingJellyMossSystem = createDancingJellyMossSystemStub();
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
+    const cloudCastlesSystem = createCloudCastlesSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -393,6 +371,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         boostSystem,
         rollSystem,
         effectManager,
+        magicPaintbrushSystem,
         victorySystem,
         tutorialSystem,
         lightningBoltSystem,
@@ -400,11 +379,14 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         stormGeodeSystem,
         crystalChimeManager,
         blackHoleSystem,
+        galacticCoreSystem,
+        dreamPortalSystem,
         wishLanternSystem,
         weatherSystem,
         dancingJellyMossSystem,
         dynamicStarfieldSystem,
         dayNightCycleSystem,
+        cloudCastlesSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager

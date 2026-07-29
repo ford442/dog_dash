@@ -21,7 +21,6 @@ import {
     texture,
     normalMap,
     instanceIndex,
-    vec3,
     distance,
     smoothstep,
     dot,
@@ -33,6 +32,8 @@ import {
 } from 'three/tsl';
 import { ParticleSystem } from '../particles';
 import { disposeObject } from '../utils';
+import type { TSLNode } from '../tsl_types';
+import { jellyMossSoftBody } from '../jelly_moss_softbody';
 
 // --- TSL Noise Functions (3D) ---
 
@@ -72,9 +73,9 @@ const valueNoise3D = (v: any) => {
 };
 
 export const fbm = (v: any) => {
-    let total = float(0.0);
-    let amplitude = float(0.5);
-    let frequency = float(1.0);
+    let total: TSLNode = float(0.0);
+    let amplitude: TSLNode = float(0.5);
+    let frequency: TSLNode = float(1.0);
 
     // 3 Octaves
     total = total.add(valueNoise3D(v.mul(frequency)).mul(amplitude));
@@ -336,6 +337,8 @@ export function updateNebulaJellyMoss(mesh: THREE.Mesh, delta: number, timeVal: 
 }
 
 export function destroyNebulaJellyMoss(mesh: THREE.Mesh, scene: THREE.Scene, particleSystem: ParticleSystem) {
+    jellyMossSoftBody.detach(mesh);
+
     // 1. Particle Burst
     // Emit green goo particles
     particleSystem.emit(mesh.position, 0x00ff88, 50, 8.0, 2.0, 3.0);

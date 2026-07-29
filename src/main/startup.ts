@@ -16,6 +16,7 @@ import { SlingObjectiveManager } from '../sling_objective';
 import { SlingComboManager } from '../sling_combo';
 import { TetherSystem } from '../tether_system';
 import { spawnGravLensCorridorsForLevel } from './grav_lens_update';
+import { spawnDreamPortalsForLevel } from './dream_portal_update';
 import { spawnArtifactsForLevel } from './artifact_update';
 import { DebugSystem } from '../debug_system';
 import { decorationBudget, registerDefaultDecorationBudgets } from '../decoration_budget';
@@ -23,9 +24,11 @@ import { attachGpuLeakDetector } from '../gpu_leak_detector';
 import { disposeObject } from '../utils';
 import { createGalaxy, createMoon } from '../visuals';
 import { shouldShowTutorial } from '../tutorial_system';
+import { applyCraftedLoadout } from './loadout';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
+import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -54,7 +57,11 @@ async function loadWasm(): Promise<void> {
     if (handle) {
         game.wasmExports = handle.exports;
         game.wasmMemory = handle.memory;
+        game.wasmBackend = handle.backend;
+    } else {
+        game.wasmBackend = null;
     }
+    jellyMossSoftBody.bindWasm(handle);
 }
 
 import {
@@ -63,7 +70,8 @@ import {
     createSporeCloudAtPosition, createVoidRootBallAtPosition,
     createVacuumKelpAtPosition, createIceNeedleClusterAtPosition,
     createLiquidMetalBlobAtPosition, createMagmaHeartAtPosition,
-    createGravityAnchorAtPosition, createGeodeAtPosition
+    createGravityAnchorAtPosition, createGeodeAtPosition,
+    createJellyMossAtPosition
 } from '../environment';
 import {
     createGravityAnchorWithTarsiers,
@@ -120,6 +128,11 @@ export async function spawnDeferredPrototypeContent(): Promise<void> {
         radius: 1.8, mass: 4.5,
         velocity: new THREE.Vector3(-0.9, 0.2, 0), kind: 'wreckingBall'
     });
+
+    // Hero Nebula Jelly-Moss (1–3). With VITE_CPP_WASM + game_cpp.wasm, cores use Verlet soft-body.
+    createJellyMossAtPosition(120, 4, -22, 5.5);
+    createJellyMossAtPosition(210, -3, -20, 4.2);
+    createJellyMossAtPosition(340, 6, -24, 6.0);
 }
 
 export async function spawnDeferredVideoStars(): Promise<void> {
@@ -157,7 +170,6 @@ function createLevelManager(
         pinwheelManager: managers.pinwheelManager,
         windChimeManager: managers.windChimeManager,
         solarSailFernManager: managers.solarSailFernManager,
-        castleManager: managers.castleManager,
         candyManager: managers.candyManager,
         debugSystem: deferred.debugSystem,
         env: {
@@ -175,6 +187,7 @@ function createLevelManager(
             planetaryHorizonSystem: systems.planetaryHorizonSystem,
             moonPalaceSystem: systems.moonPalaceSystem,
             blackHoleSystem: systems.blackHoleSystem,
+            galacticCoreSystem: systems.galacticCoreSystem,
             reEntrySystem: systems.reEntrySystem,
             chromaShiftSystem: systems.chromaShiftSystem,
             stormGeodeSystem: systems.stormGeodeSystem,
@@ -183,7 +196,8 @@ function createLevelManager(
             weatherSystem: systems.weatherSystem,
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
             dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
-            dayNightCycleSystem: systems.dayNightCycleSystem
+            dayNightCycleSystem: systems.dayNightCycleSystem,
+            cloudCastlesSystem: systems.cloudCastlesSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -212,6 +226,7 @@ function createLevelManager(
             game.friendsManager.resetLevelLemurCap();
             game.toyRocketSpawnManager.spawnForLevel(game.levelManager.currentLevel, cfg);
             spawnGravLensCorridorsForLevel(game.levelManager.currentLevel, cfg);
+            spawnDreamPortalsForLevel(cfg);
             spawnArtifactsForLevel(cfg, player?.position.x ?? 0);
             game.wrenchChargeAvailable = game.saveManager.hasMemory('mine_robot');
             game.slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
@@ -242,7 +257,8 @@ function createLevelManager(
             if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
         },
         dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
-        dayNightCycleSystem: systems.dayNightCycleSystem
+        dayNightCycleSystem: systems.dayNightCycleSystem,
+        cloudCastlesSystem: systems.cloudCastlesSystem
     });
 }
 
@@ -431,6 +447,8 @@ export function initializeStartup(): void {
 
     installGameContext(ctx);
 
+    applyCraftedLoadout(game, playerState);
+
     attachGpuLeakDetector(debugSystem, () => {
         const camX = camera.position.x;
         const playerX = player?.position.x ?? camX;
@@ -450,7 +468,7 @@ export function initializeStartup(): void {
 
     onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: unknown) => {
         game.effectManager.setTarget(loadedPlayer);
-        const dogTarget = (rocketModelOrGroup as THREE.Object3D) || loadedPlayer;
+        const dogTarget = (rocketModelOrGroup as THREE.Group) || loadedPlayer;
         try { game.dogController.initialize(dogTarget); } catch { game.dogController.initialize(loadedPlayer); }
         console.log('🚀 Rocket loaded via player_loader onto canonical scene');
     });
@@ -460,4 +478,11 @@ export function initializeStartup(): void {
     }
 
     wireStartupCallbacks();
+
+    // Dev / `?debug` only: a handle on the composition root so set-pieces that
+    // sit deep in a run (Dream Portals, the Galactic Core approach) can be
+    // driven from the console or a browser test without playing to them.
+    if (import.meta.env.DEV || hasDebugUrlFlag('debug')) {
+        (window as unknown as { dogDash?: unknown }).dogDash = { game, playerState, scene, camera };
+    }
 }

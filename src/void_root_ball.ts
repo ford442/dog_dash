@@ -30,6 +30,8 @@ export interface RootBallInteraction {
     impactDamage: number;
     bleedDamagePerSec: number;
     hitPoint: THREE.Vector3 | null;
+    /** True on the frame the player severs the tether vine by shooting it. */
+    vineSevered: boolean;
 }
 
 export interface VoidRootBallUpdateContext {
@@ -457,6 +459,7 @@ function updateAnchor(
                             data.recoverTimer = 2.5;
                             result.isTethered = false;
                             result.rotationLocked = false;
+                            result.vineSevered = true;
                             return;
                         }
                     }
@@ -506,7 +509,8 @@ export function updateVoidRootBall(
         rotationLocked: false,
         impactDamage: 0,
         bleedDamagePerSec: 0,
-        hitPoint: null
+        hitPoint: null,
+        vineSevered: false
     };
 
     const data = group.userData;

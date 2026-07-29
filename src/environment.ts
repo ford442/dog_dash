@@ -27,6 +27,7 @@ import type { ParticleSystem } from './particles';
 import type { WeaponSystem } from './weapons';
 import type { LiquidMetalSystem } from './geological';
 import { disposeObject } from './utils';
+import { jellyMossSoftBody } from './jelly_moss_softbody';
 
 /** Injected by bootstrap — environment never imports composition-root singletons. */
 export type EnvironmentSystems = {
@@ -90,6 +91,8 @@ export function createJellyMossAtPosition(x: number, y: number, z: number, size?
     jellyMoss.userData.speciesId = 'nebulaJellyMoss';
     scene.add(jellyMoss);
     jellyMosses.push(jellyMoss);
+    // Opt-in C++ Verlet soft-body for up to 3 hero mosses; no-op on AS default.
+    jellyMossSoftBody.tryAttach(jellyMoss);
     return jellyMoss;
 }
 
@@ -168,7 +171,7 @@ export function createGravityAnchorAtPosition(x: number, y: number, z: number, b
 }
 
 // Magma Hearts - eruption cycle mechanics
-export const magmaHearts: THREE.Group[] = [];
+export const magmaHearts: THREE.Mesh[] = [];
 
 export function createMagmaHeartAtPosition(x: number, y: number, z: number) {
     const heart = createMagmaHeart({ size: 3 + Math.random() * 2 });
@@ -267,6 +270,7 @@ export function cleanupGeologicalObjects(cameraX: number) {
     for (let i = jellyMosses.length - 1; i >= 0; i--) {
         const jellyMoss = jellyMosses[i];
         if (jellyMoss.position.x < cutoff) {
+            jellyMossSoftBody.detach(jellyMoss);
             scene.remove(jellyMoss);
             disposeObject(jellyMoss);
             jellyMosses.splice(i, 1);

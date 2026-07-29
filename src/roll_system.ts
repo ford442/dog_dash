@@ -40,6 +40,11 @@ export class RollSystem {
         return this.isCooldown ? 1 - (this.cooldownTimer / this.cooldown) : 0;
     }
 
+    /** Crafted Phase Shifter: shorten the roll cooldown for this run. */
+    scaleCooldown(factor: number): void {
+        this.cooldown = Math.max(0.2, this.cooldown * factor);
+    }
+
     canRoll(): boolean {
         return !this.isActive && !this.isCooldown;
     }

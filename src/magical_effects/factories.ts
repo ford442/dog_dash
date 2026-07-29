@@ -4,7 +4,8 @@ import { MagicalEffect, MagicalEffectType } from './shared';
 import { RainbowTrailEffect } from './rainbow_trail';
 import { ButterflySwarmEffect } from './butterfly_swarm_effect';
 import { HeartBubbleEffect } from './heart_bubble';
-import { ConfettiBurstEffect } from './burst_effects';
+import { ConfettiBurstEffect, HeartRainEffect, StarCascadeEffect, RainbowSpiralEffect, SparkleFieldEffect } from './burst_effects';
+import { createHeartShape } from './shared';
 
 // =============================================================================
 // CONVENIENCE FUNCTIONS
@@ -121,18 +122,7 @@ export function spawnSparkleField(
 // HELPER FUNCTIONS
 // =============================================================================
 
-export function createHeartShape(size: number = 1): THREE.Shape {
-  const shape = new THREE.Shape();
-  const x = 0, y = 0;
-  
-  shape.moveTo(x, y);
-  shape.bezierCurveTo(x, y + size * 0.3, x - size * 0.5, y + size * 0.7, x - size * 0.5, y + size);
-  shape.bezierCurveTo(x - size * 0.5, y + size * 1.4, x, y + size * 1.7, x, y + size * 2);
-  shape.bezierCurveTo(x, y + size * 1.7, x + size * 0.5, y + size * 1.4, x + size * 0.5, y + size);
-  shape.bezierCurveTo(x + size * 0.5, y + size * 0.7, x, y + size * 0.3, x, y);
-  
-  return shape;
-}
+export { createHeartShape };
 
 // =============================================================================
 // SHADER EFFECTS (TSL Helpers)

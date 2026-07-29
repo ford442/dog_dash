@@ -7,6 +7,54 @@ import type { CandyFlavor } from '../../candy_materials';
 import { updateCombatBossKraken } from './boss';
 import { onBarnacleOpened, updateProjectileAnchorPanic } from './friends';
 
+const BUTTERFLY_COLORS = [0xffb6c1, 0xdda0dd, 0x87ceeb, 0x98fb98, 0xf0e68c];
+
+function transformAsteroidToButterflies(obs: THREE.Object3D): void {
+    const mesh = obs as THREE.Mesh;
+    const pastel = BUTTERFLY_COLORS[Math.floor(Math.random() * BUTTERFLY_COLORS.length)];
+    (mesh.material as THREE.MeshStandardMaterial).color.setHex(pastel);
+    (mesh.material as THREE.MeshStandardMaterial).emissive.setHex(pastel);
+    (mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.4;
+    mesh.userData.isCandy = true;
+
+    for (let b = 0; b < 4; b++) {
+        const offset = new THREE.Vector3(
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 2,
+            (Math.random() - 0.5) * 0.5
+        );
+        game.particleSystem.emit(
+            mesh.position.clone().add(offset),
+            pastel,
+            3,
+            3.0,
+            0.35,
+            0.8
+        );
+    }
+    game.audioSystem.playMagicSound('happy');
+}
+
+/** Destroy one obstacle with the standard projectile-hit effects (also used by Glitch Grenades). */
+export function blastObstacle(obs: THREE.Object3D): void {
+    if (obs.userData.isCandyAsteroid) {
+        const flavor = obs.userData.candyFlavor as CandyFlavor;
+        const sparkle = CANDY_FLAVOR_COLORS[flavor]?.sparkle ?? 0xffffff;
+        game.particleSystem.emit(obs.position, sparkle, 14, 5.5, 0.9, 1.2);
+        game.obstacleSystem.triggerCandySquash(obs as THREE.Mesh, 1.2);
+    } else {
+        game.particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0);
+    }
+
+    game.audioSystem.play('explode');
+
+    onBarnacleOpened(obs);
+
+    game.pickupManager.trySpawn(obs.position.clone());
+
+    game.obstacleSystem.splitAsteroid(obs as THREE.Mesh);
+}
+
 /** Weapons update, projectile↔obstacles/field/meteors, kraken + anchor panic. */
 export function updateCombatWeapons(delta: number): void {
     if (!player) return;
@@ -19,6 +67,8 @@ export function updateCombatWeapons(delta: number): void {
     if (projectiles.length === 0) return;
 
     const obstacles = game.obstacleSystem.getObstacles();
+    const butterflyBlast = game.powerUpManager.getCombinedModifiers().asteroidsToButterflies;
+
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const obs = obstacles[i];
         const obsRadius = obs.userData.radius || 1.0;
@@ -28,22 +78,12 @@ export function updateCombatWeapons(delta: number): void {
 
             const dist = proj.mesh.position.distanceTo(obs.position);
             if (dist < obsRadius + 0.5) {
-                if (obs.userData.isCandyAsteroid) {
-                    const flavor = obs.userData.candyFlavor as CandyFlavor;
-                    const sparkle = CANDY_FLAVOR_COLORS[flavor]?.sparkle ?? 0xffffff;
-                    game.particleSystem.emit(obs.position, sparkle, 14, 5.5, 0.9, 1.2);
-                    game.obstacleSystem.triggerCandySquash(obs as THREE.Mesh, 1.2);
-                } else {
-                    game.particleSystem.emit(obs.position, 0x00ffff, 10, 5.0, 1.0, 2.0);
+                if (butterflyBlast && !obs.userData.isCandyAsteroid) {
+                    transformAsteroidToButterflies(obs);
+                    proj.deactivate();
+                    break;
                 }
-
-                game.audioSystem.play('explode');
-
-                onBarnacleOpened(obs);
-
-                game.pickupManager.trySpawn(obs.position.clone());
-
-                game.obstacleSystem.splitAsteroid(obs as THREE.Mesh);
+                blastObstacle(obs);
 
                 proj.deactivate();
                 break;

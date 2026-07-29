@@ -1,5 +1,42 @@
 import { game } from '../game_runtime';
 
+// Grenade ammo counter (crafted Glitch Grenades) — tap the pill to throw.
+export function createGrenadeDisplay(onTap: () => void) {
+    const div = document.createElement('div');
+    div.id = 'grenade-display';
+    div.style.cssText = `
+        position: absolute;
+        bottom: 130px;
+        right: 20px;
+        z-index: 100;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 16px;
+        font-weight: bold;
+        color: #ff88ff;
+        text-shadow: 0 0 8px rgba(255,136,255,0.6);
+        background: rgba(0,0,0,0.35);
+        border: 2px solid rgba(255,136,255,0.5);
+        border-radius: 14px;
+        padding: 8px 12px;
+        cursor: pointer;
+        touch-action: manipulation;
+        user-select: none;
+        display: none;
+    `;
+    div.addEventListener('click', onTap);
+    document.body.appendChild(div);
+    updateGrenadeDisplay();
+}
+
+export function updateGrenadeDisplay() {
+    const div = document.getElementById('grenade-display');
+    if (!div) return;
+    const ammo = game.grenadeAmmo;
+    div.style.display = ammo > 0 ? 'block' : 'none';
+    div.textContent = `💥 ×${ammo}`;
+    div.style.opacity = ammo > 0 ? '1' : '0.5';
+}
+
 // Heat Bar UI
 export function createHeatBar() {
     const heatDiv = document.createElement('div');

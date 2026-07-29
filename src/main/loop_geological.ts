@@ -30,6 +30,8 @@ import {
 import type { VoidRootBallUpdateContext } from '../void_root_ball';
 import { isVoidRootTethered } from '../void_root_ball';
 import { CONFIG } from '../game_config';
+import { jellyMossSoftBody } from '../jelly_moss_softbody';
+
 export function updateLoopGeological(delta: number, time: number): void {
         // --- NEW: Update Geological Objects ---
         if (game.debugSystem.isEnabled('geologicalObjects')) {
@@ -119,6 +121,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                         if (proj.mesh.position.distanceTo(jellyMoss.position) < hitRadius) {
                             proj.deactivate();
                             game.particleSystem.emit(proj.mesh.position.clone(), 0x00ff88, 8, 4.0, 0.4, 0.6);
+                            // C++ Verlet impulse (no-op on AS); direction from moss center toward hit
+                            const hitDir = proj.mesh.position.clone().sub(jellyMoss.position);
+                            jellyMossSoftBody.applyImpulse(jellyMoss, hitDir.x, hitDir.y);
                             jellyMoss.userData.health = (jellyMoss.userData.health || 10) - 5;
                             jellyMoss.userData.hitCount = (jellyMoss.userData.hitCount || 0) + 1;
                             if (jellyMoss.userData.health <= 0) {
@@ -151,6 +156,13 @@ export function updateLoopGeological(delta: number, time: number): void {
                     if (dist < radius) {
                         // 1. Viscosity
                         playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
+
+                        // Soft-body push from player (C++ only)
+                        jellyMossSoftBody.applyPlayerProximity(
+                            jellyMoss,
+                            player.position.x - jellyMoss.position.x,
+                            player.position.y - jellyMoss.position.y
+                        );
 
                         // 2. Stealth Effect
                         if (!jellyMoss.userData.isHiding) {
@@ -268,6 +280,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                     }
                 }
             }
+
+            // C++ Verlet soft-body step for hero Jelly-Moss cores (no-op on AS)
+            jellyMossSoftBody.update(delta);
     
             // Update solar sails (iridescent rippling, unfold near player)
             if (player) {
@@ -299,6 +314,9 @@ export function updateLoopGeological(delta: number, time: number): void {
                         if (interaction.hitPoint && Math.random() < 0.25) {
                             game.particleSystem.emit(interaction.hitPoint, 0xcc44ff, 2, 2.0, 0.5);
                         }
+                    }
+                    if (interaction.vineSevered) {
+                        game.resourceHarvester.harvest('voidRootBall', 'destroy', rootBall.position.clone());
                     }
                     if (interaction.impactDamage > 0 && !playerState.invincible) {
                         playerState.health = Math.max(0, playerState.health - 1);
@@ -344,9 +362,10 @@ export function updateLoopGeological(delta: number, time: number): void {
             let nearestGravAngularSpeed = 0;
             let anyInfluencing = false;
     
-            if (player) gravityAnchors.forEach(anchor => {
+            const gravAnchorPlayer = player;
+            if (gravAnchorPlayer) gravityAnchors.forEach(anchor => {
                 if (!anchor) return;
-                const interaction = updateGravityAnchor(anchor, delta, time, player.position);
+                const interaction = updateGravityAnchor(anchor, delta, time, gravAnchorPlayer.position);
                 if (interaction.isInfluencing) {
                     anyInfluencing = true;
     
@@ -370,14 +389,14 @@ export function updateLoopGeological(delta: number, time: number): void {
                             playerState.currentSpeedY + GA_SLING_BONUS,
                             CONFIG.player.maxSpeedY
                         );
-                        game.particleSystem.emit(player.position.clone(), 0x44aaff, 12, 3.0, 0.6);
+                        game.particleSystem.emit(gravAnchorPlayer.position.clone(), 0x44aaff, 12, 3.0, 0.6);
     
                         // Record a perfect gravity-arc sling in the combo chain
-                        const gaSlipstreamBonus = game.slingableObjectSystem.isInSlipstream(player.position) ? 2 : 1;
-                        game.slingComboManager.recordSlingAction('perfect', player.position.clone(), gaSlipstreamBonus);
+                        const gaSlipstreamBonus = game.slingableObjectSystem.isInSlipstream(gravAnchorPlayer.position) ? 2 : 1;
+                        game.slingComboManager.recordSlingAction('perfect', gravAnchorPlayer.position.clone(), gaSlipstreamBonus);
                         game.slingObjectiveManager.recordSling('perfect');
                         game.reportComboObjectiveProgress();
-                        game.friendsManager.cheerFlotilla(player.position.clone());
+                        game.friendsManager.cheerFlotilla(gravAnchorPlayer.position.clone());
     
                         // Sling release doppler whoosh
                         game.audioSystem.playGravitySlingRelease('perfect', game.slingComboManager.getCombo());

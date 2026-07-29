@@ -29,14 +29,18 @@ See `docs/RENDERER_FALLBACK.md` for the implementation details.
 
 ## Typecheck gate
 
-Strict TypeScript is gated with a **baseline ratchet** (not zero-error yet):
+Strict TypeScript currently reports **zero errors**; a **baseline ratchet** keeps it that way:
 
-- `npm run typecheck` — raw `tsc --noEmit` (reports all current errors)
-- `npm run typecheck:ci` — fail only on errors newer than `.github/typecheck-baseline.txt`
-- `npm run typecheck:baseline:update` — after fixing errors, ratchet the baseline down
+- `npm run typecheck` — raw `tsc --noEmit` (must stay clean)
+- `npm run typecheck:ci` — fail on any error newer than `.github/typecheck-baseline.txt`
+- `npm run typecheck:baseline:update` — regenerate the baseline (only when intentionally accepting debt)
 - `npm run check` — local pre-PR gate: brace balance + typecheck ratchet
 
 CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci` then `npm run build` on PRs/pushes to `main`. Prefer `npm run check` locally before opening a PR.
+
+### TSL typing convention
+
+When a TSL value is reassigned across node subtypes (e.g. `let total = float(0.0)` then `total = total.add(...)`), annotate it as `TSLNode` from `src/tsl_types.ts` instead of a narrow `ConstNode`/`MathNode`/`OperatorNode` type. Do not fight `three/tsl` inference with `as any` casts.
 
 ## Composition root
 

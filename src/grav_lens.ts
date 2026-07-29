@@ -51,7 +51,8 @@ export interface GravLensUpdateResult {
     forceY: number;
     inCrushZone: boolean;
     slingshotExits: {
-        grade: SlingshotGrade;
+        // 'none' and 'failed' exits are filtered out by _buildSlingshotExit.
+        grade: Exclude<SlingshotGrade, 'none' | 'failed'>;
         position: THREE.Vector3;
         chain: number;
         boostMult: number;

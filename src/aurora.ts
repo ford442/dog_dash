@@ -20,6 +20,7 @@ import {
     distance,
     Loop
 } from 'three/tsl';
+import type { TSLNode } from './tsl_types';
 import { WeaponLightManager } from './lighting';
 
 export type AuroraConfig = {
@@ -76,7 +77,7 @@ function createAuroraMaterial(weaponLights?: any, uPlayerPos?: any) {
 
 
     // 4. Dynamic Lighting Interaction
-    let finalColorWithInteraction = finalColor;
+    let finalColorWithInteraction: TSLNode = finalColor;
 
     // Player Engine Glow Interaction
     if (uPlayerPos) {

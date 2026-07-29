@@ -1,0 +1,147 @@
+- generic [active] [ref=f1e1]:
+  - generic:
+    - generic: ⭐ Score
+    - generic: 1,350
+    - generic: "🏆 Best: 4,510"
+  - generic:
+    - generic: 🚀 Distance
+    - generic: 0m
+  - generic:
+    - generic: Hearts 💕
+    - generic:
+      - generic: 🤍
+      - generic: 🤍
+      - generic: 🤍
+  - generic: Next Power-Up
+  - generic:
+    - generic: 🔍 Catalog
+    - generic: 8/8
+  - generic: ×12
+  - generic: ⚡
+  - generic: ∠
+  - generic: ✦ Frost Heart
+  - generic: + Frost Heart
+  - generic:
+    - generic: 🌍
+    - generic: 🚀
+    - generic: 🌕
+    - generic: Lvl 1/6
+  - generic:
+    - generic: "Scanned: Wish Lantern!"
+    - generic: Chapter Complete!
+  - generic [ref=f1e18]:
+    - generic:
+      - generic: 🌟💫🌟
+      - heading "Good Try!" [level=1]
+      - paragraph: The puppy will try again! 🐕
+      - generic:
+        - generic:
+          - generic: "Final Score:"
+          - generic: "850"
+        - generic:
+          - generic: "Best Score:"
+          - generic: 4,510
+      - generic:
+        - button "🚀 Try Again" [ref=f1e19] [cursor=pointer]
+        - button "🏠 Space Base" [ref=f1e20] [cursor=pointer]
+  - generic [ref=f1e21]:
+    - generic:
+      - generic: 🌟💫🌟
+      - heading "Good Try!" [level=1]
+      - paragraph: The puppy will try again! 🐕
+      - generic:
+        - generic:
+          - generic: "Final Score:"
+          - generic: 1,060
+        - generic:
+          - generic: "Best Score:"
+          - generic: 4,510
+      - generic:
+        - button "🚀 Try Again" [ref=f1e22] [cursor=pointer]
+        - button "🏠 Space Base" [ref=f1e23] [cursor=pointer]
+  - generic [ref=f1e24]: "Distance to Moon: 58m"
+  - generic [ref=f1e25]:
+    - generic:
+      - generic:
+        - generic:
+          - heading "🌍 → 🌕 Moon Journey Map" [level=2]
+          - paragraph: Chapter complete!
+        - button "✕ Close" [ref=f1e26] [cursor=pointer]
+      - generic:
+        - generic: "🐾 Friends rescued: 0"
+        - generic: "🌿 Discoveries: 22/49"
+        - generic: "📖 Bestiary: 2/14"
+      - generic:
+        - img:
+          - generic:
+            - generic:
+              - generic: 🌍
+              - generic: Earth
+          - generic:
+            - generic:
+              - generic: 🌕
+              - generic: Moon
+          - generic:
+            - generic: 🌿
+            - generic: ✓
+            - generic: Ch 1
+            - generic: 🌿 scan
+          - generic:
+            - generic: 🌀
+            - generic: Ch 2
+            - generic: 🌀 sling
+          - generic:
+            - generic: 🐾
+            - generic: Ch 3
+            - generic: 🐾 rescue
+          - generic:
+            - generic: 🛡️
+            - generic: Ch 4
+            - generic: 🛡️ survive
+          - generic:
+            - generic: ⚡
+            - generic: Ch 5
+            - generic: ⚡ combo
+          - generic:
+            - generic: 👑
+            - generic: Ch 6
+            - generic: 👑 boss
+      - generic:
+        - generic:
+          - generic: 🌿 ✅
+          - generic: The Neon Garden
+          - generic: Catalog 8 alien plants
+          - generic: Neon gardens & pastel butterflies
+        - generic:
+          - generic: 🌀
+          - generic: The Asteroid Belt
+          - generic: Complete 5 clean gravity slings
+          - generic: Asteroid belt gravity wells
+        - generic:
+          - generic: 🐾
+          - generic: Orbital Descent
+          - generic: Rescue 4 space friends
+          - generic: Fiery re-entry skies
+        - generic:
+          - generic: 🛡️
+          - generic: The Rusty Gauntlet
+          - generic: Survive the rusty gauntlet
+          - generic: Rusty industrial tunnels
+        - generic:
+          - generic: ⚡
+          - generic: The Astral Leviathan
+          - generic: Reach an Arc Surge combo
+          - generic: Living nebula corridors
+        - generic:
+          - generic: 👑
+          - generic: The Aqua Expanse
+          - generic: Find the path to the Moon
+          - generic: Aqua expanse & lunar aurora
+      - generic: "✨ Coming up: The Asteroid Belt — Asteroid belt gravity wells"
+      - generic:
+        - generic: 🐕
+        - generic: Chapter 1 done! Sniff sniff… so many glowing plants! Let’s catalog them all!
+      - paragraph: Pinch or scroll to zoom the map · tap a chapter for a dog tip
+  - generic: ✨
+  - generic: ✨
+  - generic: ✨

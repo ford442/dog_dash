@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PASTEL_RAINBOW, STARDUST_COLORS, getRainbowColor, randomRange } from './shared';
+import { PASTEL_RAINBOW, STARDUST_COLORS, getRainbowColor, randomRange, createHeartShape } from './shared';
 
 // =============================================================================
 // PARTICLE PRESETS - CONFETTI BURST

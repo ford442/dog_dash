@@ -3,7 +3,7 @@ import { scene, camera, mainLight, renderer, rendererBackend } from '../scene_co
 import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { sporeClouds, geodes, voidRootBalls, vacuumKelps, iceNeedleClusters, magmaHearts, gravityAnchors } from '../environment';
+import { sporeClouds, geodes, voidRootBalls, vacuumKelps, iceNeedleClusters, magmaHearts, gravityAnchors, jellyMosses } from '../environment';
 import {
     CollisionDebugOverlay,
     WebGLMaterialFallbackRenderer,

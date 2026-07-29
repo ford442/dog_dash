@@ -40,6 +40,8 @@ export interface SaveData {
     quantumCompassUnlocked: boolean;
     /** Crafting material bag (Plasma Caster economy Phase A). */
     resources: ResourceInventory;
+    /** Crafted items queued for the next run (recipeId -> charges). Consumed at boot. */
+    loadout: Record<string, number>;
     version: string;
 }
 
@@ -61,6 +63,18 @@ const DEFAULT_STATS: GameStats = {
     runsCompleted: 0,
     totalPlayTime: 0
 };
+
+/** Coerce a raw loadout payload into a clean recipeId -> charge count map. */
+function normalizeLoadout(raw: unknown): Record<string, number> {
+    const out: Record<string, number> = {};
+    if (raw && typeof raw === 'object') {
+        for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+            const n = Math.floor(Number(v));
+            if (Number.isFinite(n) && n > 0) out[k] = n;
+        }
+    }
+    return out;
+}
 
 export class SaveManager {
     private data: SaveData;
@@ -100,6 +114,7 @@ export class SaveManager {
             mapFragments: 0,
             quantumCompassUnlocked: false,
             resources: createEmptyInventory(),
+            loadout: {},
             version: CURRENT_VERSION
         };
     }
@@ -119,6 +134,7 @@ export class SaveManager {
             mapFragments: typeof raw?.mapFragments === 'number' ? raw.mapFragments : 0,
             quantumCompassUnlocked: raw?.quantumCompassUnlocked === true,
             resources: normalizeInventory(raw?.resources),
+            loadout: normalizeLoadout(raw?.loadout),
             version: CURRENT_VERSION
         };
     }
@@ -351,6 +367,37 @@ export class SaveManager {
 
     getUnlockedLevels(): number[] {
         return [...this.data.unlockedLevels];
+    }
+
+    /** Architect Key recipe: every chapter becomes selectable forever. */
+    unlockAllLevels(): void {
+        this.data.unlockedLevels = [1, 2, 3, 4, 5, 6];
+        this.save();
+    }
+
+    // --- Crafted loadout (Phase B crafting, see crafting_system.ts) ---
+
+    /** Copy of the pending next-run loadout (recipeId -> charges). */
+    getLoadout(): Record<string, number> {
+        if (!this.data.loadout) this.data.loadout = {};
+        return { ...this.data.loadout };
+    }
+
+    /** Queues crafted charges for the next run. */
+    grantCrafted(recipeId: string, amount: number = 1): void {
+        if (!this.data.loadout) this.data.loadout = {};
+        const n = Math.floor(amount);
+        if (n <= 0) return;
+        this.data.loadout[recipeId] = (this.data.loadout[recipeId] || 0) + n;
+        this.save();
+    }
+
+    /** Returns the pending loadout and clears it (called once at boot). */
+    consumeLoadout(): Record<string, number> {
+        const out = this.getLoadout();
+        this.data.loadout = {};
+        this.save();
+        return out;
     }
 
     // Apply upgrades to game values

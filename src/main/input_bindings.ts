@@ -4,13 +4,15 @@ import { player } from '../player_loader';
 import { playerState, gameStarted, setGameStarted, setIsGamePaused, isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { sporeClouds } from '../environment';
+import { PowerUpType } from '../powerup_manager';
 import { createUI, setupKeyboardControls } from '../ui_controls';
 import { createBestiaryUI } from '../bestiary';
 import { createArchitectCodexUI } from '../architect_lore';
 import {
     createHeatBar, createBoostDisplay, createRollDisplay,
-    createTetherDisplay, createCoresDisplay
+    createTetherDisplay, createCoresDisplay, createGrenadeDisplay
 } from './hud_displays';
+import { throwGrenade } from './grenade';
 import { RESOLUTION_RATIOS } from './render_helpers';
 import { ensureGameplayReady } from '../level_systems_loader';
 import { consumePendingStartChapter } from '../hub_screen';
@@ -38,6 +40,22 @@ export let lastLeftTapTime = 0;
 export let lastRightTapTime = 0;
 export let tetherKeyHeld = false;
 export let tetherMouseHeld = false;
+let paintbrushMouseDown = false;
+
+function screenToWorldXY(clientX: number, clientY: number): THREE.Vector3 | null {
+    if (!player) return null;
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2();
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const target = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, target)) return null;
+    target.z = player.position.z;
+    return target;
+}
 
 let architectCodexUI: HTMLDivElement | null = null;
 
@@ -63,6 +81,7 @@ export function setupInputBindings(): void {
             createBoostDisplay();
             createRollDisplay();
             createTetherDisplay();
+            createGrenadeDisplay(() => throwGrenade());
 
             const rollStyle = document.createElement('style');
             rollStyle.textContent = `
@@ -177,12 +196,13 @@ export function setupInputBindings(): void {
 
         sporeClouds.forEach(cloud => {
             if (!cloud.active) return;
-            const intersects = raycaster.intersectObjects(cloud.spores, false);
+            const intersects = raycaster.intersectObject(cloud.spores, false);
             if (intersects.length > 0) {
                 const hitPoint = intersects[0].point;
                 const triggered = cloud.triggerChainReaction(hitPoint);
                 if (triggered > 0) {
                     game.particleSystem.emit(hitPoint, 0x88ff88, 20, 8.0, 1.0, 2.0);
+                    game.resourceHarvester.harvest('sporeCloud', 'destroy', hitPoint);
                 }
             }
         });
@@ -195,6 +215,12 @@ export function setupInputBindings(): void {
                 playerState.cores += 5;
             }
         });
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyG' && !e.repeat && gameStarted) {
+            throwGrenade();
+        }
     });
 
     window.addEventListener('keydown', (e) => {
@@ -211,16 +237,32 @@ export function setupInputBindings(): void {
     });
 
     canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && gameStarted && game.powerUpManager.hasPowerUp(PowerUpType.MAGIC_PAINTBRUSH)) {
+            paintbrushMouseDown = true;
+            game.magicPaintbrushSystem.setPainting(true);
+            const pos = screenToWorldXY(e.clientX, e.clientY);
+            if (pos) game.magicPaintbrushSystem.paintAt(pos);
+            return;
+        }
         if (e.button === 2 && gameStarted) {
             tetherMouseHeld = true;
             game.wantsTether = true;
         }
     });
     canvas.addEventListener('mouseup', (e) => {
+        if (e.button === 0 && paintbrushMouseDown) {
+            paintbrushMouseDown = false;
+            game.magicPaintbrushSystem.setPainting(false);
+        }
         if (e.button === 2) {
             tetherMouseHeld = false;
             if (game.tetherSystem.isLatched()) game.wantsReleaseTether = true;
         }
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!paintbrushMouseDown || !gameStarted) return;
+        const pos = screenToWorldXY(e.clientX, e.clientY);
+        if (pos) game.magicPaintbrushSystem.paintAt(pos);
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 }

@@ -4,6 +4,8 @@ import { createClayMaterial, foliageMaterials, reactiveMaterials, registerReacti
 const dummy = new THREE.Object3D();
 const MAX_PER_MESH = 1000;
 
+let grassMeshes: THREE.InstancedMesh[] = [];
+
 export function initGrassSystem(scene: THREE.Scene, count: number = 5000) {
     grassMeshes = [];
     const height = 0.8;

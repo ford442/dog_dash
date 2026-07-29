@@ -110,6 +110,9 @@ Use `?renderer=webgl` on headless/cloud; real GPU + WebGPU is preferred for the 
 | `nebula_cloud_puffs` | `nebula.ts` | 45 cloud instances (3 layers) |
 | `nebula_energy_motes` | `nebula.ts` | 50 particle/mote instances |
 | `nebula_ribbons` | `nebula.ts` | 24 ribbon sheets (3 layers) |
+| `dream_portal` | `dream_portal.ts` | ≤3 bonus-room doors per level |
+| `dream_room_props` | `dream_portal.ts` | Bonus-room contents: instanced toys + jellies + exit ring/lantern |
+| `galactic_core` | `galactic_core.ts` | Single finale backdrop set-piece (4 meshes, additive) |
 
 ## Related files
 
@@ -144,13 +147,19 @@ WASM collision (`public/build/optimized.wasm`, ~3 KB) stays on the critical path
 | Level | Example async modules |
 |-------|------------------------|
 | 1 Neon Garden | *(none — pastel nebula + liquid metal are eager)* |
-| 2 Asteroid Belt | `ghost_debris`, `black_hole`, `chroma_shift`, `storm_geodes`, `slingable_objects` |
-| 3 Orbital Descent | `meteor_shower`, `planetary_horizon`, `reentry`, `bubble_coral` |
+| 2 Asteroid Belt | `ghost_debris`, `black_hole`, `chroma_shift`, `storm_geodes`, `slingable_objects`, `dream_portal` |
+| 3 Orbital Descent | `meteor_shower`, `planetary_horizon`, `reentry`, `bubble_coral`, `dream_portal` |
 | 4 Rusty Gauntlet | `industrial_background`, `industrial_geometry`, `bubble_coral`, slingables |
 | 5 Astral Leviathan | `biological_background`, `cosmic_dust`, `void_jellyfish`, `starlight_koi`, `bubble_coral`, industrial geometry (whale ribs) |
-| 6 Aqua Expanse | `waterfall`, `aquatic_life`, `boss_system`, plus koi / coral / jellyfish as flagged |
+| 6 Aqua Expanse | `waterfall`, `aquatic_life`, `boss_system`, `galactic_core`, plus koi / coral / jellyfish as flagged |
 
-Typical async chunk sizes (minified): 2–11 KB each (e.g. `waterfall` ~8 KB, `boss_system` ~10 KB, `industrial_background` ~11 KB).
+Typical async chunk sizes (minified): 2–13 KB each (e.g. `waterfall` ~8 KB, `boss_system` ~10 KB, `industrial_background` ~11 KB, `dream_portal` ~12 KB, `galactic_core` ~5 KB).
+
+Two guardrails for these: the deferred module must not be statically imported by
+anything in the entry graph (Vite prints "dynamically imported … but also
+statically imported by" and folds it back into `index-*.js`), and shared
+constants belong in an eager module — `DREAM_ROOM_Y` lives in `game_config.ts`
+for exactly that reason.
 
 Slingable prototype props load in the background after first click via `ensureSlingableSystems()` — they do not block Level 1 start.
 

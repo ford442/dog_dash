@@ -19,7 +19,6 @@ import type { ConstellationManager } from '../flower_constellations';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
-import type { CastleBackgroundManager } from '../cloud_castles';
 import type { CandyBeltManager } from '../candy_obstacles';
 import { applyLevelDecorationBudgets, decorationBudget } from '../decoration_budget';
 import { DEPTH_LAYERS } from '../depth_layers';
@@ -58,7 +57,6 @@ export class LevelManager {
     readonly pinwheelManager: PinwheelFloraManager;
     readonly windChimeManager: WindChimeManager;
     readonly solarSailFernManager: SolarSailFernManager;
-    private readonly castleManager: CastleBackgroundManager;
     private readonly candyManager: CandyBeltManager;
     readonly getPlayer: () => THREE.Group | null;
     readonly spawners: GeologicalSpawners;
@@ -85,6 +83,7 @@ export class LevelManager {
     planetaryHorizonSystem: LevelEnvironmentPorts['planetaryHorizonSystem'];
     moonPalaceSystem: LevelEnvironmentPorts['moonPalaceSystem'];
     blackHoleSystem: LevelEnvironmentPorts['blackHoleSystem'];
+    galacticCoreSystem: LevelEnvironmentPorts['galacticCoreSystem'];
     reEntrySystem: LevelEnvironmentPorts['reEntrySystem'];
     chromaShiftSystem: LevelEnvironmentPorts['chromaShiftSystem'];
     stormGeodeSystem: LevelEnvironmentPorts['stormGeodeSystem'];
@@ -94,6 +93,7 @@ export class LevelManager {
     dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'];
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
+    cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -114,7 +114,6 @@ export class LevelManager {
         this.pinwheelManager = options.pinwheelManager;
         this.windChimeManager = options.windChimeManager;
         this.solarSailFernManager = options.solarSailFernManager;
-        this.castleManager = options.castleManager;
         this.candyManager = options.candyManager;
         this.getPlayer = options.getPlayer;
         this.spawners = options.spawners;
@@ -136,6 +135,7 @@ export class LevelManager {
         this.planetaryHorizonSystem = options.env.planetaryHorizonSystem;
         this.moonPalaceSystem = options.env.moonPalaceSystem;
         this.blackHoleSystem = options.env.blackHoleSystem;
+        this.galacticCoreSystem = options.env.galacticCoreSystem;
         this.reEntrySystem = options.env.reEntrySystem;
         this.chromaShiftSystem = options.env.chromaShiftSystem;
         this.stormGeodeSystem = options.env.stormGeodeSystem;
@@ -145,6 +145,7 @@ export class LevelManager {
         this.dancingJellyMossSystem = options.env.dancingJellyMossSystem;
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
         this.dayNightCycleSystem = options.dayNightCycleSystem;
+        this.cloudCastlesSystem = options.cloudCastlesSystem;
 
         this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
@@ -289,9 +290,6 @@ export class LevelManager {
                 DEPTH_LAYERS.BACKGROUND.min,
                 DEPTH_LAYERS.BACKGROUND.max
             );
-
-            this.castleManager.clear();
-            this.castleManager.generateCastleField(8, dreamyStart + 50, dreamyEnd - 50);
         }
 
         if (levelIndex !== 4 && levelIndex !== 5) {
@@ -383,6 +381,7 @@ export class LevelManager {
         if (enabled('ghostDebris') && this.ghostDebrisSystem) this.ghostDebrisSystem.update(delta, cameraX);
         if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
         if (this.blackHoleSystem) this.blackHoleSystem.update(delta, cameraX, playerPos);
+        if (this.galacticCoreSystem) this.galacticCoreSystem.update(delta, cameraX, playerPos);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -390,6 +389,7 @@ export class LevelManager {
         this.dancingJellyMossSystem.update(delta, cameraX, playerPos);
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
+        this.cloudCastlesSystem?.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 

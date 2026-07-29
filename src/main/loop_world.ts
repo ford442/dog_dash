@@ -27,6 +27,8 @@ import { updateCamera } from './camera_system';
 import { updateShadowQuality, updateShadowCulling } from './render_helpers';
 import { updateGravLensSystems } from './grav_lens_update';
 import { updateArtifacts } from './artifact_update';
+import { updateDreamPortals } from './dream_portal_update';
+import { updateGalacticCoreEffects } from './galactic_core_update';
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
@@ -97,6 +99,12 @@ export function updateLoopWorld(delta: number, time: number): void {
         if (player) {
             updateArtifacts(delta);
         }
+
+        // Dream Portal doors + bonus rooms (levels 2–3)
+        updateDreamPortals(delta, time);
+
+        // Galactic Core finale: projectile lensing + approach rumble (level 6)
+        updateGalacticCoreEffects(delta);
     
         // Update Level Manager (and Clouds)
         if (player) {
@@ -121,7 +129,8 @@ export function updateLoopWorld(delta: number, time: number): void {
                 ...geoScannables,
                 ...game.friendsManager.getScannables(),
                 ...game.creatureManager.getScannables(),
-                ...game.slingableObjectSystem.getScannables()
+                ...game.slingableObjectSystem.getScannables(),
+                ...game.dreamPortalSystem.getScannables()
             ]);
             if (game.debugSystem.isEnabled('butterflySwarm')) {
                 const nowSec = performance.now() * 0.001;
@@ -237,6 +246,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                 
                 // Check candy collisions (bouncy gummies!)
                 const candyCollisions = game.candyManager.checkCollisions(player.position, 2.0);
+                const playerPos = player.position;
                 candyCollisions.forEach(collision => {
                     if (collision.type === 'bouncy') {
                         // Bouncy gummies make the dog giggle!
@@ -245,17 +255,12 @@ export function updateLoopWorld(delta: number, time: number): void {
                         game.audioSystem.playMagicSound('happy');
                     } else if (collision.type === 'collectible') {
                         // Cotton candy dissolves into sugar sparkles
-                        game.juiceManager.spawnSparkles(player.position, new THREE.Color(0xffb6c1), 10);
+                        game.juiceManager.spawnSparkles(playerPos, new THREE.Color(0xffb6c1), 10);
                         game.audioSystem.playMagicSound('collect');
                     }
                 });
             }
             
-            // Update cloud castles (parallax scrolling)
-            if (game.debugSystem.isEnabled('cloudCastles')) {
-                game.castleManager.update(delta, player.position.x);
-            }
-
             // Update Moon Palace
             if (game.moonPalaceSystem) {
                 game.moonPalaceSystem.update(delta, camera.position.x, player.position);
@@ -285,7 +290,7 @@ export function updateLoopWorld(delta: number, time: number): void {
         // --- NEW: Pilot/Player Animations ---
         if (game.debugSystem.isEnabled('pilotAnim')) {
             try {
-                const rocketRoot = player.children[0];
+                const rocketRoot = player?.children[0];
                 if (rocketRoot) {
                     // Pitch and roll are now driven by updatePlayer's upgraded flight model.
     

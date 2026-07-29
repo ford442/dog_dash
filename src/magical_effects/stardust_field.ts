@@ -18,7 +18,6 @@ interface StardustParticle {
 export class StardustFieldEffect extends MagicalEffect {
   type = MagicalEffectType.STARDUST_FIELD;
   isActive = true;
-  duration: number;
   
   private target: THREE.Object3D;
   private scene: THREE.Scene;
