@@ -26,7 +26,8 @@ import {
     createWishLanternSystemStub,
     createWeatherSystemStub,
     createDancingJellyMossSystemStub,
-    createDynamicStarfieldSystemStub
+    createDynamicStarfieldSystemStub,
+    createDayNightCycleSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -41,6 +42,7 @@ import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
+import type { DayNightCycleSystem } from './day_night_cycle';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -120,6 +122,7 @@ export type GameSystems = {
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
+    dayNightCycleSystem: DayNightCycleSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -137,6 +140,7 @@ export type LevelEnvironmentSystemExports = {
     blackHoleSystem: BlackHoleSystem;
     wishLanternSystem: WishLanternSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
+    dayNightCycleSystem: DayNightCycleSystem;
 };
 
 /**
@@ -350,6 +354,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const dancingJellyMossSystem: DancingJellyMossSystem = createDancingJellyMossSystemStub();
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
+    const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -399,6 +404,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         weatherSystem,
         dancingJellyMossSystem,
         dynamicStarfieldSystem,
+        dayNightCycleSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager

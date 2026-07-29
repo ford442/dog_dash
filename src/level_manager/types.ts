@@ -97,6 +97,7 @@ export type LevelEnvironmentPorts = {
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
+    dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
 };
 
 export type LevelManagerOptions = {
@@ -124,4 +125,5 @@ export type LevelManagerOptions = {
     onUpdateLevelDisplay?: (levelIndex: number, name: string) => void;
     env: LevelEnvironmentPorts;
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
+    dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
 };

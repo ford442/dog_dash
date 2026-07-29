@@ -77,12 +77,12 @@ src/geological/geodes.ts(88,5): TS2740: Type 'OperatorNode' is missing the follo
 src/input_system.ts(7,10): TS2724: '"./level_manager"' has no exported member named 'levelManager'. Did you mean 'LevelManager'?
 src/input_system.ts(82,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
 src/level_manager/environment_plugins.ts(13,18): TS2430: Interface 'LevelPluginHost' incorrectly extends interface 'LevelEnvironmentPorts'.
-src/level_manager/environment_plugins.ts(136,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 8 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(141,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 8 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(146,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 8 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(151,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 8 more ... | undefined>) => void'.
-src/level_manager/environment_plugins.ts(170,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 8 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
-src/level_manager/environment_plugins.ts(58,74): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 8 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
+src/level_manager/environment_plugins.ts(142,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(147,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(152,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(157,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(176,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
+src/level_manager/environment_plugins.ts(64,74): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
 src/lightning_bolt.ts(20,5): TS2300: Duplicate identifier 'uv'.
 src/lightning_bolt.ts(6,5): TS2300: Duplicate identifier 'uv'.
 src/magical_effects/burst_effects.ts(177,46): TS2304: Cannot find name 'createHeartShape'.
@@ -119,7 +119,7 @@ src/main/player_update.ts(374,53): TS2304: Cannot find name 'DogAnimationState'.
 src/main/player_update.ts(416,49): TS2304: Cannot find name 'DogAnimationState'.
 src/main/render_helpers.ts(69,26): TS7006: Parameter 'jellyMoss' implicitly has an 'any' type.
 src/main/render_helpers.ts(69,5): TS2304: Cannot find name 'jellyMosses'.
-src/main/startup.ts(452,45): TS2345: Argument of type 'Object3D<Object3DEventMap>' is not assignable to parameter of type 'Group<Object3DEventMap>'.
+src/main/startup.ts(454,45): TS2345: Argument of type 'Object3D<Object3DEventMap>' is not assignable to parameter of type 'Group<Object3DEventMap>'.
 src/pinwheel_flora.ts(185,31): TS2345: Argument of type 'Material | Material[]' is not assignable to parameter of type 'Material'.
 src/pinwheel_flora.ts(186,30): TS2345: Argument of type 'Material | Material[]' is not assignable to parameter of type 'Material'.
 src/player_loader.ts(31,23): TS2339: Property 'isMesh' does not exist on type 'Object3D<Object3DEventMap>'.

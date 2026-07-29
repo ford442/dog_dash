@@ -116,6 +116,7 @@ export type LevelEnvironments = {
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
+    dayNightCycle?: boolean | { cycleDuration: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -270,7 +271,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             butterflySwarm: true,
             pastelNebula: true,
             wishLanterns: true,
-            dancingJellyMoss: true
+            dancingJellyMoss: true,
+            dayNightCycle: { cycleDuration: 30 }
         },
         vignettes: {
             treeGroves: 1.5,
