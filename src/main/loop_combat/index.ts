@@ -14,31 +14,34 @@ import { updateCombatWeapons } from './weapons';
 export function updateLoopCombat(_rawDelta: number, delta: number, time: number): boolean {
     if (updateCombatBoss(delta)) return true;
 
-    if (player) {
-        updateCombatPickups(delta, time);
-        updateCombatPowerups(delta);
+    const timeScale = game.powerUpManager.getCombinedModifiers().timeScale;
+    const scaledDelta = delta * timeScale;
 
-        game.victorySystem.update(delta);
-        game.tutorialSystem.update(delta);
+    if (player) {
+        updateCombatPickups(scaledDelta, time);
+        updateCombatPowerups(scaledDelta);
+
+        game.victorySystem.update(scaledDelta);
+        game.tutorialSystem.update(scaledDelta);
 
         maybeSpawnRandomOrb();
-        updateCombatFriends(delta);
+        updateCombatFriends(scaledDelta);
 
-        game.dogController.update(delta, playerState);
+        game.dogController.update(scaledDelta, playerState);
     }
 
-    updateMoonGateSequence(delta);
+    updateMoonGateSequence(scaledDelta);
 
-    game.hudManager.update(delta);
+    game.hudManager.update(scaledDelta);
 
     if (game.debugSystem.isEnabled('particles')) {
-        game.particleSystem.update(delta);
+        game.particleSystem.update(scaledDelta);
     }
     if (game.debugSystem.isEnabled('debris')) {
-        game.debrisSystem.update(delta);
+        game.debrisSystem.update(scaledDelta);
     }
 
-    updateCombatWeapons(delta);
+    updateCombatWeapons(scaledDelta);
 
     return false;
 }

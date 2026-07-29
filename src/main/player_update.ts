@@ -15,9 +15,13 @@ import { DogAnimationState } from '../dog_cockpit';
 export function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
     if (!player) return;
+
+    const modifiers = game.powerUpManager.getCombinedModifiers();
+    const hasFairyWings = game.powerUpManager.hasPowerUp(PowerUpType.FAIRY_DOG_WINGS);
     
     // Auto-scroll (constant forward movement)
-    player.position.x += playerState.autoScrollSpeed * delta;
+    const speedMult = modifiers.speedMultiplier ?? 1.0;
+    player.position.x += playerState.autoScrollSpeed * speedMult * delta;
 
     // --- UPGRADED: Gravity and Momentum Flight ---
     let targetSpeed = 0;
@@ -52,9 +56,6 @@ export function updatePlayer(delta: number) {
         }
     }
     
-    const modifiers = game.powerUpManager.getCombinedModifiers();
-    const hasFairyWings = game.powerUpManager.hasPowerUp(PowerUpType.FAIRY_DOG_WINGS);
-
     if (isMovingUp) {
         targetSpeed = CONFIG.player.maxSpeedY;
     } else if (isMovingDown) {
@@ -84,6 +85,17 @@ export function updatePlayer(delta: number) {
     }
     
     playerState.currentSpeedY += (targetSpeed - playerState.currentSpeedY) * accel * delta;
+
+    if (hasFairyWings && keys.run) {
+        // Float glide handled above via targetSpeed
+    } else if (game.powerUpManager.hasPowerUp(PowerUpType.MAGIC_PAINTBRUSH)) {
+        playerState.currentSpeedY = game.magicPaintbrushSystem.applyGuideForce(
+            player.position,
+            playerState.currentSpeedY,
+            delta
+        );
+    }
+
     player.position.y += playerState.currentSpeedY * delta;
     
     // Soft boundaries - keep player on screen (Y: -10 to +15)

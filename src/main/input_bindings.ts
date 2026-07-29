@@ -4,6 +4,7 @@ import { player } from '../player_loader';
 import { playerState, gameStarted, setGameStarted, setIsGamePaused, isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { sporeClouds } from '../environment';
+import { PowerUpType } from '../powerup_manager';
 import { createUI, setupKeyboardControls } from '../ui_controls';
 import { createBestiaryUI } from '../bestiary';
 import { createArchitectCodexUI } from '../architect_lore';
@@ -39,6 +40,22 @@ export let lastLeftTapTime = 0;
 export let lastRightTapTime = 0;
 export let tetherKeyHeld = false;
 export let tetherMouseHeld = false;
+let paintbrushMouseDown = false;
+
+function screenToWorldXY(clientX: number, clientY: number): THREE.Vector3 | null {
+    if (!player) return null;
+    const rect = canvas.getBoundingClientRect();
+    const mouse = new THREE.Vector2();
+    mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const target = new THREE.Vector3();
+    if (!raycaster.ray.intersectPlane(plane, target)) return null;
+    target.z = player.position.z;
+    return target;
+}
 
 let architectCodexUI: HTMLDivElement | null = null;
 
@@ -220,16 +237,32 @@ export function setupInputBindings(): void {
     });
 
     canvas.addEventListener('mousedown', (e) => {
+        if (e.button === 0 && gameStarted && game.powerUpManager.hasPowerUp(PowerUpType.MAGIC_PAINTBRUSH)) {
+            paintbrushMouseDown = true;
+            game.magicPaintbrushSystem.setPainting(true);
+            const pos = screenToWorldXY(e.clientX, e.clientY);
+            if (pos) game.magicPaintbrushSystem.paintAt(pos);
+            return;
+        }
         if (e.button === 2 && gameStarted) {
             tetherMouseHeld = true;
             game.wantsTether = true;
         }
     });
     canvas.addEventListener('mouseup', (e) => {
+        if (e.button === 0 && paintbrushMouseDown) {
+            paintbrushMouseDown = false;
+            game.magicPaintbrushSystem.setPainting(false);
+        }
         if (e.button === 2) {
             tetherMouseHeld = false;
             if (game.tetherSystem.isLatched()) game.wantsReleaseTether = true;
         }
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!paintbrushMouseDown || !gameStarted) return;
+        const pos = screenToWorldXY(e.clientX, e.clientY);
+        if (pos) game.magicPaintbrushSystem.paintAt(pos);
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 }

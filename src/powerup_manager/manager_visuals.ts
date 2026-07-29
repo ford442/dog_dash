@@ -53,6 +53,30 @@ export function createEffectVisuals(ctx: PowerUpManagerVisualContext, type: Powe
         case PowerUpType.FAIRY_DOG_WINGS:
             createFairyDogWings(ctx, config);
             break;
+        case PowerUpType.DREAM_CLOUD_CARPET:
+            createDreamCloudCarpet(ctx, config);
+            break;
+        case PowerUpType.LULLABY_LANTERN:
+            createLullabyLantern(ctx, config);
+            break;
+        case PowerUpType.PUPPY_HUG_HUG:
+            createPuppyHugAura(ctx, config);
+            break;
+        case PowerUpType.MOONBEAM_SLIDE:
+            createMoonbeamSlide(ctx, config);
+            break;
+        case PowerUpType.FAIRY_GODMOTHER_SPARKLE:
+            createFairyGodmotherSparkle(ctx, config);
+            break;
+        case PowerUpType.CANDY_CANE_VORTEX:
+            createCandyCaneVortex(ctx, config);
+            break;
+        case PowerUpType.MAGIC_PAINTBRUSH:
+            createMagicPaintbrush(ctx, config);
+            break;
+        case PowerUpType.BEST_FRIEND_FOREVER_AURA:
+            createBestFriendAura(ctx, config);
+            break;
     }
 
     createEffectLight(ctx, type, config.color);
@@ -208,6 +232,264 @@ export function createFairyDogWings(ctx: PowerUpManagerVisualContext, config: Po
 
     ctx.fairyWingsMesh = wingsGroup;
     ctx.rocket.add(wingsGroup);
+    ctx.effectMeshes.set(PowerUpType.FAIRY_DOG_WINGS, wingsGroup);
+}
+
+export function createDreamCloudCarpet(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const carpetGroup = new THREE.Group();
+    carpetGroup.position.set(0, -1.2, 0);
+
+    const puffCount = 5;
+    for (let i = 0; i < puffCount; i++) {
+        const puff = new THREE.Mesh(
+            new THREE.SphereGeometry(0.5 + Math.random() * 0.2, 8, 8),
+            new THREE.MeshBasicMaterial({
+                color: i % 2 === 0 ? config.color : config.secondaryColor,
+                transparent: true,
+                opacity: 0.7,
+            })
+        );
+        puff.position.set((i - 2) * 0.55, Math.sin(i) * 0.1, (Math.random() - 0.5) * 0.3);
+        carpetGroup.add(puff);
+    }
+
+    const rainbowStrip = new THREE.Mesh(
+        new THREE.PlaneGeometry(3.2, 0.25),
+        new THREE.MeshBasicMaterial({
+            color: 0xffb6c1,
+            transparent: true,
+            opacity: 0.5,
+            side: THREE.DoubleSide,
+        })
+    );
+    rainbowStrip.rotation.x = -Math.PI / 2;
+    rainbowStrip.position.y = 0.15;
+    carpetGroup.add(rainbowStrip);
+
+    ctx.rocket.add(carpetGroup);
+    ctx.effectMeshes.set(PowerUpType.DREAM_CLOUD_CARPET, carpetGroup);
+}
+
+export function createLullabyLantern(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const lanternGroup = new THREE.Group();
+    lanternGroup.position.set(0.8, 1.2, 0.5);
+
+    const body = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.25, 0.3, 0.5, 8),
+        new THREE.MeshBasicMaterial({ color: config.color, transparent: true, opacity: 0.9 })
+    );
+    lanternGroup.add(body);
+
+    const glow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.35, 8, 8),
+        new THREE.MeshBasicMaterial({
+            color: config.secondaryColor,
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending,
+        })
+    );
+    glow.position.y = 0.1;
+    lanternGroup.add(glow);
+
+    const tassel = new THREE.Mesh(
+        new THREE.ConeGeometry(0.08, 0.25, 6),
+        new THREE.MeshBasicMaterial({ color: 0xff4500 })
+    );
+    tassel.position.y = -0.35;
+    lanternGroup.add(tassel);
+
+    ctx.rocket.add(lanternGroup);
+    ctx.effectMeshes.set(PowerUpType.LULLABY_LANTERN, lanternGroup);
+}
+
+export function createPuppyHugAura(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const auraGroup = new THREE.Group();
+    const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(1.6, 0.12, 8, 24),
+        new THREE.MeshBasicMaterial({
+            color: config.color,
+            transparent: true,
+            opacity: 0.55,
+            blending: THREE.AdditiveBlending,
+        })
+    );
+    auraGroup.add(ring);
+
+    const heart = new THREE.Mesh(
+        new THREE.SphereGeometry(0.25, 8, 8),
+        new THREE.MeshBasicMaterial({ color: config.secondaryColor })
+    );
+    heart.position.set(0, 1.4, 0.3);
+    heart.scale.set(1.2, 1, 0.8);
+    auraGroup.add(heart);
+
+    ctx.rocket.add(auraGroup);
+    ctx.effectMeshes.set(PowerUpType.PUPPY_HUG_HUG, auraGroup);
+}
+
+export function createMoonbeamSlide(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const slideGroup = new THREE.Group();
+    slideGroup.position.set(-1.5, -0.3, 0);
+
+    const beam = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.08, 0.25, 3, 8),
+        new THREE.MeshBasicMaterial({
+            color: config.color,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending,
+        })
+    );
+    beam.rotation.z = Math.PI / 2;
+    slideGroup.add(beam);
+
+    const tip = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.2),
+        new THREE.MeshBasicMaterial({ color: config.secondaryColor })
+    );
+    tip.position.set(-1.6, 0, 0);
+    slideGroup.add(tip);
+
+    ctx.rocket.add(slideGroup);
+    ctx.effectMeshes.set(PowerUpType.MOONBEAM_SLIDE, slideGroup);
+}
+
+export function createFairyGodmotherSparkle(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const fairyGroup = new THREE.Group();
+    fairyGroup.position.set(1.2, 1.5, 0.4);
+
+    const body = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 8, 8),
+        new THREE.MeshBasicMaterial({ color: config.secondaryColor })
+    );
+    fairyGroup.add(body);
+
+    const wings = new THREE.Mesh(
+        new THREE.CircleGeometry(0.35, 6),
+        new THREE.MeshBasicMaterial({
+            color: config.color,
+            transparent: true,
+            opacity: 0.7,
+            side: THREE.DoubleSide,
+        })
+    );
+    wings.rotation.y = Math.PI / 2;
+    fairyGroup.add(wings);
+
+    const wand = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.02, 0.02, 0.4, 4),
+        new THREE.MeshBasicMaterial({ color: 0xffd700 })
+    );
+    wand.position.set(0.25, -0.1, 0);
+    wand.rotation.z = -0.5;
+    fairyGroup.add(wand);
+
+    ctx.rocket.add(fairyGroup);
+    ctx.effectMeshes.set(PowerUpType.FAIRY_GODMOTHER_SPARKLE, fairyGroup);
+}
+
+export function createCandyCaneVortex(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const vortexGroup = new THREE.Group();
+
+    const stripeCount = 6;
+    for (let i = 0; i < stripeCount; i++) {
+        const angle = (i / stripeCount) * Math.PI * 2;
+        const stripe = new THREE.Mesh(
+            new THREE.BoxGeometry(0.15, 1.8, 0.15),
+            new THREE.MeshBasicMaterial({
+                color: i % 2 === 0 ? config.color : config.secondaryColor,
+                transparent: true,
+                opacity: 0.8,
+            })
+        );
+        stripe.position.set(Math.cos(angle) * 1.2, Math.sin(angle) * 1.2, 0);
+        stripe.rotation.z = angle;
+        vortexGroup.add(stripe);
+    }
+
+    ctx.rocket.add(vortexGroup);
+    ctx.effectMeshes.set(PowerUpType.CANDY_CANE_VORTEX, vortexGroup);
+}
+
+export function createMagicPaintbrush(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const brushGroup = new THREE.Group();
+    brushGroup.position.set(0.6, 0.2, 0.8);
+
+    const handle = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.5, 6),
+        new THREE.MeshBasicMaterial({ color: 0x8b4513 })
+    );
+    handle.rotation.z = Math.PI / 4;
+    brushGroup.add(handle);
+
+    const bristles = new THREE.Mesh(
+        new THREE.ConeGeometry(0.12, 0.2, 8),
+        new THREE.MeshBasicMaterial({ color: config.color })
+    );
+    bristles.position.set(0.2, 0.2, 0);
+    bristles.rotation.z = Math.PI / 4;
+    brushGroup.add(bristles);
+
+    const tipGlow = new THREE.Mesh(
+        new THREE.SphereGeometry(0.08, 6, 6),
+        new THREE.MeshBasicMaterial({
+            color: config.secondaryColor,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+        })
+    );
+    tipGlow.position.set(0.28, 0.28, 0);
+    brushGroup.add(tipGlow);
+
+    ctx.rocket.add(brushGroup);
+    ctx.effectMeshes.set(PowerUpType.MAGIC_PAINTBRUSH, brushGroup);
+}
+
+export function createBestFriendAura(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
+    if (!ctx.rocket) return;
+
+    const auraGroup = new THREE.Group();
+
+    const innerRing = new THREE.Mesh(
+        new THREE.TorusGeometry(1.4, 0.08, 8, 32),
+        new THREE.MeshBasicMaterial({
+            color: config.color,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+        })
+    );
+    auraGroup.add(innerRing);
+
+    const outerRing = new THREE.Mesh(
+        new THREE.TorusGeometry(1.9, 0.05, 8, 32),
+        new THREE.MeshBasicMaterial({
+            color: config.secondaryColor,
+            transparent: true,
+            opacity: 0.35,
+            blending: THREE.AdditiveBlending,
+        })
+    );
+    auraGroup.add(outerRing);
+
+    ctx.rocket.add(auraGroup);
+    ctx.effectMeshes.set(PowerUpType.BEST_FRIEND_FOREVER_AURA, auraGroup);
 }
 
 export function createStarlightTiara(ctx: PowerUpManagerVisualContext, config: PowerUpConfig): void {
@@ -315,7 +597,6 @@ export function updateEffectPosition(ctx: PowerUpManagerVisualContext, type: Pow
             break;
         case PowerUpType.FAIRY_DOG_WINGS:
             if (ctx.fairyWingsMesh) {
-                // Animate wing flapping
                 const now = Date.now() * 0.008;
                 const leftWing = ctx.fairyWingsMesh.children[0];
                 const rightWing = ctx.fairyWingsMesh.children[1];
@@ -327,6 +608,73 @@ export function updateEffectPosition(ctx: PowerUpManagerVisualContext, type: Pow
                 }
             }
             break;
+        case PowerUpType.STARLIGHT_TIARA: {
+            const tiara = ctx.effectMeshes.get(PowerUpType.STARLIGHT_TIARA);
+            if (tiara) {
+                const pulse = 1 + Math.sin(Date.now() * 0.006) * 0.08;
+                tiara.scale.set(pulse, pulse, pulse);
+                tiara.rotation.y = Math.sin(Date.now() * 0.002) * 0.15;
+            }
+            break;
+        }
+        case PowerUpType.DREAM_CLOUD_CARPET: {
+            const carpet = ctx.effectMeshes.get(PowerUpType.DREAM_CLOUD_CARPET);
+            if (carpet) {
+                carpet.position.y = -1.2 + Math.sin(Date.now() * 0.003) * 0.15;
+            }
+            break;
+        }
+        case PowerUpType.LULLABY_LANTERN: {
+            const lantern = ctx.effectMeshes.get(PowerUpType.LULLABY_LANTERN);
+            if (lantern) {
+                lantern.rotation.z = Math.sin(Date.now() * 0.002) * 0.12;
+                const glow = lantern.children[1];
+                if (glow) {
+                    const s = 1 + Math.sin(Date.now() * 0.005) * 0.15;
+                    glow.scale.set(s, s, s);
+                }
+            }
+            break;
+        }
+        case PowerUpType.PUPPY_HUG_HUG:
+        case PowerUpType.BEST_FRIEND_FOREVER_AURA: {
+            const aura = ctx.effectMeshes.get(type);
+            if (aura) {
+                const pulse = 1 + Math.sin(Date.now() * 0.004) * 0.1;
+                aura.scale.set(pulse, pulse, pulse);
+                aura.rotation.z += 0.015;
+            }
+            break;
+        }
+        case PowerUpType.MOONBEAM_SLIDE: {
+            const slide = ctx.effectMeshes.get(PowerUpType.MOONBEAM_SLIDE);
+            if (slide) {
+                slide.children[0].scale.x = 1 + Math.sin(Date.now() * 0.008) * 0.2;
+            }
+            break;
+        }
+        case PowerUpType.FAIRY_GODMOTHER_SPARKLE: {
+            const fairy = ctx.effectMeshes.get(PowerUpType.FAIRY_GODMOTHER_SPARKLE);
+            if (fairy) {
+                fairy.position.y = 1.5 + Math.sin(Date.now() * 0.005) * 0.2;
+                fairy.rotation.y += 0.03;
+            }
+            break;
+        }
+        case PowerUpType.CANDY_CANE_VORTEX: {
+            const vortex = ctx.effectMeshes.get(PowerUpType.CANDY_CANE_VORTEX);
+            if (vortex) {
+                vortex.rotation.z += 0.06;
+            }
+            break;
+        }
+        case PowerUpType.MAGIC_PAINTBRUSH: {
+            const brush = ctx.effectMeshes.get(PowerUpType.MAGIC_PAINTBRUSH);
+            if (brush) {
+                brush.rotation.z = Math.sin(Date.now() * 0.006) * 0.2;
+            }
+            break;
+        }
     }
 }
 
@@ -460,6 +808,8 @@ export function removeEffectVisuals(ctx: PowerUpManagerVisualContext, type: Powe
                 ctx.fairyWingsMesh.parent.remove(ctx.fairyWingsMesh);
             }
             ctx.fairyWingsMesh = undefined;
+            break;
+        case PowerUpType.STARLIGHT_TIARA:
             break;
     }
 }

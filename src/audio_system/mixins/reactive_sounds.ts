@@ -522,5 +522,60 @@ playRoll() {
     rumbleGain.connect(this.sfxGain);
     rumble.start(now);
     rumble.stop(now + 0.35);
+},
+
+/**
+ * Procedural stub for per-power-up activation cues referenced in POWER_UP_CONFIGS.
+ */
+playPowerUpCue(cueId: string) {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const now = this.ctx.currentTime;
+    const cueProfiles: Record<string, { freq: number; slide: number; wave: OscillatorType; dur: number }> = {
+        powerup_rainbow: { freq: 523, slide: 1046, wave: 'sine', dur: 0.5 },
+        powerup_flower: { freq: 440, slide: 554, wave: 'triangle', dur: 0.4 },
+        powerup_shield: { freq: 350, slide: 700, wave: 'sine', dur: 0.35 },
+        powerup_magnet: { freq: 880, slide: 1320, wave: 'sine', dur: 0.3 },
+        powerup_unicorn: { freq: 659, slide: 988, wave: 'triangle', dur: 0.45 },
+        powerup_cloud: { freq: 220, slide: 330, wave: 'sine', dur: 0.6 },
+        powerup_lantern: { freq: 392, slide: 494, wave: 'sine', dur: 0.55 },
+        powerup_hug: { freq: 523, slide: 659, wave: 'sine', dur: 0.4 },
+        powerup_fairy: { freq: 1046, slide: 1318, wave: 'sine', dur: 0.35 },
+        powerup_moonbeam: { freq: 784, slide: 1175, wave: 'triangle', dur: 0.4 },
+        powerup_vortex: { freq: 330, slide: 660, wave: 'sawtooth', dur: 0.5 },
+        powerup_tiara: { freq: 880, slide: 1108, wave: 'sine', dur: 0.45 },
+        powerup_butterfly: { freq: 698, slide: 932, wave: 'triangle', dur: 0.35 },
+        powerup_paint: { freq: 494, slide: 740, wave: 'square', dur: 0.3 },
+        powerup_bff: { freq: 440, slide: 554, wave: 'sine', dur: 0.6 },
+    };
+
+    const profile = cueProfiles[cueId];
+    if (!profile) {
+        this.play('powerup', 0.7);
+        return;
+    }
+
+    const osc = this.ctx.createOscillator();
+    osc.type = profile.wave;
+    osc.frequency.setValueAtTime(profile.freq, now);
+    osc.frequency.exponentialRampToValueAtTime(profile.slide, now + profile.dur * 0.6);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + profile.dur);
+
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + profile.dur + 0.05);
+
+    if (cueId === 'powerup_bff' || cueId === 'powerup_hug') {
+        this.play('giggle', 0.25, 3);
+    }
+    if (cueId === 'powerup_vortex' || cueId === 'powerup_paint') {
+        this.play('whoosh', 0.2, 3);
+    }
 }
 });

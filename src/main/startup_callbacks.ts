@@ -3,8 +3,7 @@ import { player } from '../player_loader';
 import { playerState, CONFIG, setIsGamePaused, isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { updateHealthDisplay } from '../ui_controls';
-import { PowerUpType } from '../powerup_manager';
-import { MagicalEffectType } from '../magical_effects';
+import { syncMagicalEffectsFromActive } from '../powerup_manager';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPopup } from './hud_displays';
@@ -45,31 +44,18 @@ export function wireStartupCallbacks(): void {
     game.orbManager.onPowerUpReady = () => {
         const triggered = game.powerUpManager.collectOrb();
         if (triggered && player) {
-            game.dogController.triggerAnimation(DogAnimationState.POWER_UP, 2.0);
             game.juiceManager.flashRainbow(0.5);
             game.juiceManager.burstMagic(player.position.clone());
-            const activeEffects = game.powerUpManager.getActiveEffects();
-            activeEffects.forEach(effect => {
-                switch (effect.type) {
-                    case PowerUpType.RAINBOW_COMET_TAIL:
-                        game.effectManager.activateEffect(MagicalEffectType.RAINBOW_TRAIL, effect.duration);
-                        break;
-                    case PowerUpType.FLOWER_CROWN_BOOST:
-                        game.effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
-                        break;
-                    case PowerUpType.BUBBLEGUM_SHIELD:
-                        game.effectManager.activateEffect(MagicalEffectType.HEART_BUBBLE, effect.duration);
-                        break;
-                    case PowerUpType.TWINKLE_STAR_MAGNET:
-                        game.effectManager.activateEffect(MagicalEffectType.STARDUST_FIELD, effect.duration);
-                        break;
-                    case PowerUpType.BUTTERFLY_ESCORT:
-                        game.effectManager.activateEffect(MagicalEffectType.BUTTERFLY_SWARM, effect.duration);
-                        break;
-                    case PowerUpType.UNICORN_HORN_BLAST:
-                        game.effectManager.activateEffect(MagicalEffectType.GLITTER_BEAM, effect.duration);
-                        break;
-                }
+            syncMagicalEffectsFromActive({
+                effectManager: game.effectManager,
+                audioSystem: game.audioSystem,
+                dogController: game.dogController,
+                juiceManager: game.juiceManager,
+                powerUpManager: game.powerUpManager,
+                getPlayerPosition: () => player?.position,
+                onHudHealthUpdate: () => {
+                    game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                },
             });
         }
     };
@@ -86,8 +72,12 @@ export function wireStartupCallbacks(): void {
 
     const originalAddScore = game.hudManager.addScore.bind(game.hudManager);
     game.hudManager.addScore = (points: number) => {
+        let scaled = points;
+        if (game.powerUpManager.getCombinedModifiers().doubleValue) {
+            scaled *= 2;
+        }
         const mult = performance.now() < game.scoreMultiplierUntil ? game.scoreMultiplierValue : 1;
-        originalAddScore(Math.round(points * mult));
+        originalAddScore(Math.round(scaled * mult));
     };
 
     game.discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, _isNewEver) => {
