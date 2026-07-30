@@ -20,6 +20,13 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     camera: { position: { x: number } };
     baseAsteroidDensity: number;
     objectDensityMultiplier: number;
+    moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
+    wishLanternSystem: { activate: () => void; deactivate: () => void };
+    weatherSystem: { activate: () => void; deactivate: () => void };
+    dancingJellyMossSystem: { activate: (config?: any) => void; deactivate: () => void };
+    dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void };
+    dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void };
+    cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void };
 }
 
 /** Discriminated union of plugins keyed by environment flag, so each
@@ -36,6 +43,11 @@ export function buildEnvironmentPlugins(
             flag: 'dynamicStarfield',
             activate: (config: any) => host.dynamicStarfieldSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => host.dynamicStarfieldSystem.deactivate()
+        },
+        {
+            flag: 'dayNightCycle',
+            activate: (config: any) => host.dayNightCycleSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.dayNightCycleSystem.deactivate()
         },
         {
             flag: 'pastelNebula',

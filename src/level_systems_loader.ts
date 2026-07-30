@@ -40,7 +40,8 @@ type SystemKey =
     | 'wishLanterns'
     | 'weather'
     | 'dancingJellyMoss'
-    | 'dynamicStarfield';
+    | 'dynamicStarfield'
+    | 'dayNightCycle';
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -73,6 +74,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 const { WaterfallSystem } = await import('./waterfall');
                 installEnvPartial({
                     waterfallSystem: new WaterfallSystem(scene, camera, game.weaponLightManager)
+                });
+                break;
+            }
+            case 'dayNightCycle': {
+                const { DayNightCycleSystem } = await import('./day_night_cycle');
+                installEnvPartial({
+                    dayNightCycleSystem: new DayNightCycleSystem(scene, camera)
                 });
                 break;
             }
@@ -276,6 +284,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.weather)) keys.add('weather');
     if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
     if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
+    if (isEnvironmentEnabled(env.dayNightCycle)) keys.add('dayNightCycle');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');
     if ((cfg.stormGeodeDensity ?? 0) > 0) keys.add('stormGeode');

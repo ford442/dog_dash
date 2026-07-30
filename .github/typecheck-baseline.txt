@@ -1,4 +1,126 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 0
-
+# Count: 123
+src/aurora.ts(104,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
+src/aurora.ts(86,9): TS2739: Type 'OperatorNode' is missing the following properties from type 'MathNode': method, cNode, isMathNode
+src/biological_background.ts(57,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/biological_background.ts(58,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/biological_background.ts(59,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/biological_background.ts(61,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/biological_background.ts(62,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/biological_background.ts(63,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/biological_background.ts(65,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/candy_materials/factories.ts(171,9): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/candy_materials/factories.ts(179,9): TS2339: Property 'colorNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(180,9): TS2339: Property 'emissiveNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(257,9): TS2339: Property 'colorNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(258,9): TS2339: Property 'emissiveNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(281,44): TS2304: Cannot find name 'uv'.
+src/candy_materials/factories.ts(284,40): TS2304: Cannot find name 'uv'.
+src/candy_materials/factories.ts(336,17): TS2304: Cannot find name 'uv'.
+src/candy_materials/factories.ts(345,9): TS2339: Property 'colorNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(346,9): TS2339: Property 'emissiveNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(67,9): TS2339: Property 'colorNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/factories.ts(68,9): TS2339: Property 'emissiveNode' does not exist on type 'CandyMaterial'.
+src/candy_materials/gameplay.ts(104,9): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/candy_materials/gameplay.ts(93,91): TS2345: Argument of type 'Node' is not assignable to parameter of type 'number'.
+src/candy_materials/gameplay.ts(96,53): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'MathNodeParameter'.
+src/candy_materials/shared.ts(227,100): TS2345: Argument of type 'Node' is not assignable to parameter of type 'number'.
+src/candy_materials/shared.ts(230,57): TS2345: Argument of type 'unknown' is not assignable to parameter of type 'MathNodeParameter'.
+src/candy_materials/shared.ts(256,9): TS18046: 'handle.baseColor.value' is of type 'unknown'.
+src/candy_materials/shared.ts(266,9): TS18046: 'handle.emissiveColor.value' is of type 'unknown'.
+src/candy_obstacles/candy_asteroid.ts(13,5): TS2564: Property 'scale' has no initializer and is not definitely assigned in the constructor.
+src/candy_obstacles/candy_asteroid.ts(34,13): TS2564: Property 'originalScale' has no initializer and is not definitely assigned in the constructor.
+src/candy_obstacles/candy_asteroid.ts(6,5): TS2564: Property 'mesh' has no initializer and is not definitely assigned in the constructor.
+src/chroma_shift.ts(72,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/chroma_shift.ts(73,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/chroma_shift.ts(74,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/chroma_shift.ts(76,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/chroma_shift.ts(77,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/chroma_shift.ts(78,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/chroma_shift.ts(80,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/cloud_castle.ts(102,5): TS2564: Property 'cloudBase' has no initializer and is not definitely assigned in the constructor.
+src/cloud_castles/materials.ts(184,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<Vector3>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(238,41): TS2339: Property 'value' does not exist on type 'OperatorNode'.
+src/cloud_castles/materials.ts(78,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(79,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(80,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(81,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(82,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(83,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/cloud_castles/materials.ts(84,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(61,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(62,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(63,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(65,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(66,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(67,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(69,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/clouds.ts(8,5): TS2300: Duplicate identifier 'Loop'.
+src/clouds.ts(9,5): TS2300: Duplicate identifier 'Loop'.
+src/environment.ts(178,22): TS2345: Argument of type 'Mesh<SphereGeometry, MeshStandardNodeMaterial, Object3DEventMap>' is not assignable to parameter of type 'Group<Object3DEventMap>'.
+src/environment.ts(462,51): TS2345: Argument of type 'Group<Object3DEventMap>' is not assignable to parameter of type 'Mesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], Object3DEventMap>'.
+src/foliage/grass_system.ts(23,9): TS2304: Cannot find name 'grassMeshes'.
+src/foliage/grass_system.ts(26,12): TS2304: Cannot find name 'grassMeshes'.
+src/foliage/grass_system.ts(30,18): TS2304: Cannot find name 'grassMeshes'.
+src/foliage/grass_system.ts(30,35): TS7006: Parameter 'm' implicitly has an 'any' type.
+src/foliage/grass_system.ts(8,5): TS2304: Cannot find name 'grassMeshes'.
+src/geological/geodes.ts(13,5): TS2300: Duplicate identifier 'vec3'.
+src/geological/geodes.ts(24,5): TS2300: Duplicate identifier 'vec3'.
+src/geological/geodes.ts(80,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/geological/geodes.ts(81,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/geological/geodes.ts(82,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/geological/geodes.ts(84,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/geological/geodes.ts(85,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/geological/geodes.ts(86,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/geological/geodes.ts(88,5): TS2740: Type 'OperatorNode' is missing the following properties from type 'ConstNode<number>': isConstNode, generateConst, isInputNode, value, and 3 more.
+src/input_system.ts(7,10): TS2724: '"./level_manager"' has no exported member named 'levelManager'. Did you mean 'LevelManager'?
+src/input_system.ts(82,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
+src/level_manager/environment_plugins.ts(13,18): TS2430: Interface 'LevelPluginHost' incorrectly extends interface 'LevelEnvironmentPorts'.
+src/level_manager/environment_plugins.ts(142,13): TS2322: Type '(config: GodRaysEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(147,13): TS2322: Type '(config: AuroraEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(152,13): TS2322: Type '(config: LightningEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(157,13): TS2322: Type '(config: AsteroidFieldEnvironmentConfig) => void' is not assignable to type '(value: NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>) => void'.
+src/level_manager/environment_plugins.ts(176,69): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>' is not assignable to parameter of type 'VoidJellyfishEnvironmentConfig'.
+src/level_manager/environment_plugins.ts(64,74): TS2345: Argument of type 'NonNullable<boolean | BlackHoleEnvironmentConfig | GodRaysEnvironmentConfig | AuroraEnvironmentConfig | ... 9 more ... | undefined>' is not assignable to parameter of type '{ baseX?: number | undefined; baseY?: number | undefined; } | undefined'.
+src/lightning_bolt.ts(20,5): TS2300: Duplicate identifier 'uv'.
+src/lightning_bolt.ts(6,5): TS2300: Duplicate identifier 'uv'.
+src/magical_effects/burst_effects.ts(177,46): TS2304: Cannot find name 'createHeartShape'.
+src/magical_effects/butterfly_swarm_effect.ts(25,3): TS2564: Property 'duration' has no initializer and is not definitely assigned in the constructor.
+src/magical_effects/butterfly_swarm_effect.ts(25,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+src/magical_effects/factories.ts(109,22): TS2304: Cannot find name 'SparkleFieldEffect'.
+src/magical_effects/factories.ts(61,22): TS2304: Cannot find name 'HeartRainEffect'.
+src/magical_effects/factories.ts(77,22): TS2304: Cannot find name 'StarCascadeEffect'.
+src/magical_effects/factories.ts(93,22): TS2552: Cannot find name 'RainbowSpiralEffect'. Did you mean 'RainbowTrailEffect'?
+src/magical_effects/glitter_beam.ts(12,3): TS2564: Property 'duration' has no initializer and is not definitely assigned in the constructor.
+src/magical_effects/glitter_beam.ts(12,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+src/magical_effects/glitter_beam.ts(199,21): TS2304: Cannot find name 'PASTEL_RAINBOW'.
+src/magical_effects/glitter_beam.ts(199,40): TS2304: Cannot find name 'PASTEL_RAINBOW'.
+src/magical_effects/heart_bubble.ts(12,3): TS2564: Property 'duration' has no initializer and is not definitely assigned in the constructor.
+src/magical_effects/heart_bubble.ts(12,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+src/magical_effects/rainbow_trail.ts(164,46): TS2304: Cannot find name 'createHeartShape'.
+src/magical_effects/rainbow_trail.ts(20,3): TS2564: Property 'duration' has no initializer and is not definitely assigned in the constructor.
+src/magical_effects/rainbow_trail.ts(20,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+src/magical_effects/stardust_field.ts(21,3): TS2564: Property 'duration' has no initializer and is not definitely assigned in the constructor.
+src/magical_effects/stardust_field.ts(21,3): TS2612: Property 'duration' will overwrite the base property in 'MagicalEffect'. If this is intentional, add an initializer. Otherwise, add a 'declare' modifier or remove the redundant declaration.
+src/main/grav_lens_update.ts(81,43): TS2345: Argument of type 'SlingshotGrade' is not assignable to parameter of type '"perfect" | "partial" | "failed"'.
+src/main/grav_lens_update.ts(92,50): TS2345: Argument of type 'SlingQuality' is not assignable to parameter of type '"perfect" | "good" | "ok" | undefined'.
+src/main/input_bindings.ts(180,59): TS2345: Argument of type 'InstancedMesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], InstancedMeshEventMap>' is not assignable to parameter of type 'Object3D<Object3DEventMap>[]'.
+src/main/loop_geological.ts(340,59): TS2345: Argument of type 'Group<Object3DEventMap>' is not assignable to parameter of type 'Mesh<BufferGeometry<NormalBufferAttributes, BufferGeometryEventMap>, Material | Material[], Object3DEventMap>'.
+src/main/loop_geological.ts(349,78): TS18047: 'player' is possibly 'null'.
+src/main/loop_geological.ts(373,50): TS18047: 'player' is possibly 'null'.
+src/main/loop_geological.ts(376,93): TS18047: 'player' is possibly 'null'.
+src/main/loop_geological.ts(377,77): TS18047: 'player' is possibly 'null'.
+src/main/loop_geological.ts(380,59): TS18047: 'player' is possibly 'null'.
+src/main/loop_world.ts(248,57): TS18047: 'player' is possibly 'null'.
+src/main/loop_world.ts(288,36): TS18047: 'player' is possibly 'null'.
+src/main/player_update.ts(353,39): TS2769: No overload matches this call.
+src/main/player_update.ts(374,53): TS2304: Cannot find name 'DogAnimationState'.
+src/main/player_update.ts(416,49): TS2304: Cannot find name 'DogAnimationState'.
+src/main/render_helpers.ts(69,26): TS7006: Parameter 'jellyMoss' implicitly has an 'any' type.
+src/main/render_helpers.ts(69,5): TS2304: Cannot find name 'jellyMosses'.
+src/main/startup.ts(454,45): TS2345: Argument of type 'Object3D<Object3DEventMap>' is not assignable to parameter of type 'Group<Object3DEventMap>'.
+src/pinwheel_flora.ts(185,31): TS2345: Argument of type 'Material | Material[]' is not assignable to parameter of type 'Material'.
+src/pinwheel_flora.ts(186,30): TS2345: Argument of type 'Material | Material[]' is not assignable to parameter of type 'Material'.
+src/player_loader.ts(31,23): TS2339: Property 'isMesh' does not exist on type 'Object3D<Object3DEventMap>'.
+src/ui_factory.ts(262,40): TS2304: Cannot find name 'PlayerState'.

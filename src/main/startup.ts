@@ -196,6 +196,7 @@ function createLevelManager(
             weatherSystem: systems.weatherSystem,
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
             dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
+            dayNightCycleSystem: systems.dayNightCycleSystem,
             cloudCastlesSystem: systems.cloudCastlesSystem
         },
         spawners: {
@@ -256,6 +257,7 @@ function createLevelManager(
             if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
         },
         dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
+        dayNightCycleSystem: systems.dayNightCycleSystem,
         cloudCastlesSystem: systems.cloudCastlesSystem
     });
 }
