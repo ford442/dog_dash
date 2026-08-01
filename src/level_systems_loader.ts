@@ -41,7 +41,8 @@ type SystemKey =
     | 'weather'
     | 'dancingJellyMoss'
     | 'dynamicStarfield'
-    | 'dayNightCycle';
+    | 'dayNightCycle'
+    | 'singingGeodes';
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -74,6 +75,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 const { WaterfallSystem } = await import('./waterfall');
                 installEnvPartial({
                     waterfallSystem: new WaterfallSystem(scene, camera, game.weaponLightManager)
+                });
+                break;
+            }
+            case 'singingGeodes': {
+                const { SingingGeodeSystem } = await import('./singing_geodes');
+                installEnvPartial({
+                    singingGeodeSystem: new SingingGeodeSystem(scene, game.audioSystem, game.particleSystem)
                 });
                 break;
             }
@@ -285,6 +293,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
     if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
     if (isEnvironmentEnabled(env.dayNightCycle)) keys.add('dayNightCycle');
+    if (isEnvironmentEnabled(env.singingGeodes)) keys.add('singingGeodes');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');
     if ((cfg.stormGeodeDensity ?? 0) > 0) keys.add('stormGeode');

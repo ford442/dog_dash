@@ -102,6 +102,7 @@ export type LevelEnvironmentPorts = {
     dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     candyFieldSystem: CandyFieldSystem;
+    singingGeodeSystem: { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
 };
 
 export type LevelManagerOptions = {
@@ -131,4 +132,5 @@ export type LevelManagerOptions = {
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
+    singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 };
