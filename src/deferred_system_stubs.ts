@@ -28,6 +28,7 @@ import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
+import type { SingingGeodeSystem } from './singing_geodes';
 
 const noop = () => undefined;
 
@@ -305,4 +306,14 @@ export function createCandyFieldSystemStub(): CandyFieldSystem {
         update: () => undefined,
         setVisible: () => undefined
     } as unknown as CandyFieldSystem;
+}
+
+export function createSingingGeodeSystemStub(): SingingGeodeSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as SingingGeodeSystem;
 }

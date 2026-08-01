@@ -162,6 +162,7 @@ export type LevelEnvironments = {
     galacticCore?: GalacticCoreEnvironmentConfig;
     /** Secret bonus-room doorways (deferred chunk). */
     dreamPortals?: DreamPortalsEnvironmentConfig;
+    singingGeodes?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -603,7 +604,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebulaRibbons: true,
             cosmicDust: true,
             voidJellyfish: { density: 45 },
-            dancingJellyMoss: { density: 1.5 }
+            dancingJellyMoss: { density: 1.5 },
+            singingGeodes: { density: 15 }
         },
         vignettes: {
             treeGroves: 0.8,
@@ -672,6 +674,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             voidJellyfish: { density: 40 },
             moonPalace: true,
             weather: true,
+            singingGeodes: { density: 20 },
             // Finale beat: the Galactic Core swells across the last stretch of
             // the run (level 6 spans x 4200 → 5200, the Moon threshold).
             galacticCore: {

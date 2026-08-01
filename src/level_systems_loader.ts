@@ -42,6 +42,7 @@ type SystemKey =
     | 'dancingJellyMoss'
     | 'dynamicStarfield'
     | 'dayNightCycle'
+    | 'singingGeodes';
     | 'cloudCastles'
     | 'candyPlanetRing';
 
@@ -76,6 +77,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 const { WaterfallSystem } = await import('./waterfall');
                 installEnvPartial({
                     waterfallSystem: new WaterfallSystem(scene, camera, game.weaponLightManager)
+                });
+                break;
+            }
+            case 'singingGeodes': {
+                const { SingingGeodeSystem } = await import('./singing_geodes');
+                installEnvPartial({
+                    singingGeodeSystem: new SingingGeodeSystem(scene, game.audioSystem, game.particleSystem)
                 });
                 break;
             }
@@ -293,6 +301,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
     if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
     if (isEnvironmentEnabled(env.dayNightCycle)) keys.add('dayNightCycle');
+    if (isEnvironmentEnabled(env.singingGeodes)) keys.add('singingGeodes');
     if (isEnvironmentEnabled(env.candyPlanetRing)) keys.add('candyPlanetRing');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');

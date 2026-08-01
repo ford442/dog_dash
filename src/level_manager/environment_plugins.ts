@@ -28,6 +28,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'] & { activate: (config?: any) => void; deactivate: () => void };
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'] & { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void };
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'] & { activate: (config?: any) => void; deactivate: () => void; setVisible: (visible: boolean) => void; update: (delta: number, cameraX: number) => void };
+    singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'] & { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
 }
 
 /** Discriminated union of plugins keyed by environment flag, so each
@@ -211,6 +212,11 @@ export function buildEnvironmentPlugins(
             flag: 'weather',
             activate: () => host.weatherSystem.activate(),
             deactivate: () => host.weatherSystem.deactivate()
+        },
+        {
+            flag: 'singingGeodes',
+            activate: (config: any) => host.singingGeodeSystem.activate(typeof config === 'object' ? config.density : undefined),
+            deactivate: () => host.singingGeodeSystem.deactivate()
         }
     ];
 }
