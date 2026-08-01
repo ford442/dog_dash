@@ -50,7 +50,7 @@ import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
-import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
+import type { CandyFieldSystem } from './candy_obstacles';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -337,7 +337,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
-    const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
+    const candyFieldSystem = createCandyFieldSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);

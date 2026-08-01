@@ -1,3 +1,4 @@
+import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
 import type { BlackHoleSystem } from './black_hole';
 import type { GalacticCoreSystem } from './galactic_core';
 import type { DreamPortalSystem } from './dream_portal';
@@ -299,9 +300,9 @@ export function createCloudCastlesSystemStub(): CloudCastlesSystem {
 export function createCandyFieldSystemStub(): CandyFieldSystem {
     return {
         active: false,
-        activate: noop,
-        deactivate: noop,
-        update: noop,
-        setVisible: noop
+        activate: () => undefined,
+        deactivate: () => undefined,
+        update: () => undefined,
+        setVisible: () => undefined
     } as unknown as CandyFieldSystem;
 }

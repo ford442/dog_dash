@@ -9,6 +9,7 @@ export class CandyFieldSystem {
     constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.initLayers();
+        this.deactivate();
     }
 
     private initLayers() {
@@ -59,8 +60,8 @@ export class CandyFieldSystem {
         this.setVisible(false);
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
-        this.layers.forEach(l => l.update(delta, cameraX));
+        this.layers.forEach(l => l.update(delta, cameraX, playerPos));
     }
 }
