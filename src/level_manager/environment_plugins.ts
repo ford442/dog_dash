@@ -20,13 +20,14 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     camera: { position: { x: number } };
     baseAsteroidDensity: number;
     objectDensityMultiplier: number;
-    moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void };
-    wishLanternSystem: { activate: () => void; deactivate: () => void };
-    weatherSystem: { activate: () => void; deactivate: () => void };
-    dancingJellyMossSystem: { activate: (config?: any) => void; deactivate: () => void };
-    dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void };
-    dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void };
-    cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void };
+    moonPalaceSystem: LevelEnvironmentPorts['moonPalaceSystem'] & { levelDistance: number; activate: () => void; deactivate: () => void };
+    wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'] & { activate: () => void; deactivate: () => void };
+    weatherSystem: LevelEnvironmentPorts['weatherSystem'] & { activate: () => void; deactivate: () => void };
+    dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'] & { activate: (config?: any) => void; deactivate: () => void };
+    dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'] & { activate: (config?: any) => void; deactivate: () => void };
+    dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'] & { activate: (config?: any) => void; deactivate: () => void };
+    cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'] & { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void };
+    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'] & { activate: (config?: any) => void; deactivate: () => void; setVisible: (visible: boolean) => void; update: (delta: number, cameraX: number) => void };
 }
 
 /** Discriminated union of plugins keyed by environment flag, so each
@@ -53,6 +54,11 @@ export function buildEnvironmentPlugins(
             flag: 'pastelNebula',
             activate: () => host.pastelNebulaSystem.activate(),
             deactivate: () => host.pastelNebulaSystem.deactivate()
+        },
+        {
+            flag: 'candyField',
+            activate: () => host.candyFieldSystem.activate(),
+            deactivate: () => host.candyFieldSystem.deactivate()
         },
         {
             flag: 'wishLanterns',

@@ -197,7 +197,8 @@ function createLevelManager(
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
             dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
             dayNightCycleSystem: systems.dayNightCycleSystem,
-            cloudCastlesSystem: systems.cloudCastlesSystem
+            cloudCastlesSystem: systems.cloudCastlesSystem,
+            candyFieldSystem: systems.candyFieldSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -258,7 +259,8 @@ function createLevelManager(
         },
         dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
         dayNightCycleSystem: systems.dayNightCycleSystem,
-        cloudCastlesSystem: systems.cloudCastlesSystem
+        cloudCastlesSystem: systems.cloudCastlesSystem,
+        candyFieldSystem: systems.candyFieldSystem
     });
 }
 
