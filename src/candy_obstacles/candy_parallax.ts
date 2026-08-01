@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial, MeshPhysicalNodeMaterial } from 'three/webgpu';
+import { uniform, distance, positionWorld, smoothstep, time, mix, color, vec4 } from 'three/tsl';
+
 import { CandyType, CandyFlavor, CANDY_COLORS } from './shared';
 
 export class CandyParallaxLayer {
@@ -16,6 +19,7 @@ export class CandyParallaxLayer {
     flavors: CandyFlavor[];
     
     private time: number = 0;
+    private uPlayerPos: ReturnType<typeof uniform>;
 
     constructor(
         scene: THREE.Scene,
@@ -34,6 +38,7 @@ export class CandyParallaxLayer {
         
         this.candyTypes = [];
         this.flavors = [];
+        this.uPlayerPos = uniform(new THREE.Vector3(0, -999, 0));
         
         // Create geometry based on type
         const geometry = this.createCandyGeometry(config.type);
@@ -101,12 +106,17 @@ export class CandyParallaxLayer {
         }
     }
 
-    private createCandyMaterial(type: string): THREE.Material {
+private createCandyMaterial(type: string): THREE.Material {
         const colors = CANDY_COLORS[CandyFlavor.STRAWBERRY];
         
+        // Base distance calculation for player glow
+        const distToPlayer = distance(positionWorld, this.uPlayerPos);
+        const glowIntensity = smoothstep(15.0, 0.0, distToPlayer);
+        const glowColor = color(0xffffff).mul(glowIntensity.mul(0.6));
+
         switch (type) {
-            case 'gummy':
-                return new THREE.MeshPhysicalMaterial({
+            case 'gummy': {
+                const mat = new MeshPhysicalNodeMaterial({
                     color: colors.primary,
                     transmission: 0.3,
                     thickness: 1.0,
@@ -115,30 +125,45 @@ export class CandyParallaxLayer {
                     transparent: true,
                     opacity: 0.85
                 });
-            case 'lollipop':
-                return new THREE.MeshStandardMaterial({
+                mat.emissiveNode = glowColor;
+                return mat;
+            }
+            case 'lollipop': {
+                const mat = new MeshStandardNodeMaterial({
                     color: colors.primary,
                     roughness: 0.3,
                     metalness: 0.2
                 });
-            case 'jellybean':
-                return new THREE.MeshPhysicalMaterial({
+                mat.emissiveNode = glowColor;
+                return mat;
+            }
+            case 'jellybean': {
+                const mat = new MeshPhysicalNodeMaterial({
                     color: colors.primary,
                     roughness: 0.15,
                     clearcoat: 0.8
                 });
-            case 'cotton_candy':
-                return new THREE.MeshStandardMaterial({
+                mat.emissiveNode = glowColor;
+                return mat;
+            }
+            case 'cotton_candy': {
+                const mat = new MeshStandardNodeMaterial({
                     color: colors.primary,
                     roughness: 0.9,
                     transparent: true,
                     opacity: 0.6
                 });
-            default:
-                return new THREE.MeshStandardMaterial({
+                mat.emissiveNode = glowColor;
+                return mat;
+            }
+            default: {
+                const mat = new MeshStandardNodeMaterial({
                     color: colors.primary,
                     roughness: 0.4
                 });
+                mat.emissiveNode = glowColor;
+                return mat;
+            }
         }
     }
 
@@ -150,8 +175,11 @@ export class CandyParallaxLayer {
         return types[Math.floor(Math.random() * types.length)];
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         this.time += delta;
+        if (playerPos) {
+            (this.uPlayerPos.value as THREE.Vector3).copy(playerPos);
+        }
         const margin = 20;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;

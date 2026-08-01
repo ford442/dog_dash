@@ -41,7 +41,9 @@ type SystemKey =
     | 'weather'
     | 'dancingJellyMoss'
     | 'dynamicStarfield'
-    | 'dayNightCycle';
+    | 'dayNightCycle'
+    | 'cloudCastles'
+    | 'candyPlanetRing';
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -131,6 +133,12 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 installEnvPartial({ biologicalSystem: new BiologicalBackgroundSystem(scene) });
                 break;
             }
+            case 'candyPlanetRing': {
+                const { CandyFieldSystem } = await import('./candy_obstacles');
+                installEnvPartial({ candyFieldSystem: new CandyFieldSystem(scene) });
+                break;
+            }
+
             case 'cosmicDust': {
                 const { CosmicDustSystem } = await import('./cosmic_dust');
                 installEnvPartial({
@@ -285,6 +293,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
     if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
     if (isEnvironmentEnabled(env.dayNightCycle)) keys.add('dayNightCycle');
+    if (isEnvironmentEnabled(env.candyPlanetRing)) keys.add('candyPlanetRing');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');
     if ((cfg.stormGeodeDensity ?? 0) > 0) keys.add('stormGeode');
