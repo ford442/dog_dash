@@ -52,6 +52,11 @@ export function buildEnvironmentPlugins(
             deactivate: () => host.dayNightCycleSystem.deactivate()
         },
         {
+            flag: 'candyPlanetRing',
+            activate: () => host.candyFieldSystem.activate(),
+            deactivate: () => host.candyFieldSystem.deactivate()
+        },
+        {
             flag: 'pastelNebula',
             activate: () => host.pastelNebulaSystem.activate(),
             deactivate: () => host.pastelNebulaSystem.deactivate()

@@ -51,7 +51,7 @@ import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
-import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
+import type { CandyFieldSystem } from './candy_obstacles';
 import type { SingingGeodeSystem } from './singing_geodes';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';

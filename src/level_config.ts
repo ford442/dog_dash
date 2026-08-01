@@ -130,6 +130,7 @@ export type DataMonolithConfig = {
 
 export type LevelEnvironments = {
     pastelNebula?: boolean;
+    candyPlanetRing?: boolean;
     butterflySwarm?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
     industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
@@ -315,6 +316,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true,
             pastelNebula: true,
+            candyPlanetRing: true,
             wishLanterns: true,
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 }

@@ -29,15 +29,12 @@ import type { BiologicalBackgroundSystem } from '../biological_background';
 import type { MeteorShowerSystem } from '../meteor_shower';
 import type { CosmicDustSystem } from '../cosmic_dust';
 import type { PlanetaryHorizonSystem } from '../planetary_horizon';
-import type { MoonPalaceSystem } from '../moon_palace';
 import type { BlackHoleSystem } from '../black_hole';
 import type { GalacticCoreSystem } from '../galactic_core';
 import type { ReEntrySystem } from '../reentry';
 import type { ChromaShiftSystem } from '../chroma_shift';
 import type { StormGeodeSystem } from '../storm_geodes';
 import type { PastelNebulaSystem } from '../pastel_nebula';
-import type { WishLanternSystem } from '../wish_lanterns';
-import type { WeatherSystem } from '../weather_system';
 
 export type EnvironmentPlugin<K extends keyof LevelEnvironments = keyof LevelEnvironments> = {
     flag: K;
@@ -88,15 +85,15 @@ export type LevelEnvironmentPorts = {
     meteorShowerSystem: MeteorShowerSystem;
     cosmicDustSystem: CosmicDustSystem;
     planetaryHorizonSystem: PlanetaryHorizonSystem;
-    moonPalaceSystem: MoonPalaceSystem;
+    moonPalaceSystem: { levelDistance: number; activate: () => void; deactivate: () => void; };
     blackHoleSystem: BlackHoleSystem;
     galacticCoreSystem: GalacticCoreSystem;
     reEntrySystem: ReEntrySystem;
     chromaShiftSystem: ChromaShiftSystem;
     stormGeodeSystem: StormGeodeSystem;
     pastelNebulaSystem: PastelNebulaSystem;
-    wishLanternSystem: WishLanternSystem;
-    weatherSystem: WeatherSystem;
+    wishLanternSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
+    weatherSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
@@ -122,6 +119,7 @@ export type LevelManagerOptions = {
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
     candyManager: CandyBeltManager;
+    candyFieldSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     getPlayer: () => THREE.Group | null;
     spawners: GeologicalSpawners;
     geologicalCounts: GeologicalCounts;

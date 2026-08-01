@@ -58,6 +58,7 @@ export class LevelManager {
     readonly windChimeManager: WindChimeManager;
     readonly solarSailFernManager: SolarSailFernManager;
     private readonly candyManager: CandyBeltManager;
+    readonly candyFieldSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     readonly getPlayer: () => THREE.Group | null;
     readonly spawners: GeologicalSpawners;
     readonly geologicalCounts: GeologicalCounts;
@@ -117,6 +118,7 @@ export class LevelManager {
         this.windChimeManager = options.windChimeManager;
         this.solarSailFernManager = options.solarSailFernManager;
         this.candyManager = options.candyManager;
+        this.candyFieldSystem = options.candyFieldSystem;
         this.getPlayer = options.getPlayer;
         this.spawners = options.spawners;
         this.geologicalCounts = options.geologicalCounts;
@@ -394,6 +396,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         this.cloudCastlesSystem?.update(delta, cameraX, playerPos);
+        if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
         this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
