@@ -30,7 +30,8 @@ import {
     createDancingJellyMossSystemStub,
     createDynamicStarfieldSystemStub,
     createDayNightCycleSystemStub,
-    createCloudCastlesSystemStub
+    createCloudCastlesSystemStub,
+    createCandyFieldSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -49,6 +50,7 @@ import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
+import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -134,6 +136,7 @@ export type GameSystems = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    candyFieldSystem: CandyFieldSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -154,6 +157,7 @@ export type LevelEnvironmentSystemExports = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    candyFieldSystem: CandyFieldSystem;
 };
 
 /**
@@ -333,6 +337,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
+    const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -387,6 +392,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dynamicStarfieldSystem,
         dayNightCycleSystem,
         cloudCastlesSystem,
+        candyFieldSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager
