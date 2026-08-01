@@ -11,6 +11,7 @@ import type { ButterflySwarmSystem } from '../butterfly_swarm';
 import type { WeaponLightManager } from '../lighting';
 import type { DancingJellyMossSystem } from '../dancing_jelly_moss';
 import type { ConstellationManager } from '../flower_constellations';
+import type { CandyFieldSystem } from '../candy_obstacles/candy_field_system';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
@@ -127,4 +128,5 @@ export type LevelManagerOptions = {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
+    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
 };

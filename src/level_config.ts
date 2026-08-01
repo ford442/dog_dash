@@ -157,6 +157,7 @@ export type LevelEnvironments = {
     weather?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
     dayNightCycle?: boolean | { cycleDuration: number };
+    candyField?: boolean;
     /** Finale backdrop: singularity + accretion disk (deferred chunk). */
     galacticCore?: GalacticCoreEnvironmentConfig;
     /** Secret bonus-room doorways (deferred chunk). */
@@ -369,6 +370,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         environments: {
             dynamicStarfield: true,
             asteroidField: { rate: 0.8 },
+            candyField: true,
             ghostDebris: { density: 100 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
