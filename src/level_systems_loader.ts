@@ -42,7 +42,7 @@ type SystemKey =
     | 'dancingJellyMoss'
     | 'dynamicStarfield'
     | 'dayNightCycle'
-    | 'singingGeodes';
+    | 'singingGeodes'
     | 'cloudCastles'
     | 'candyPlanetRing';
 
