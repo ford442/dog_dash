@@ -188,6 +188,7 @@ function createSubmersionMaterial() {
 
     const uTime = time;
     const uIntensity = uniform(0.0); // 0 to 1
+    const uDepthIntensity = uniform(0.0); // 0 to 1
 
     // Base Blue Tint
     const tintColor = color(0x004488);
@@ -201,13 +202,17 @@ function createSubmersionMaterial() {
     const pattern = sin(vUv.x.mul(10.0).add(uTime)).add(cos(vUv.y.mul(15.0).sub(uTime.mul(0.5))));
     const caustic = pattern.mul(0.1); // Subtle variation
 
+    const distFromCenter = length(vUv.sub(0.5));
+    const vignette = smoothstep(0.2, 0.8, distFromCenter).mul(uDepthIntensity);
+
     // Final Opacity depends on intensity
     const baseOpacity = float(0.3).mul(uIntensity);
-    const finalOpacity = baseOpacity.add(caustic.mul(uIntensity)); // Add caustic flicker
+    const finalOpacity = baseOpacity.add(caustic.mul(uIntensity)).add(vignette); // Add caustic flicker and vignette
 
     mat.colorNode = vec4(tintColor, finalOpacity);
 
     mat.userData.uIntensity = uIntensity;
+    mat.userData.uDepthIntensity = uDepthIntensity;
 
     return mat;
 }
@@ -326,7 +331,7 @@ export class BubbleLayer {
         this.mesh.visible = false;
     }
 
-    update(delta: number, cameraX: number) {
+    update(delta: number, cameraX: number, submersionRatio: number = 0.0) {
         const margin = 20;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
@@ -337,7 +342,7 @@ export class BubbleLayer {
             const idx = i * 3;
 
             // Rise
-            this.positions[idx+1] += this.speeds[i] * delta;
+            this.positions[idx+1] += this.speeds[i] * delta * (1.0 + submersionRatio * 1.5);
 
             let x = this.positions[idx];
             let y = this.positions[idx+1];
@@ -545,6 +550,13 @@ export class SubmersionOverlay {
             mat.userData.uIntensity.value = intensity;
         }
     }
+
+    setDepthIntensity(depth: number) {
+        const mat = this.mesh.material as any;
+        if (mat.userData && mat.userData.uDepthIntensity) {
+            mat.userData.uDepthIntensity.value = depth;
+        }
+    }
 }
 
 import { WeaponLightManager } from './lighting';
@@ -602,11 +614,11 @@ export class WaterfallSystem {
         this.layers.push(new WaterfallLayer(this.scene, {
             width: 300,
             height: 60,
-            z: 10,
+            z: 15,
             color: 0x88ccff,
-            opacity: 0.3,
+            opacity: 0.6,
             speed: 0.8,
-            parallaxFactor: 0.1,
+            parallaxFactor: 0.15,
             weaponLights: this.weaponLightManager ? this.weaponLightManager.storageNode : undefined,
             uPlayerPos: this.uPlayerPos
         }));
@@ -657,8 +669,15 @@ export class WaterfallSystem {
         const progress = Math.max(0, Math.min(1, cameraX / this.levelDistance));
         this.submersion.setIntensity(progress);
 
+        let depthRatio = 0.0;
+        if (playerPos) {
+            depthRatio = Math.max(0, Math.min(1, -playerPos.y / 20.0));
+        }
+
+        this.submersion.setDepthIntensity(depthRatio);
+
         this.layers.forEach(l => l.update(cameraX));
-        this.bubbles.update(delta, cameraX);
+        this.bubbles.update(delta, cameraX, depthRatio);
     }
 
     triggerSplash(position: THREE.Vector3, count: number = 10) {
