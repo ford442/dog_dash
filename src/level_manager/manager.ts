@@ -95,7 +95,6 @@ export class LevelManager {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
-    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
