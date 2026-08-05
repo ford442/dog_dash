@@ -87,6 +87,13 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 });
                 break;
             }
+            case 'cloudCastles': {
+                const { CloudCastlesSystem } = await import('./cloud_castles_system');
+                installEnvPartial({
+                    cloudCastlesSystem: new CloudCastlesSystem(scene)
+                });
+                break;
+            }
             case 'dayNightCycle': {
                 const { DayNightCycleSystem } = await import('./day_night_cycle');
                 installEnvPartial({
@@ -302,6 +309,7 @@ export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[]
     if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
     if (isEnvironmentEnabled(env.dayNightCycle)) keys.add('dayNightCycle');
     if (isEnvironmentEnabled(env.singingGeodes)) keys.add('singingGeodes');
+    if (isEnvironmentEnabled(env.cloudCastles)) keys.add('cloudCastles');
     if (isEnvironmentEnabled(env.candyPlanetRing)) keys.add('candyPlanetRing');
 
     if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');

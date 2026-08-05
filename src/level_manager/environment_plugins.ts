@@ -1,3 +1,4 @@
+import type * as THREE from 'three';
 import type {
     LevelConfig,
     LevelEnvironments,
@@ -217,6 +218,11 @@ export function buildEnvironmentPlugins(
             flag: 'singingGeodes',
             activate: (config: any) => host.singingGeodeSystem.activate(typeof config === 'object' ? config.density : undefined),
             deactivate: () => host.singingGeodeSystem.deactivate()
+        },
+        {
+            flag: 'cloudCastles',
+            activate: (config: any) => host.cloudCastlesSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.cloudCastlesSystem.deactivate()
         }
     ];
 }
