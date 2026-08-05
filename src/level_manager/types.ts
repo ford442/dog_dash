@@ -119,7 +119,6 @@ export type LevelManagerOptions = {
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
     candyManager: CandyBeltManager;
-    candyFieldSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     getPlayer: () => THREE.Group | null;
     spawners: GeologicalSpawners;
     geologicalCounts: GeologicalCounts;
