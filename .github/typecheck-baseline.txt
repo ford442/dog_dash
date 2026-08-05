@@ -1,14 +1,10 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 11
+# Count: 7
 src/deferred_system_stubs.ts(1,15): TS2300: Duplicate identifier 'CandyFieldSystem'.
 src/deferred_system_stubs.ts(28,15): TS2300: Duplicate identifier 'CandyFieldSystem'.
 src/level_manager/environment_plugins.ts(31,188): TS2503: Cannot find namespace 'THREE'.
-src/level_manager/manager.ts(272,33): TS2345: Argument of type 'this' is not assignable to parameter of type 'LevelPluginHost'.
-src/level_manager/manager.ts(61,14): TS2687: All declarations of 'candyFieldSystem' must have identical modifiers.
-src/level_manager/manager.ts(98,5): TS2300: Duplicate identifier 'candyFieldSystem'.
-src/level_manager/manager.ts(98,5): TS2687: All declarations of 'candyFieldSystem' must have identical modifiers.
-src/level_manager/manager.ts(98,5): TS2717: Subsequent property declarations must have the same type.  Property 'candyFieldSystem' must be of type '{ activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: Vector3 | undefined) => void; }', but here has type 'CandyFieldSystem'.
+src/level_manager/manager.ts(271,33): TS2345: Argument of type 'this' is not assignable to parameter of type 'LevelPluginHost'.
 src/level_manager/types.ts(122,5): TS2300: Duplicate identifier 'candyFieldSystem'.
 src/level_manager/types.ts(132,5): TS2300: Duplicate identifier 'candyFieldSystem'.
 src/level_manager/types.ts(132,5): TS2717: Subsequent property declarations must have the same type.  Property 'candyFieldSystem' must be of type '{ activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: Vector3 | undefined) => void; }', but here has type 'CandyFieldSystem'.
