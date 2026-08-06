@@ -101,42 +101,30 @@ export class YourFeatureSystem {
 
 ---
 
-## 🔌 STEP 2: INTEGRATE VIA THE COMPOSITION ROOT
+## 🔌 STEP 2: INTEGRATE VIA THE REGISTRY (required)
 
-There is no monolithic `main.ts`. Systems are wired through the `GameContext` composition root (see `docs/GAME_CONTEXT.md`). You must touch up to 4 areas:
+There is no monolithic `main.ts`. Environment features must use the **closed-loop registry** in `src/level_env_registry.ts` (see `docs/GAME_CONTEXT.md`). Do **not** land features via one-shot Python patch scripts.
 
-### 2A: Instantiate your system
+### 2A: Deferred (code-split) environment
 
-Add construction in `createGameSystems()` (`src/create_game_systems.ts`) or bootstrap (`src/main/startup.ts`) near similar systems, and expose it on the typed `GameContext` (`src/game_runtime.ts`):
+1. Add stub + `GameSystems` field in `create_game_systems.ts` if needed.
+2. Add **one** entry to `DEFERRED_ENV_REGISTRY` with `load`, `install`, and `plugin` hooks.
+3. Append the flag to `PLUGIN_ORDER` in `level_manager/environment_plugins.ts`.
+4. Add `environments: { yourFeature: true }` in `LEVEL_CONFIG` for target level(s).
 
-```typescript
-// YOUR FEATURE SYSTEM
-const yourFeatureSystem = new YourFeatureSystem(scene /*, deps */);
-```
+### 2B: Eager environment (bootstrap stub / full system)
 
-### 2B: Activate/deactivate per level
+1. Construct in `create_game_systems.ts` and expose on `GameContext`.
+2. Add activate/deactivate to `buildEagerEnvPlugins` in `level_env_registry.ts`.
+3. Add the flag to `EAGER_ENV_FLAGS` and `PLUGIN_ORDER`.
 
-Level-conditional environment systems are registered as plugins in `src/level_manager/environment_plugins.ts` (flag in `LevelEnvironments`, `activate`/`deactivate`). Add a plugin entry (or extend an existing one) instead of hand-editing level `if/else` chains:
+### 2C: Per-frame update
 
-```typescript
-{
-    flag: 'yourFeature',
-    activate: () => host.yourFeatureSystem.activate(),
-    deactivate: () => host.yourFeatureSystem.deactivate()
-},
-```
+Hook `update()` from `level_manager/manager.ts` or the matching `src/main/loop_*.ts` module.
 
-### 2C: Add to the per-frame update loop
+### 2D: Cleanup
 
-Hook `update()` from the appropriate loop module under `src/main/` (e.g. `loop_world.ts`, `loop_geological.ts`) alongside similar systems:
-
-```typescript
-yourFeatureSystem.update(delta, cameraX, player ? player.position : undefined);
-```
-
-### 2D: Add to cleanup logic if your system adds scene objects
-
-Search for where `levelObjects` are cleaned up or where other systems call `cleanup()`. If your system spawns objects into `levelObjects`, ensure they get removed on level transition.
+Search for where other systems call `cleanup()` and mirror that pattern on level transition.
 
 ---
 
@@ -163,8 +151,9 @@ Before declaring done, verify:
 - [ ] **File created** under `src/` (e.g., `src/your_feature.ts`)
 - [ ] **Imports use `three/tsl` and `three/webgpu`** (not vanilla Three.js materials for custom shaders)
 - [ ] **`activate()` / `deactivate()` / `update()`** pattern followed
-- [ ] **Instantiation** added to the composition root (`createGameSystems()` / `src/main/startup.ts`) and exposed on `GameContext`
-- [ ] **Level-activation plugin** added in `src/level_manager/environment_plugins.ts` (if level-conditional)
+- [ ] **Registry entry** in `src/level_env_registry.ts` (deferred) or `buildEagerEnvPlugins` (eager)
+- [ ] **`PLUGIN_ORDER`** updated in `level_manager/environment_plugins.ts`
+- [ ] **`npm run check:env-registry`** passes
 - [ ] **Per-frame update hook** added in the matching `src/main/loop_*.ts` module
 - [ ] **Level config updated** (if new fields were added)
 - [ ] **Cleanup handled** — objects don't leak between levels
