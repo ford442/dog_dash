@@ -8,7 +8,7 @@
 
 import * as THREE from 'three';
 import { ParticleSystem } from './particles';
-import { getAudioSystem } from './audio_system';
+import type { AudioPort } from './ports';
 
 /** Types of collectible orbs */
 export enum OrbType {
@@ -359,13 +359,12 @@ export class CollectibleOrb {
     }
     
     /** Collect the orb - play effects and return points */
-    collect(particleSystem: ParticleSystem): { points: number; type: OrbType; healthRestore?: number } {
+    collect(particleSystem: ParticleSystem, audio: AudioPort): { points: number; type: OrbType; healthRestore?: number } {
         if (this.collected) return { points: 0, type: this.type };
         
         this.collected = true;
         
         // Play collection sound
-        const audio = getAudioSystem();
         if (this.type === OrbType.MAGIC_BONE) {
             audio.play('powerup', 1.2);
         } else if (this.type === OrbType.HEART) {
@@ -424,6 +423,7 @@ export class CollectibleOrb {
 export class OrbManager {
     private scene: THREE.Scene;
     private particleSystem: ParticleSystem;
+    private readonly audio: AudioPort;
     private orbs: CollectibleOrb[] = [];
     private orbCount: number = 0;
     private powerUpThreshold: number = 5;
@@ -433,9 +433,10 @@ export class OrbManager {
     onHealthRestore?: (amount: number) => void;
     onPowerUpReady?: () => void;
     
-    constructor(scene: THREE.Scene, particleSystem: ParticleSystem, powerUpThreshold: number = 5) {
+    constructor(scene: THREE.Scene, particleSystem: ParticleSystem, audio: AudioPort, powerUpThreshold: number = 5) {
         this.scene = scene;
         this.particleSystem = particleSystem;
+        this.audio = audio;
         this.powerUpThreshold = powerUpThreshold;
     }
     
@@ -504,7 +505,7 @@ export class OrbManager {
         
         for (const orb of this.orbs) {
             if (!orb.collected && orb.checkCollision(playerPosition, collectionRadius)) {
-                const result = orb.collect(this.particleSystem);
+                const result = orb.collect(this.particleSystem, this.audio);
                 
                 totalPoints += result.points;
                 collectedType = result.type;

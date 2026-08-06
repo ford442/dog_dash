@@ -4,7 +4,7 @@
  */
 
 import * as THREE from 'three';
-import { SaveManager } from './save_manager';
+import type { InventoryPort } from './ports';
 import {
     type HarvestEvent,
     type HarvestOptions,
@@ -26,13 +26,13 @@ export interface MaterialCollectedEvent {
  * Central harvest pipeline for scan / destroy / sling material grants.
  */
 export class ResourceHarvester {
-    private saveManager: SaveManager;
+    private readonly inventory: InventoryPort;
 
     /** Fired once per material grant (after inventory write). */
     onMaterialCollected?: (evt: MaterialCollectedEvent) => void;
 
-    constructor(saveManager: SaveManager) {
-        this.saveManager = saveManager;
+    constructor(inventory: InventoryPort) {
+        this.inventory = inventory;
     }
 
     /**
@@ -52,7 +52,7 @@ export class ResourceHarvester {
 
         const applied: MaterialGrant[] = [];
         for (const grant of grants) {
-            const total = this.saveManager.addMaterial(grant.id, grant.amount);
+            const total = this.inventory.addMaterial(grant.id, grant.amount);
             applied.push(grant);
             this.onMaterialCollected?.({
                 id: grant.id,
@@ -72,8 +72,8 @@ export class ResourceHarvester {
         event: HarvestEvent = 'destroy',
         position?: THREE.Vector3
     ): number {
-        if (amount <= 0) return this.saveManager.getMaterialCount(id);
-        const total = this.saveManager.addMaterial(id, amount);
+        if (amount <= 0) return this.inventory.getMaterialCount(id);
+        const total = this.inventory.addMaterial(id, amount);
         this.onMaterialCollected?.({
             id,
             amount,

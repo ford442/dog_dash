@@ -1,4 +1,4 @@
-import type { WasmExports } from '../wasm_loader';
+import type { CollisionPort, CollisionWasmHandle } from '../ports';
 import * as THREE from 'three';
 import type { LevelConfig } from '../level_config';
 import type { SporeCloud } from '../geological';
@@ -18,18 +18,15 @@ export type GameplayModifiers = {
     obstacleSlowFactor?: number;
 };
 
-export type ObstacleWasmHandle = {
-    exports: WasmExports | null;
-    memory: Float32Array | null;
-};
+export type ObstacleWasmHandle = CollisionWasmHandle;
 
 export type ObstacleSystemOptions = {
     scene: THREE.Scene;
     getPlayer: () => THREE.Group | null;
     getCurrentConfig: () => LevelConfig | undefined;
     playerState: { health: number; invincible: boolean; inSafeHarbor?: boolean; velocity: THREE.Vector3 };
-    getWasm: () => ObstacleWasmHandle;
-    setWasmMemory: (memory: Float32Array | null) => void;
+    getWasm: CollisionPort['getWasm'];
+    setWasmMemory: CollisionPort['setWasmMemory'];
     sporeClouds: SporeCloud[];
     particleSystem: {
         emit: (position: THREE.Vector3, color: number, count: number, speed: number, lifetime: number, size?: number) => void;
