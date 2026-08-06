@@ -34,6 +34,74 @@ Hook into the matching phase under `src/main/`:
 
 Call `game.yourSystem.update(...)` (or a thin helper that takes ports from `game`). Do not import live singletons from a composition module.
 
+## GameContext field groups
+
+`GameContext` is still a flat bag on the live `game` binding (the loop reads `game.playerState`, `game.hudManager`, etc.). Fields are grouped into named slices in [`src/game_runtime.ts`](../src/game_runtime.ts) for documentation and future nesting:
+
+| Slice | Type | Examples |
+|-------|------|----------|
+| **core** | `CoreRuntime` | `playerState`, `wasmExports`, `wasmMemory`, `wasmBackend`, `clock` |
+| **frame** | `FrameCounters` | `fpsFrameCount`, `objectDensityMultiplier`, `geologicalUpdateFrame` |
+| **run** | `RunState` | `grenadeAmmo`, `completedChaptersThisRun`, `wantsBoost`, `moonGateSequenceActive` |
+| **extensions** | `GameContextExtensions` | `levelManager`, `obstacleSystem`, `slingComboManager`, scene anchors |
+| **systems** | `GameSystems` | eager gameplay systems from `createGameSystems()` |
+| **managers** | `GameManagers` | friends, hub, victory, tutorial, etc. |
+
+Do **not** add new unscoped fields — place them on the matching slice type in `game_runtime.ts`.
+
+## Domain ports (`src/ports/`)
+
+Domain modules depend on **narrow port interfaces**, not `import { game } from './game_runtime'`. Concrete classes are constructed in `createGameSystems()` / `startup.ts` and passed in.
+
+| Port | File | Typical consumers |
+|------|------|-------------------|
+| `AudioPort` | `ports/audio_port.ts` | collectibles, sling combo, power-up hooks |
+| `JuicePort` | `ports/juice_port.ts` | sling combo, combat feedback |
+| `HudPort` | `ports/hud_port.ts` | sling combo, graze scoring |
+| `InventoryPort` | `ports/inventory_port.ts` | resource harvester, craft bay |
+| `CollisionPort` | `ports/collision_port.ts` | obstacle_system WASM checks |
+| `PlayerMotionPort` | `ports/player_motion_port.ts` | dream portal, power-ups |
+
+### Example — collectibles (`AudioPort`)
+
+```ts
+// src/collectibles.ts — no game import, no getAudioSystem()
+import type { AudioPort } from './ports';
+
+export class OrbManager {
+    constructor(scene: THREE.Scene, particleSystem: ParticleSystem, audio: AudioPort, powerUpThreshold = 5) {
+        this.audio = audio;
+        // ...
+    }
+}
+```
+
+Wired in `create_game_systems.ts`:
+
+```ts
+const audioSystem = getAudioSystem(); // composition root only
+const orbManager = new OrbManager(scene, particleSystem, audioSystem, 4);
+```
+
+### Example — resource harvester (`InventoryPort`)
+
+```ts
+// src/resource_harvester.ts
+import type { InventoryPort } from './ports';
+
+export class ResourceHarvester {
+    constructor(inventory: InventoryPort) { /* saveManager satisfies InventoryPort */ }
+}
+```
+
+### Example — obstacle collision (`CollisionPort`)
+
+`ObstacleSystemOptions.getWasm` / `setWasmMemory` are typed from `CollisionPort` in [`src/obstacle_system/types.ts`](../src/obstacle_system/types.ts). Bootstrap passes handles from `game.wasmExports` / `game.wasmMemory`.
+
+### Example — sling combo (multi-port)
+
+[`src/sling_combo.ts`](../src/sling_combo.ts) takes `JuicePort`, `HudPort`, and `AudioPort` in `SlingComboManagerOptions` — wired in `startup.ts` with the real `juiceManager`, `hudManager`, and `audioSystem` instances.
+
 ## Domain modules — ports, not the bag
 
 `level_manager`, `environment`, and gameplay systems like `storm_geodes` must **not** import composition-root singletons.

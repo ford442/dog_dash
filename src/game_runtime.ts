@@ -27,41 +27,38 @@ import type {
     WireframeDebugHelper
 } from './render_debug_helpers';
 
-/** Fully typed mutable runtime bag owned by bootstrap. */
-export interface GameContext extends GameSystems, GameManagers {
-    playerState: typeof playerState;
+// ---------------------------------------------------------------------------
+// GameContext field groups (Phase 2 slices — flat on `game`, typed for docs/tests)
+// See docs/GAME_CONTEXT.md
+// ---------------------------------------------------------------------------
 
+/** Clock, player snapshot, and WASM collision backends. */
+export type CoreRuntime = {
+    playerState: typeof playerState;
     wasmExports: WasmExports | null;
     wasmMemory: Float32Array | null;
     /** Active WASM backend after load (null if both backends failed). */
     wasmBackend: WasmBackend | null;
-
-    ghostDebrisSystem: GhostDebrisSystem;
-    voidJellyfishSystem: VoidJellyfishSystem;
-    slingableObjectSystem: SlingableObjectSystem;
-    toyRocketSpawnManager: ToyRocketSpawnManager;
-    tetherSystem: TetherSystem;
-    slingComboManager: SlingComboManager;
-    slingObjectiveManager: SlingObjectiveManager;
-    discoveryManager: DiscoveryManager;
-    resourceHarvester: ResourceHarvester;
-    creatureCatalogManager: CreatureCatalogManager;
-    creatureManager: CreatureManager;
-    aquaticLifeManager: AquaticLifeManager;
-    starlightKoiManager: StarlightKoiManager;
-    bubbleCoralManager: RainbowBubbleCoralManager;
-    industrialGeometryManager: IndustrialGeometryManager;
-    debugSystem: DebugSystem;
-    levelManager: LevelManager;
-    obstacleSystem: ObstacleSystem;
-
-    moon: THREE.Group;
-    galaxy1: THREE.Object3D;
-    galaxy2: THREE.Object3D;
-    galaxy3: THREE.Object3D;
-    videoTumblingStars: VideoTumblingStar[];
-
     clock: THREE.Clock;
+};
+
+/** Per-frame perf counters, density throttle, and render debug cadence. */
+export type FrameCounters = {
+    fpsFrameCount: number;
+    fpsElapsedTime: number;
+    fpsLowDuration: number;
+    fpsHighDuration: number;
+    currentRatioIndex: number;
+    currentPixelRatio: number;
+    objectDensityMultiplier: number;
+    shadowCullingFrame: number;
+    shadowCullingWarningIssued: boolean;
+    renderDebugWarningIssued: boolean;
+    geologicalUpdateFrame: number;
+};
+
+/** Single-run progression, crafted loadout, and input latch flags. */
+export type RunState = {
     lastPlayerDamageTime: number;
     aquaticLifeSpawnedLevel: number | null;
     koiSpawnedLevel: number | null;
@@ -80,39 +77,59 @@ export interface GameContext extends GameSystems, GameManagers {
     scoreMultiplierValue: number;
     tetherSpriteSweep: number;
     tetherSpritePrevAngle: number | null;
-
-    fpsFrameCount: number;
-    fpsElapsedTime: number;
-    fpsLowDuration: number;
-    fpsHighDuration: number;
-    currentRatioIndex: number;
-    currentPixelRatio: number;
-    objectDensityMultiplier: number;
-    shadowCullingFrame: number;
-    shadowCullingWarningIssued: boolean;
-    renderDebugWarningIssued: boolean;
-    geologicalUpdateFrame: number;
-
-    wireframeDebugHelper: WireframeDebugHelper;
-    collisionDebugOverlay: CollisionDebugOverlay;
-    webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
-
     bestiaryUI: HTMLDivElement | null;
     /** Chapters whose objectives were completed this run (1–6). */
     completedChaptersThisRun: number[];
-
-    reportComboObjectiveProgress: () => void;
-    handleGameOver: () => void;
-    /** Re-attach slingable callbacks after deferred manager swap. */
-    rewireSlingableCallbacks: () => void;
-
     wantsBoost: boolean;
     wasTouchBoosting: boolean;
     wantsRoll: boolean;
     wasTouchRolling: boolean;
     wantsTether: boolean;
     wantsReleaseTether: boolean;
-}
+};
+
+/** Deferred managers and scene anchors not on GameSystems / GameManagers. */
+export type GameContextExtensions = {
+    ghostDebrisSystem: GhostDebrisSystem;
+    voidJellyfishSystem: VoidJellyfishSystem;
+    slingableObjectSystem: SlingableObjectSystem;
+    toyRocketSpawnManager: ToyRocketSpawnManager;
+    tetherSystem: TetherSystem;
+    slingComboManager: SlingComboManager;
+    slingObjectiveManager: SlingObjectiveManager;
+    discoveryManager: DiscoveryManager;
+    resourceHarvester: ResourceHarvester;
+    creatureCatalogManager: CreatureCatalogManager;
+    creatureManager: CreatureManager;
+    aquaticLifeManager: AquaticLifeManager;
+    starlightKoiManager: StarlightKoiManager;
+    bubbleCoralManager: RainbowBubbleCoralManager;
+    industrialGeometryManager: IndustrialGeometryManager;
+    debugSystem: DebugSystem;
+    levelManager: LevelManager;
+    obstacleSystem: ObstacleSystem;
+    moon: THREE.Group;
+    galaxy1: THREE.Object3D;
+    galaxy2: THREE.Object3D;
+    galaxy3: THREE.Object3D;
+    videoTumblingStars: VideoTumblingStar[];
+    wireframeDebugHelper: WireframeDebugHelper;
+    collisionDebugOverlay: CollisionDebugOverlay;
+    webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
+    reportComboObjectiveProgress: () => void;
+    handleGameOver: () => void;
+    /** Re-attach slingable callbacks after deferred manager swap. */
+    rewireSlingableCallbacks: () => void;
+};
+
+/** Fully typed mutable runtime bag owned by bootstrap. */
+export interface GameContext
+    extends GameSystems,
+        GameManagers,
+        CoreRuntime,
+        FrameCounters,
+        RunState,
+        GameContextExtensions {}
 
 /** @deprecated Use GameContext */
 export type GameRuntime = GameContext;
