@@ -46,6 +46,8 @@ When a TSL value is reassigned across node subtypes (e.g. `let total = float(0.0
 
 Gameplay systems are constructed in `createGameSystems()` / bootstrap (`src/main/startup.ts`), not at import time. Shared state is the typed `GameContext` on `game` (`src/game_runtime.ts`). Domain modules take ports — see `docs/GAME_CONTEXT.md`.
 
+**Environment features:** register in `src/level_env_registry.ts` (one entry for deferred systems). Do not land features via one-shot `patch_*.py` sed scripts — those caused half-wired systems (e.g. Cloud Castles). `npm run check:env-registry` validates the closed loop.
+
 ## Cursor Cloud specific instructions
 
 Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + typecheck ratchet). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint or unit-test suite; quality gates are brace check, typecheck baseline, production build, and Playwright smoke.
