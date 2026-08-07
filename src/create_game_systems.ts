@@ -230,11 +230,11 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     };
 
     const starfield = new StarfieldSystem(scene);
-    const orbManager = new OrbManager(scene, particleSystem, 4);
+    const orbManager = new OrbManager(scene, particleSystem, audioSystem, 4);
 
     const saveManager = getSaveManager();
     const dogController = new DogCockpitController();
-    const hudManager = new HUDManager(saveManager);
+    const hudManager = new HUDManager(saveManager, audioSystem);
     const juiceManager = new JuiceManager(camera, scene, particleSystem);
 
     const tempTarget = new THREE.Group();

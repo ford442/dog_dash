@@ -25,7 +25,6 @@ import type { WishLanternSystem } from './wish_lanterns';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
-import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { SingingGeodeSystem } from './singing_geodes';
