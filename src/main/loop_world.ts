@@ -170,12 +170,6 @@ export function updateLoopWorld(delta: number, time: number): void {
     
         // SWARM #3: Update Dreamy Environments
         if (player) {
-            // Update flower constellations (bloom, pollen, sparkles)
-            if (game.debugSystem.isEnabled('flowerConstellations')) {
-                game.flowerManager.update(delta, player.position);
-                game.flowerManager.checkPlayerProximity(player.position);
-            }
-    
             // Twirling pinwheel flowers — spin, wind gusts, blade clips
             if (game.debugSystem.isEnabled('pinwheelFlora')) {
                 const pinwheelHits = game.pinwheelManager.update(delta, time, player.position);

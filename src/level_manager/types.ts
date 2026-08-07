@@ -10,7 +10,6 @@ import type { FriendsManager } from '../space_friends';
 import type { ButterflySwarmSystem } from '../butterfly_swarm';
 import type { WeaponLightManager } from '../lighting';
 import type { DancingJellyMossSystem } from '../dancing_jelly_moss';
-import type { ConstellationManager } from '../flower_constellations';
 import type { CandyFieldSystem } from '../candy_obstacles/candy_field_system';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
@@ -100,6 +99,7 @@ export type LevelEnvironmentPorts = {
     cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
 };
 
 export type LevelManagerOptions = {
@@ -114,7 +114,6 @@ export type LevelManagerOptions = {
     friendsManager?: FriendsManager;
     industrialGeometryManager: IndustrialGeometryManager;
     butterflySwarmSystem: ButterflySwarmSystem;
-    flowerManager: ConstellationManager;
     pinwheelManager: PinwheelFloraManager;
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
