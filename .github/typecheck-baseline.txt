@@ -1,4 +1,6 @@
 # TypeScript error baseline — do not edit by hand unless you know what you are doing.
 # Regenerate with: npm run typecheck:baseline:update
-# Count: 0
-
+# Count: 3
+src/sling_combo.ts(214,22): TS2339: Property 'flashChromatic' does not exist on type 'JuicePort'.
+src/sling_combo.ts(222,26): TS2339: Property 'hitPause' does not exist on type 'JuicePort'.
+src/sling_combo.ts(226,21): TS2551: Property 'playSlingArcSurge' does not exist on type 'AudioPort'. Did you mean 'playSlingCharge'?

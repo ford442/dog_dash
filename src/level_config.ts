@@ -164,6 +164,7 @@ export type LevelEnvironments = {
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
+    flowerConstellations?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -321,7 +322,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             wishLanterns: true,
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 },
-            cloudCastles: { density: 0.6 }
+            cloudCastles: { density: 0.6 },
+            flowerConstellations: true
         },
         vignettes: {
             treeGroves: 1.5,
@@ -384,7 +386,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 portals: [
                     { x: 820, y: 7, z: -1, theme: 'candy', durationSeconds: 32 }
                 ]
-            }
+            },
+            flowerConstellations: true
         },
         vignettes: {
             geodeClearings: 0.5
@@ -463,7 +466,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 portals: [
                     { x: 1660, y: -3, z: -1, theme: 'aurora', durationSeconds: 38, toyCount: 16 }
                 ]
-            }
+            },
+            flowerConstellations: true
         },
         vignettes: {
             roseArches: 1.2

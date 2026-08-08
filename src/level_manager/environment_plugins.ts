@@ -47,7 +47,8 @@ const PLUGIN_ORDER = [
     'weather',
     'singingGeodes',
     'cloudCastles',
-    'bubbleCoral'
+    'bubbleCoral',
+    'flowerConstellations'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

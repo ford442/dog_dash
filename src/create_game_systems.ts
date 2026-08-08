@@ -32,7 +32,8 @@ import {
     createDayNightCycleSystemStub,
     createCloudCastlesSystemStub,
     createCandyFieldSystemStub,
-    createSingingGeodeSystemStub
+    createSingingGeodeSystemStub,
+    createFlowerConstellationsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -53,6 +54,7 @@ import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { CandyFieldSystem } from './candy_obstacles';
 import type { SingingGeodeSystem } from './singing_geodes';
+import type { FlowerConstellationsSystem } from './flower_constellations_system';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -140,6 +142,7 @@ export type GameSystems = {
     cloudCastlesSystem: CloudCastlesSystem;
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
+    flowerConstellationsSystem: FlowerConstellationsSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -162,6 +165,7 @@ export type LevelEnvironmentSystemExports = {
     cloudCastlesSystem: CloudCastlesSystem;
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
+    flowerConstellationsSystem: FlowerConstellationsSystem;
 };
 
 /**
@@ -343,6 +347,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const cloudCastlesSystem = createCloudCastlesSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
+    const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -399,6 +404,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         cloudCastlesSystem,
         candyFieldSystem,
         singingGeodeSystem,
+        flowerConstellationsSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager

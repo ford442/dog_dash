@@ -49,7 +49,8 @@ export const DEFERRED_ENV_FLAGS = [
     'galacticCore',
     'dreamPortals',
     'singingGeodes',
-    'cloudCastles'
+    'cloudCastles',
+    'flowerConstellations'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -104,6 +105,7 @@ export type DeferredGamePorts = {
     weaponLightManager: WeaponLightManager;
     audioSystem: AudioSystem;
     particleSystem: ParticleSystem;
+    flowerConstellationsSystem?: unknown;
     debrisSystem: DebrisSystem;
     lightningBoltSystem: { onBoltStrike?: (pos: THREE.Vector3, color: THREE.Color) => void };
     levelManager: {
@@ -220,6 +222,22 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'cloudCastles',
             activate: (config) => host.cloudCastlesSystem.activate(objectConfig(config)),
             deactivate: () => host.cloudCastlesSystem.deactivate()
+        })
+    },
+    flowerConstellations: {
+        flag: 'flowerConstellations',
+        systemKey: 'flowerConstellations',
+        load: () => import('./flower_constellations_system'),
+        install: (ctx, mod) => {
+            const { FlowerConstellationsSystem } = mod as typeof import('./flower_constellations_system');
+            const system = new FlowerConstellationsSystem(ctx.scene, ctx.game.audioSystem, ctx.game.particleSystem);
+            ctx.assignGameSystem('flowerConstellationsSystem', system);
+            ctx.installEnvPartial({ flowerConstellationsSystem: system });
+        },
+        plugin: (host, _cfg, levelLength) => ({
+            flag: 'flowerConstellations',
+            activate: (config) => host.flowerConstellationsSystem.activate(config, levelLength),
+            deactivate: () => host.flowerConstellationsSystem.deactivate()
         })
     },
     dayNightCycle: {
@@ -769,7 +787,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'dancingJellyMoss',
     'weather',
     'singingGeodes',
-    'cloudCastles'
+    'cloudCastles',
+    'flowerConstellations'
 ];
 
 export function buildDeferredEnvPlugins(
