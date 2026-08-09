@@ -32,7 +32,8 @@ import {
     createDayNightCycleSystemStub,
     createCloudCastlesSystemStub,
     createCandyFieldSystemStub,
-    createSingingGeodeSystemStub
+    createSingingGeodeSystemStub,
+    createWindCurrentsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -138,6 +139,8 @@ export type GameSystems = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
 };
@@ -160,6 +163,8 @@ export type LevelEnvironmentSystemExports = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
 };
@@ -341,6 +346,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
+    const windCurrentsSystem = createWindCurrentsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const gravLensManager = new GravLensManager(scene);
@@ -397,6 +403,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dynamicStarfieldSystem,
         dayNightCycleSystem,
         cloudCastlesSystem,
+        windCurrentsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         gravLensManager,

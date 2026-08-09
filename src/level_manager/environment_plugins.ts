@@ -47,6 +47,7 @@ const PLUGIN_ORDER = [
     'weather',
     'singingGeodes',
     'cloudCastles',
+    'windCurrents',
     'bubbleCoral'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 

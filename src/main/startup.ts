@@ -199,7 +199,8 @@ function createLevelManager(
             dayNightCycleSystem: systems.dayNightCycleSystem,
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
-            singingGeodeSystem: systems.singingGeodeSystem
+            singingGeodeSystem: systems.singingGeodeSystem,
+            windCurrentsSystem: systems.windCurrentsSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -262,7 +263,8 @@ function createLevelManager(
         dayNightCycleSystem: systems.dayNightCycleSystem,
         cloudCastlesSystem: systems.cloudCastlesSystem,
         candyFieldSystem: systems.candyFieldSystem,
-        singingGeodeSystem: systems.singingGeodeSystem
+        singingGeodeSystem: systems.singingGeodeSystem,
+        windCurrentsSystem: systems.windCurrentsSystem
     });
 }
 

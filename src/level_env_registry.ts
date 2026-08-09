@@ -49,7 +49,8 @@ export const DEFERRED_ENV_FLAGS = [
     'galacticCore',
     'dreamPortals',
     'singingGeodes',
-    'cloudCastles'
+    'cloudCastles',
+    'windCurrents'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -220,6 +221,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'cloudCastles',
             activate: (config) => host.cloudCastlesSystem.activate(objectConfig(config)),
             deactivate: () => host.cloudCastlesSystem.deactivate()
+        })
+    },
+    windCurrents: {
+        flag: 'windCurrents',
+        systemKey: 'windCurrents',
+        load: () => import('./wind_currents'),
+        install: (ctx, mod) => {
+            const { WindCurrentsSystem } = mod as typeof import('./wind_currents');
+            ctx.installEnvPartial({ windCurrentsSystem: new WindCurrentsSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'windCurrents',
+            activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
+            deactivate: () => host.windCurrentsSystem.deactivate()
         })
     },
     dayNightCycle: {
@@ -769,7 +784,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'dancingJellyMoss',
     'weather',
     'singingGeodes',
-    'cloudCastles'
+    'cloudCastles',
+    'windCurrents'
 ];
 
 export function buildDeferredEnvPlugins(
