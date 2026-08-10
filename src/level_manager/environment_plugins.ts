@@ -1,40 +1,57 @@
 import type {
     LevelConfig,
-    LevelEnvironments,
-    GodRaysEnvironmentConfig,
-    AuroraEnvironmentConfig,
-    LightningEnvironmentConfig,
-    AsteroidFieldEnvironmentConfig
+    LevelEnvironments
 } from '../level_config';
-import type { EnvironmentPlugin, LevelEnvironmentPorts } from './types';
+import type { EnvironmentPlugin } from './types';
 import { isEnvironmentEnabled } from './types';
 import type * as THREE from 'three';
+import type { LevelPluginHost } from './plugin_host';
+import {
+    buildDeferredEnvPlugins,
+    buildEagerEnvPlugins
+} from '../level_env_registry';
 
-/** Systems registry host for environment plugin activation. */
-export interface LevelPluginHost extends LevelEnvironmentPorts {
-    butterflySwarmSystem: { activate: () => void; deactivate: () => void };
-    cloudSystem: { layers: { mesh: { visible: boolean } }[] };
-    godRaySystem: { activate: (config: GodRaysEnvironmentConfig) => void; deactivate: () => void };
-    auroraSystem: { activate: (config: AuroraEnvironmentConfig) => void; deactivate: () => void };
-    ghostDebrisSystem: { activate: () => void; deactivate: () => void };
-    voidJellyfishSystem: { activate: (config: NonNullable<LevelEnvironments['voidJellyfish']>) => void; deactivate: () => void };
-    camera: { position: { x: number } };
-    baseAsteroidDensity: number;
-    objectDensityMultiplier: number;
-    moonPalaceSystem: LevelEnvironmentPorts['moonPalaceSystem'] & { levelDistance: number; activate: () => void; deactivate: () => void };
-    wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'] & { activate: () => void; deactivate: () => void };
-    weatherSystem: LevelEnvironmentPorts['weatherSystem'] & { activate: () => void; deactivate: () => void };
-    dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'] & { activate: (config?: any) => void; deactivate: () => void };
-    dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'] & { activate: (config?: any) => void; deactivate: () => void };
-    dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'] & { activate: (config?: any) => void; deactivate: () => void };
-    cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'] & { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void };
-    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'] & { activate: (config?: any) => void; deactivate: () => void; setVisible: (visible: boolean) => void; update: (delta: number, cameraX: number) => void };
-    singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'] & { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
-}
+export type { LevelPluginHost } from './plugin_host';
 
 /** Discriminated union of plugins keyed by environment flag, so each
  * `activate` receives its own config type. */
 type AnyEnvironmentPlugin = { [K in keyof LevelEnvironments]-?: EnvironmentPlugin<K> }[keyof LevelEnvironments];
+
+/** Plugin order preserved for level transitions (matches pre-registry behaviour). */
+const PLUGIN_ORDER = [
+    'dynamicStarfield',
+    'dayNightCycle',
+    'candyPlanetRing',
+    'pastelNebula',
+    'candyField',
+    'wishLanterns',
+    'butterflySwarm',
+    'blackHole',
+    'galacticCore',
+    'industrial',
+    'waterfall',
+    'planetaryHorizon',
+    'moonPalace',
+    'reEntry',
+    'biological',
+    'nebula',
+    'nebulaRibbons',
+    'cosmicDust',
+    'godRays',
+    'aurora',
+    'lightning',
+    'asteroidField',
+    'ghostDebris',
+    'voidJellyfish',
+    'meteorShower',
+    'dancingJellyMoss',
+    'weather',
+    'singingGeodes',
+    'cloudCastles',
+    'windCurrents',
+    'bubbleCoral',
+    'flowerConstellations'
+] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(
     host: LevelPluginHost,
@@ -223,8 +240,20 @@ export function buildEnvironmentPlugins(
             flag: 'singingGeodes',
             activate: (config: any) => host.singingGeodeSystem.activate(typeof config === 'object' ? config.density : undefined),
             deactivate: () => host.singingGeodeSystem.deactivate()
+    const eagerByFlag = new Map(
+        buildEagerEnvPlugins(host, cfg, levelLength).map((p) => [p.flag, p])
+    );
+    const deferredByFlag = new Map(
+        buildDeferredEnvPlugins(host, cfg, levelLength).map((p) => [p.flag, p])
+    );
+
+    return PLUGIN_ORDER.map((flag) => {
+        const plugin = deferredByFlag.get(flag) ?? eagerByFlag.get(flag);
+        if (!plugin) {
+            throw new Error(`Missing environment plugin for flag "${String(flag)}"`);
         }
-    ];
+        return plugin as AnyEnvironmentPlugin;
+    });
 }
 
 export function applyEnvironmentPlugins(

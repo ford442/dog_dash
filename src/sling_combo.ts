@@ -12,11 +12,10 @@
  */
 
 import * as THREE from 'three';
-import { JuiceManager, ShakeType, BurstType } from './juice_effects';
-import { HUDManager } from './hud_system';
+import { ShakeType, BurstType } from './juice_effects';
 import { DogCockpitController, DogAnimationState } from './dog_cockpit';
-import { AudioSystem } from './audio_system';
 import { ParticleSystem } from './particles';
+import type { AudioPort, HudPort, JuicePort } from './ports';
 
 /** Quality level of a sling action */
 export type SlingQuality = 'perfect' | 'good' | 'messy';
@@ -43,10 +42,10 @@ const COMBO_TIMEOUT = 4.0;
 const SLING_ASSIST_DURATION = 4.0;
 
 export interface SlingComboManagerOptions {
-    juiceManager: JuiceManager;
-    hudManager: HUDManager;
+    juiceManager: JuicePort;
+    hudManager: HudPort;
     dogController: DogCockpitController;
-    audioSystem: AudioSystem;
+    audioSystem: AudioPort;
     particleSystem: ParticleSystem;
     /** Called with score bonus each time an action is recorded */
     onScoreBonus?: (points: number) => void;
@@ -113,7 +112,7 @@ export class SlingComboManager {
         }
 
         // Audio: rising charge hum scales with combo
-        audioSystem.playSlingCharge(this.combo);
+        audioSystem.playSlingCharge?.(this.combo);
 
         // Update HUD
         hudManager.showSlingCombo(this.combo, this.combo >= 7);

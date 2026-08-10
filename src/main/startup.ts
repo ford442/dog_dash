@@ -166,7 +166,6 @@ function createLevelManager(
         godRaySystem: systems.godRaySystem,
         auroraSystem: systems.auroraSystem,
         butterflySwarmSystem: managers.butterflySwarmSystem,
-        flowerManager: managers.flowerManager,
         pinwheelManager: managers.pinwheelManager,
         windChimeManager: managers.windChimeManager,
         solarSailFernManager: managers.solarSailFernManager,
@@ -199,7 +198,9 @@ function createLevelManager(
             dayNightCycleSystem: systems.dayNightCycleSystem,
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
-            singingGeodeSystem: systems.singingGeodeSystem
+            singingGeodeSystem: systems.singingGeodeSystem,
+            windCurrentsSystem: systems.windCurrentsSystem,
+            flowerConstellationsSystem: systems.flowerConstellationsSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -262,7 +263,8 @@ function createLevelManager(
         dayNightCycleSystem: systems.dayNightCycleSystem,
         cloudCastlesSystem: systems.cloudCastlesSystem,
         candyFieldSystem: systems.candyFieldSystem,
-        singingGeodeSystem: systems.singingGeodeSystem
+        singingGeodeSystem: systems.singingGeodeSystem,
+        windCurrentsSystem: systems.windCurrentsSystem
     });
 }
 

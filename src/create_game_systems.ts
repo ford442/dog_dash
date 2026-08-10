@@ -32,7 +32,9 @@ import {
     createDayNightCycleSystemStub,
     createCloudCastlesSystemStub,
     createCandyFieldSystemStub,
-    createSingingGeodeSystemStub
+    createSingingGeodeSystemStub,
+    createWindCurrentsSystemStub,
+    createFlowerConstellationsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -53,6 +55,7 @@ import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { CandyFieldSystem } from './candy_obstacles';
 import type { SingingGeodeSystem } from './singing_geodes';
+import type { FlowerConstellationsSystem } from './flower_constellations_system';
 import { GravLensManager } from './grav_lens';
 import { DerelictBuoyManager } from './derelict_buoy';
 import { DataMonolithManager } from './data_monolith';
@@ -138,8 +141,11 @@ export type GameSystems = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
+    flowerConstellationsSystem: FlowerConstellationsSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -160,8 +166,11 @@ export type LevelEnvironmentSystemExports = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
+    flowerConstellationsSystem: FlowerConstellationsSystem;
 };
 
 /**
@@ -230,11 +239,11 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     };
 
     const starfield = new StarfieldSystem(scene);
-    const orbManager = new OrbManager(scene, particleSystem, 4);
+    const orbManager = new OrbManager(scene, particleSystem, audioSystem, 4);
 
     const saveManager = getSaveManager();
     const dogController = new DogCockpitController();
-    const hudManager = new HUDManager(saveManager);
+    const hudManager = new HUDManager(saveManager, audioSystem);
     const juiceManager = new JuiceManager(camera, scene, particleSystem);
 
     const tempTarget = new THREE.Group();
@@ -341,8 +350,10 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
+    const windCurrentsSystem = createWindCurrentsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
+    const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -397,8 +408,10 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dynamicStarfieldSystem,
         dayNightCycleSystem,
         cloudCastlesSystem,
+        windCurrentsSystem,
         candyFieldSystem,
         singingGeodeSystem,
+        flowerConstellationsSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager

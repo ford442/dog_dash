@@ -2,18 +2,21 @@
  * Per-level / per-flag async system loading.
  * Heavy modules are only downloaded when a level that needs them is about to start
  * (or prefetched near the end of the previous segment).
+ *
+ * Loader keys and install hooks are defined in `level_env_registry.ts`.
  */
 import { game } from './game_runtime';
 import { getLevelSpan } from './depth_layers';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
-import { isEnvironmentEnabled } from './level_manager/types';
 import type { LevelEnvironmentPorts } from './level_manager/types';
 import {
-    shouldSpawnStarlightKoi,
-    shouldSpawnBubbleCoral
-} from './level_spawn_rules';
+    installDeferredSystem,
+    systemsNeededForLevel,
+    type SystemKey,
+    type DeferredLoaderContext,
+    type DeferredGamePorts
+} from './level_env_registry';
 import { scene, camera } from './scene_context';
-import { createDreamPortalCallbacks } from './main/dream_portal_update';
 
 type SystemKey =
     | 'reEntry'
@@ -45,6 +48,8 @@ type SystemKey =
     | 'singingGeodes'
     | 'cloudCastles'
     | 'candyPlanetRing';
+export type { SystemKey } from './level_env_registry';
+export { systemsNeededForLevel } from './level_env_registry';
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -57,8 +62,16 @@ function installEnvPartial(partial: Partial<LevelEnvironmentPorts>): void {
     }
 }
 
-function assignGameSystem<K extends keyof typeof game>(key: K, value: (typeof game)[K]): void {
-    game[key] = value;
+function createLoaderContext(): DeferredLoaderContext {
+    return {
+        scene,
+        camera,
+        game: game as unknown as DeferredGamePorts,
+        installEnvPartial,
+        assignGameSystem(key, value) {
+            (game as unknown as DeferredGamePorts)[key] = value;
+        }
+    };
 }
 
 async function loadSystem(key: SystemKey): Promise<void> {
@@ -268,6 +281,7 @@ async function loadSystem(key: SystemKey): Promise<void> {
                 break;
             }
         }
+        await installDeferredSystem(key, createLoaderContext());
         loaded.add(key);
         inflight.delete(key);
     })();

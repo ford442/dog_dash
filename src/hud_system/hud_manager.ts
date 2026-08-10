@@ -3,7 +3,7 @@
  */
 
 import { SaveManager } from '../save_manager';
-import { AudioSystem, getAudioSystem } from '../audio_system';
+import { AudioSystem } from '../audio_system';
 import { COLORS, POWER_UP_ICONS, PowerUpType, GameStats } from './styles';
 import {
     HUDElementsBuilder,
@@ -49,9 +49,9 @@ export class HUDManager {
     private activePowerUps: Map<PowerUpType, { element: HTMLDivElement; timeout: number }> = new Map();
     private soundEnabled: boolean = true;
 
-    constructor(saveManager: SaveManager) {
+    constructor(saveManager: SaveManager, audioSystem: AudioSystem) {
         this.saveManager = saveManager;
-        this.audioSystem = getAudioSystem();
+        this.audioSystem = audioSystem;
         this.highScore = saveManager.getStats().highScore;
         this.elements = new HUDElementsBuilder();
 
@@ -615,9 +615,9 @@ export class HUDManager {
 
 let hudManager: HUDManager | null = null;
 
-export function getHUDManager(saveManager?: SaveManager): HUDManager {
-    if (!hudManager && saveManager) {
-        hudManager = new HUDManager(saveManager);
+export function getHUDManager(saveManager?: SaveManager, audioSystem?: AudioSystem): HUDManager {
+    if (!hudManager && saveManager && audioSystem) {
+        hudManager = new HUDManager(saveManager, audioSystem);
     }
     return hudManager!;
 }

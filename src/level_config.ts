@@ -128,6 +128,20 @@ export type DataMonolithConfig = {
     tier?: 1 | 2 | 3;
 };
 
+
+export type WindZoneConfig = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    forceX: number;
+    forceY: number;
+};
+
+export type WindCurrentsEnvironmentConfig = {
+    zones: WindZoneConfig[];
+};
+
 export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
@@ -164,6 +178,8 @@ export type LevelEnvironments = {
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
+    windCurrents?: boolean | WindCurrentsEnvironmentConfig;
+    flowerConstellations?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -320,7 +336,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             candyPlanetRing: true,
             wishLanterns: true,
             dancingJellyMoss: true,
-            dayNightCycle: { cycleDuration: 30 }
+            dayNightCycle: { cycleDuration: 30 },
+            cloudCastles: { density: 0.6 },
+            flowerConstellations: true
         },
         vignettes: {
             treeGroves: 1.5,
@@ -377,13 +395,20 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
             blackHole: { enabled: true, baseX: 3000, baseY: 100 },
+            windCurrents: {
+                zones: [
+                    { x: 400, y: 5, width: 200, height: 20, forceX: 0, forceY: 30 },
+                    { x: 700, y: 5, width: 200, height: 20, forceX: 0, forceY: -30 }
+                ]
+            },
             // Dream Portal door tucked between the two grav-lens corridors.
             dreamPortals: {
                 enabled: true,
                 portals: [
                     { x: 820, y: 7, z: -1, theme: 'candy', durationSeconds: 32 }
                 ]
-            }
+            },
+            flowerConstellations: true
         },
         vignettes: {
             geodeClearings: 0.5
@@ -462,7 +487,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 portals: [
                     { x: 1660, y: -3, z: -1, theme: 'aurora', durationSeconds: 38, toyCount: 16 }
                 ]
-            }
+            },
+            flowerConstellations: true
         },
         vignettes: {
             roseArches: 1.2

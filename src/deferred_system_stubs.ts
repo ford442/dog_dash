@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
 import type { BlackHoleSystem } from './black_hole';
 import type { GalacticCoreSystem } from './galactic_core';
@@ -28,6 +29,7 @@ import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { SingingGeodeSystem } from './singing_geodes';
+import type { WindCurrentsSystem } from './wind_currents';
 
 const noop = () => undefined;
 
@@ -297,6 +299,17 @@ export function createCloudCastlesSystemStub(): CloudCastlesSystem {
     } as unknown as CloudCastlesSystem;
 }
 
+export function createWindCurrentsSystemStub(): WindCurrentsSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop,
+        getWindForce: () => new THREE.Vector3(0, 0, 0)
+    } as unknown as WindCurrentsSystem;
+}
+
 export function createCandyFieldSystemStub(): CandyFieldSystem {
     return {
         active: false,
@@ -315,4 +328,13 @@ export function createSingingGeodeSystemStub(): SingingGeodeSystem {
         update: noop,
         cleanup: noop
     } as unknown as SingingGeodeSystem;
+}
+import type { FlowerConstellationsSystem } from './flower_constellations_system';
+export function createFlowerConstellationsSystemStub(): FlowerConstellationsSystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as FlowerConstellationsSystem;
 }
