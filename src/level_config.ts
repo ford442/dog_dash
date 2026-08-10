@@ -632,6 +632,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             cosmicDust: true,
             voidJellyfish: { density: 45 },
             dancingJellyMoss: { density: 1.5 },
+            cloudCastles: true,
             singingGeodes: { density: 15 }
         },
         vignettes: {

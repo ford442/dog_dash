@@ -119,6 +119,7 @@ export type LevelManagerOptions = {
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
     candyManager: CandyBeltManager;
+    candyFieldSystem: CandyFieldSystem;
     getPlayer: () => THREE.Group | null;
     spawners: GeologicalSpawners;
     geologicalCounts: GeologicalCounts;
