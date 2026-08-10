@@ -199,7 +199,8 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
-            flowerConstellationsSystem: systems.flowerConstellationsSystem
+            flowerConstellationsSystem: systems.flowerConstellationsSystem,
+            skyRailTerminalSystem: systems.skyRailTerminalSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -366,6 +367,7 @@ export function initializeStartup(): void {
         ['moonEffects', 'Moon / Galaxy Effects', true],
         ['pilotAnim', 'Pilot Animation', true],
         ['flowerConstellations', 'Flower Constellations', true],
+        ['skyRailTerminal', 'Sky-Rail Terminal', true],
         ['pinwheelFlora', 'Pinwheel Flowers', true],
         ['solarSailFerns', 'Solar Sail Ferns', true],
         ['crystalChimes', 'Crystal Chimes', true],
