@@ -8,6 +8,7 @@ import type {
 } from '../level_config';
 import type { EnvironmentPlugin, LevelEnvironmentPorts } from './types';
 import { isEnvironmentEnabled } from './types';
+import type * as THREE from 'three';
 
 /** Systems registry host for environment plugin activation. */
 export interface LevelPluginHost extends LevelEnvironmentPorts {
@@ -212,6 +213,11 @@ export function buildEnvironmentPlugins(
             flag: 'weather',
             activate: () => host.weatherSystem.activate(),
             deactivate: () => host.weatherSystem.deactivate()
+        },
+        {
+            flag: 'cloudCastles',
+            activate: (config: any) => host.cloudCastlesSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.cloudCastlesSystem.deactivate()
         },
         {
             flag: 'singingGeodes',

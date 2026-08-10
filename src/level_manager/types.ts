@@ -119,7 +119,7 @@ export type LevelManagerOptions = {
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;
     candyManager: CandyBeltManager;
-    candyFieldSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
+    candyFieldSystem: CandyFieldSystem;
     getPlayer: () => THREE.Group | null;
     spawners: GeologicalSpawners;
     geologicalCounts: GeologicalCounts;
@@ -129,6 +129,5 @@ export type LevelManagerOptions = {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
-    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 };

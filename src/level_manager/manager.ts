@@ -58,7 +58,6 @@ export class LevelManager {
     readonly windChimeManager: WindChimeManager;
     readonly solarSailFernManager: SolarSailFernManager;
     private readonly candyManager: CandyBeltManager;
-    readonly candyFieldSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     readonly getPlayer: () => THREE.Group | null;
     readonly spawners: GeologicalSpawners;
     readonly geologicalCounts: GeologicalCounts;
@@ -95,7 +94,7 @@ export class LevelManager {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
-    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
+    readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {

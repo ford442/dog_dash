@@ -163,6 +163,7 @@ export type LevelEnvironments = {
     /** Secret bonus-room doorways (deferred chunk). */
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
+    cloudCastles?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -605,6 +606,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             cosmicDust: true,
             voidJellyfish: { density: 45 },
             dancingJellyMoss: { density: 1.5 },
+            cloudCastles: true,
             singingGeodes: { density: 15 }
         },
         vignettes: {
