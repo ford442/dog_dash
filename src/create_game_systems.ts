@@ -26,6 +26,7 @@ import {
     createGalacticCoreSystemStub,
     createDreamPortalSystemStub,
     createWishLanternSystemStub,
+    createSpacePetsSwarmSystemStub,
     createWeatherSystemStub,
     createDancingJellyMossSystemStub,
     createDynamicStarfieldSystemStub,
@@ -47,6 +48,7 @@ import type { BlackHoleSystem } from './black_hole';
 import type { GalacticCoreSystem } from './galactic_core';
 import type { DreamPortalSystem } from './dream_portal';
 import type { WishLanternSystem } from './wish_lanterns';
+import type { SpacePetsSwarmSystem } from './space_pets_swarm';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
@@ -135,6 +137,7 @@ export type GameSystems = {
     derelictBuoyManager: DerelictBuoyManager;
     dataMonolithManager: DataMonolithManager;
     wishLanternSystem: WishLanternSystem;
+    spacePetsSwarmSystem: SpacePetsSwarmSystem;
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
@@ -160,6 +163,7 @@ export type LevelEnvironmentSystemExports = {
     blackHoleSystem: BlackHoleSystem;
     galacticCoreSystem: GalacticCoreSystem;
     wishLanternSystem: WishLanternSystem;
+    spacePetsSwarmSystem: SpacePetsSwarmSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
@@ -340,6 +344,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const galacticCoreSystem: GalacticCoreSystem = createGalacticCoreSystemStub();
     const dreamPortalSystem: DreamPortalSystem = createDreamPortalSystemStub();
     const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
+    const spacePetsSwarmSystem: SpacePetsSwarmSystem = createSpacePetsSwarmSystemStub();
     const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const dancingJellyMossSystem: DancingJellyMossSystem = createDancingJellyMossSystemStub();
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
@@ -397,6 +402,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         galacticCoreSystem,
         dreamPortalSystem,
         wishLanternSystem,
+        spacePetsSwarmSystem,
         weatherSystem,
         dancingJellyMossSystem,
         dynamicStarfieldSystem,

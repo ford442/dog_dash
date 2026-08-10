@@ -22,6 +22,7 @@ import type { RainbowBubbleCoralManager } from './bubble_coral';
 import type { SlingableObjectSystem } from './slingable_objects';
 import type { ToyRocketSpawnManager } from './toy_rockets';
 import type { WishLanternSystem } from './wish_lanterns';
+import type { SpacePetsSwarmSystem } from './space_pets_swarm';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
@@ -235,6 +236,16 @@ export function createToyRocketSpawnManagerStub(): ToyRocketSpawnManager {
     return {
         spawnForLevel: noop
     } as unknown as ToyRocketSpawnManager;
+}
+
+export function createSpacePetsSwarmSystemStub(): SpacePetsSwarmSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as SpacePetsSwarmSystem;
 }
 
 export function createWishLanternSystemStub(): WishLanternSystem {

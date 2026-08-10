@@ -88,6 +88,7 @@ export class LevelManager {
     stormGeodeSystem: LevelEnvironmentPorts['stormGeodeSystem'];
     pastelNebulaSystem: LevelEnvironmentPorts['pastelNebulaSystem'];
     wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'];
+    spacePetsSwarmSystem: LevelEnvironmentPorts['spacePetsSwarmSystem'];
     weatherSystem: LevelEnvironmentPorts['weatherSystem'];
     dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'];
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
@@ -141,6 +142,7 @@ export class LevelManager {
         this.stormGeodeSystem = options.env.stormGeodeSystem;
         this.pastelNebulaSystem = options.env.pastelNebulaSystem;
         this.wishLanternSystem = options.env.wishLanternSystem;
+        this.spacePetsSwarmSystem = options.env.spacePetsSwarmSystem;
         this.weatherSystem = options.env.weatherSystem;
         this.dancingJellyMossSystem = options.env.dancingJellyMossSystem;
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
@@ -378,6 +380,7 @@ export class LevelManager {
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
+        this.spacePetsSwarmSystem.update(delta, cameraX, playerPos);
         this.weatherSystem.update(delta, cameraX, playerPos);
         this.dancingJellyMossSystem.update(delta, cameraX, playerPos);
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
