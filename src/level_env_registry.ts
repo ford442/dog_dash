@@ -50,6 +50,7 @@ export const DEFERRED_ENV_FLAGS = [
     'dreamPortals',
     'singingGeodes',
     'cloudCastles',
+    'windCurrents',
     'flowerConstellations'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -224,6 +225,18 @@ export const DEFERRED_ENV_REGISTRY: {
             deactivate: () => host.cloudCastlesSystem.deactivate()
         })
     },
+    windCurrents: {
+        flag: 'windCurrents',
+        systemKey: 'windCurrents',
+        load: () => import('./wind_currents'),
+        install: (ctx, mod) => {
+            const { WindCurrentsSystem } = mod as typeof import('./wind_currents');
+            ctx.installEnvPartial({ windCurrentsSystem: new WindCurrentsSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'windCurrents',
+            activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
+            deactivate: () => host.windCurrentsSystem.deactivate()
     flowerConstellations: {
         flag: 'flowerConstellations',
         systemKey: 'flowerConstellations',
@@ -788,6 +801,7 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'weather',
     'singingGeodes',
     'cloudCastles',
+    'windCurrents',
     'flowerConstellations'
 ];
 

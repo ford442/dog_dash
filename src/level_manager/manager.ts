@@ -93,6 +93,7 @@ export class LevelManager {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
+    windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
 
@@ -146,6 +147,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
         this.dayNightCycleSystem = options.dayNightCycleSystem;
         this.cloudCastlesSystem = options.cloudCastlesSystem;
+        this.windCurrentsSystem = options.windCurrentsSystem;
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
@@ -383,6 +385,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         if (enabled('cloudCastles') && this.cloudCastlesSystem) this.cloudCastlesSystem.update(delta, cameraX, playerPos);
+        if (enabled('windCurrents') && this.windCurrentsSystem) this.windCurrentsSystem.update(delta, cameraX, playerPos);
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
         this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);

@@ -97,6 +97,7 @@ export type LevelEnvironmentPorts = {
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     dayNightCycleSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    windCurrentsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; getWindForce: (pos: THREE.Vector3) => THREE.Vector3; };
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
@@ -127,6 +128,7 @@ export type LevelManagerOptions = {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
+    windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 };

@@ -199,6 +199,7 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
+            windCurrentsSystem: systems.windCurrentsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem
         },
         spawners: {
@@ -263,6 +264,7 @@ function createLevelManager(
         cloudCastlesSystem: systems.cloudCastlesSystem,
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
+        windCurrentsSystem: systems.windCurrentsSystem
     });
 }
 

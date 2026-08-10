@@ -33,6 +33,7 @@ import {
     createCloudCastlesSystemStub,
     createCandyFieldSystemStub,
     createSingingGeodeSystemStub,
+    createWindCurrentsSystemStub,
     createFlowerConstellationsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
@@ -140,6 +141,8 @@ export type GameSystems = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
@@ -163,6 +166,8 @@ export type LevelEnvironmentSystemExports = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
@@ -345,6 +350,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
+    const windCurrentsSystem = createWindCurrentsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -402,6 +408,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dynamicStarfieldSystem,
         dayNightCycleSystem,
         cloudCastlesSystem,
+        windCurrentsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,

@@ -128,6 +128,20 @@ export type DataMonolithConfig = {
     tier?: 1 | 2 | 3;
 };
 
+
+export type WindZoneConfig = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    forceX: number;
+    forceY: number;
+};
+
+export type WindCurrentsEnvironmentConfig = {
+    zones: WindZoneConfig[];
+};
+
 export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
@@ -164,6 +178,7 @@ export type LevelEnvironments = {
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
+    windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
 };
 
@@ -380,6 +395,12 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
             blackHole: { enabled: true, baseX: 3000, baseY: 100 },
+            windCurrents: {
+                zones: [
+                    { x: 400, y: 5, width: 200, height: 20, forceX: 0, forceY: 30 },
+                    { x: 700, y: 5, width: 200, height: 20, forceX: 0, forceY: -30 }
+                ]
+            },
             // Dream Portal door tucked between the two grav-lens corridors.
             dreamPortals: {
                 enabled: true,
