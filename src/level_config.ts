@@ -167,6 +167,7 @@ export type LevelEnvironments = {
     meteorShower?: MeteorShowerEnvironmentConfig;
     bubbleCoral?: BubbleCoralEnvironmentConfig | boolean;
     wishLanterns?: boolean;
+    spacePetsSwarm?: boolean | { density?: number };
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
@@ -335,6 +336,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             pastelNebula: true,
             candyPlanetRing: true,
             wishLanterns: true,
+            spacePetsSwarm: true,
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },

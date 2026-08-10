@@ -192,6 +192,7 @@ function createLevelManager(
             stormGeodeSystem: systems.stormGeodeSystem,
             pastelNebulaSystem: systems.pastelNebulaSystem,
             wishLanternSystem: systems.wishLanternSystem,
+            spacePetsSwarmSystem: systems.spacePetsSwarmSystem,
             weatherSystem: systems.weatherSystem,
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
             dynamicStarfieldSystem: systems.dynamicStarfieldSystem,

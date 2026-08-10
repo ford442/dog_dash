@@ -22,6 +22,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     objectDensityMultiplier: number;
     moonPalaceSystem: LevelEnvironmentPorts['moonPalaceSystem'] & { levelDistance: number; activate: () => void; deactivate: () => void };
     wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'] & { activate: () => void; deactivate: () => void };
+    spacePetsSwarmSystem: LevelEnvironmentPorts['spacePetsSwarmSystem'] & { activate: () => void; deactivate: () => void };
     weatherSystem: LevelEnvironmentPorts['weatherSystem'] & { activate: () => void; deactivate: () => void };
     dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'] & { activate: (config?: { density?: number }) => void; deactivate: () => void };
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'] & { activate: (config?: { speedScaling?: number }) => void; deactivate: () => void };

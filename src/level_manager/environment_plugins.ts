@@ -25,6 +25,7 @@ const PLUGIN_ORDER = [
     'pastelNebula',
     'candyField',
     'wishLanterns',
+    'spacePetsSwarm',
     'butterflySwarm',
     'blackHole',
     'galacticCore',

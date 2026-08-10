@@ -92,6 +92,7 @@ export type LevelEnvironmentPorts = {
     stormGeodeSystem: StormGeodeSystem;
     pastelNebulaSystem: PastelNebulaSystem;
     wishLanternSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
+    spacePetsSwarmSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     weatherSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
