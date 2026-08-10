@@ -15,7 +15,6 @@ import type { VoidJellyfishSystem } from '../void_jellyfish';
 import { DebugSystem } from '../debug_system';
 import { FriendsManager } from '../space_friends';
 import { ButterflySwarmSystem } from '../butterfly_swarm';
-import type { ConstellationManager } from '../flower_constellations';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
@@ -53,7 +52,6 @@ export class LevelManager {
     readonly scene: THREE.Scene;
     readonly camera: THREE.PerspectiveCamera;
     readonly butterflySwarmSystem: ButterflySwarmSystem;
-    private readonly flowerManager: ConstellationManager;
     readonly pinwheelManager: PinwheelFloraManager;
     readonly windChimeManager: WindChimeManager;
     readonly solarSailFernManager: SolarSailFernManager;
@@ -97,6 +95,7 @@ export class LevelManager {
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
+    flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -113,7 +112,6 @@ export class LevelManager {
         this.scene = options.scene;
         this.camera = options.camera;
         this.butterflySwarmSystem = options.butterflySwarmSystem;
-        this.flowerManager = options.flowerManager;
         this.pinwheelManager = options.pinwheelManager;
         this.windChimeManager = options.windChimeManager;
         this.solarSailFernManager = options.solarSailFernManager;
@@ -152,6 +150,7 @@ export class LevelManager {
         this.windCurrentsSystem = options.windCurrentsSystem;
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
+        this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
 
         this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
@@ -287,16 +286,6 @@ export class LevelManager {
         const dreamyStart = levelStartX + dreamyPadding;
         const dreamyEnd = levelEndX - dreamyPadding;
 
-        if (levelIndex <= 3 || levelIndex >= 6) {
-            this.flowerManager.cleanup();
-            this.flowerManager.generateConstellation(
-                15,
-                dreamyStart,
-                dreamyEnd,
-                DEPTH_LAYERS.BACKGROUND.min,
-                DEPTH_LAYERS.BACKGROUND.max
-            );
-        }
 
         if (levelIndex !== 4 && levelIndex !== 5) {
             this.candyManager.clear();

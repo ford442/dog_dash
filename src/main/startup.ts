@@ -166,7 +166,6 @@ function createLevelManager(
         godRaySystem: systems.godRaySystem,
         auroraSystem: systems.auroraSystem,
         butterflySwarmSystem: managers.butterflySwarmSystem,
-        flowerManager: managers.flowerManager,
         pinwheelManager: managers.pinwheelManager,
         windChimeManager: managers.windChimeManager,
         solarSailFernManager: managers.solarSailFernManager,
@@ -200,7 +199,8 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
-            windCurrentsSystem: systems.windCurrentsSystem
+            windCurrentsSystem: systems.windCurrentsSystem,
+            flowerConstellationsSystem: systems.flowerConstellationsSystem
         },
         spawners: {
             createSporeCloudAtPosition,

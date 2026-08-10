@@ -329,3 +329,12 @@ export function createSingingGeodeSystemStub(): SingingGeodeSystem {
         cleanup: noop
     } as unknown as SingingGeodeSystem;
 }
+import type { FlowerConstellationsSystem } from './flower_constellations_system';
+export function createFlowerConstellationsSystemStub(): FlowerConstellationsSystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as FlowerConstellationsSystem;
+}
