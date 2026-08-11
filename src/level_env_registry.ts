@@ -44,6 +44,7 @@ export const DEFERRED_ENV_FLAGS = [
     'meteorShower',
     'wishLanterns',
     'dancingJellyMoss',
+    'spacePetsSwarm',
     'weather',
     'dynamicStarfield',
     'dayNightCycle',
@@ -51,6 +52,7 @@ export const DEFERRED_ENV_FLAGS = [
     'dreamPortals',
     'singingGeodes',
     'cloudCastles',
+    'windCurrents',
     'flowerConstellations'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -124,6 +126,7 @@ export type DeferredGamePorts = {
     bubbleCoralManager: unknown;
     slingableObjectSystem: unknown;
     toyRocketSpawnManager: unknown;
+    spacePetsSwarmSystem: unknown;
     rewireSlingableCallbacks?: () => void;
     bossManager: unknown;
     dreamPortalSystem: unknown;
@@ -240,6 +243,18 @@ export const DEFERRED_ENV_REGISTRY: {
             deactivate: () => host.skyRailTerminalSystem.deactivate()
         })
     },
+    windCurrents: {
+        flag: 'windCurrents',
+        systemKey: 'windCurrents',
+        load: () => import('./wind_currents'),
+        install: (ctx, mod) => {
+            const { WindCurrentsSystem } = mod as typeof import('./wind_currents');
+            ctx.installEnvPartial({ windCurrentsSystem: new WindCurrentsSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'windCurrents',
+            activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
+            deactivate: () => host.windCurrentsSystem.deactivate()
     flowerConstellations: {
         flag: 'flowerConstellations',
         systemKey: 'flowerConstellations',
@@ -268,6 +283,22 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'dayNightCycle',
             activate: (config) => host.dayNightCycleSystem.activate(objectConfig(config)),
             deactivate: () => host.dayNightCycleSystem.deactivate()
+        })
+    },
+    spacePetsSwarm: {
+        flag: 'spacePetsSwarm',
+        systemKey: 'spacePetsSwarm',
+        load: () => import('./space_pets_swarm'),
+        install: (ctx, mod) => {
+            const { SpacePetsSwarmSystem } = mod as typeof import('./space_pets_swarm');
+            const system = new SpacePetsSwarmSystem(ctx.scene, ctx.game.particleSystem);
+            ctx.assignGameSystem('spacePetsSwarmSystem', system);
+            ctx.installEnvPartial({ spacePetsSwarmSystem: system });
+        },
+        plugin: (host) => ({
+            flag: 'spacePetsSwarm',
+            activate: () => host.spacePetsSwarmSystem.activate(),
+            deactivate: () => host.spacePetsSwarmSystem.deactivate()
         })
     },
     dancingJellyMoss: {
@@ -804,11 +835,13 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'voidJellyfish',
     'meteorShower',
     'dancingJellyMoss',
+    'spacePetsSwarm',
     'weather',
     'singingGeodes',
     'cloudCastles',
-    'flowerConstellations',
     'skyRailTerminal'
+    'windCurrents',
+    'flowerConstellations'
 ];
 
 export function buildDeferredEnvPlugins(

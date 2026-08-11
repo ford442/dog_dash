@@ -20,11 +20,21 @@ export function updatePlayer(delta: number) {
     const hasFairyWings = game.powerUpManager.hasPowerUp(PowerUpType.FAIRY_DOG_WINGS);
     
     // Auto-scroll (constant forward movement)
+    // Apply wind currents force
+    let windForceY = 0;
+    let windForceX = 0;
+    if (game.levelManager && game.levelManager.windCurrentsSystem) {
+        const windForce = game.levelManager.windCurrentsSystem.getWindForce(player.position);
+        windForceY = windForce.y;
+        windForceX = windForce.x;
+    }
     const speedMult = modifiers.speedMultiplier ?? 1.0;
-    player.position.x += playerState.autoScrollSpeed * speedMult * delta;
+    player.position.x += (playerState.autoScrollSpeed + windForceX) * speedMult * delta;
+
 
     // --- UPGRADED: Gravity and Momentum Flight ---
     let targetSpeed = 0;
+
     let isMovingUp = keys.jump || keys.right;  // Space or Up arrow or D
     let isMovingDown = keys.left;              // A or Left arrow
     
@@ -58,10 +68,13 @@ export function updatePlayer(delta: number) {
     
     if (isMovingUp) {
         targetSpeed = CONFIG.player.maxSpeedY;
+        targetSpeed += windForceY * 0.5; // Apply vertical wind (reduced in thrust)
     } else if (isMovingDown) {
         targetSpeed = -CONFIG.player.maxDescentSpeed;
+        targetSpeed += windForceY * 0.5; // Apply vertical wind (reduced in dive)
     } else {
         targetSpeed = -CONFIG.player.gravity;
+        targetSpeed += windForceY; // Apply vertical wind
         if (playerState.penguinSlideAssistTimer > 0) {
             targetSpeed *= 0.45;
         }

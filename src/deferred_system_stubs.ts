@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import type { CandyFieldSystem } from './candy_obstacles/candy_field_system';
 import type { BlackHoleSystem } from './black_hole';
 import type { GalacticCoreSystem } from './galactic_core';
@@ -22,12 +23,14 @@ import type { RainbowBubbleCoralManager } from './bubble_coral';
 import type { SlingableObjectSystem } from './slingable_objects';
 import type { ToyRocketSpawnManager } from './toy_rockets';
 import type { WishLanternSystem } from './wish_lanterns';
+import type { SpacePetsSwarmSystem } from './space_pets_swarm';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { SingingGeodeSystem } from './singing_geodes';
+import type { WindCurrentsSystem } from './wind_currents';
 
 const noop = () => undefined;
 
@@ -237,6 +240,16 @@ export function createToyRocketSpawnManagerStub(): ToyRocketSpawnManager {
     } as unknown as ToyRocketSpawnManager;
 }
 
+export function createSpacePetsSwarmSystemStub(): SpacePetsSwarmSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as SpacePetsSwarmSystem;
+}
+
 export function createWishLanternSystemStub(): WishLanternSystem {
     return {
         active: false,
@@ -295,6 +308,17 @@ export function createCloudCastlesSystemStub(): CloudCastlesSystem {
         update: noop,
         cleanup: noop
     } as unknown as CloudCastlesSystem;
+}
+
+export function createWindCurrentsSystemStub(): WindCurrentsSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop,
+        getWindForce: () => new THREE.Vector3(0, 0, 0)
+    } as unknown as WindCurrentsSystem;
 }
 
 export function createCandyFieldSystemStub(): CandyFieldSystem {

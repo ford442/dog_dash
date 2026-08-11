@@ -192,6 +192,7 @@ function createLevelManager(
             stormGeodeSystem: systems.stormGeodeSystem,
             pastelNebulaSystem: systems.pastelNebulaSystem,
             wishLanternSystem: systems.wishLanternSystem,
+            spacePetsSwarmSystem: systems.spacePetsSwarmSystem,
             weatherSystem: systems.weatherSystem,
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
             dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
@@ -199,8 +200,9 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
-            flowerConstellationsSystem: systems.flowerConstellationsSystem,
             skyRailTerminalSystem: systems.skyRailTerminalSystem
+            windCurrentsSystem: systems.windCurrentsSystem,
+            flowerConstellationsSystem: systems.flowerConstellationsSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -264,6 +266,7 @@ function createLevelManager(
         cloudCastlesSystem: systems.cloudCastlesSystem,
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
+        windCurrentsSystem: systems.windCurrentsSystem
     });
 }
 
