@@ -1,3 +1,4 @@
+import { SkyRailTerminalSystem } from './sky_rail_terminal';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
 import { CrystalChimeManager } from './crystal_chimes';
@@ -149,6 +150,7 @@ export type GameSystems = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
+    skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -175,6 +177,7 @@ export type LevelEnvironmentSystemExports = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
+    skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
 /**
@@ -359,6 +362,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
+    const skyRailTerminalSystem = new SkyRailTerminalSystem(scene);
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -420,6 +424,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         flowerConstellationsSystem,
         gravLensManager,
         derelictBuoyManager,
-        dataMonolithManager
+        dataMonolithManager,
+        skyRailTerminalSystem
     };
 }

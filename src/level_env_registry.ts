@@ -28,6 +28,7 @@ import { createDreamPortalCallbacks } from './main/dream_portal_update';
 
 /** Environment flags whose real implementation is dynamically imported. */
 export const DEFERRED_ENV_FLAGS = [
+    'skyRailTerminal',
     'candyPlanetRing',
     'blackHole',
     'industrial',
@@ -108,6 +109,7 @@ export type DeferredGamePorts = {
     audioSystem: AudioSystem;
     particleSystem: ParticleSystem;
     flowerConstellationsSystem?: unknown;
+    skyRailTerminalSystem?: unknown;
     debrisSystem: DebrisSystem;
     lightningBoltSystem: { onBoltStrike?: (pos: THREE.Vector3, color: THREE.Color) => void };
     levelManager: {
@@ -225,6 +227,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'cloudCastles',
             activate: (config) => host.cloudCastlesSystem.activate(objectConfig(config)),
             deactivate: () => host.cloudCastlesSystem.deactivate()
+        })
+    },
+    skyRailTerminal: {
+        flag: 'skyRailTerminal',
+        systemKey: 'skyRailTerminal',
+        load: () => import('./sky_rail_terminal'),
+        install: (ctx, mod) => {
+            const { SkyRailTerminalSystem } = mod as typeof import('./sky_rail_terminal');
+            ctx.installEnvPartial({ skyRailTerminalSystem: new SkyRailTerminalSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'skyRailTerminal',
+            activate: (config) => host.skyRailTerminalSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.skyRailTerminalSystem.deactivate()
         })
     },
     windCurrents: {
@@ -737,7 +753,10 @@ export function buildEagerEnvPlugins(
                         host.nebulaSystem.activate();
                         host.nebulaSystem.activateRibbons();
                     },
-                    deactivate: () => host.nebulaSystem.deactivate()
+                    deactivate: () => {
+                        host.nebulaSystem.deactivate();
+                        host.nebulaSystem.deactivateRibbons();
+                    }
                 });
                 break;
             case 'nebulaRibbons':
@@ -820,6 +839,7 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'weather',
     'singingGeodes',
     'cloudCastles',
+    'skyRailTerminal'
     'windCurrents',
     'flowerConstellations'
 ];

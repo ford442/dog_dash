@@ -181,6 +181,7 @@ export type LevelEnvironments = {
     cloudCastles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
+    skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -558,7 +559,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dynamicStarfield: true,
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
-            bubbleCoral: { density: 0.85 }
+            bubbleCoral: { density: 0.85 },
+            skyRailTerminal: true
         },
         vignettes: {
             treeGroves: 0.6,

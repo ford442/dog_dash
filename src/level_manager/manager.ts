@@ -98,6 +98,7 @@ export class LevelManager {
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
+    skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -154,6 +155,7 @@ export class LevelManager {
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
+        this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
 
         this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
@@ -393,6 +395,7 @@ export class LevelManager {
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
         this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);
+        if (enabled('skyRailTerminal') && this.skyRailTerminalSystem) this.skyRailTerminalSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
