@@ -69,4 +69,11 @@ if (!Number.isFinite(x)) {
     process.exit(1);
 }
 
+// Light call smoke for noise (Option B biome-noise consumer — src/biome_noise.ts)
+const n = exports.fractalNoise2D(1.23, 4.56, 4, 2.0, 0.5);
+if (!Number.isFinite(n)) {
+    console.error('❌ fractalNoise2D produced non-finite value');
+    process.exit(1);
+}
+
 console.log(`✅ C++ WASM verified (${wasmPath})`);
