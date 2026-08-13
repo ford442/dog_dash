@@ -375,6 +375,78 @@ export class ObstacleSystem implements ObstacleSystemHost {
         triggerCandySquashFn(this, asteroid, intensity);
     }
 
+    /**
+     * Bark Blast: clear nearby debris/projectiles and weaken small obstacles.
+     * Returns counts for juice/audio feedback.
+     */
+    applyBarkBlast(center: THREE.Vector3, radius = 14): { cleared: number; weakened: number } {
+        let cleared = 0;
+        let weakened = 0;
+
+        for (let i = this.obstacles.length - 1; i >= 0; i--) {
+            const obs = this.obstacles[i];
+            const dist = obs.position.distanceTo(center);
+            if (dist > radius) continue;
+
+            const obsRadius = obs.userData.radius || 1.0;
+            const velocity = obs.userData.velocity as THREE.Vector3 | undefined;
+            const isProjectile = velocity && velocity.lengthSq() > 4;
+
+            if (isProjectile || obsRadius < 1.2) {
+                if (obs.userData.isCandyAsteroid) {
+                    triggerCandySquashFn(this, obs, 1.6);
+                } else {
+                    splitAsteroidFn(this, obs);
+                }
+                cleared++;
+            } else if (obsRadius < 2.0) {
+                obs.userData.radius = obsRadius * 0.55;
+                obs.scale.multiplyScalar(0.65);
+                if (obs.userData.isCandyAsteroid) {
+                    triggerCandySquashFn(this, obs, 0.8);
+                }
+                weakened++;
+            }
+        }
+
+        for (let i = this.patternEnemies.length - 1; i >= 0; i--) {
+            const enemy = this.patternEnemies[i];
+            if (enemy.mesh.position.distanceTo(center) <= radius + 1) {
+                this.scene.remove(enemy.mesh);
+                disposeObject(enemy.mesh);
+                this.patternEnemies.splice(i, 1);
+                cleared++;
+            }
+        }
+
+        return { cleared, weakened };
+    }
+
+    /** Scan for off-screen threats approaching the player (for dog whine warning). */
+    findOffscreenThreat(playerX: number, playerY: number, lookAhead = 45): THREE.Vector3 | null {
+        let closest: THREE.Vector3 | null = null;
+        let closestDist = lookAhead;
+
+        for (const obs of this.obstacles) {
+            const dx = obs.position.x - playerX;
+            const dy = obs.position.y - playerY;
+            if (dx < 18 || dx > lookAhead) continue;
+            if (Math.abs(dy) > 12) continue;
+
+            const velocity = obs.userData.velocity as THREE.Vector3 | undefined;
+            const movingToward = !velocity || velocity.x < 0;
+            if (!movingToward) continue;
+
+            const dist = Math.hypot(dx, dy);
+            if (dist < closestDist) {
+                closestDist = dist;
+                closest = obs.position;
+            }
+        }
+
+        return closest;
+    }
+
     getSquids(): NebulaKraken[] {
         return this.squids;
     }

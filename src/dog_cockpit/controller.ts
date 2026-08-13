@@ -259,6 +259,9 @@ export class DogCockpitController {
             case DogAnimationState.DELIGHTED:
                 animationStates.animateDelighted(this.animHost, deltaTime);
                 break;
+            case DogAnimationState.BARK:
+                animationStates.animateBark(this.animHost, deltaTime);
+                break;
         }
     }
     
@@ -400,6 +403,10 @@ export class DogCockpitController {
                 // Perk ears and spawn initial burst of sparkles
                 this.perkEars(0.8);
                 this.spawnHappyParticles();
+                break;
+            case DogAnimationState.BARK:
+                this.perkEars(1.0);
+                this.raisePaws(true);
                 break;
         }
     }

@@ -10,7 +10,7 @@ import { createBestiaryUI } from '../bestiary';
 import { createArchitectCodexUI } from '../architect_lore';
 import {
     createHeatBar, createBoostDisplay, createRollDisplay,
-    createTetherDisplay, createCoresDisplay, createGrenadeDisplay
+    createBarkDisplay, createTetherDisplay, createCoresDisplay, createGrenadeDisplay
 } from './hud_displays';
 import { throwGrenade } from './grenade';
 import { RESOLUTION_RATIOS } from './render_helpers';
@@ -80,6 +80,7 @@ export function setupInputBindings(): void {
             createCoresDisplay();
             createBoostDisplay();
             createRollDisplay();
+            createBarkDisplay();
             createTetherDisplay();
             createGrenadeDisplay(() => throwGrenade());
 
@@ -220,6 +221,12 @@ export function setupInputBindings(): void {
     window.addEventListener('keydown', (e) => {
         if (e.code === 'KeyG' && !e.repeat && gameStarted) {
             throwGrenade();
+        }
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'KeyB' && !e.repeat && gameStarted) {
+            game.wantsBark = true;
         }
     });
 

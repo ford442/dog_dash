@@ -145,6 +145,13 @@ export class OrbManager {
         return this.orbCount / this.powerUpThreshold;
     }
 
+    /** Spend accumulated orb charge (e.g. Bark Blast fuel). Returns true if spent. */
+    spendOrbCharge(): boolean {
+        if (this.orbCount < 4) return false;
+        this.orbCount = 0;
+        return true;
+    }
+
     /** Set the power-up threshold */
     setPowerUpThreshold(threshold: number): void {
         this.powerUpThreshold = threshold;

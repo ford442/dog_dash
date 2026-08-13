@@ -4,7 +4,7 @@ import { game } from '../game_runtime';
 import { keys, updateDistanceDisplay } from '../ui_controls';
 import { VictoryState } from '../victory_system';
 import { DogAnimationState } from '../dog_cockpit';
-import { updateHeatBar, updateCoresDisplay, updateBoostDisplay, updateRollDisplay, updateTetherDisplay, updateGrenadeDisplay } from './hud_displays';
+import { updateHeatBar, updateCoresDisplay, updateBoostDisplay, updateRollDisplay, updateBarkDisplay, updateTetherDisplay, updateGrenadeDisplay } from './hud_displays';
 import { renderGameFrame } from './render_helpers';
 
 export function updateLoopFinish(_time: number): void {
@@ -17,6 +17,7 @@ export function updateLoopFinish(_time: number): void {
         updateCoresDisplay();
         updateBoostDisplay();
         updateRollDisplay();
+        updateBarkDisplay();
         updateTetherDisplay();
         updateGrenadeDisplay();
         

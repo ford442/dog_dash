@@ -7,7 +7,8 @@ import { player } from '../player_loader';
 import { updateHealthDisplay } from '../ui_controls';
 import { LEVEL_DISTANCE_BOUNDARIES } from '../level_config';
 import { gravityAnchors } from '../environment';
-import { showRollPopup } from './hud_displays';
+import { showRollPopup, updateBarkDisplay } from './hud_displays';
+import { BARK_RADIUS } from '../bark_blast_system';
 import { maybePrefetchNextLevel } from '../level_systems_loader';
 import { PowerUpType } from '../powerup_manager';
 import { DogAnimationState } from '../dog_cockpit';
@@ -332,6 +333,54 @@ export function updatePlayer(delta: number) {
                     }
                 }
             });
+        }
+    }
+
+    // --- BARK BLAST SYSTEM ---
+    game.barkBlastSystem.syncCores(playerState.cores);
+    game.barkBlastSystem.update(delta);
+
+    const canBark = game.barkBlastSystem.canBark();
+    if (canBark) {
+        if (game.wantsBark) {
+            game.wantsBark = false;
+            if (game.barkBlastSystem.activate(player.position)) {
+                const result = game.obstacleSystem.applyBarkBlast(player.position, BARK_RADIUS);
+                game.particleSystem.emit(player.position.clone(), 0xffcc88, 18, 10.0, 1.0, 1.4);
+                game.particleSystem.emit(player.position.clone(), 0xffffff, 12, 8.0, 0.8, 1.2);
+                if (result.cleared > 0) {
+                    game.audioSystem.play('whoosh', 0.5, 4);
+                }
+                updateBarkDisplay();
+            }
+        }
+    } else {
+        game.wantsBark = false;
+    }
+
+    if (touchControls) {
+        const touchInput = touchControls.getInput();
+        if (touchInput.bark && !game.wasTouchBarking && canBark) {
+            if (game.barkBlastSystem.activate(player.position)) {
+                const result = game.obstacleSystem.applyBarkBlast(player.position, BARK_RADIUS);
+                game.particleSystem.emit(player.position.clone(), 0xffcc88, 18, 10.0, 1.0, 1.4);
+                if (result.cleared > 0) {
+                    game.audioSystem.play('whoosh', 0.5, 4);
+                }
+                updateBarkDisplay();
+            }
+        }
+        game.wasTouchBarking = touchInput.bark;
+    }
+
+    // Whine warning: off-screen threat approaching
+    if (game.barkBlastSystem.canWhine()) {
+        const threat = game.obstacleSystem.findOffscreenThreat(player.position.x, player.position.y);
+        if (threat) {
+            game.barkBlastSystem.markWhine();
+            game.dogController.triggerAnimation(DogAnimationState.CURIOUS, 0.8);
+            game.dogController.perkEars(0.9);
+            game.audioSystem.playDogWhine();
         }
     }
 

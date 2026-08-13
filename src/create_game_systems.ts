@@ -82,6 +82,7 @@ import { VictorySystem } from './victory_system';
 import { TutorialSystem, shouldShowTutorial } from './tutorial_system';
 import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
+import { BarkBlastSystem } from './bark_blast_system';
 import { updateHealthDisplay } from './ui_controls';
 import { player } from './player_loader';
 import { playerState as playerStateSingleton } from './game_config';
@@ -126,6 +127,7 @@ export type GameSystems = {
     juiceManager: JuiceManager;
     boostSystem: BoostSystem;
     rollSystem: RollSystem;
+    barkBlastSystem: BarkBlastSystem;
     effectManager: EffectManager;
     magicPaintbrushSystem: MagicPaintbrushSystem;
     victorySystem: VictorySystem;
@@ -345,6 +347,23 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         }
     });
 
+    const barkBlastSystem = new BarkBlastSystem({
+        getCores: () => playerState.cores,
+        spendCores: (amount) => {
+            if (playerState.cores < amount) return false;
+            playerState.cores -= amount;
+            return true;
+        },
+        getOrbChargeProgress: () => orbManager.getPowerUpProgress(),
+        spendOrbCharge: () => orbManager.spendOrbCharge(),
+        onActivate: (position) => {
+            audioSystem.playDogBark();
+            dogController.triggerAnimation(DogAnimationState.BARK, 0.65);
+            juiceManager.shakeScreen(ShakeType.MEDIUM, 0.35);
+            juiceManager.burstMagic(position);
+        }
+    });
+
     const victorySystem = new VictorySystem(scene, camera, audioSystem, hudManager, juiceManager);
     const tutorialSystem = new TutorialSystem(scene, hudManager, audioSystem, dogController);
 
@@ -411,6 +430,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         juiceManager,
         boostSystem,
         rollSystem,
+        barkBlastSystem,
         effectManager,
         magicPaintbrushSystem,
         victorySystem,
