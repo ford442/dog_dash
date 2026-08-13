@@ -56,7 +56,6 @@ export class LevelManager {
     readonly windChimeManager: WindChimeManager;
     readonly solarSailFernManager: SolarSailFernManager;
     private readonly candyManager: CandyBeltManager;
-    readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     readonly getPlayer: () => THREE.Group | null;
     readonly spawners: GeologicalSpawners;
     readonly geologicalCounts: GeologicalCounts;
@@ -94,6 +93,7 @@ export class LevelManager {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
+    readonly spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
     readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
@@ -151,6 +151,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
         this.dayNightCycleSystem = options.dayNightCycleSystem;
         this.cloudCastlesSystem = options.cloudCastlesSystem;
+        this.spaceGardenSystem = options.spaceGardenSystem;
         this.windCurrentsSystem = options.windCurrentsSystem;
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
@@ -391,6 +392,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         if (enabled('cloudCastles') && this.cloudCastlesSystem) this.cloudCastlesSystem.update(delta, cameraX, playerPos);
+        if (enabled('spaceGarden') && this.spaceGardenSystem) this.spaceGardenSystem.update(delta, cameraX, playerPos);
         if (enabled('windCurrents') && this.windCurrentsSystem) this.windCurrentsSystem.update(delta, cameraX, playerPos);
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
         this.candyFieldSystem?.update(delta, cameraX);

@@ -5,4 +5,5 @@ export interface AudioPort {
     play(type: SoundType, volumeMultiplier?: number, priority?: number): void;
     /** Rising sling-combo charge hum (optional — not all audio backends implement it). */
     playSlingCharge?(combo: number): void;
+    playSlingArcSurge(): void;
 }

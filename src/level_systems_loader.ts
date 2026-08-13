@@ -12,44 +12,14 @@ import type { LevelEnvironmentPorts } from './level_manager/types';
 import {
     installDeferredSystem,
     systemsNeededForLevel,
-    type SystemKey,
+    type SystemKey as ImportedSystemKey,
     type DeferredLoaderContext,
     type DeferredGamePorts
 } from './level_env_registry';
 import { scene, camera } from './scene_context';
 
-type SystemKey =
-    | 'reEntry'
-    | 'waterfall'
-    | 'meteorShower'
-    | 'industrial'
-    | 'biological'
-    | 'cosmicDust'
-    | 'boss'
-    | 'planetaryHorizon'
-    | 'moonPalace'
-    | 'chromaShift'
-    | 'stormGeode'
-    | 'blackHole'
-    | 'galacticCore'
-    | 'dreamPortals'
-    | 'ghostDebris'
-    | 'voidJellyfish'
-    | 'industrialGeometry'
-    | 'aquaticLife'
-    | 'starlightKoi'
-    | 'bubbleCoral'
-    | 'slingables'
-    | 'wishLanterns'
-    | 'weather'
-    | 'dancingJellyMoss'
-    | 'dynamicStarfield'
-    | 'dayNightCycle'
-    | 'singingGeodes'
-    | 'cloudCastles'
-    | 'candyPlanetRing';
-export type { SystemKey } from './level_env_registry';
-export { systemsNeededForLevel } from './level_env_registry';
+export type SystemKey = ImportedSystemKey;
+export { systemsNeededForLevel };
 
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
@@ -79,212 +49,9 @@ async function loadSystem(key: SystemKey): Promise<void> {
     const existing = inflight.get(key);
     if (existing) return existing;
 
-    const promise = (async () => {
-        switch (key) {
-            case 'reEntry': {
-                const { ReEntrySystem } = await import('./reentry');
-                installEnvPartial({ reEntrySystem: new ReEntrySystem(scene, camera) });
-                break;
-            }
-            case 'waterfall': {
-                const { WaterfallSystem } = await import('./waterfall');
-                installEnvPartial({
-                    waterfallSystem: new WaterfallSystem(scene, camera, game.weaponLightManager)
-                });
-                break;
-            }
-            case 'cloudCastles': {
-                const { CloudCastlesSystem } = await import('./cloud_castles_system');
-                installEnvPartial({ cloudCastlesSystem: new CloudCastlesSystem(scene) });
-                break;
-            }
-            case 'singingGeodes': {
-                const { SingingGeodeSystem } = await import('./singing_geodes');
-                installEnvPartial({
-                    singingGeodeSystem: new SingingGeodeSystem(scene, game.audioSystem, game.particleSystem)
-                });
-                break;
-            }
-            case 'dayNightCycle': {
-                const { DayNightCycleSystem } = await import('./day_night_cycle');
-                installEnvPartial({
-                    dayNightCycleSystem: new DayNightCycleSystem(scene, camera)
-                });
-                break;
-            }
-            case 'dancingJellyMoss': {
-                const { DancingJellyMossSystem } = await import('./dancing_jelly_moss');
-                installEnvPartial({
-                    dancingJellyMossSystem: new DancingJellyMossSystem(scene)
-                });
-                break;
-            }
-            case 'dynamicStarfield': {
-                const { DynamicStarfieldSystem } = await import('./dynamic_starfield');
-                installEnvPartial({
-                    dynamicStarfieldSystem: new DynamicStarfieldSystem(scene)
-                });
-                break;
-            }
-            case 'weather': {
-                const { WeatherSystem } = await import('./weather_system');
-                installEnvPartial({
-                    weatherSystem: new WeatherSystem(scene)
-                });
-                break;
-            }
-            case 'wishLanterns': {
-                const { WishLanternSystem } = await import('./wish_lanterns');
-                installEnvPartial({
-                    wishLanternSystem: new WishLanternSystem(scene)
-                });
-                break;
-            }
-            case 'meteorShower': {
-                const { MeteorShowerSystem } = await import('./meteor_shower');
-                installEnvPartial({
-                    meteorShowerSystem: new MeteorShowerSystem(scene, game.weaponLightManager)
-                });
-                break;
-            }
-            case 'industrial': {
-                const { IndustrialBackgroundSystem } = await import('./industrial_background');
-                installEnvPartial({
-                    industrialSystem: new IndustrialBackgroundSystem(scene, game.weaponLightManager)
-                });
-                break;
-            }
-            case 'biological': {
-                const { BiologicalBackgroundSystem } = await import('./biological_background');
-                installEnvPartial({ biologicalSystem: new BiologicalBackgroundSystem(scene) });
-                break;
-            }
-            case 'candyPlanetRing': {
-                const { CandyFieldSystem } = await import('./candy_obstacles');
-                installEnvPartial({ candyFieldSystem: new CandyFieldSystem(scene) });
-                break;
-            }
-
-            case 'cosmicDust': {
-                const { CosmicDustSystem } = await import('./cosmic_dust');
-                installEnvPartial({
-                    cosmicDustSystem: new CosmicDustSystem(scene, game.weaponLightManager)
-                });
-                break;
-            }
-            case 'boss': {
-                const { BossManager } = await import('./boss_system');
-                assignGameSystem('bossManager', new BossManager(scene));
-                break;
-            }
-            case 'planetaryHorizon': {
-                const { PlanetaryHorizonSystem } = await import('./planetary_horizon');
-                installEnvPartial({
-                    planetaryHorizonSystem: new PlanetaryHorizonSystem(scene, camera)
-                });
-                break;
-            }
-            case 'moonPalace': {
-                const { MoonPalaceSystem } = await import('./moon_palace');
-                installEnvPartial({
-                    moonPalaceSystem: new MoonPalaceSystem(scene, camera, game.weaponLightManager)
-                });
-                break;
-            }
-            case 'chromaShift': {
-                const { ChromaShiftSystem } = await import('./chroma_shift');
-                installEnvPartial({ chromaShiftSystem: new ChromaShiftSystem(scene) });
-                break;
-            }
-            case 'stormGeode': {
-                const { StormGeodeSystem } = await import('./storm_geodes');
-                installEnvPartial({
-                    stormGeodeSystem: new StormGeodeSystem(scene, {
-                        playHit: () => game.audioSystem.play('hit'),
-                        onBoltStrike: (pos, color) => game.lightningBoltSystem.onBoltStrike?.(pos, color)
-                    })
-                });
-                break;
-            }
-            case 'blackHole': {
-                const { BlackHoleSystem } = await import('./black_hole');
-                installEnvPartial({ blackHoleSystem: new BlackHoleSystem(scene) });
-                break;
-            }
-            case 'galacticCore': {
-                const { GalacticCoreSystem } = await import('./galactic_core');
-                installEnvPartial({ galacticCoreSystem: new GalacticCoreSystem(scene) });
-                break;
-            }
-            case 'dreamPortals': {
-                const { DreamPortalSystem } = await import('./dream_portal');
-                assignGameSystem(
-                    'dreamPortalSystem',
-                    new DreamPortalSystem(scene, createDreamPortalCallbacks())
-                );
-                break;
-            }
-            case 'ghostDebris': {
-                const { GhostDebrisSystem } = await import('./ghost_debris');
-                game.ghostDebrisSystem = new GhostDebrisSystem(scene);
-                if (game.levelManager) {
-                    game.levelManager.ghostDebrisSystem = game.ghostDebrisSystem;
-                }
-                break;
-            }
-            case 'voidJellyfish': {
-                const { VoidJellyfishSystem } = await import('./void_jellyfish');
-                game.voidJellyfishSystem = new VoidJellyfishSystem(scene);
-                if (game.levelManager) {
-                    game.levelManager.voidJellyfishSystem = game.voidJellyfishSystem;
-                }
-                break;
-            }
-            case 'industrialGeometry': {
-                const { IndustrialGeometryManager } = await import('./industrial_geometry');
-                game.industrialGeometryManager = new IndustrialGeometryManager(scene);
-                if (game.levelManager) {
-                    game.levelManager.industrialGeometryManager = game.industrialGeometryManager;
-                }
-                break;
-            }
-            case 'aquaticLife': {
-                const { AquaticLifeManager } = await import('./aquatic_life');
-                game.aquaticLifeManager = new AquaticLifeManager(scene);
-                break;
-            }
-            case 'starlightKoi': {
-                const { StarlightKoiManager } = await import('./starlight_koi');
-                game.starlightKoiManager = new StarlightKoiManager(scene, game.particleSystem);
-                break;
-            }
-            case 'bubbleCoral': {
-                const { RainbowBubbleCoralManager } = await import('./bubble_coral');
-                game.bubbleCoralManager = new RainbowBubbleCoralManager(scene, game.particleSystem);
-                break;
-            }
-            case 'slingables': {
-                const [{ SlingableObjectSystem }, { ToyRocketSpawnManager }] = await Promise.all([
-                    import('./slingable_objects'),
-                    import('./toy_rockets')
-                ]);
-                const slingableObjectSystem = new SlingableObjectSystem(
-                    scene,
-                    game.particleSystem,
-                    game.debrisSystem
-                );
-                game.slingableObjectSystem = slingableObjectSystem;
-                game.toyRocketSpawnManager = new ToyRocketSpawnManager(slingableObjectSystem);
-                if (typeof game.rewireSlingableCallbacks === 'function') {
-                    game.rewireSlingableCallbacks();
-                }
-                break;
-            }
-        }
-        await installDeferredSystem(key, createLoaderContext());
+    const promise = installDeferredSystem(key, createLoaderContext()).then(() => {
         loaded.add(key);
-        inflight.delete(key);
-    })();
+    });
 
     inflight.set(key, promise);
     try {
@@ -293,54 +60,6 @@ async function loadSystem(key: SystemKey): Promise<void> {
         inflight.delete(key);
         throw err;
     }
-}
-
-/** Resolve which deferred systems a level config needs. */
-export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[] {
-    if (!cfg) return [];
-    const keys = new Set<SystemKey>();
-    const env = cfg.environments || {};
-
-    if (isEnvironmentEnabled(env.reEntry)) keys.add('reEntry');
-    if (isEnvironmentEnabled(env.waterfall)) keys.add('waterfall');
-    if (isEnvironmentEnabled(env.meteorShower)) keys.add('meteorShower');
-    if (isEnvironmentEnabled(env.industrial)) keys.add('industrial');
-    if (isEnvironmentEnabled(env.biological)) keys.add('biological');
-    if (isEnvironmentEnabled(env.cosmicDust)) keys.add('cosmicDust');
-    if (isEnvironmentEnabled(env.planetaryHorizon)) keys.add('planetaryHorizon');
-    if (isEnvironmentEnabled(env.moonPalace)) keys.add('moonPalace');
-    if (isEnvironmentEnabled(env.blackHole)) keys.add('blackHole');
-    if (isEnvironmentEnabled(env.galacticCore)) keys.add('galacticCore');
-    if (isEnvironmentEnabled(env.dreamPortals)) keys.add('dreamPortals');
-    if (isEnvironmentEnabled(env.ghostDebris)) keys.add('ghostDebris');
-    if (isEnvironmentEnabled(env.voidJellyfish)) keys.add('voidJellyfish');
-    if (isEnvironmentEnabled(env.aquaticLife)) keys.add('aquaticLife');
-    if (isEnvironmentEnabled(env.wishLanterns)) keys.add('wishLanterns');
-    if (isEnvironmentEnabled(env.weather)) keys.add('weather');
-    if (isEnvironmentEnabled(env.dancingJellyMoss)) keys.add('dancingJellyMoss');
-    if (isEnvironmentEnabled(env.dynamicStarfield)) keys.add('dynamicStarfield');
-    if (isEnvironmentEnabled(env.dayNightCycle)) keys.add('dayNightCycle');
-    if (isEnvironmentEnabled(env.singingGeodes)) keys.add('singingGeodes');
-    if (isEnvironmentEnabled(env.cloudCastles)) keys.add('cloudCastles');
-    if (isEnvironmentEnabled(env.candyPlanetRing)) keys.add('candyPlanetRing');
-
-    if ((cfg.chromaShiftDensity ?? 0) > 0) keys.add('chromaShift');
-    if ((cfg.stormGeodeDensity ?? 0) > 0) keys.add('stormGeode');
-
-    if (cfg.levelType === 'tunnel' || cfg.levelType === 'organic_tunnel') {
-        keys.add('industrialGeometry');
-    }
-
-    if (cfg.objective?.type === 'boss') keys.add('boss');
-
-    if (shouldSpawnStarlightKoi(env, cfg.koiSchoolDensity)) keys.add('starlightKoi');
-    if (shouldSpawnBubbleCoral(env, cfg.bubbleCoralDensity)) keys.add('bubbleCoral');
-
-    if ((cfg.toyRocketCount ?? 0) > 0 || cfg.objective?.type === 'sling') {
-        keys.add('slingables');
-    }
-
-    return [...keys];
 }
 
 async function loadKeys(keys: SystemKey[]): Promise<void> {
