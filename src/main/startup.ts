@@ -200,6 +200,7 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
+            skyRailTerminalSystem: systems.skyRailTerminalSystem
             windCurrentsSystem: systems.windCurrentsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             spaceGardenSystem: systems.spaceGardenSystem
@@ -371,6 +372,7 @@ export function initializeStartup(): void {
         ['moonEffects', 'Moon / Galaxy Effects', true],
         ['pilotAnim', 'Pilot Animation', true],
         ['flowerConstellations', 'Flower Constellations', true],
+        ['skyRailTerminal', 'Sky-Rail Terminal', true],
         ['pinwheelFlora', 'Pinwheel Flowers', true],
         ['solarSailFerns', 'Solar Sail Ferns', true],
         ['crystalChimes', 'Crystal Chimes', true],

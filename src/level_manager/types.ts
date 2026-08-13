@@ -1,3 +1,4 @@
+import type { SkyRailTerminalSystem } from '../sky_rail_terminal';
 import type { DynamicStarfieldSystem } from '../dynamic_starfield';
 import type { LevelConfig, LevelEnvironments } from '../level_config';
 import type * as THREE from 'three';
@@ -103,6 +104,7 @@ export type LevelEnvironmentPorts = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
 export type LevelManagerOptions = {
