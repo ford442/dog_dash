@@ -170,6 +170,7 @@ export type LevelEnvironments = {
     spacePetsSwarm?: boolean | { density?: number };
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
+    spaceGarden?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
     dayNightCycle?: boolean | { cycleDuration: number };
     candyField?: boolean;
@@ -340,6 +341,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },
+            spaceGarden: true,
             flowerConstellations: true
         },
         vignettes: {

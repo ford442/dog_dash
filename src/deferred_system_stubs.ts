@@ -349,3 +349,7 @@ export function createFlowerConstellationsSystemStub(): FlowerConstellationsSyst
         cleanup: noop
     } as unknown as FlowerConstellationsSystem;
 }
+
+export function createSpaceGardenSystemStub(): import('./space_garden').SpaceGardenSystem {
+    return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {} } as unknown as import('./space_garden').SpaceGardenSystem;
+}

@@ -201,7 +201,8 @@ function createLevelManager(
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
             windCurrentsSystem: systems.windCurrentsSystem,
-            flowerConstellationsSystem: systems.flowerConstellationsSystem
+            flowerConstellationsSystem: systems.flowerConstellationsSystem,
+            spaceGardenSystem: systems.spaceGardenSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -265,7 +266,8 @@ function createLevelManager(
         cloudCastlesSystem: systems.cloudCastlesSystem,
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
-        windCurrentsSystem: systems.windCurrentsSystem
+        windCurrentsSystem: systems.windCurrentsSystem,
+        spaceGardenSystem: systems.spaceGardenSystem
     });
 }
 

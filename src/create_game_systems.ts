@@ -1,3 +1,4 @@
+import type { SpaceGardenSystem } from './space_garden';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
 import { CrystalChimeManager } from './crystal_chimes';
@@ -35,7 +36,8 @@ import {
     createCandyFieldSystemStub,
     createSingingGeodeSystemStub,
     createWindCurrentsSystemStub,
-    createFlowerConstellationsSystemStub
+    createFlowerConstellationsSystemStub,
+    createSpaceGardenSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -149,6 +151,7 @@ export type GameSystems = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
+    spaceGardenSystem: SpaceGardenSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -359,6 +362,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
+    const spaceGardenSystem = createSpaceGardenSystemStub();
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
     const dataMonolithManager = new DataMonolithManager(scene);
@@ -418,6 +422,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
+        spaceGardenSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager

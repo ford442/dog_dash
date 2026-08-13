@@ -7,4 +7,6 @@ export interface JuicePort {
     spawnBurst(position: THREE.Vector3, type: BurstType, count?: number): void;
     showFloatingText(text: string, position: THREE.Vector3, color?: string, size?: number): void;
     showScoreText(score: number, position: THREE.Vector3): void;
+    flashChromatic(intensity: number, duration: number, color: THREE.Color): void;
+    hitPause(duration: number): void;
 }

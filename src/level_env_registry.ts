@@ -52,7 +52,8 @@ export const DEFERRED_ENV_FLAGS = [
     'singingGeodes',
     'cloudCastles',
     'windCurrents',
-    'flowerConstellations'
+    'flowerConstellations',
+    'spaceGarden'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -239,6 +240,8 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'windCurrents',
             activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
             deactivate: () => host.windCurrentsSystem.deactivate()
+        })
+    },
     flowerConstellations: {
         flag: 'flowerConstellations',
         systemKey: 'flowerConstellations',
@@ -253,6 +256,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'flowerConstellations',
             activate: (config) => host.flowerConstellationsSystem.activate(config, levelLength),
             deactivate: () => host.flowerConstellationsSystem.deactivate()
+        })
+    },
+    spaceGarden: {
+        flag: 'spaceGarden',
+        systemKey: 'spaceGarden',
+        load: () => import('./space_garden'),
+        install: (ctx, mod) => {
+            const { SpaceGardenSystem } = mod as typeof import('./space_garden');
+            ctx.installEnvPartial({ spaceGardenSystem: new SpaceGardenSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'spaceGarden',
+            activate: () => host.spaceGardenSystem.activate(),
+            deactivate: () => host.spaceGardenSystem.deactivate()
         })
     },
     dayNightCycle: {
