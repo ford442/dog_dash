@@ -29,6 +29,7 @@ import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
+import { biomeNoise } from '../biome_noise';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -62,6 +63,7 @@ async function loadWasm(): Promise<void> {
         game.wasmBackend = null;
     }
     jellyMossSoftBody.bindWasm(handle);
+    biomeNoise.bindWasm(handle);
 }
 
 import {
