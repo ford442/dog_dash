@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ParticleSystem } from '../particles';
-import { AudioSystem } from '../audio_system';
+import type { AudioPort } from '../ports';
 import {
     PowerUpType,
     POWER_UP_CONFIGS,
@@ -28,7 +28,7 @@ import {
 export interface PowerUpManagerOptions {
     scene: THREE.Scene;
     particleSystem: ParticleSystem;
-    audioSystem?: AudioSystem;
+    audioSystem?: AudioPort;
     rocket?: THREE.Group;
     dogController?: any; // Add dogController here
     onPowerUpStart?: (type: PowerUpType, config: PowerUpConfig) => void;
@@ -39,7 +39,7 @@ export interface PowerUpManagerOptions {
 export class PowerUpManager {
     private scene: THREE.Scene;
     private particleSystem: ParticleSystem;
-    private audioSystem?: AudioSystem;
+    private audioSystem?: AudioPort;
     private rocket?: THREE.Group;
     private dogController?: any;
     
@@ -388,7 +388,7 @@ export class PowerUpManager {
     /**
      * Set the audio system reference
      */
-    setAudioSystem(audioSystem: AudioSystem): void {
+    setAudioSystem(audioSystem: AudioPort): void {
         this.audioSystem = audioSystem;
     }
 

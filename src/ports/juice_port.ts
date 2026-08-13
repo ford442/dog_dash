@@ -9,4 +9,7 @@ export interface JuicePort {
     showScoreText(score: number, position: THREE.Vector3): void;
     flashChromatic(intensity: number, duration: number, color: THREE.Color): void;
     hitPause(duration: number): void;
+    flashRainbow?(duration: number): void;
+    burstMagic?(position: THREE.Vector3): void;
+    spawnSparkles?(position: THREE.Vector3, color: THREE.Color, count?: number): void;
 }

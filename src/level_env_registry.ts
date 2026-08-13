@@ -856,9 +856,10 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'weather',
     'singingGeodes',
     'cloudCastles',
-    'skyRailTerminal'
+    'skyRailTerminal',
     'windCurrents',
-    'flowerConstellations'
+    'flowerConstellations',
+    'spaceGarden'
 ];
 
 export function buildDeferredEnvPlugins(

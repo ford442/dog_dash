@@ -200,7 +200,7 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
-            skyRailTerminalSystem: systems.skyRailTerminalSystem
+            skyRailTerminalSystem: systems.skyRailTerminalSystem,
             windCurrentsSystem: systems.windCurrentsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             spaceGardenSystem: systems.spaceGardenSystem
@@ -420,7 +420,10 @@ export function initializeStartup(): void {
     const obstacleSystem = createObstacleSystem({
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,
-        waterfallSystem: systems.waterfallSystem
+        waterfallSystem: systems.waterfallSystem,
+        audioSystem: systems.audioSystem,
+        hudManager: systems.hudManager,
+        juiceManager: systems.juiceManager,
     });
 
     const ctx: GameContext = {

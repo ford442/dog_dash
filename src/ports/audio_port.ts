@@ -6,4 +6,11 @@ export interface AudioPort {
     /** Rising sling-combo charge hum (optional — not all audio backends implement it). */
     playSlingCharge?(combo: number): void;
     playSlingArcSurge(): void;
+    /** Near-miss graze combo sting (optional). */
+    playGraze?(combo: number): void;
+    playPowerUpCue?(soundEffect: string): void;
+    playCometActivate?(): void;
+    playShieldActivate?(): void;
+    playShieldBreak?(): void;
+    activateMagicMusic?(durationMs: number): void;
 }

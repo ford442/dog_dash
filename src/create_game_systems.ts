@@ -270,6 +270,13 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         onHudHealthUpdate: () => {
             hudManager.updateHealth(playerState.health, playerState.maxHealth);
         },
+        onHeal: () => {
+            if (playerState.health >= playerState.maxHealth) return false;
+            playerState.health++;
+            hudManager.updateHealth(playerState.health, playerState.maxHealth);
+            updateHealthDisplay(playerState);
+            return true;
+        },
     };
 
     const powerUpManager = new PowerUpManager({
