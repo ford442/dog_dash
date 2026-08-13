@@ -26,7 +26,9 @@ export type SoundType =
     | 'choir_ahh'
     | 'magical_shimmer'
     | 'sparkle_cascade'
-    | 'hover_hum';
+    | 'hover_hum'
+    | 'dog_bark'
+    | 'dog_whine';
 
 // Magic sound sequences for combos
 export type MagicSequence = 'star_collect' | 'power_up' | 'shield_up' | 'spell_complete';

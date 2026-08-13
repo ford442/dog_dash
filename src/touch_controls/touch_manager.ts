@@ -26,6 +26,7 @@ export abstract class TouchControlsBase {
     protected joystickBase: HTMLElement | null = null;
     protected joystickKnob: HTMLElement | null = null;
     protected boostButton: HTMLElement | null = null;
+    protected barkButton: HTMLElement | null = null;
     protected fireButton: HTMLElement | null = null;
     protected fingerFollower: HTMLElement | null = null;
     protected touchIndicators: Map<number, HTMLElement> = new Map();
@@ -155,6 +156,9 @@ export abstract class TouchControlsBase {
         if (this.fireButton) {
             this.fireButton.style.opacity = String(this.visualFeedback.buttonOpacity);
         }
+        if (this.barkButton) {
+            this.barkButton.style.opacity = String(this.visualFeedback.buttonOpacity);
+        }
     }
 
     hide(): void {
@@ -168,6 +172,9 @@ export abstract class TouchControlsBase {
         }
         if (this.fireButton) {
             this.fireButton.style.opacity = '0';
+        }
+        if (this.barkButton) {
+            this.barkButton.style.opacity = '0';
         }
     }
 

@@ -84,6 +84,8 @@ export type RunState = {
     wasTouchBoosting: boolean;
     wantsRoll: boolean;
     wasTouchRolling: boolean;
+    wantsBark: boolean;
+    wasTouchBarking: boolean;
     wantsTether: boolean;
     wantsReleaseTether: boolean;
 };
@@ -194,6 +196,8 @@ export function createGameContextFrameState(): Pick<
     | 'wasTouchBoosting'
     | 'wantsRoll'
     | 'wasTouchRolling'
+    | 'wantsBark'
+    | 'wasTouchBarking'
     | 'wantsTether'
     | 'wantsReleaseTether'
     | 'reportComboObjectiveProgress'
@@ -239,6 +243,8 @@ export function createGameContextFrameState(): Pick<
         wasTouchBoosting: false,
         wantsRoll: false,
         wasTouchRolling: false,
+        wantsBark: false,
+        wasTouchBarking: false,
         wantsTether: false,
         wantsReleaseTether: false,
         reportComboObjectiveProgress: () => {},

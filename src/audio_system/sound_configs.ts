@@ -206,5 +206,22 @@ export const SOUND_CONFIGS: Record<SoundType, SoundConfig> = {
             duration: 0.1,
             waveform: 'sine',
             volume: 0.1
+        },
+        dog_bark: {
+            type: 'dog_bark',
+            frequency: 380,
+            duration: 0.22,
+            waveform: 'triangle',
+            volume: 0.28,
+            slide: -160
+        },
+        dog_whine: {
+            type: 'dog_whine',
+            frequency: 520,
+            duration: 0.45,
+            waveform: 'sine',
+            volume: 0.18,
+            slide: -120,
+            decay: 0.4
         }
     };;

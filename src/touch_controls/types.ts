@@ -26,6 +26,8 @@ export interface TouchInput {
     roll: boolean;
     /** Fire weapon */
     fire: boolean;
+    /** Bark Blast companion ability */
+    bark: boolean;
     /** Pause requested */
     pause: boolean;
     /** Whether there's any active touch */
@@ -68,6 +70,7 @@ export const DEFAULT_INPUT: TouchInput = {
     boost: false,
     roll: false,
     fire: false,
+    bark: false,
     pause: false,
     active: false
 };

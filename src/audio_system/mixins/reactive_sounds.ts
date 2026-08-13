@@ -577,5 +577,75 @@ playPowerUpCue(cueId: string) {
     if (cueId === 'powerup_vortex' || cueId === 'powerup_paint') {
         this.play('whoosh', 0.2, 3);
     }
+},
+
+playDogBark() {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+
+    if (this.activeVoices >= this.maxVoices) return;
+    this.activeVoices++;
+    setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 400);
+
+    const now = this.ctx.currentTime;
+
+    const bark = this.ctx.createOscillator();
+    bark.type = 'triangle';
+    bark.frequency.setValueAtTime(420, now);
+    bark.frequency.exponentialRampToValueAtTime(240, now + 0.16);
+
+    const barkGain = this.ctx.createGain();
+    barkGain.gain.setValueAtTime(0, now);
+    barkGain.gain.linearRampToValueAtTime(0.28, now + 0.02);
+    barkGain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+
+    bark.connect(barkGain);
+    barkGain.connect(this.sfxGain);
+    bark.start(now);
+    bark.stop(now + 0.24);
+
+    // Second yap for playful double-bark
+    const yap = this.ctx.createOscillator();
+    yap.type = 'triangle';
+    yap.frequency.setValueAtTime(360, now + 0.12);
+    yap.frequency.exponentialRampToValueAtTime(280, now + 0.22);
+
+    const yapGain = this.ctx.createGain();
+    yapGain.gain.setValueAtTime(0, now + 0.12);
+    yapGain.gain.linearRampToValueAtTime(0.18, now + 0.13);
+    yapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+
+    yap.connect(yapGain);
+    yapGain.connect(this.sfxGain);
+    yap.start(now + 0.12);
+    yap.stop(now + 0.28);
+
+    this.applyDuck(0.2, 0.45);
+},
+
+playDogWhine() {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+
+    if (this.activeVoices >= this.maxVoices) return;
+    this.activeVoices++;
+    setTimeout(() => { this.activeVoices = Math.max(0, this.activeVoices - 1); }, 600);
+
+    const now = this.ctx.currentTime;
+
+    const whine = this.ctx.createOscillator();
+    whine.type = 'sine';
+    whine.frequency.setValueAtTime(520, now);
+    whine.frequency.exponentialRampToValueAtTime(380, now + 0.35);
+
+    const whineGain = this.ctx.createGain();
+    whineGain.gain.setValueAtTime(0, now);
+    whineGain.gain.linearRampToValueAtTime(0.16, now + 0.05);
+    whineGain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+
+    whine.connect(whineGain);
+    whineGain.connect(this.sfxGain);
+    whine.start(now);
+    whine.stop(now + 0.45);
 }
 });
