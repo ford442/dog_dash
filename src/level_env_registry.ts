@@ -53,6 +53,7 @@ export const DEFERRED_ENV_FLAGS = [
     'singingGeodes',
     'cloudCastles',
     'windCurrents',
+    'timeShiftZones',
     'flowerConstellations',
     'spaceGarden'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
@@ -256,6 +257,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'windCurrents',
             activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
             deactivate: () => host.windCurrentsSystem.deactivate()
+        })
+    },
+    timeShiftZones: {
+        flag: 'timeShiftZones',
+        systemKey: 'timeShiftZones',
+        load: () => import('./time_shift_zones'),
+        install: (ctx, mod) => {
+            const { TimeShiftZonesSystem } = mod as typeof import('./time_shift_zones');
+            ctx.installEnvPartial({ timeShiftZonesSystem: new TimeShiftZonesSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'timeShiftZones',
+            activate: (config) => host.timeShiftZonesSystem.activate(objectConfig(config)),
+            deactivate: () => host.timeShiftZonesSystem.deactivate()
         })
     },
     flowerConstellations: {
