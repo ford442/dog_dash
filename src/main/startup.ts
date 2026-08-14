@@ -204,6 +204,7 @@ function createLevelManager(
             singingGeodeSystem: systems.singingGeodeSystem,
             skyRailTerminalSystem: systems.skyRailTerminalSystem,
             windCurrentsSystem: systems.windCurrentsSystem,
+            timeShiftZonesSystem: systems.timeShiftZonesSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             spaceGardenSystem: systems.spaceGardenSystem
         },
@@ -270,6 +271,7 @@ function createLevelManager(
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
         windCurrentsSystem: systems.windCurrentsSystem,
+        timeShiftZonesSystem: systems.timeShiftZonesSystem,
         spaceGardenSystem: systems.spaceGardenSystem
     });
 }

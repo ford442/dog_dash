@@ -14,7 +14,10 @@ import { updateCombatWeapons } from './weapons';
 export function updateLoopCombat(_rawDelta: number, delta: number, time: number): boolean {
     if (updateCombatBoss(delta)) return true;
 
-    const timeScale = game.powerUpManager.getCombinedModifiers().timeScale;
+    let timeScale = game.powerUpManager.getCombinedModifiers().timeScale;
+    if (player && game.levelManager.timeShiftZonesSystem) {
+        timeScale *= game.levelManager.timeShiftZonesSystem.getTimeScaleModifier(player.position);
+    }
     const scaledDelta = delta * timeScale;
 
     if (player) {
