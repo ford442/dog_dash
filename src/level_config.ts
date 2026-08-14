@@ -170,6 +170,7 @@ export type LevelEnvironments = {
     spacePetsSwarm?: boolean | { density?: number };
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
+    spaceGarden?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
     dayNightCycle?: boolean | { cycleDuration: number };
     candyField?: boolean;
@@ -180,6 +181,7 @@ export type LevelEnvironments = {
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
+    timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
 };
@@ -341,6 +343,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },
+            spaceGarden: true,
             flowerConstellations: true
         },
         vignettes: {
@@ -560,7 +563,13 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
             bubbleCoral: { density: 0.85 },
-            skyRailTerminal: true
+            skyRailTerminal: true,
+            timeShiftZones: {
+                zones: [
+                    { x: 300, y: 0, width: 80, height: 25 },
+                    { x: 700, y: 0, width: 100, height: 25 }
+                ]
+            }
         },
         vignettes: {
             treeGroves: 0.6,

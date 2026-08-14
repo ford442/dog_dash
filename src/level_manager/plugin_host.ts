@@ -29,6 +29,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'] & { activate: (config?: { cycleDuration?: number }) => void; deactivate: () => void };
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'] & { activate: (config?: { density?: number }) => void; deactivate: () => void; cleanup: () => void };
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'] & { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void; getWindForce: (pos: THREE.Vector3) => THREE.Vector3; };
+    timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'] & { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void; getTimeScaleModifier: (pos: THREE.Vector3) => number; };
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'] & { activate: (config?: unknown) => void; deactivate: () => void; setVisible: (visible: boolean) => void; update: (delta: number, cameraX: number) => void };
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'] & { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void };
 }

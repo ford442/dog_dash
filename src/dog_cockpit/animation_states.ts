@@ -255,3 +255,37 @@ export function animateDelighted(host: DogAnimationHost, deltaTime: number): voi
         host.happiness = 1;
 }
 
+export function animateBark(host: DogAnimationHost, deltaTime: number): void {
+        // Head thrust forward — vocal blast pose
+        if (host.bones.head || host.bones.pilotHead) {
+            const head = host.bones.head || host.bones.pilotHead!;
+            const data = host.boneData.get('head') || host.boneData.get('pilotHead');
+            if (data) {
+                head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, data.baseRotation.x + 0.35, 0.2);
+                head.position.x = THREE.MathUtils.lerp(head.position.x, data.basePosition.x + 0.08, 0.2);
+            }
+        }
+
+        // Ears perked, paws raised briefly
+        host.perkEars(1.0);
+        host.raisePaws(true);
+        host.wagTail(16, 0.5);
+
+        // Body bounce on bark
+        host.bounceAmount = Math.max(host.bounceAmount, 0.15);
+        if (host.bones.body || host.bones.pilotGroup) {
+            const body = host.bones.body || host.bones.pilotGroup!;
+            const data = host.boneData.get('body') || host.boneData.get('pilotGroup');
+            if (data) {
+                const pulse = Math.sin(host.time * 22) * 0.04;
+                body.scale.y = data.baseScale.y * (1 + pulse);
+            }
+        }
+
+        if (Math.random() < 0.35) {
+            host.spawnHappyParticles();
+        }
+
+        host.excitement = 1;
+        host.happiness = Math.min(1, host.happiness + deltaTime);
+}

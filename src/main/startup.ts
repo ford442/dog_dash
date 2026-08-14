@@ -29,6 +29,7 @@ import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
+import { biomeNoise } from '../biome_noise';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -62,6 +63,7 @@ async function loadWasm(): Promise<void> {
         game.wasmBackend = null;
     }
     jellyMossSoftBody.bindWasm(handle);
+    biomeNoise.bindWasm(handle);
 }
 
 import {
@@ -200,9 +202,11 @@ function createLevelManager(
             cloudCastlesSystem: systems.cloudCastlesSystem,
             candyFieldSystem: systems.candyFieldSystem,
             singingGeodeSystem: systems.singingGeodeSystem,
-            skyRailTerminalSystem: systems.skyRailTerminalSystem
+            skyRailTerminalSystem: systems.skyRailTerminalSystem,
             windCurrentsSystem: systems.windCurrentsSystem,
-            flowerConstellationsSystem: systems.flowerConstellationsSystem
+            timeShiftZonesSystem: systems.timeShiftZonesSystem,
+            flowerConstellationsSystem: systems.flowerConstellationsSystem,
+            spaceGardenSystem: systems.spaceGardenSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -266,7 +270,9 @@ function createLevelManager(
         cloudCastlesSystem: systems.cloudCastlesSystem,
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
-        windCurrentsSystem: systems.windCurrentsSystem
+        windCurrentsSystem: systems.windCurrentsSystem,
+        timeShiftZonesSystem: systems.timeShiftZonesSystem,
+        spaceGardenSystem: systems.spaceGardenSystem
     });
 }
 
@@ -418,7 +424,10 @@ export function initializeStartup(): void {
     const obstacleSystem = createObstacleSystem({
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,
-        waterfallSystem: systems.waterfallSystem
+        waterfallSystem: systems.waterfallSystem,
+        audioSystem: systems.audioSystem,
+        hudManager: systems.hudManager,
+        juiceManager: systems.juiceManager,
     });
 
     const ctx: GameContext = {

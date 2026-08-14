@@ -53,7 +53,9 @@ export const DEFERRED_ENV_FLAGS = [
     'singingGeodes',
     'cloudCastles',
     'windCurrents',
-    'flowerConstellations'
+    'timeShiftZones',
+    'flowerConstellations',
+    'spaceGarden'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -255,6 +257,22 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'windCurrents',
             activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
             deactivate: () => host.windCurrentsSystem.deactivate()
+        })
+    },
+    timeShiftZones: {
+        flag: 'timeShiftZones',
+        systemKey: 'timeShiftZones',
+        load: () => import('./time_shift_zones'),
+        install: (ctx, mod) => {
+            const { TimeShiftZonesSystem } = mod as typeof import('./time_shift_zones');
+            ctx.installEnvPartial({ timeShiftZonesSystem: new TimeShiftZonesSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'timeShiftZones',
+            activate: (config) => host.timeShiftZonesSystem.activate(objectConfig(config)),
+            deactivate: () => host.timeShiftZonesSystem.deactivate()
+        })
+    },
     flowerConstellations: {
         flag: 'flowerConstellations',
         systemKey: 'flowerConstellations',
@@ -269,6 +287,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'flowerConstellations',
             activate: (config) => host.flowerConstellationsSystem.activate(config, levelLength),
             deactivate: () => host.flowerConstellationsSystem.deactivate()
+        })
+    },
+    spaceGarden: {
+        flag: 'spaceGarden',
+        systemKey: 'spaceGarden',
+        load: () => import('./space_garden'),
+        install: (ctx, mod) => {
+            const { SpaceGardenSystem } = mod as typeof import('./space_garden');
+            ctx.installEnvPartial({ spaceGardenSystem: new SpaceGardenSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'spaceGarden',
+            activate: () => host.spaceGardenSystem.activate(),
+            deactivate: () => host.spaceGardenSystem.deactivate()
         })
     },
     dayNightCycle: {
@@ -839,9 +871,10 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'weather',
     'singingGeodes',
     'cloudCastles',
-    'skyRailTerminal'
+    'skyRailTerminal',
     'windCurrents',
-    'flowerConstellations'
+    'flowerConstellations',
+    'spaceGarden'
 ];
 
 export function buildDeferredEnvPlugins(

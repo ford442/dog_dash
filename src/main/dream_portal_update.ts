@@ -17,6 +17,7 @@ import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { VictoryState } from '../victory_system';
 import type { DreamPortalCallbacks } from '../dream_portal';
+import type { PlayerMotionPort } from '../ports';
 import type { LevelConfig } from '../level_config';
 
 /** Anything above this Y belongs to the bonus pocket, never the main run. */
@@ -27,8 +28,7 @@ function clearPocketOrbs(): void {
 }
 
 export function createDreamPortalCallbacks(): DreamPortalCallbacks {
-    return {
-        getPlayer: () => player,
+    const motion: PlayerMotionPort = {
         getScrollSpeed: () => playerState.autoScrollSpeed,
         setScrollSpeed: (speed) => {
             playerState.autoScrollSpeed = speed;
@@ -37,13 +37,18 @@ export function createDreamPortalCallbacks(): DreamPortalCallbacks {
         setWorldOriginY: (y) => {
             playerState.worldOriginY = y;
         },
-        snapCamera: (y) => {
-            // Skip the follow lerp — otherwise the camera crawls across the gap.
-            camera.position.y = y + 2;
-        },
         nudgePlayer: (dx, dy) => {
             playerState.currentSpeedY += dy;
             if (player) player.position.x += dx * 0.08;
+        },
+    };
+
+    return {
+        getPlayer: () => player,
+        motion,
+        snapCamera: (y) => {
+            // Skip the follow lerp — otherwise the camera crawls across the gap.
+            camera.position.y = y + 2;
         },
         spawnOrb: (x, y, z) => {
             game.orbManager.spawnStarOrb(x, y, z);

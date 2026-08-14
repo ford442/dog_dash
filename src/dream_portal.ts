@@ -22,6 +22,7 @@
 
 import * as THREE from 'three';
 import { decorationBudget } from './decoration_budget';
+import type { PlayerMotionPort } from './ports';
 // Vertical offset of the bonus pocket — far enough that nothing in the main
 // playfield (|y| < ~60) can collide with, or be collided by, the room.
 import { DREAM_ROOM_Y } from './game_config';
@@ -83,15 +84,10 @@ export type DreamPortalReward = {
 /** Everything the system needs from the game context, injected by the caller. */
 export type DreamPortalCallbacks = {
     getPlayer: () => THREE.Object3D | null;
-    /** Current auto-scroll speed (saved on enter, restored on exit). */
-    getScrollSpeed: () => number;
-    setScrollSpeed: (speed: number) => void;
-    /** Raises/lowers the player's vertical clamp origin (see `player_update`). */
-    setWorldOriginY: (y: number) => void;
+    /** Scroll speed, vertical clamp, and nudge — see `PlayerMotionPort`. */
+    motion: PlayerMotionPort;
     /** Snap the camera after a teleport so it doesn't lerp across the gap. */
     snapCamera: (y: number) => void;
-    /** Gentle push applied when the player bumps a dream jelly. */
-    nudgePlayer: (dx: number, dy: number) => void;
     spawnOrb: (x: number, y: number, z: number) => void;
     onEnter?: (portalPosition: THREE.Vector3) => void;
     onExit?: (reward: DreamPortalReward, exitPosition: THREE.Vector3) => void;
@@ -418,7 +414,7 @@ export class DreamPortalSystem {
         if (!player || !portal) return;
 
         this.returnY = player.position.y;
-        this.savedScrollSpeed = this.cb.getScrollSpeed();
+        this.savedScrollSpeed = this.cb.motion.getScrollSpeed();
 
         const room = this._ensureRoom();
         room.position.set(player.position.x, DREAM_ROOM_Y, 0);
@@ -427,8 +423,8 @@ export class DreamPortalSystem {
         this._layoutRoom(portal);
 
         player.position.y = DREAM_ROOM_Y;
-        this.cb.setWorldOriginY(DREAM_ROOM_Y);
-        this.cb.setScrollSpeed(0);
+        this.cb.motion.setWorldOriginY(DREAM_ROOM_Y);
+        this.cb.motion.setScrollSpeed(0);
         this.cb.snapCamera(DREAM_ROOM_Y);
 
         this.roomDuration = portal.placement.durationSeconds;
@@ -461,8 +457,8 @@ export class DreamPortalSystem {
             player.position.y = THREE.MathUtils.clamp(this.returnY, -10, 15);
             this.cb.snapCamera(player.position.y);
         }
-        this.cb.setWorldOriginY(0);
-        this.cb.setScrollSpeed(this.savedScrollSpeed);
+        this.cb.motion.setWorldOriginY(0);
+        this.cb.motion.setScrollSpeed(this.savedScrollSpeed);
         if (this.roomGroup) this.roomGroup.visible = false;
         this._hideRoomHud();
     }
@@ -747,7 +743,7 @@ export class DreamPortalSystem {
             if (dist <= HAZARD_RADIUS && dist > 0.001) {
                 // Gentle bump: pushes the player away, never costs health.
                 hazard.cooldown = 0.6;
-                this.cb.nudgePlayer((dx / dist) * 2.0, (dy / dist) * 7.0);
+                this.cb.motion.nudgePlayer((dx / dist) * 2.0, (dy / dist) * 7.0);
                 this.cb.onBumper?.(worldPos);
             }
         }

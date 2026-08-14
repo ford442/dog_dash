@@ -84,6 +84,8 @@ export type RunState = {
     wasTouchBoosting: boolean;
     wantsRoll: boolean;
     wasTouchRolling: boolean;
+    wantsBark: boolean;
+    wasTouchBarking: boolean;
     wantsTether: boolean;
     wantsReleaseTether: boolean;
 };
@@ -122,7 +124,8 @@ export type GameContextExtensions = {
     rewireSlingableCallbacks: () => void;
 };
 
-/** Fully typed mutable runtime bag owned by bootstrap. */
+/** Fully typed mutable runtime bag owned by bootstrap.
+ *  Top-level keys must come only from the slice types below — never add orphan fields here. */
 export interface GameContext
     extends GameSystems,
         GameManagers,
@@ -130,6 +133,18 @@ export interface GameContext
         FrameCounters,
         RunState,
         GameContextExtensions {}
+
+/** Compile-time guard: every `game.*` key belongs to a named slice. */
+type _GameContextSliceKeys =
+    | keyof GameSystems
+    | keyof GameManagers
+    | keyof CoreRuntime
+    | keyof FrameCounters
+    | keyof RunState
+    | keyof GameContextExtensions;
+type _AssertNoUnscopedGameContextFields = Exclude<keyof GameContext, _GameContextSliceKeys> extends never ? true : never;
+const _gameContextSliceGuard: _AssertNoUnscopedGameContextFields = true;
+void _gameContextSliceGuard;
 
 /** @deprecated Use GameContext */
 export type GameRuntime = GameContext;
@@ -181,6 +196,8 @@ export function createGameContextFrameState(): Pick<
     | 'wasTouchBoosting'
     | 'wantsRoll'
     | 'wasTouchRolling'
+    | 'wantsBark'
+    | 'wasTouchBarking'
     | 'wantsTether'
     | 'wantsReleaseTether'
     | 'reportComboObjectiveProgress'
@@ -226,6 +243,8 @@ export function createGameContextFrameState(): Pick<
         wasTouchBoosting: false,
         wantsRoll: false,
         wasTouchRolling: false,
+        wantsBark: false,
+        wasTouchBarking: false,
         wantsTether: false,
         wantsReleaseTether: false,
         reportComboObjectiveProgress: () => {},

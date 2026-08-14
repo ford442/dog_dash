@@ -273,6 +273,71 @@ export function showRollPopup() {
     setTimeout(() => popup.remove(), 600);
 }
 
+// Bark Blast display (companion ability)
+export function createBarkDisplay() {
+    const barkDiv = document.createElement('div');
+    barkDiv.id = 'bark-display';
+    barkDiv.style.cssText = `
+        position: absolute;
+        bottom: 70px;
+        right: 320px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        z-index: 100;
+        font-family: 'Segoe UI', sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        color: #ffcc88;
+        text-shadow: 0 0 8px rgba(255,204,136,0.6);
+    `;
+
+    const label = document.createElement('span');
+    label.textContent = 'BARK [B]';
+    barkDiv.appendChild(label);
+
+    for (let i = 0; i < 2; i++) {
+        const icon = document.createElement('span');
+        icon.id = `bark-charge-${i}`;
+        icon.textContent = '🐕';
+        icon.style.cssText = `
+            font-size: 16px;
+            opacity: 0.3;
+            transition: opacity 0.3s, transform 0.3s;
+            filter: grayscale(0.8);
+        `;
+        barkDiv.appendChild(icon);
+    }
+
+    document.body.appendChild(barkDiv);
+}
+
+export function updateBarkDisplay() {
+    const maxCharges = game.barkBlastSystem.getMaxCharges();
+    const charges = game.barkBlastSystem.getCharges();
+    const canBark = game.barkBlastSystem.canBark();
+    const cooldownRatio = game.barkBlastSystem.getCooldownRatio();
+
+    for (let i = 0; i < maxCharges; i++) {
+        const icon = document.getElementById(`bark-charge-${i}`);
+        if (!icon) continue;
+
+        if (i < charges) {
+            icon.style.opacity = '1';
+            icon.style.transform = 'scale(1.15)';
+            icon.style.filter = 'grayscale(0) drop-shadow(0 0 6px #ffcc88)';
+        } else if (canBark && charges === 0) {
+            icon.style.opacity = String(0.5 + (1 - cooldownRatio) * 0.3);
+            icon.style.transform = 'scale(1.0)';
+            icon.style.filter = 'grayscale(0.3)';
+        } else {
+            icon.style.opacity = '0.25';
+            icon.style.transform = 'scale(1.0)';
+            icon.style.filter = 'grayscale(0.9)';
+        }
+    }
+}
+
 export function createTetherDisplay() {
     const tetherDiv = document.createElement('div');
     tetherDiv.id = 'tether-display';

@@ -14,6 +14,7 @@ import {
 import { DEPTH_LAYERS, randomZInLayer, randomZInRange } from '../depth_layers';
 import { moonPlants } from '../visuals';
 import { decorationBudget } from '../decoration_budget';
+import { biomeNoise } from '../biome_noise';
 import { STREAM_AHEAD_END, STREAM_AHEAD_START } from './constants';
 import type { LevelFoliageHost } from './foliage_host';
 
@@ -105,7 +106,11 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
         levelConfig: LevelConfig,
         yRange: [number, number] = [-20, 20]
     ) {
-        const scaledCount = (count: number) => Math.max(0, Math.floor(count * lm.objectDensityMultiplier));
+        // Chunk-cached biome noise (C++ fractalNoise2D under VITE_CPP_WASM=true, JS fallback otherwise)
+        // varies foliage/void-root scatter density per world X instead of a flat multiplier.
+        const foliageDensityMul = biomeNoise.densityMultiplier(startX + width / 2, 'foliage');
+        const scaledCount = (count: number) =>
+            Math.max(0, Math.floor(count * lm.objectDensityMultiplier * foliageDensityMul));
         const foliageZ: [number, number] = [DEPTH_LAYERS.MIDGROUND.min, DEPTH_LAYERS.MIDGROUND.max];
         const geoZ: [number, number] = [DEPTH_LAYERS.BACKGROUND.min + 5, DEPTH_LAYERS.MIDGROUND.max];
         const vignettes = levelConfig.vignettes || {};
@@ -197,8 +202,10 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
         }
         spawnFoliageVignettes(lm, startX, width, density, yRange, treeYRange, foliageZ, geoZ, vignettes, vignetteCount, geodeClearings);
         if (density.cloud) {
+            // Independent noise sample (own channel) so spore-cloud rate doesn't move in lockstep with foliage.
+            const sporeDensityMul = biomeNoise.densityMultiplier(startX + width / 2, 'spore');
             const targetCount = Math.min(
-                scaledCount(density.cloud),
+                Math.max(0, Math.floor(density.cloud * lm.objectDensityMultiplier * sporeDensityMul)),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.cloud - lm.geologicalCounts.sporeClouds())
             );
             for (let i = 0; i < targetCount; i++) {
