@@ -205,6 +205,7 @@ function createLevelManager(
             skyRailTerminalSystem: systems.skyRailTerminalSystem,
             windCurrentsSystem: systems.windCurrentsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
+            bouncePadsSystem: systems.bouncePadsSystem,
             spaceGardenSystem: systems.spaceGardenSystem
         },
         spawners: {
@@ -270,7 +271,8 @@ function createLevelManager(
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
         windCurrentsSystem: systems.windCurrentsSystem,
-        spaceGardenSystem: systems.spaceGardenSystem
+        bouncePadsSystem: systems.bouncePadsSystem,
+            spaceGardenSystem: systems.spaceGardenSystem
     });
 }
 

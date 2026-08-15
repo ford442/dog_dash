@@ -54,6 +54,7 @@ export const DEFERRED_ENV_FLAGS = [
     'cloudCastles',
     'windCurrents',
     'flowerConstellations',
+    'bouncePads',
     'spaceGarden'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -256,6 +257,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'windCurrents',
             activate: (config) => host.windCurrentsSystem.activate(objectConfig(config)),
             deactivate: () => host.windCurrentsSystem.deactivate()
+        })
+    },
+    bouncePads: {
+        flag: 'bouncePads',
+        systemKey: 'bouncePads',
+        load: () => import('./bounce_pads'),
+        install: (ctx, mod) => {
+            const { BouncePadsSystem } = mod as typeof import('./bounce_pads');
+            ctx.installEnvPartial({ bouncePadsSystem: new BouncePadsSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'bouncePads',
+            activate: (config) => host.bouncePadsSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.bouncePadsSystem.deactivate()
         })
     },
     flowerConstellations: {
@@ -859,6 +874,7 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'skyRailTerminal',
     'windCurrents',
     'flowerConstellations',
+    'bouncePads',
     'spaceGarden'
 ];
 

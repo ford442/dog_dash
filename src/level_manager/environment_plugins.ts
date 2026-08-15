@@ -53,6 +53,7 @@ const PLUGIN_ORDER = [
     'bubbleCoral',
     'flowerConstellations',
     'skyRailTerminal',
+    'bouncePads',
     'spaceGarden'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 

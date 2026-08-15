@@ -30,6 +30,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'] & { activate: (config?: { density?: number }) => void; deactivate: () => void; cleanup: () => void };
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'] & { activate: (config?: any) => void; deactivate: () => void; cleanup: () => void; getWindForce: (pos: THREE.Vector3) => THREE.Vector3; };
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'] & { activate: (config?: unknown) => void; deactivate: () => void; setVisible: (visible: boolean) => void; update: (delta: number, cameraX: number) => void };
+    bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'] & { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'] & { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void };
 }
 

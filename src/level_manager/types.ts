@@ -104,6 +104,7 @@ export type LevelEnvironmentPorts = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    bouncePadsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
     skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
@@ -135,5 +136,6 @@ export type LevelManagerOptions = {
     spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
+    bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 };

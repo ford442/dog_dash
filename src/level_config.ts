@@ -142,6 +142,10 @@ export type WindCurrentsEnvironmentConfig = {
     zones: WindZoneConfig[];
 };
 
+export type BouncePadsEnvironmentConfig = {
+    pads: { x: number; y: number; z?: number; bounceStrength?: number }[];
+};
+
 export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
@@ -181,6 +185,7 @@ export type LevelEnvironments = {
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
+    bouncePads?: boolean | BouncePadsEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
 };
@@ -562,7 +567,13 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
             bubbleCoral: { density: 0.85 },
-            skyRailTerminal: true
+            skyRailTerminal: true,
+            bouncePads: {
+                pads: [
+                    { x: 300, y: 0, z: 0, bounceStrength: 45 },
+                    { x: 400, y: 5, z: 0, bounceStrength: 40 }
+                ]
+            }
         },
         vignettes: {
             treeGroves: 0.6,
