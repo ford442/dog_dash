@@ -101,6 +101,7 @@ export type LevelEnvironmentPorts = {
     cloudCastlesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     spaceGardenSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     windCurrentsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; getWindForce: (pos: THREE.Vector3) => THREE.Vector3; };
+    timeShiftZonesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; getTimeScaleModifier: (pos: THREE.Vector3) => number; };
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
@@ -135,6 +136,7 @@ export type LevelManagerOptions = {
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
     spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
+    timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];

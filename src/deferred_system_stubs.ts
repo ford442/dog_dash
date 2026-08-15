@@ -31,6 +31,7 @@ import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { SingingGeodeSystem } from './singing_geodes';
 import type { WindCurrentsSystem } from './wind_currents';
+import type { TimeShiftZonesSystem } from './time_shift_zones';
 
 const noop = () => undefined;
 
@@ -319,6 +320,17 @@ export function createWindCurrentsSystemStub(): WindCurrentsSystem {
         cleanup: noop,
         getWindForce: () => new THREE.Vector3(0, 0, 0)
     } as unknown as WindCurrentsSystem;
+}
+
+export function createTimeShiftZonesSystemStub(): TimeShiftZonesSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop,
+        getTimeScaleModifier: () => 1.0
+    } as unknown as TimeShiftZonesSystem;
 }
 
 export function createCandyFieldSystemStub(): CandyFieldSystem {

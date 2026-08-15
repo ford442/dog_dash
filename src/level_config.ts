@@ -186,6 +186,7 @@ export type LevelEnvironments = {
     cloudCastles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     bouncePads?: boolean | BouncePadsEnvironmentConfig;
+    timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
 };
@@ -572,6 +573,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 pads: [
                     { x: 300, y: 0, z: 0, bounceStrength: 45 },
                     { x: 400, y: 5, z: 0, bounceStrength: 40 }
+            timeShiftZones: {
+                zones: [
+                    { x: 300, y: 0, width: 80, height: 25 },
+                    { x: 700, y: 0, width: 100, height: 25 }
                 ]
             }
         },

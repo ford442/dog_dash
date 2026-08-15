@@ -53,6 +53,7 @@ export const DEFERRED_ENV_FLAGS = [
     'singingGeodes',
     'cloudCastles',
     'windCurrents',
+    'timeShiftZones',
     'flowerConstellations',
     'bouncePads',
     'spaceGarden'
@@ -271,6 +272,18 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'bouncePads',
             activate: (config) => host.bouncePadsSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => host.bouncePadsSystem.deactivate()
+    timeShiftZones: {
+        flag: 'timeShiftZones',
+        systemKey: 'timeShiftZones',
+        load: () => import('./time_shift_zones'),
+        install: (ctx, mod) => {
+            const { TimeShiftZonesSystem } = mod as typeof import('./time_shift_zones');
+            ctx.installEnvPartial({ timeShiftZonesSystem: new TimeShiftZonesSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'timeShiftZones',
+            activate: (config) => host.timeShiftZonesSystem.activate(objectConfig(config)),
+            deactivate: () => host.timeShiftZonesSystem.deactivate()
         })
     },
     flowerConstellations: {

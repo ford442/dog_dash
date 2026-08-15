@@ -50,6 +50,7 @@ const PLUGIN_ORDER = [
     'singingGeodes',
     'cloudCastles',
     'windCurrents',
+    'timeShiftZones',
     'bubbleCoral',
     'flowerConstellations',
     'skyRailTerminal',

@@ -20,6 +20,7 @@ import {
     createIndustrialSystemStub,
     createBiologicalSystemStub,
     createCosmicDustSystemStub,
+    createTimeShiftZonesSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -152,6 +153,7 @@ export type GameSystems = {
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
     windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+    timeShiftZonesSystem: import('./time_shift_zones').TimeShiftZonesSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -391,6 +393,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
     const windCurrentsSystem = createWindCurrentsSystemStub();
+    const timeShiftZonesSystem = createTimeShiftZonesSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -454,6 +457,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dayNightCycleSystem,
         cloudCastlesSystem,
         windCurrentsSystem,
+        timeShiftZonesSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
