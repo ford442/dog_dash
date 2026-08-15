@@ -289,3 +289,4 @@ export function animateBark(host: DogAnimationHost, deltaTime: number): void {
         host.excitement = 1;
         host.happiness = Math.min(1, host.happiness + deltaTime);
 }
+
