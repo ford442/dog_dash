@@ -93,7 +93,8 @@ export class LevelManager {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
-    readonly spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
+    readonly bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
+    spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
     readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
@@ -152,6 +153,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
         this.dayNightCycleSystem = options.dayNightCycleSystem;
         this.cloudCastlesSystem = options.cloudCastlesSystem;
+        this.bouncePadsSystem = options.bouncePadsSystem;
         this.spaceGardenSystem = options.spaceGardenSystem;
         this.windCurrentsSystem = options.windCurrentsSystem;
         this.timeShiftZonesSystem = options.timeShiftZonesSystem;

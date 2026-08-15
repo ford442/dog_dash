@@ -206,6 +206,7 @@ function createLevelManager(
             windCurrentsSystem: systems.windCurrentsSystem,
             timeShiftZonesSystem: systems.timeShiftZonesSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
+            bouncePadsSystem: systems.bouncePadsSystem,
             spaceGardenSystem: systems.spaceGardenSystem
         },
         spawners: {
@@ -271,6 +272,8 @@ function createLevelManager(
         candyFieldSystem: systems.candyFieldSystem,
         singingGeodeSystem: systems.singingGeodeSystem,
         windCurrentsSystem: systems.windCurrentsSystem,
+        bouncePadsSystem: systems.bouncePadsSystem,
+            spaceGardenSystem: systems.spaceGardenSystem
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
         spaceGardenSystem: systems.spaceGardenSystem
     });

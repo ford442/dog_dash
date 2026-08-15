@@ -365,3 +365,7 @@ export function createFlowerConstellationsSystemStub(): FlowerConstellationsSyst
 export function createSpaceGardenSystemStub(): import('./space_garden').SpaceGardenSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {} } as unknown as import('./space_garden').SpaceGardenSystem;
 }
+
+export function createBouncePadsSystemStub(): import('./bounce_pads').BouncePadsSystem {
+    return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, checkCollision: () => null } as unknown as import('./bounce_pads').BouncePadsSystem;
+}

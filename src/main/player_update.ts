@@ -110,6 +110,16 @@ export function updatePlayer(delta: number) {
         );
     }
 
+    // --- BOUNCE PADS CHECK ---
+    const bounceVelocity = game.bouncePadsSystem?.checkCollision(player.position, playerState.currentSpeedY);
+    if (bounceVelocity !== null) {
+        playerState.currentSpeedY = bounceVelocity;
+        game.audioSystem.playBoing();
+        game.particleSystem.emit(player.position.clone().add(new THREE.Vector3(0, -1, 0)), 0x00ffcc, 15, 5.0, 0.5, 0.5);
+        game.dogController.triggerAnimation(DogAnimationState.VICTORY, 0.5);
+    }
+
+
     player.position.y += playerState.currentSpeedY * delta;
     
     // Soft boundaries - keep player on screen (Y: origin-10 to origin+15).
