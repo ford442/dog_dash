@@ -573,6 +573,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 pads: [
                     { x: 300, y: 0, z: 0, bounceStrength: 45 },
                     { x: 400, y: 5, z: 0, bounceStrength: 40 }
+                ]
+            },
             timeShiftZones: {
                 zones: [
                     { x: 300, y: 0, width: 80, height: 25 },
