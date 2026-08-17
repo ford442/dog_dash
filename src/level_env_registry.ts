@@ -272,6 +272,8 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'bouncePads',
             activate: (config) => host.bouncePadsSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => host.bouncePadsSystem.deactivate()
+        })
+    },
     timeShiftZones: {
         flag: 'timeShiftZones',
         systemKey: 'timeShiftZones',

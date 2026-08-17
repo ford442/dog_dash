@@ -273,7 +273,6 @@ function createLevelManager(
         singingGeodeSystem: systems.singingGeodeSystem,
         windCurrentsSystem: systems.windCurrentsSystem,
         bouncePadsSystem: systems.bouncePadsSystem,
-            spaceGardenSystem: systems.spaceGardenSystem
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
         spaceGardenSystem: systems.spaceGardenSystem
     });
