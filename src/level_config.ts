@@ -189,6 +189,7 @@ export type LevelEnvironments = {
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
+    aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -573,6 +574,15 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 pads: [
                     { x: 300, y: 0, z: 0, bounceStrength: 45 },
                     { x: 400, y: 5, z: 0, bounceStrength: 40 }
+                ]
+            },
+            aerialGuardPatrol: {
+                zones: [
+                    { x: 500, y: 8, z: 0, width: 100, searchRadius: 20 },
+                    { x: 900, y: -5, z: 0, width: 150, searchRadius: 25 },
+                    { x: 1400, y: 10, z: -5, width: 80, searchRadius: 15 }
+                ]
+            },
             timeShiftZones: {
                 zones: [
                     { x: 300, y: 0, width: 80, height: 25 },

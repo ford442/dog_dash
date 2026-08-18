@@ -369,3 +369,7 @@ export function createSpaceGardenSystemStub(): import('./space_garden').SpaceGar
 export function createBouncePadsSystemStub(): import('./bounce_pads').BouncePadsSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, checkCollision: () => null } as unknown as import('./bounce_pads').BouncePadsSystem;
 }
+
+export function createAerialGuardPatrolSystemStub(): import('./aerial_guard_patrol').AerialGuardPatrolSystem {
+    return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, checkDetection: () => 0 } as unknown as import('./aerial_guard_patrol').AerialGuardPatrolSystem;
+}

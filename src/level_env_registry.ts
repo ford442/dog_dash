@@ -56,7 +56,8 @@ export const DEFERRED_ENV_FLAGS = [
     'timeShiftZones',
     'flowerConstellations',
     'bouncePads',
-    'spaceGarden'
+    'spaceGarden',
+    'aerialGuardPatrol'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -272,6 +273,8 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'bouncePads',
             activate: (config) => host.bouncePadsSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => host.bouncePadsSystem.deactivate()
+        })
+    },
     timeShiftZones: {
         flag: 'timeShiftZones',
         systemKey: 'timeShiftZones',
@@ -314,6 +317,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'spaceGarden',
             activate: () => host.spaceGardenSystem.activate(),
             deactivate: () => host.spaceGardenSystem.deactivate()
+        })
+    },
+    aerialGuardPatrol: {
+        flag: 'aerialGuardPatrol',
+        systemKey: 'aerialGuardPatrol',
+        load: () => import('./aerial_guard_patrol'),
+        install: (ctx, mod) => {
+            const { AerialGuardPatrolSystem } = mod as typeof import('./aerial_guard_patrol');
+            ctx.installEnvPartial({ aerialGuardPatrolSystem: new AerialGuardPatrolSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'aerialGuardPatrol',
+            activate: (config) => host.aerialGuardPatrolSystem.activate(objectConfig(config)),
+            deactivate: () => host.aerialGuardPatrolSystem.deactivate()
         })
     },
     dayNightCycle: {
