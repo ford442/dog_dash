@@ -94,6 +94,7 @@ export class LevelManager {
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
     readonly bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
+    readonly aerialGuardPatrolSystem: LevelEnvironmentPorts['aerialGuardPatrolSystem'];
     spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
     readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
@@ -154,6 +155,7 @@ export class LevelManager {
         this.dayNightCycleSystem = options.dayNightCycleSystem;
         this.cloudCastlesSystem = options.cloudCastlesSystem;
         this.bouncePadsSystem = options.bouncePadsSystem;
+        this.aerialGuardPatrolSystem = options.aerialGuardPatrolSystem;
         this.spaceGardenSystem = options.spaceGardenSystem;
         this.windCurrentsSystem = options.windCurrentsSystem;
         this.timeShiftZonesSystem = options.timeShiftZonesSystem;
@@ -397,6 +399,7 @@ export class LevelManager {
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         if (enabled('cloudCastles') && this.cloudCastlesSystem) this.cloudCastlesSystem.update(delta, cameraX, playerPos);
         if (enabled('spaceGarden') && this.spaceGardenSystem) this.spaceGardenSystem.update(delta, cameraX, playerPos);
+        if (enabled('aerialGuardPatrol') && this.aerialGuardPatrolSystem) this.aerialGuardPatrolSystem.update(delta, cameraX, playerPos);
         if (enabled('windCurrents') && this.windCurrentsSystem) this.windCurrentsSystem.update(delta, cameraX, playerPos);
         if (enabled('timeShiftZones') && this.timeShiftZonesSystem) this.timeShiftZonesSystem.update(delta, cameraX, playerPos);
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
