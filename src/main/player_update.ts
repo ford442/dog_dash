@@ -152,8 +152,10 @@ export function updatePlayer(delta: number) {
 
         // Engine VFX based on thrust vs glide vs dive
         if (rocket.userData.flame) {
+            const speedRatioAbs = Math.abs(speedRatio);
+
             if (isMovingUp) {
-                // Thrusting up → bright, large, flickering flame
+                // Thrusting up / boost → bright, large, flickering green/magenta flame
                 const flicker = 0.9 + Math.random() * 0.3;
                 rocket.userData.flame.scale.set(flicker * 1.5, flicker * 3.0, flicker * 1.5);
                 
@@ -161,9 +163,13 @@ export function updatePlayer(delta: number) {
                 const exhaustPos = player.position.clone();
                 exhaustPos.x -= 0.5;
                 exhaustPos.y -= 0.5;
-                game.particleSystem.emit(exhaustPos, 0x00ff00, 2, 5.0, 0.8, 0.2); // Green for boost/thrust
+
+                const isMagenta = Math.random() > 0.5;
+                const boostColor = isMagenta ? 0xff00ff : 0x00ffaa;
+
+                game.particleSystem.emit(exhaustPos, boostColor, 2, 6.0, 1.0, 0.3);
             } else if (isMovingDown) {
-                // Diving → very small, dim flame + extra downward particle streaks
+                // Diving → dim flame, warm orange to deep red trailing particles
                 const flicker = 0.4 + Math.random() * 0.2;
                 rocket.userData.flame.scale.set(flicker, flicker, flicker);
                 
@@ -171,18 +177,25 @@ export function updatePlayer(delta: number) {
                 const streakPos = player.position.clone();
                 streakPos.x -= 0.5;
                 streakPos.y -= 0.3;
-                game.particleSystem.emit(streakPos, 0xff0000, 1, 3.0, 0.5, 0.3); // Red for dive
+
+                // Color gets redder and darker as dive speed increases
+                const diveColor = speedRatioAbs > 0.6 ? 0xff1100 : 0xff6600;
+                const emitCount = speedRatioAbs > 0.8 ? 2 : 1;
+                const particleSpeed = 3.0 + speedRatioAbs * 3.0;
+
+                game.particleSystem.emit(streakPos, diveColor, emitCount, particleSpeed, 0.5, 0.3);
             } else {
                 // Gliding / idle → smaller, softer flame
                 const flicker = 0.5 + Math.random() * 0.2;
                 rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
 
-                // Blue trail for glide
+                // Cyan/Soft blue trail for glide
                 const glidePos = player.position.clone();
                 glidePos.x -= 0.5;
                 glidePos.y -= 0.1;
-                if (Math.random() < 0.3) {
-                    game.particleSystem.emit(glidePos, 0x00aaff, 1, 3.0, 0.6, 0.2);
+                if (Math.random() < 0.4) {
+                    const glideColor = Math.random() > 0.5 ? 0x00aaff : 0x44ffff;
+                    game.particleSystem.emit(glidePos, glideColor, 1, 3.0, 0.6, 0.2);
                 }
             }
         }
@@ -234,18 +247,18 @@ export function updatePlayer(delta: number) {
             (rocket.userData.flame.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.5 + Math.random() * 1.0;
         }
 
-        // Rainbow afterburner trail particles
+        // Bright green/magenta afterburner trail particles for boost cohesiveness
         const exhaustPos = player.position.clone();
         exhaustPos.x -= 0.8;
-        const colors = [0xff8800, 0xffaa00, 0xffdd44, 0xffffff];
+        const colors = [0x00ffaa, 0x00ff00, 0xff00ff, 0xffffff];
         const color = colors[Math.floor(Math.random() * colors.length)];
         game.particleSystem.emit(exhaustPos, color, 2, 6.0 + Math.random() * 2, 0.8, 0.25);
 
-        // Additional downward streak for contrast
+        // Additional downward streak for contrast (cyan to match the theme)
         const streakPos = player.position.clone();
         streakPos.x -= 0.6;
         streakPos.y -= 0.2;
-        game.particleSystem.emit(streakPos, 0xff4400, 1, 4.0, 0.5, 0.3);
+        game.particleSystem.emit(streakPos, 0x00ffff, 1, 4.0, 0.5, 0.3);
     } else {
         // Restore normal scroll speed when not boosting
         const baseSpeed = game.saveManager.applyToSpeed(8);
