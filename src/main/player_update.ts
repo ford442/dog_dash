@@ -12,6 +12,7 @@ import { BARK_RADIUS } from '../bark_blast_system';
 import { maybePrefetchNextLevel } from '../level_systems_loader';
 import { PowerUpType } from '../powerup_manager';
 import { DogAnimationState } from '../dog_cockpit';
+import { ShakeType } from '../juice_effects/shared';
 
 export function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
@@ -117,6 +118,15 @@ export function updatePlayer(delta: number) {
         game.audioSystem.playBoing();
         game.particleSystem.emit(player.position.clone().add(new THREE.Vector3(0, -1, 0)), 0x00ffcc, 15, 5.0, 0.5, 0.5);
         game.dogController.triggerAnimation(DogAnimationState.VICTORY, 0.5);
+    }
+
+    // --- AERIAL GUARD PATROL CHECK ---
+    const detectionLevel = game.aerialGuardPatrolSystem?.checkDetection(player.position) ?? 0;
+    if (detectionLevel > 0) {
+        playerState.autoScrollSpeed = Math.max(5, playerState.autoScrollSpeed - detectionLevel * 20 * delta);
+        if (detectionLevel > 0.5) {
+            game.juiceManager.shakeScreen(ShakeType.LIGHT, 0.1);
+        }
     }
 
 
