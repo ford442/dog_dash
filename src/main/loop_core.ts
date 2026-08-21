@@ -106,7 +106,6 @@ export function updateLoopCore(rawDelta: number, delta: number, _time: number): 
         }
         
         if (isGamePaused) {
-            renderGameFrame();
             return true;
         }
     
