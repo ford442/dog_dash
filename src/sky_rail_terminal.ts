@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeObject } from './utils';
 import { time, color, uniform, sin, positionWorld, length, uv, smoothstep } from 'three/tsl';
 import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
 
@@ -196,13 +197,11 @@ export class SkyRailTerminalSystem {
     cleanup() {
         if (this.railMesh) {
             this.scene.remove(this.railMesh);
-            this.railMesh.geometry.dispose();
-            if (this.railMesh.material) (this.railMesh.material as any).dispose?.();
+            disposeObject(this.railMesh);
         }
         if (this.terminalMesh) {
             this.scene.remove(this.terminalMesh);
-            this.terminalMesh.geometry.dispose();
-            if (this.terminalMesh.material) (this.terminalMesh.material as any).dispose?.();
+            disposeObject(this.terminalMesh);
         }
     }
 }

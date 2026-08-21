@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeObject } from './utils';
 import { time, vec3, color, uniform, sin, float, mod, positionLocal } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
@@ -132,8 +133,7 @@ export class WindCurrentsSystem {
     cleanup() {
         for (const mesh of this.meshes) {
             this.scene.remove(mesh);
-            mesh.geometry.dispose();
-            (mesh.material as any).dispose?.();
+            disposeObject(mesh);
         }
         this.meshes = [];
     }

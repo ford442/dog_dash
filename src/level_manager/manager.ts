@@ -309,20 +309,7 @@ export class LevelManager {
             );
         }
 
-        this.pinwheelManager.clear();
-        this.windChimeManager.clear();
-        this.solarSailFernManager.clear();
-        this.crystalChimeManager.clear();
-
-        // Re-baseline decoration counters after clears; re-sync still-live streams/pools
-        decorationBudget.resetCounts();
-        decorationBudget.syncCount('foliage_scatter', this.levelObjects.length);
-        decorationBudget.syncCount(
-            'void_root_ball',
-            this.geologicalCounts.voidRootBalls()
-        );
-        this.butterflySwarmSystem.resyncBudgetCounts();
-        this.nebulaSystem.resyncBudgetCounts();
+        this.disposeLevelStreamingResources();
 
         if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
             this.pinwheelManager.spawnField(
@@ -426,5 +413,29 @@ export class LevelManager {
         const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
         const percent = Math.min(100, Math.max(0, (playerX / total) * 100));
         return { percent, level: this.currentLevel };
+    }
+
+    disposeLevelStreamingResources(): void {
+        this.pinwheelManager.clear();
+        this.windChimeManager.clear();
+        this.solarSailFernManager.clear();
+        this.crystalChimeManager.clear();
+
+        // Newly added to clean up decorative leaks
+        if ((this as any).cloudCastlesSystem) (this as any).cloudCastlesSystem.cleanup?.();
+        if ((this as any).skyRailTerminalSystem) (this as any).skyRailTerminalSystem.cleanup?.();
+        if ((this as any).flowerConstellationsSystem) (this as any).flowerConstellationsSystem.cleanup?.();
+        if ((this as any).spacePetsSwarmSystem) (this as any).spacePetsSwarmSystem.cleanup?.();
+        if ((this as any).windCurrentsSystem) (this as any).windCurrentsSystem.cleanup?.();
+
+        // Re-baseline decoration counters after clears; re-sync still-live streams/pools
+        decorationBudget.resetCounts();
+        decorationBudget.syncCount('foliage_scatter', this.levelObjects.length);
+        decorationBudget.syncCount(
+            'void_root_ball',
+            this.geologicalCounts.voidRootBalls()
+        );
+        this.butterflySwarmSystem.resyncBudgetCounts();
+        this.nebulaSystem.resyncBudgetCounts();
     }
 }
