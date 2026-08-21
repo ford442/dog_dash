@@ -57,7 +57,8 @@ export const DEFERRED_ENV_FLAGS = [
     'flowerConstellations',
     'bouncePads',
     'spaceGarden',
-    'aerialGuardPatrol'
+    'aerialGuardPatrol',
+    'airTokens'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -331,6 +332,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'aerialGuardPatrol',
             activate: (config) => host.aerialGuardPatrolSystem.activate(objectConfig(config)),
             deactivate: () => host.aerialGuardPatrolSystem.deactivate()
+        })
+    },
+    airTokens: {
+        flag: 'airTokens',
+        systemKey: 'airTokens',
+        load: () => import('./air_tokens'),
+        install: (ctx, mod) => {
+            const { AirTokensSystem } = mod as typeof import('./air_tokens');
+            ctx.installEnvPartial({ airTokensSystem: new AirTokensSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'airTokens',
+            activate: (config) => host.airTokensSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.airTokensSystem.deactivate()
         })
     },
     dayNightCycle: {
@@ -905,7 +920,10 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'windCurrents',
     'flowerConstellations',
     'bouncePads',
-    'spaceGarden'
+    'spaceGarden',
+    'timeShiftZones',
+    'aerialGuardPatrol',
+    'airTokens'
 ];
 
 export function buildDeferredEnvPlugins(

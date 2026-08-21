@@ -33,6 +33,7 @@ export interface LevelPluginHost extends LevelEnvironmentPorts {
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'] & { activate: (config?: unknown) => void; deactivate: () => void; setVisible: (visible: boolean) => void; update: (delta: number, cameraX: number) => void };
     bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'] & { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
     aerialGuardPatrolSystem: LevelEnvironmentPorts['aerialGuardPatrolSystem'] & { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkDetection: (playerPos: THREE.Vector3) => number; };
+    airTokensSystem: LevelEnvironmentPorts['airTokensSystem'] & { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; collectNear: (pos: THREE.Vector3, radius?: number) => { lift: number } | null; };
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'] & { activate: (density?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void };
 }
 

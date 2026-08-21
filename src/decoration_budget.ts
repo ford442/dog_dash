@@ -296,6 +296,11 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'effects',
         maxActive: 36
     });
+    decorationBudget.register('air_tokens', {
+        label: 'Air tokens',
+        category: 'effects',
+        maxActive: 32
+    });
     decorationBudget.register('star_eater_boss', {
         label: 'Star-Eater Pitcher (boss)',
         category: 'creatures',

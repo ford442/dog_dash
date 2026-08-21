@@ -120,6 +120,18 @@ export function updatePlayer(delta: number) {
         game.dogController.triggerAnimation(DogAnimationState.VICTORY, 0.5);
     }
 
+    // --- AIR TOKENS (ideas.md §18.1 1H) ---
+    const airToken = game.airTokensSystem?.collectNear(player.position);
+    if (airToken) {
+        game.boostSystem.addCharge(1);
+        playerState.currentSpeedY = Math.max(playerState.currentSpeedY, airToken.lift);
+        game.hudManager.addScore(10);
+        game.juiceManager.showScoreText(10, player.position.clone());
+        game.audioSystem.playCollect();
+        game.particleSystem.emit(player.position.clone(), 0x7fffd4, 18, 6.0, 0.6, 0.7);
+        game.dogController.triggerAnimation(DogAnimationState.COLLECT, 0.6);
+    }
+
     // --- AERIAL GUARD PATROL CHECK ---
     const detectionLevel = game.aerialGuardPatrolSystem?.checkDetection(player.position) ?? 0;
     if (detectionLevel > 0) {

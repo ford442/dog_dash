@@ -208,7 +208,8 @@ function createLevelManager(
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             bouncePadsSystem: systems.bouncePadsSystem,
             spaceGardenSystem: systems.spaceGardenSystem,
-            aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem
+            aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
+            airTokensSystem: systems.airTokensSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -275,6 +276,7 @@ function createLevelManager(
         windCurrentsSystem: systems.windCurrentsSystem,
         bouncePadsSystem: systems.bouncePadsSystem,
         aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
+        airTokensSystem: systems.airTokensSystem,
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
         spaceGardenSystem: systems.spaceGardenSystem
     });
@@ -403,6 +405,7 @@ export function initializeStartup(): void {
         ['chromaShift', 'Chroma Rocks', true],
         ['godRays', 'God Rays', true],
         ['aurora', 'Aurora Borealis', true],
+        ['airTokens', 'Air Tokens', true],
         ['wireframe', 'Wireframe', hasDebugUrlFlag('wireframe')],
         ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')]
     ];

@@ -1,6 +1,7 @@
 import type { SpaceGardenSystem } from './space_garden';
 import type { BouncePadsSystem } from './bounce_pads';
 import type { AerialGuardPatrolSystem } from './aerial_guard_patrol';
+import type { AirTokensSystem } from './air_tokens';
 import { SkyRailTerminalSystem } from './sky_rail_terminal';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
@@ -43,7 +44,8 @@ import {
     createFlowerConstellationsSystemStub,
     createBouncePadsSystemStub,
     createSpaceGardenSystemStub,
-    createAerialGuardPatrolSystemStub
+    createAerialGuardPatrolSystemStub,
+    createAirTokensSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -162,6 +164,7 @@ export type GameSystems = {
     flowerConstellationsSystem: FlowerConstellationsSystem;
     bouncePadsSystem: BouncePadsSystem;
     aerialGuardPatrolSystem: AerialGuardPatrolSystem;
+    airTokensSystem: AirTokensSystem;
     spaceGardenSystem: SpaceGardenSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
 };
@@ -402,6 +405,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
     const bouncePadsSystem = createBouncePadsSystemStub();
     const aerialGuardPatrolSystem = createAerialGuardPatrolSystemStub();
+    const airTokensSystem = createAirTokensSystemStub();
     const spaceGardenSystem = createSpaceGardenSystemStub();
     const skyRailTerminalSystem = new SkyRailTerminalSystem(scene);
     const gravLensManager = new GravLensManager(scene);
@@ -467,6 +471,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         flowerConstellationsSystem,
         bouncePadsSystem,
         aerialGuardPatrolSystem,
+        airTokensSystem,
         spaceGardenSystem,
         gravLensManager,
         derelictBuoyManager,
