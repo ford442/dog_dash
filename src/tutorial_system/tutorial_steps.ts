@@ -165,7 +165,7 @@ export class TutorialSystem extends TutorialSystemUI {
         for (let i = 0; i < this.targetOrbCount; i++) {
             const x = 5 + i * 3;
             const y = (i % 2 === 0) ? 2 : -2;
-            const orb = new TutorialOrb(this.scene, x, y, 0, OrbType.STAR);
+            const orb = new TutorialOrb(this.scene, x, y, 0, OrbType.STAR, this.audio);
             this.tutorialOrbs.push(orb);
         }
 
@@ -174,7 +174,11 @@ export class TutorialSystem extends TutorialSystemUI {
 
     private activatePowerUpDemo(): void {
         this.hud.showPowerUpIcon('speed_boost' as PowerUpType, 5);
-        this.audio.playMagicSound('power');
+        if (typeof this.audio.playMagicSound === 'function') {
+            this.audio.playMagicSound('power');
+        } else {
+            this.audio.play('powerup');
+        }
         this.createRainbowTrail();
     }
 
@@ -258,7 +262,11 @@ export class TutorialSystem extends TutorialSystemUI {
         if (this.stepTimer >= 2000 && !this.spaceKitty.hasWavedAtPlayer) {
             (this.spaceKitty as any).isWaving = true;
             (this.spaceKitty as any).hasWavedAtPlayer = true;
-            this.audio.playMagicSound('happy');
+            if (typeof this.audio.playMagicSound === 'function') {
+                this.audio.playMagicSound('happy');
+            } else {
+                this.audio.play('giggle');
+            }
 
             setTimeout(() => this.nextStep(), 2000);
         }

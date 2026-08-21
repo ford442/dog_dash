@@ -2,9 +2,10 @@
  * Tutorial System types and configuration
  */
 
+import * as THREE from 'three';
 import { DogAnimationState } from '../dog_cockpit';
 import { CollectibleOrb, OrbType } from '../collectibles';
-import { getAudioSystem } from './persistence';
+import type { AudioPort } from '../ports';
 
 // =============================================================================
 // TUTORIAL STEP ENUM
@@ -100,6 +101,19 @@ export const TUTORIAL_CONFIG = {
 
 export class TutorialOrb extends CollectibleOrb {
     tutorialCollected: boolean = false;
+    private audio?: AudioPort | null;
+
+    constructor(
+        scene: THREE.Scene,
+        x: number,
+        y: number,
+        z: number = 0,
+        type: OrbType = OrbType.STAR,
+        audio?: AudioPort | null
+    ) {
+        super(scene, x, y, z, type);
+        this.audio = audio;
+    }
 
     collectForTutorial(): void {
         if (this.tutorialCollected) return;
@@ -112,7 +126,13 @@ export class TutorialOrb extends CollectibleOrb {
         }
 
         // Play sound
-        const audio = getAudioSystem();
-        audio.playMagicSound('collect');
+        if (this.audio) {
+            if (typeof this.audio.playMagicSound === 'function') {
+                this.audio.playMagicSound('collect');
+            } else {
+                this.audio.play('twinkle', 0.8);
+            }
+        }
     }
 }
+

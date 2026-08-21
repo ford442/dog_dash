@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { ConstellationManager } from './flower_constellations';
-import type { AudioSystem } from './audio_system';
+import type { AudioPort } from './ports';
 import type { ParticleSystem } from './particles';
 import { DEPTH_LAYERS } from './depth_layers';
 
@@ -9,7 +9,7 @@ export class FlowerConstellationsSystem {
     private manager: ConstellationManager;
     private active: boolean = false;
 
-    constructor(scene: THREE.Scene, audioSystem: AudioSystem, particleSystem: ParticleSystem) {
+    constructor(scene: THREE.Scene, audioSystem: AudioPort, particleSystem: ParticleSystem) {
         this.scene = scene;
         this.manager = new ConstellationManager(scene, audioSystem, particleSystem);
         this.deactivate();
