@@ -26,6 +26,7 @@ import type {
     WebGLMaterialFallbackRenderer,
     WireframeDebugHelper
 } from './render_debug_helpers';
+import type { PixelGlowSystem } from './pixel_glow';
 
 // ---------------------------------------------------------------------------
 // GameContext field groups (Phase 2 slices — flat on `game`, typed for docs/tests)
@@ -118,6 +119,7 @@ export type GameContextExtensions = {
     wireframeDebugHelper: WireframeDebugHelper;
     collisionDebugOverlay: CollisionDebugOverlay;
     webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
+    pixelGlowSystem: PixelGlowSystem;
     reportComboObjectiveProgress: () => void;
     handleGameOver: () => void;
     /** Re-attach slingable callbacks after deferred manager swap. */

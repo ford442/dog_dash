@@ -52,6 +52,7 @@ import {
     WebGLMaterialFallbackRenderer,
     WireframeDebugHelper
 } from '../render_debug_helpers';
+import { PixelGlowSystem } from '../pixel_glow';
 
 async function loadWasm(): Promise<void> {
     const handle = await loadWasmModule();
@@ -405,6 +406,7 @@ export function initializeStartup(): void {
         ['chromaShift', 'Chroma Rocks', true],
         ['godRays', 'God Rays', true],
         ['aurora', 'Aurora Borealis', true],
+        ['pixelGlow', 'Retro Pixel-Glow', hasDebugUrlFlag('pixelGlow')],
         ['airTokens', 'Air Tokens', true],
         ['wireframe', 'Wireframe', hasDebugUrlFlag('wireframe')],
         ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')]
@@ -465,6 +467,7 @@ export function initializeStartup(): void {
         wireframeDebugHelper: new WireframeDebugHelper(),
         collisionDebugOverlay: new CollisionDebugOverlay(scene),
         webglMaterialFallbackRenderer: new WebGLMaterialFallbackRenderer(rendererBackend),
+        pixelGlowSystem: new PixelGlowSystem(),
         levelManager,
         obstacleSystem,
         handleGameOver

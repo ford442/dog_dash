@@ -164,6 +164,11 @@ export function setupInputBindings(): void {
             renderer.setPixelRatio(game.currentPixelRatio);
             console.log(`🔧 Resolution set to ${Math.round(next * 100)}% (pixel ratio ${game.currentPixelRatio.toFixed(2)})`);
         }
+        if (e.code === 'KeyP') {
+            if (game.pixelGlowSystem) {
+                game.pixelGlowSystem.toggle();
+            }
+        }
     });
 
     window.addEventListener('keydown', (e) => {
