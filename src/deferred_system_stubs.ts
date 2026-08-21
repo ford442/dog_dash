@@ -373,3 +373,7 @@ export function createBouncePadsSystemStub(): import('./bounce_pads').BouncePads
 export function createAerialGuardPatrolSystemStub(): import('./aerial_guard_patrol').AerialGuardPatrolSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, checkDetection: () => 0 } as unknown as import('./aerial_guard_patrol').AerialGuardPatrolSystem;
 }
+
+export function createAirTokensSystemStub(): import('./air_tokens').AirTokensSystem {
+    return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, collectNear: () => null } as unknown as import('./air_tokens').AirTokensSystem;
+}

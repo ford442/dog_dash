@@ -186,6 +186,8 @@ export type LevelEnvironments = {
     cloudCastles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     bouncePads?: boolean | BouncePadsEnvironmentConfig;
+    /** Glowing air-tokens that refill boost / grant a lift (ideas.md §18.1 1H). */
+    airTokens?: boolean | import('./air_tokens').AirTokensEnvironmentConfig;
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
@@ -350,7 +352,17 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },
             spaceGarden: true,
-            flowerConstellations: true
+            flowerConstellations: true,
+            airTokens: {
+                tokens: [
+                    { x: 70, y: 6 },
+                    { x: 140, y: -3 },
+                    { x: 210, y: 10 },
+                    { x: 280, y: 3 },
+                    { x: 350, y: -5 },
+                    { x: 430, y: 8 }
+                ]
+            }
         },
         vignettes: {
             treeGroves: 1.5,

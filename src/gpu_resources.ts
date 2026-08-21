@@ -168,3 +168,7 @@ export function disposeMaterialsOnObject(
         disposeMaterialIfOwned(material);
     }
 }
+
+if (typeof window !== 'undefined') {
+    Object.defineProperty(window, 'gpuLiveCounts', { get: () => getGpuResourceLiveCounts() });
+}

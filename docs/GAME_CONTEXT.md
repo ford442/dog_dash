@@ -83,6 +83,39 @@ const audioSystem = getAudioSystem(); // composition root only
 const orbManager = new OrbManager(scene, particleSystem, audioSystem, 4);
 ```
 
+### Example — space friends & ambient audio (`AudioPort`)
+
+[`src/space_friends/FriendsManager.ts`](../src/space_friends/FriendsManager.ts), [`src/singing_geodes.ts`](../src/singing_geodes.ts), [`src/crystal_chimes.ts`](../src/crystal_chimes.ts), and [`src/flower_constellations/manager.ts`](../src/flower_constellations/manager.ts) depend strictly on `AudioPort` instead of concrete `AudioSystem`:
+
+```ts
+// src/space_friends/FriendsManager.ts
+import type { AudioPort } from '../ports';
+
+export class FriendsManager implements FriendSpawnerHost, FriendInteractionHost {
+    constructor(scene: THREE.Scene, audio: AudioPort, particles: ParticleSystem) {
+        this.scene = scene;
+        this.audio = audio;
+        this.particles = particles;
+    }
+}
+```
+
+### Example — tutorial system (`AudioPort`)
+
+[`src/tutorial_system/tutorial_core.ts`](../src/tutorial_system/tutorial_core.ts) and `TutorialOrb` receive `AudioPort` via dependency injection without creating eager audio singletons:
+
+```ts
+// src/tutorial_system/tutorial_core.ts
+export abstract class TutorialSystemCore {
+    constructor(scene: THREE.Scene, hud: HUDManager, audio: AudioPort, dogController: DogCockpitController) {
+        this.scene = scene;
+        this.hud = hud;
+        this.audio = audio;
+        this.dogController = dogController;
+    }
+}
+```
+
 ### Example — power-up hooks (`AudioPort` + `JuicePort`)
 
 [`src/powerup_manager/powerup_hooks.ts`](../src/powerup_manager/powerup_hooks.ts) takes narrow ports in `PowerUpHookContext` — health mutations use an `onHeal` callback wired in `create_game_systems.ts` against `playerState`, not a direct `game_config` import.

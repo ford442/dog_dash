@@ -107,6 +107,7 @@ export type LevelEnvironmentPorts = {
     flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     bouncePadsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
     aerialGuardPatrolSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkDetection: (playerPos: THREE.Vector3) => number; };
+    airTokensSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; collectNear: (pos: THREE.Vector3, radius?: number) => { lift: number } | null; };
     skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
@@ -141,5 +142,6 @@ export type LevelManagerOptions = {
     candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
     aerialGuardPatrolSystem: LevelEnvironmentPorts['aerialGuardPatrolSystem'];
+    airTokensSystem: LevelEnvironmentPorts['airTokensSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
 };

@@ -25,7 +25,9 @@
     "typecheck:baseline:update": "node tools/typecheck_baseline.cjs --update",
     "check:env-registry": "node tools/check_level_env_registry.cjs",
     "check": "node tools/check_braces.cjs && node tools/check_level_env_registry.cjs && npm run typecheck:ci",
-    "test:smoke": "playwright test"
+    "test:unit": "node --test tests/*.test.mjs",
+    "test:smoke": "playwright test",
+    "test": "npm run test:unit && npm run test:smoke"
   },
   "keywords": [],
   "author": "",

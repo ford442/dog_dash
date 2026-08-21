@@ -56,7 +56,8 @@ const PLUGIN_ORDER = [
     'skyRailTerminal',
     'bouncePads',
     'spaceGarden',
-    'aerialGuardPatrol'
+    'aerialGuardPatrol',
+    'airTokens'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

@@ -3,6 +3,7 @@
  */
 
 import * as THREE from 'three';
+import { disposeObject } from '../utils';
 import {
     PASTEL_COLORS,
     TOWER_COLORS,
@@ -589,17 +590,6 @@ export class CloudCastle {
     }
 
     dispose(): void {
-        this.group.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(m => m.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
-                }
-            }
-        });
+        disposeObject(this.group);
     }
 }
