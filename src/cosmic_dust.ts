@@ -42,27 +42,25 @@ export class CosmicDustSystem {
 
         const distFromCenter = uv().sub(0.5).length();
 
-        const finalColor = vec3(baseColor.mul(pulse)).toVar();
-
-        // Player Glow
         const distToPlayer = length(positionWorld.sub(this.uPlayerPos));
         const playerGlow = smoothstep(30.0, 0.0, distToPlayer).mul(0.8);
         const engineColor = color(0xffaa00);
-        finalColor.addAssign(vec3(engineColor).mul(playerGlow));
+        let finalColor = vec3(baseColor.mul(pulse)).add(vec3(engineColor).mul(playerGlow));
 
         // Weapon lights glow
         if (this.weaponLightManager && this.weaponLightManager.storageNode) {
             const lights = this.weaponLightManager.storageNode;
             const maxLights = this.weaponLightManager.maxLights;
 
+            const weaponGlow = float(0.0).toVar();
             Loop(maxLights, ({ i }) => {
                 const lightActive = lights.element(i).x;
                 const lightPos = vec3(lights.element(i).y, lights.element(i).z, lights.element(i).w);
                 const lightDist = length(positionWorld.sub(lightPos));
                 const glow = smoothstep(20.0, 0.0, lightDist).mul(lightActive);
-
-                finalColor.addAssign(vec3(0.0, 1.0, 1.0).mul(glow).mul(0.6));
+                weaponGlow.addAssign(glow);
             });
+            finalColor = finalColor.add(vec3(0.0, 1.0, 1.0).mul(weaponGlow).mul(0.6));
         }
 
         const alpha = float(1.0).sub(distFromCenter.mul(2.0)).max(0.0).pow(2.0);

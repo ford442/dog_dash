@@ -2,6 +2,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
     root: '.',
+    // Relative base so dynamic-import preloads resolve via import.meta.url
+    // (absolute /assets/* 404s when the build is served from a subpath).
+    base: './',
     publicDir: 'public',
     build: {
         target: 'es2022',
