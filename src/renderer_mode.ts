@@ -103,7 +103,7 @@ export function createGameRenderer(
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio * basePixelRatio));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.3;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = false;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     setRendererGlobals(backend, fallbackReason);

@@ -370,6 +370,7 @@ export class StarfieldSystem {
             const speedFactor = 1 + (layerIdx * 0.5); // Higher layers more affected by boost
             const effectiveSpeed = speedMultiplier * speedFactor;
             
+            let colorsChanged = false;
             for (let i = 0; i < config.count; i++) {
                 // Move star leftward (negative X)
                 const moveSpeed = velocities[i] * (1 + effectiveSpeed * 0.5);
@@ -388,12 +389,13 @@ export class StarfieldSystem {
                         colors[i * 3] = pastelColor.r;
                         colors[i * 3 + 1] = pastelColor.g;
                         colors[i * 3 + 2] = pastelColor.b;
+                        colorsChanged = true;
                     }
                 }
             }
             
             layer.geometry.attributes.position.needsUpdate = true;
-            if (layer.geometry.attributes.color) {
+            if (colorsChanged && layer.geometry.attributes.color) {
                 layer.geometry.attributes.color.needsUpdate = true;
             }
         });

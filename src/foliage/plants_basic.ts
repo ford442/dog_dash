@@ -140,7 +140,7 @@ export function createFloweringTree(options: any = {}) {
     const group = new THREE.Group();
 
     const trunkH = 3 + Math.random() * 2;
-    const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, trunkH, 16);
+    const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, trunkH, 8);
     const trunk = new THREE.Mesh(trunkGeo, createClayMaterial(0x8B5A2B));
     trunk.position.y = trunkH / 2;
     trunk.castShadow = true;
@@ -151,7 +151,7 @@ export function createFloweringTree(options: any = {}) {
 
     const bloomCount = 5 + Math.floor(Math.random() * 5);
     for (let i = 0; i < bloomCount; i++) {
-        const bloomGeo = new THREE.SphereGeometry(0.8 + Math.random() * 0.4, 16, 16);
+        const bloomGeo = new THREE.SphereGeometry(0.8 + Math.random() * 0.4, 8, 8);
         const bloom = new THREE.Mesh(bloomGeo, bloomMat);
         bloom.position.set(
             (Math.random() - 0.5) * 2,

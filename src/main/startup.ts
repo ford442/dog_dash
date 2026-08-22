@@ -390,7 +390,7 @@ export function initializeStartup(): void {
         ['windChimes', 'Wind Chime Mobiles', true],
         ['candyBelt', 'Candy Belt', true],
         ['cloudCastles', 'Cloud Castles', true],
-        ['shadows', 'Shadows', true],
+        ['shadows', 'Shadows', false],
         ['nebula', 'Nebula', true],
         ['nebulaRibbons', 'Nebula Ribbons', true],
         ['cosmicDust', 'Cosmic Dust', true],
