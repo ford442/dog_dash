@@ -276,7 +276,9 @@ export function updateLoopWorld(delta: number, time: number): void {
     
             // --- NEW: Animate Alien Moon Plants ---
             // We pass 'false' for isDay because it's space (always night!) and null for audio
+            const camX = camera.position.x;
             moonPlants.forEach(plant => {
+                if (Math.abs(plant.position.x - camX) > 55) return;
                 animateFoliage(plant, time, null, false);
             });
         }

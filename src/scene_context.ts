@@ -85,7 +85,7 @@ export function attachLightsAndEnv(envMap: THREE.Texture) {
     scene.environment = envMap;
 
     mainLight.position.set(-5, 10, 10);
-    mainLight.castShadow = true;
+    mainLight.castShadow = false;
     mainLight.shadow.mapSize.width = 1024;
     mainLight.shadow.mapSize.height = 1024;
     mainLight.shadow.camera.near = 0.5;
