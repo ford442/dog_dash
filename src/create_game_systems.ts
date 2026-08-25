@@ -45,7 +45,8 @@ import {
     createBouncePadsSystemStub,
     createSpaceGardenSystemStub,
     createAerialGuardPatrolSystemStub,
-    createAirTokensSystemStub
+    createAirTokensSystemStub,
+    createShootingStarsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -165,6 +166,7 @@ export type GameSystems = {
     bouncePadsSystem: BouncePadsSystem;
     aerialGuardPatrolSystem: AerialGuardPatrolSystem;
     airTokensSystem: AirTokensSystem;
+    shootingStarsSystem: import('./shooting_stars').ShootingStarsSystem;
     spaceGardenSystem: SpaceGardenSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
 };
@@ -407,6 +409,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const aerialGuardPatrolSystem = createAerialGuardPatrolSystemStub();
     const airTokensSystem = createAirTokensSystemStub();
     const spaceGardenSystem = createSpaceGardenSystemStub();
+    const shootingStarsSystem = createShootingStarsSystemStub();
     const skyRailTerminalSystem = new SkyRailTerminalSystem(scene);
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
@@ -473,6 +476,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         aerialGuardPatrolSystem,
         airTokensSystem,
         spaceGardenSystem,
+        shootingStarsSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager,

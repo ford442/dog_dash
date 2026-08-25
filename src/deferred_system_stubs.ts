@@ -377,3 +377,7 @@ export function createAerialGuardPatrolSystemStub(): import('./aerial_guard_patr
 export function createAirTokensSystemStub(): import('./air_tokens').AirTokensSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, collectNear: () => null } as unknown as import('./air_tokens').AirTokensSystem;
 }
+
+export function createShootingStarsSystemStub(): import('./shooting_stars').ShootingStarsSystem {
+    return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {} } as unknown as import('./shooting_stars').ShootingStarsSystem;
+}

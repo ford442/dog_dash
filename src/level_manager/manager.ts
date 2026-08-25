@@ -96,6 +96,7 @@ export class LevelManager {
     readonly bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
     readonly aerialGuardPatrolSystem: LevelEnvironmentPorts['aerialGuardPatrolSystem'];
     readonly airTokensSystem: LevelEnvironmentPorts['airTokensSystem'];
+    readonly shootingStarsSystem?: LevelEnvironmentPorts['shootingStarsSystem'];
     spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
     readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
@@ -158,6 +159,7 @@ export class LevelManager {
         this.bouncePadsSystem = options.bouncePadsSystem;
         this.aerialGuardPatrolSystem = options.aerialGuardPatrolSystem;
         this.airTokensSystem = options.airTokensSystem;
+        this.shootingStarsSystem = options.shootingStarsSystem;
         this.spaceGardenSystem = options.spaceGardenSystem;
         this.windCurrentsSystem = options.windCurrentsSystem;
         this.timeShiftZonesSystem = options.timeShiftZonesSystem;
@@ -390,6 +392,7 @@ export class LevelManager {
         if (enabled('spaceGarden') && this.spaceGardenSystem) this.spaceGardenSystem.update(delta, cameraX, playerPos);
         if (enabled('aerialGuardPatrol') && this.aerialGuardPatrolSystem) this.aerialGuardPatrolSystem.update(delta, cameraX, playerPos);
         if (enabled('airTokens') && this.airTokensSystem) this.airTokensSystem.update(delta, cameraX, playerPos);
+        if (enabled('shootingStars') && this.shootingStarsSystem) this.shootingStarsSystem.update(delta, cameraX, playerPos);
         if (enabled('windCurrents') && this.windCurrentsSystem) this.windCurrentsSystem.update(delta, cameraX, playerPos);
         if (enabled('timeShiftZones') && this.timeShiftZonesSystem) this.timeShiftZonesSystem.update(delta, cameraX, playerPos);
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
@@ -430,6 +433,7 @@ export class LevelManager {
         if ((this as any).flowerConstellationsSystem) (this as any).flowerConstellationsSystem.cleanup?.();
         if ((this as any).spacePetsSwarmSystem) (this as any).spacePetsSwarmSystem.cleanup?.();
         if ((this as any).windCurrentsSystem) (this as any).windCurrentsSystem.cleanup?.();
+        if (this.shootingStarsSystem) this.shootingStarsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

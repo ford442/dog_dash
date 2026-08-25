@@ -58,7 +58,8 @@ export const DEFERRED_ENV_FLAGS = [
     'bouncePads',
     'spaceGarden',
     'aerialGuardPatrol',
-    'airTokens'
+    'airTokens',
+    'shootingStars'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -346,6 +347,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'airTokens',
             activate: (config) => host.airTokensSystem.activate(typeof config === 'object' ? config : undefined),
             deactivate: () => host.airTokensSystem.deactivate()
+        })
+    },
+    shootingStars: {
+        flag: 'shootingStars',
+        systemKey: 'shootingStars',
+        load: () => import('./shooting_stars'),
+        install: (ctx, mod) => {
+            const { ShootingStarsSystem } = mod as typeof import('./shooting_stars');
+            ctx.installEnvPartial({ shootingStarsSystem: new ShootingStarsSystem(ctx.scene, ctx.game.particleSystem) });
+        },
+        plugin: (host) => ({
+            flag: 'shootingStars',
+            activate: () => host.shootingStarsSystem?.activate(),
+            deactivate: () => host.shootingStarsSystem?.deactivate()
         })
     },
     dayNightCycle: {
@@ -923,7 +938,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'spaceGarden',
     'timeShiftZones',
     'aerialGuardPatrol',
-    'airTokens'
+    'airTokens',
+    'shootingStars'
 ];
 
 export function buildDeferredEnvPlugins(
