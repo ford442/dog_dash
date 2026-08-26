@@ -150,6 +150,7 @@ export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
     butterflySwarm?: boolean;
+    shootingStars?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
     industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
     waterfall?: boolean;
@@ -344,6 +345,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             godRays: { enabled: true, density: 0.45, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true,
+            shootingStars: true,
             pastelNebula: true,
             candyPlanetRing: true,
             wishLanterns: true,
@@ -418,6 +420,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             ghostDebris: { density: 100 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
+            shootingStars: true,
             blackHole: { enabled: true, baseX: 3000, baseY: 100 },
             windCurrents: {
                 zones: [

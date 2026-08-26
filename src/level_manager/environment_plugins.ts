@@ -57,7 +57,8 @@ const PLUGIN_ORDER = [
     'bouncePads',
     'spaceGarden',
     'aerialGuardPatrol',
-    'airTokens'
+    'airTokens',
+    'shootingStars'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

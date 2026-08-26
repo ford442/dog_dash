@@ -210,7 +210,8 @@ function createLevelManager(
             bouncePadsSystem: systems.bouncePadsSystem,
             spaceGardenSystem: systems.spaceGardenSystem,
             aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
-            airTokensSystem: systems.airTokensSystem
+            airTokensSystem: systems.airTokensSystem,
+            shootingStarsSystem: systems.shootingStarsSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -278,6 +279,7 @@ function createLevelManager(
         bouncePadsSystem: systems.bouncePadsSystem,
         aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
         airTokensSystem: systems.airTokensSystem,
+        shootingStarsSystem: systems.shootingStarsSystem,
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
         spaceGardenSystem: systems.spaceGardenSystem
     });
