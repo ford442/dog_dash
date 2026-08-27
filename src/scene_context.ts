@@ -52,14 +52,16 @@ export let touchSettingsBtn: HTMLElement | null = null;
 
 // One-time init of renderer, camera, touch, and lights attachment.
 // Called exactly once from main.ts. This prevents any duplicate renderer/scene.
-export function initializeSceneAndRenderer(options?: { basePixelRatio?: number }) {
+export async function initializeSceneAndRenderer(options?: { basePixelRatio?: number }): Promise<void> {
     // Camera (Side-view, follows player on X axis)
     camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
     camera.lookAt(0, CONFIG.cameraHeight, 0);
 
     // Renderer (with perf default)
     const basePixelRatio = options?.basePixelRatio ?? 0.60;
-    const rendererInit = createGameRenderer(canvas, { antialias: true, basePixelRatio });
+    // Throws WebGpuBootError if the boot probe fails; bootstrap turns that into
+    // the blocking failure screen. No WebGL context is created either way.
+    const rendererInit = await createGameRenderer(canvas, { antialias: true, basePixelRatio });
     renderer = rendererInit.renderer;
     rendererBackend = rendererInit.backend;
     requestedRendererBackend = rendererInit.requestedBackend;

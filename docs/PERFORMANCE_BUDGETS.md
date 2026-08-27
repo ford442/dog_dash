@@ -95,7 +95,7 @@ After a full 6-level run + restart ×2–3, check Chrome Task Manager → **GPU 
 - Expect **no monotonic climb** across restart cycles beyond ~noise
 - Documented acceptance band (manual spot-check, WebGL path): **within ~±80 MB** of the post-first-run steady value across subsequent restarts (record your machine’s baseline when validating a change)
 
-Use `?renderer=webgl` on headless/cloud; real GPU + WebGPU is preferred for the memory check.
+Headless/cloud cannot render at all (WebGL is deferred — see [RENDERER_FALLBACK.md](RENDERER_FALLBACK.md)); use a real GPU + WebGPU browser for the memory check.
 
 ## Systems already on the registrar
 
