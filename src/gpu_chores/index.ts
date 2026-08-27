@@ -36,6 +36,7 @@ import type {
 import { createJsChoresBackend } from './js_backend';
 import { createWasmChoresBackend, supportsChores, type ChoresWasmExports } from './wasm_backend';
 import { adoptRendererDevice, createWebGpuChoresBackend } from './webgpu_backend';
+import { getWebGpuProbeResult } from '../webgpu_probe';
 
 export type {
     AsyncChoresBackend,
@@ -114,6 +115,15 @@ class ChoresAdapter implements GpuChores {
     attachRenderer(renderer: unknown): void {
         if (this.gpuDisabled) {
             this.reason = 'disabled by ?no_gpu_compute / pinned CPU backend';
+            this.publish();
+            return;
+        }
+
+        // A failed boot probe means there is no device and nobody may ask for
+        // one. Chores must never resurrect a GPU the renderer rejected.
+        const probe = getWebGpuProbeResult();
+        if (probe && !probe.ok) {
+            this.reason = `WebGPU boot probe failed (${probe.stage}); chores stay on CPU tiers`;
             this.publish();
             return;
         }

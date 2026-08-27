@@ -29,6 +29,7 @@ import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
 import { getGpuChores } from '../gpu_chores';
+import { WebGpuBootError } from '../renderer_mode';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import { biomeNoise } from '../biome_noise';
 import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
@@ -290,11 +291,15 @@ function createLevelManager(
 }
 
 /** Scene init, WASM, manager wiring, level manager, moon/galaxy, prototype spawns. */
-export function initializeStartup(): void {
+export async function initializeStartup(): Promise<void> {
     try {
-        initializeSceneAndRenderer({ basePixelRatio: 0.60 });
+        await initializeSceneAndRenderer({ basePixelRatio: 0.60 });
         attachLightsAndEnv(generateEnvironment());
     } catch (err: unknown) {
+        // A failed WebGPU probe gets the dedicated boot-failure screen from
+        // bootstrap — don't also raise the generic init dialog over it.
+        if (err instanceof WebGpuBootError) throw err;
+
         const message = err instanceof Error ? err.message : 'Unknown error occurred during startup.';
         showError('Initialization Error', message);
         throw err;

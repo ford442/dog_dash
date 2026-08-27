@@ -2,28 +2,17 @@
 
 Dog Dash uses Three.js with WebGPU as the primary renderer and WebGL2 as a debug fallback.
 
-## Renderer Modes
+## Renderer: WebGPU only
 
-- Default: WebGPU when available.
-- Force WebGL2: open the app with `?renderer=webgl`.
-- Force/default WebGPU: omit the parameter or use `?renderer=webgpu`.
-- Runtime breadcrumbs are exposed as `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL`, and `window.rendererFallbackReason`.
+Dog Dash renders through **WebGPU exclusively**. The WebGL2 fallback was removed: it made WebGPU failures invisible by quietly rendering through a different backend, so Chrome and Edge failures looked identical. Boot now hard-fails with a diagnostic screen. See [docs/RENDERER_FALLBACK.md](docs/RENDERER_FALLBACK.md).
 
-The WebGL2 path shares the same scene, camera, level data, entities, controls, WASM collision path, and game loop. Keep renderer-specific work behind the renderer factory or small debug helpers instead of forking gameplay systems.
+Rules when touching renderer boot:
 
-## GPU Chores vs. GPU Simulation
-
-`src/gpu_chores/` is for **visual, non-authoritative** helper compute only: `compact` for instance draw lists, `reduce` for HUD and juice meters. Backend order is WebGPU → AssemblyScript/WASM → JS.
-
-Rules when touching this layer:
-
-- Never move collision, gravity, spore state, or anything a save file records into a chore. Gameplay authority stays on AssemblyScript/WASM.
-- Never call `requestAdapter()` / `requestDevice()` from chores. Adopt the renderer's existing device, or run on the CPU tiers.
-- Never write chore results back into a particle SoA — that is what would make WebGPU and the renderer both hot on the same state.
-- Synchronous ops must stay bit-identical to `src/gpu_chores/js_backend.ts`; `tests/unit/gpu_chores.test.ts` enforces it.
-- A GPU particle/spore **integrate** step is a separate, parity-gated piece of work: it requires golden-fixture tests against `assembly/index.ts` before it lands. Do not grow it out of the chores layer.
-
-Kill switch: `?no_gpu_compute`. Breadcrumbs: `window.gpuChores`. Details in [docs/GPU_CHORES.md](docs/GPU_CHORES.md).
+- **Never create a `webgl` or `webgl2` context on the default path.** Not to keep the level on screen, not to keep CI green, not as a "temporary" measure. Restoring a WebGL renderer is its own later issue wave.
+- **One adapter, one device, per page load.** `src/webgpu_probe.ts` owns both calls and memoises the outcome; the probed `GPUDevice` is handed to `WebGPURenderer` rather than letting it request its own. Nothing may re-request a device after a failed probe — the GPU chores layer explicitly checks the probe result before adopting anything.
+- **A failed probe must stay legible.** `window.webgpuProbe` always carries `{ ok, browser, reason, adapter, stage, userAgent, durationMs }`, and the browser field must distinguish Chrome from Edge (an Edge UA contains `Chrome/` before `Edg/` — order your matching accordingly).
+- Headless CI has no WebGPU adapter, so it cannot run gameplay. Use `?skip_gpu_boot` for bundle-health checks; do not add GL to make the suite pass.
+- The `window.usingWebGL` guards in the visual systems and `WebGLMaterialFallbackRenderer` are kept but inert — they are the seam a future WebGL wave re-activates. Leave them.
 
 ## Debug Helpers
 
@@ -35,7 +24,7 @@ Open the debug panel with the backquote key. The panel includes:
 
 Useful URL flags:
 
-- `?renderer=webgl`
+- `?skip_gpu_boot`
 - `?no_gpu_compute`
 - `?wireframe`
 - `?collisionDebug`
@@ -69,9 +58,10 @@ Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run d
 
 Non-obvious caveats for headless/cloud verification:
 
-- The cloud VM has no GPU and no WebGPU adapter, so the default WebGPU path renders nothing. Always open the app with `?renderer=webgl` to force the WebGL2 fallback.
-- Even with `?renderer=webgl`, a normally-launched headless/virtual Chrome shows a black canvas. Launch Chrome with software-GL flags so WebGL2 actually rasterizes: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Confirm via `window.usingWebGL === true`. Under SwiftShader, TSL/node-material shaders fall back to plain standard materials (per `docs/RENDERER_FALLBACK.md`), so visuals look flatter/grayer than on a real GPU — this is expected, not a regression.
-- Playwright smoke tests (`npm run test:smoke` / `npx playwright test`) exercise the production build on `/?renderer=webgl` with the SwiftShader flags above — see [README.md — Testing](README.md#testing). `playwright.config.ts` prefers system Chrome (`/usr/local/bin/google-chrome` on cloud) via `PLAYWRIGHT_CHROME_PATH` or `channel: 'chrome'`. Video capture additionally needs `npx playwright install ffmpeg` (one-off, not part of the update script).
+- The cloud VM has no GPU and no WebGPU adapter, so **the game cannot be rendered headlessly at all**. There is no WebGL fallback to fall back to — boot hard-fails with the diagnostic screen from `src/boot_failure.ts`. This is the intended behaviour, not a broken environment.
+- Do not add a WebGL context to get something on screen. Verifying visuals requires a real WebGPU-capable browser (Chrome/Edge 113+ with a working GPU).
+- Use `?skip_gpu_boot` when you only need to confirm the bundle parses and boots without touching the GPU.
+- Playwright smoke tests (`npm run test:smoke` / `npx playwright test`) assert the hard-fail contract on the production build: probe breadcrumb populated, blocking screen shown, no WebGL context, no page errors, no second adapter request — see [README.md — Testing](README.md#testing). `playwright.config.ts` prefers system Chrome (`/usr/local/bin/google-chrome` on cloud) via `PLAYWRIGHT_CHROME_PATH` or `channel: 'chrome'`. Video capture additionally needs `npx playwright install ffmpeg` (one-off, not part of the update script).
 - **Unit tests** (`npm run test:unit`) cover pure logic without a browser and run inside `npm run check` and CI. Smoke remains the heavyweight browser gate (currently soft-fail in CI until 3 consecutive green `main` runs).
 
 ## Chapter Music

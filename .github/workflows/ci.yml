@@ -54,7 +54,7 @@ jobs:
       - name: Build production bundle
         run: npm run build
 
-      - name: Run WebGL smoke test
+      - name: Run WebGPU boot-probe smoke test
         run: npm run test:smoke
 
   cpp-wasm:

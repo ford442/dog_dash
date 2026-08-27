@@ -72,7 +72,7 @@ Three layers — unit (fast, no GPU), smoke (browser bootstrap), and optional C+
 | Command | What it checks | GPU required |
 |---------|----------------|--------------|
 | `npm run test:unit` | Pure logic: spawn rules, crafting, env registry math, sling scoring, biome noise JS fallback, port contracts | No |
-| `npm run test:smoke` | Production build + Playwright on WebGL2 (`/?renderer=webgl`) | Software GL (SwiftShader in CI) |
+| `npm run test:smoke` | Production build + Playwright: WebGPU boot-probe hard-fail contract (breadcrumb, blocking screen, no WebGL context, one adapter request) | No — asserts the failure path |
 | `npm run verify:cpp-wasm` | Experimental C++ WASM instantiates in Node | No |
 
 `npm run check` includes unit tests. `npm run test` runs unit + smoke.
@@ -122,41 +122,29 @@ npm run test:smoke          # alias for: npx playwright test
 - **H** - Toggle heat effects (debug)
 - **`** - Toggle debug panel
 
-## Renderer Debugging
+## Renderer
 
-Dog Dash defaults to WebGPU. To force the WebGL2 fallback, open:
+Dog Dash renders through **WebGPU only** — there is no WebGL fallback. If WebGPU cannot start, the game hard-fails with a diagnostic screen instead of quietly rendering through a different backend, so a Chrome failure and an Edge failure can be compared directly. Restoring a WebGL path is a later issue wave; see [docs/RENDERER_FALLBACK.md](docs/RENDERER_FALLBACK.md).
+
+A single boot probe runs `requestAdapter()` and `requestDevice()` exactly once, then hands the device to the renderer. The result is memoised, so a failed probe stays failed and nothing re-requests a device afterwards.
+
+Runtime breadcrumbs in the browser console:
+
+- `window.webgpuProbe` — `{ ok, browser, reason, adapter, stage, userAgent, durationMs }`
+- `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL` (always false)
+
+URL flags:
 
 ```text
-http://localhost:5173/?renderer=webgl
+http://localhost:5173/?skip_gpu_boot   # skip the probe entirely (headless CI)
+http://localhost:5173/?wireframe
+http://localhost:5173/?collisionDebug
 ```
 
-The fallback shares the same game state, camera, level data, entities, controls, and WASM collision path. Runtime breadcrumbs are available in the browser console:
+The debug panel includes `Wireframe` and `Collision Debug` toggles, opened with the backquote key.
 
-- `window.rendererType`
-- `window.usingWebGPU`
-- `window.usingWebGL`
-- `window.rendererFallbackReason`
+**Gameplay verification needs a WebGPU-capable browser** (Chrome/Edge 113+ with a working GPU). Headless CI cannot render the game, so the smoke suite asserts the hard-fail contract instead of driving gameplay.
 
-The debug panel includes `Wireframe` and `Collision Debug` toggles. These can also be enabled on startup with `?wireframe` and `?collisionDebug`.
-
-## Music & Audio
-
-All audio is generated at runtime through the Web Audio API — **there are no sound files in this project**. Each of the 6 chapters has its own musical identity (scale, tempo, layer stack, filter character), and the mix reacts to how you are playing:
-
-| Level | Identity |
-|-------|----------|
-| 1 Neon Garden | Soft music-box + pastel arp |
-| 2 Asteroid Belt | Sparse percussion + metallic hits |
-| 3 Orbital Descent | Rising tension filter, heat noise bed |
-| 4 Rusty Gauntlet | Industrial pulse, clanks |
-| 5 Astral Leviathan | Deep whale pad, organic swells |
-| 6 Aqua Expanse | Bubbly delay, underwater LPF |
-
-Speed and boost lift the energy and tempo, dense obstacles or an active boss fade in a danger layer, and calm pockets (dream portals, geode harbors) duck the drums and bring chimes forward. Chapters crossfade rather than cut.
-
-Master / music / sound-effect levels and a **Simpler Music** accessibility option live in the touch settings sheet and the pause menu, and persist between runs. Simpler Music turns on automatically when your device asks for reduced motion.
-
-Details in [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md).
 ## GPU Chores
 
 `src/gpu_chores/` offloads **non-authoritative** helper compute — compacting instance draw lists and reducing values for HUD/juice meters. It picks a backend in the order WebGPU → AssemblyScript/WASM → JS, adopting the renderer's existing device rather than creating a second one.
