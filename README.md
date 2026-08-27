@@ -157,6 +157,20 @@ Speed and boost lift the energy and tempo, dense obstacles or an active boss fad
 Master / music / sound-effect levels and a **Simpler Music** accessibility option live in the touch settings sheet and the pause menu, and persist between runs. Simpler Music turns on automatically when your device asks for reduced motion.
 
 Details in [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md).
+## GPU Chores
+
+`src/gpu_chores/` offloads **non-authoritative** helper compute — compacting instance draw lists and reducing values for HUD/juice meters. It picks a backend in the order WebGPU → AssemblyScript/WASM → JS, adopting the renderer's existing device rather than creating a second one.
+
+**Chores are not a particle-sim port.** Positions, velocities, collision, gravity and spore gameplay state stay on the AssemblyScript/CPU path. A GPU integrate step is separate work and is gated on golden-fixture parity tests against `assembly/index.ts` — see [docs/GPU_CHORES.md](docs/GPU_CHORES.md).
+
+Kill switch and breadcrumbs:
+
+```text
+http://localhost:5173/?no_gpu_compute     # pin the JS tier
+http://localhost:5173/?chores=wasm        # pin a specific tier
+```
+
+- `window.gpuChores` — `{ backend, syncBackend, gpuDisabled, reason, ops }`
 
 ## Gameplay
 
