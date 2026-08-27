@@ -248,6 +248,11 @@ export class DebugSystem {
         document.body.appendChild(this.panel);
     }
 
+    /** Chapter music profile currently playing (debug breadcrumb). */
+    getMusicProfileId(): string | null {
+        return typeof window !== 'undefined' ? (window.currentMusicProfileId ?? null) : null;
+    }
+
     private updateRendererInfoElement(): void {
         if (!this.rendererInfoElement) return;
         this.rendererInfoElement.textContent = this.rendererInfo;

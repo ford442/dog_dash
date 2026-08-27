@@ -23,5 +23,9 @@ export interface AudioPort {
     playMagicSound?(type: 'collect' | 'power' | 'shield' | 'spell' | 'happy', volume?: number): void;
     /** Play built-in magical melody sequence. */
     playMagicSequence?(sequence: MagicSequence): void;
+    /** Space-dog bark, varied so repeats in one run don't sound identical. */
+    playDogBarkVariant?(kind?: 'happy' | 'alert' | 'excited' | 'grumble'): void;
+    /** Chapter-complete flourish, chosen by the active chapter music profile. */
+    playChapterCompleteStinger?(): void;
 }
 

@@ -139,6 +139,25 @@ The fallback shares the same game state, camera, level data, entities, controls,
 
 The debug panel includes `Wireframe` and `Collision Debug` toggles. These can also be enabled on startup with `?wireframe` and `?collisionDebug`.
 
+## Music & Audio
+
+All audio is generated at runtime through the Web Audio API — **there are no sound files in this project**. Each of the 6 chapters has its own musical identity (scale, tempo, layer stack, filter character), and the mix reacts to how you are playing:
+
+| Level | Identity |
+|-------|----------|
+| 1 Neon Garden | Soft music-box + pastel arp |
+| 2 Asteroid Belt | Sparse percussion + metallic hits |
+| 3 Orbital Descent | Rising tension filter, heat noise bed |
+| 4 Rusty Gauntlet | Industrial pulse, clanks |
+| 5 Astral Leviathan | Deep whale pad, organic swells |
+| 6 Aqua Expanse | Bubbly delay, underwater LPF |
+
+Speed and boost lift the energy and tempo, dense obstacles or an active boss fade in a danger layer, and calm pockets (dream portals, geode harbors) duck the drums and bring chimes forward. Chapters crossfade rather than cut.
+
+Master / music / sound-effect levels and a **Simpler Music** accessibility option live in the touch settings sheet and the pause menu, and persist between runs. Simpler Music turns on automatically when your device asks for reduced motion.
+
+Details in [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md).
+
 ## Gameplay
 
 Navigate your rocket through 6 massive levels, blasting asteroids and dodging crazy enemy formations:

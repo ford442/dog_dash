@@ -33,6 +33,7 @@ import { updatePlayer } from './player_update';
 import { renderGameFrame, getCollisionDebugTargets, RESOLUTION_RATIOS } from './render_helpers';
 import { updateGpuLeakDetector } from '../gpu_leak_detector';
 import { ghostRunRecorder, buildActionFlags } from '../ghost_run';
+import { updateChapterMusicDynamics } from './music_update';
 
 
 export function updateLoopCore(rawDelta: number, delta: number, _time: number): boolean {
@@ -237,6 +238,9 @@ export function updateLoopCore(rawDelta: number, delta: number, _time: number): 
         if (game.obstacleSystem.getGrazeCombo() === 0) {
             game.hudManager.hideGrazeCombo();
         }
+
+        // Feed speed / boost / danger / quiet into the chapter music mix.
+        updateChapterMusicDynamics();
 
         return false;
 }

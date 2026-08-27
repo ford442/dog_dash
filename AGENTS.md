@@ -58,3 +58,16 @@ Non-obvious caveats for headless/cloud verification:
 - Even with `?renderer=webgl`, a normally-launched headless/virtual Chrome shows a black canvas. Launch Chrome with software-GL flags so WebGL2 actually rasterizes: `--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`. Confirm via `window.usingWebGL === true`. Under SwiftShader, TSL/node-material shaders fall back to plain standard materials (per `docs/RENDERER_FALLBACK.md`), so visuals look flatter/grayer than on a real GPU — this is expected, not a regression.
 - Playwright smoke tests (`npm run test:smoke` / `npx playwright test`) exercise the production build on `/?renderer=webgl` with the SwiftShader flags above — see [README.md — Testing](README.md#testing). `playwright.config.ts` prefers system Chrome (`/usr/local/bin/google-chrome` on cloud) via `PLAYWRIGHT_CHROME_PATH` or `channel: 'chrome'`. Video capture additionally needs `npx playwright install ffmpeg` (one-off, not part of the update script).
 - **Unit tests** (`npm run test:unit`) cover pure logic without a browser and run inside `npm run check` and CI. Smoke remains the heavyweight browser gate (currently soft-fail in CI until 3 consecutive green `main` runs).
+
+## Chapter Music
+
+Each of the 6 chapters has its own procedural music profile (scale, tempo, layer stack, filter character) in `src/audio_system/chapter_music.ts`, played by the `chapterMusicMixin` runtime. See [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md).
+
+Rules when touching audio:
+
+- **Never add audio files.** Everything is synthesised through the Web Audio API; `public/` holds no sound assets. If a texture seems impossible procedurally, raise it as its own issue rather than shipping an asset.
+- Keep chapters distinguishable — `tests/unit/chapter_music.test.ts` fails if two share a scale + tempo + layer stack.
+- Chapter switches must crossfade (300–800 ms) between two graphs. Never cut a sustaining oscillator; that is what produces clicks.
+- Music state belongs on `AudioSystem`, not scattered across `GameContext`. The debug breadcrumb is `window.currentMusicProfileId`.
+- Volume and reduced-audio preferences persist via `save_manager` (`SaveData.audio`); apply them through `src/audio_settings.ts` rather than poking gain nodes directly.
+- `prefers-reduced-motion` also trims the music layer stack — treat it as a request for a calmer mix, not just calmer visuals.

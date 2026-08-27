@@ -18,6 +18,7 @@ import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
 import type { CandyBeltManager } from '../candy_obstacles';
 import { applyLevelDecorationBudgets, decorationBudget } from '../decoration_budget';
+import { getAudioSystem } from '../audio_system';
 import { DEPTH_LAYERS } from '../depth_layers';
 import {
     DEFAULT_FOG_FAR,
@@ -279,6 +280,9 @@ export class LevelManager {
         if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
         this.onUpdateLevelDisplay?.(levelIndex, cfg.name);
         this.onLevelStart?.(cfg);
+
+        // Chapter sonic identity — crossfades from whatever was playing.
+        getAudioSystem().setChapterMusic(levelIndex);
         applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
 
         populateZone(this, playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
@@ -424,6 +428,11 @@ export class LevelManager {
         const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
         if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
             const nextLevel = this.currentLevel + 1;
+            // Stinger for the chapter just finished, then the next chapter's
+            // bed crossfades in from startLevel.
+            const audio = getAudioSystem();
+            audio.playChapterCompleteStinger();
+            audio.playDogBarkVariant('happy');
             void ensureLevelSystemsForLevel(nextLevel).then(() => {
                 this.startLevel(nextLevel);
             });
