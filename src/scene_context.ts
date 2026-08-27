@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { CONFIG } from './game_config';
+import { getGpuChores } from './gpu_chores';
 import {
     createGameRenderer,
     type GameRenderer,
@@ -63,6 +64,11 @@ export function initializeSceneAndRenderer(options?: { basePixelRatio?: number }
     rendererBackend = rendererInit.backend;
     requestedRendererBackend = rendererInit.requestedBackend;
     rendererFallbackReason = rendererInit.fallbackReason || '';
+
+    // Adopt the renderer's device for GPU chores (visual helper compute only).
+    // Never requests a device of its own — if renderer boot produced no WebGPU
+    // device, chores stay on the AssemblyScript/JS tiers.
+    getGpuChores().attachRenderer(renderer);
 
     // Touch Controls
     touchControls = new TouchControlsManager();

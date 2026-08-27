@@ -74,6 +74,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Performance guardrails | `decoration_budget.ts`, `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
+| GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
 | Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (C++ Verlet opt-in), `assembly/index.ts` (supported); `cpp/` experimental — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
 | Audio | `audio_system/` |
 | Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |

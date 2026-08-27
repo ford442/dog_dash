@@ -11,6 +11,20 @@ Dog Dash uses Three.js with WebGPU as the primary renderer and WebGL2 as a debug
 
 The WebGL2 path shares the same scene, camera, level data, entities, controls, WASM collision path, and game loop. Keep renderer-specific work behind the renderer factory or small debug helpers instead of forking gameplay systems.
 
+## GPU Chores vs. GPU Simulation
+
+`src/gpu_chores/` is for **visual, non-authoritative** helper compute only: `compact` for instance draw lists, `reduce` for HUD and juice meters. Backend order is WebGPU → AssemblyScript/WASM → JS.
+
+Rules when touching this layer:
+
+- Never move collision, gravity, spore state, or anything a save file records into a chore. Gameplay authority stays on AssemblyScript/WASM.
+- Never call `requestAdapter()` / `requestDevice()` from chores. Adopt the renderer's existing device, or run on the CPU tiers.
+- Never write chore results back into a particle SoA — that is what would make WebGPU and the renderer both hot on the same state.
+- Synchronous ops must stay bit-identical to `src/gpu_chores/js_backend.ts`; `tests/unit/gpu_chores.test.ts` enforces it.
+- A GPU particle/spore **integrate** step is a separate, parity-gated piece of work: it requires golden-fixture tests against `assembly/index.ts` before it lands. Do not grow it out of the chores layer.
+
+Kill switch: `?no_gpu_compute`. Breadcrumbs: `window.gpuChores`. Details in [docs/GPU_CHORES.md](docs/GPU_CHORES.md).
+
 ## Debug Helpers
 
 Open the debug panel with the backquote key. The panel includes:
@@ -22,6 +36,7 @@ Open the debug panel with the backquote key. The panel includes:
 Useful URL flags:
 
 - `?renderer=webgl`
+- `?no_gpu_compute`
 - `?wireframe`
 - `?collisionDebug`
 

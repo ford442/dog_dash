@@ -194,3 +194,105 @@ export function checkBossCollision(projX: f32, projY: f32, projRadius: f32, hitb
   }
   return -1;
 }
+
+// ---------------------------------------------------------------------------
+// GPU CHORES — visual-only helper ops (see docs/GPU_CHORES.md)
+//
+// These are NOT part of the gameplay/physics path. They compute derived,
+// non-authoritative values (draw lists, HUD meters) from data JS already owns.
+// Nothing here reads or writes the asteroid / spore / boss hitbox buffers, so
+// collision determinism is unaffected.
+//
+// Accumulation is done in f64 so results match the JS reference backend in
+// src/gpu_chores/js_backend.ts bit for bit.
+// ---------------------------------------------------------------------------
+
+let choreValuesPtr: usize = 0;
+let choreValuesCapacity: i32 = 0;
+
+let choreIndicesPtr: usize = 0;
+let choreIndicesCapacity: i32 = 0;
+
+// Allocates the f32 input buffer chores read from.
+export function allocChoreValues(count: i32): usize {
+  const requiredBytes = count * 4;
+
+  if (count > choreValuesCapacity) {
+    if (choreValuesCapacity == 0) {
+      choreValuesPtr = heap.alloc(requiredBytes);
+    } else {
+      choreValuesPtr = heap.realloc(choreValuesPtr, requiredBytes);
+    }
+    choreValuesCapacity = count;
+  }
+  return choreValuesPtr;
+}
+
+// Allocates the i32 index buffer choresCompact writes into.
+export function allocChoreIndices(count: i32): usize {
+  const requiredBytes = count * 4;
+
+  if (count > choreIndicesCapacity) {
+    if (choreIndicesCapacity == 0) {
+      choreIndicesPtr = heap.alloc(requiredBytes);
+    } else {
+      choreIndicesPtr = heap.realloc(choreIndicesPtr, requiredBytes);
+    }
+    choreIndicesCapacity = count;
+  }
+  return choreIndicesPtr;
+}
+
+// Writes the index of every value greater than `epsilon` into the index
+// buffer, preserving input order. Returns the number of indices written.
+export function choresCompact(count: i32, epsilon: f64): i32 {
+  if (count <= 0 || choreValuesPtr == 0 || choreIndicesPtr == 0) {
+    return 0;
+  }
+
+  const limit = min(min(count, choreValuesCapacity), choreIndicesCapacity);
+  let kept = 0;
+
+  for (let i = 0; i < limit; i++) {
+    const value = <f64>load<f32>(choreValuesPtr + (<usize>i << 2));
+    if (value > epsilon) {
+      store<i32>(choreIndicesPtr + (<usize>kept << 2), i);
+      kept++;
+    }
+  }
+  return kept;
+}
+
+// Reduces the value buffer. op: 0 = sum, 1 = max, 2 = min.
+export function choresReduce(count: i32, op: i32): f64 {
+  if (count <= 0 || choreValuesPtr == 0) {
+    return 0;
+  }
+
+  const limit = min(count, choreValuesCapacity);
+  if (limit <= 0) {
+    return 0;
+  }
+
+  if (op == 0) {
+    let sum: f64 = 0;
+    for (let i = 0; i < limit; i++) {
+      sum += <f64>load<f32>(choreValuesPtr + (<usize>i << 2));
+    }
+    return sum;
+  }
+
+  let acc = <f64>load<f32>(choreValuesPtr);
+  if (op == 1) {
+    for (let i = 1; i < limit; i++) {
+      const value = <f64>load<f32>(choreValuesPtr + (<usize>i << 2));
+      if (value > acc) acc = value;
+    }
+  } else {
+    for (let i = 1; i < limit; i++) {
+      const value = <f64>load<f32>(choreValuesPtr + (<usize>i << 2));
+      if (value < acc) acc = value;
+    }
+  }
+  return acc;
+}

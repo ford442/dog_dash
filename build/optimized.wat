@@ -10,6 +10,8 @@
  (type $8 (func (param i32 i32 i32) (result i32)))
  (type $9 (func (result i32)))
  (type $10 (func (param f32 f32 f32 f32 i32) (result i32)))
+ (type $11 (func (param i32 f64) (result i32)))
+ (type $12 (func (param i32 i32) (result f64)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
  (global $assembly/index/objectsPtr (mut i32) (i32.const 0))
  (global $assembly/index/objectsCapacity (mut i32) (i32.const 0))
@@ -19,6 +21,10 @@
  (global $assembly/index/sporeCloudsCapacity (mut i32) (i32.const 0))
  (global $assembly/index/bossHitboxPtr (mut i32) (i32.const 0))
  (global $assembly/index/bossHitboxCapacity (mut i32) (i32.const 0))
+ (global $assembly/index/choreValuesPtr (mut i32) (i32.const 0))
+ (global $assembly/index/choreValuesCapacity (mut i32) (i32.const 0))
+ (global $assembly/index/choreIndicesPtr (mut i32) (i32.const 0))
+ (global $assembly/index/choreIndicesCapacity (mut i32) (i32.const 0))
  (global $~lib/rt/tlsf/ROOT (mut i32) (i32.const 0))
  (memory $0 2)
  (data $0 (i32.const 1036) "<")
@@ -34,6 +40,10 @@
  (export "checkSporeCollision" (func $assembly/index/checkSporeCollision))
  (export "allocBossHitboxes" (func $assembly/index/allocBossHitboxes))
  (export "checkBossCollision" (func $assembly/index/checkBossCollision))
+ (export "allocChoreValues" (func $assembly/index/allocChoreValues))
+ (export "allocChoreIndices" (func $assembly/index/allocChoreIndices))
+ (export "choresCompact" (func $assembly/index/choresCompact))
+ (export "choresReduce" (func $assembly/index/choresReduce))
  (export "memory" (memory $0))
  (func $~lib/rt/tlsf/removeBlock (param $0 i32) (param $1 i32)
   (local $2 i32)
@@ -1482,5 +1492,264 @@
    end
   end
   i32.const -1
+ )
+ (func $assembly/index/allocChoreValues (param $0 i32) (result i32)
+  (local $1 i32)
+  local.get $0
+  global.get $assembly/index/choreValuesCapacity
+  i32.gt_s
+  if
+   local.get $0
+   i32.const 2
+   i32.shl
+   local.set $1
+   global.get $assembly/index/choreValuesCapacity
+   if (result i32)
+    global.get $assembly/index/choreValuesPtr
+    local.get $1
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $1
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/index/choreValuesPtr
+   local.get $0
+   global.set $assembly/index/choreValuesCapacity
+  end
+  global.get $assembly/index/choreValuesPtr
+ )
+ (func $assembly/index/allocChoreIndices (param $0 i32) (result i32)
+  (local $1 i32)
+  local.get $0
+  global.get $assembly/index/choreIndicesCapacity
+  i32.gt_s
+  if
+   local.get $0
+   i32.const 2
+   i32.shl
+   local.set $1
+   global.get $assembly/index/choreIndicesCapacity
+   if (result i32)
+    global.get $assembly/index/choreIndicesPtr
+    local.get $1
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $1
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/index/choreIndicesPtr
+   local.get $0
+   global.set $assembly/index/choreIndicesCapacity
+  end
+  global.get $assembly/index/choreIndicesPtr
+ )
+ (func $assembly/index/choresCompact (param $0 i32) (param $1 f64) (result i32)
+  (local $2 i32)
+  (local $3 i32)
+  (local $4 i32)
+  global.get $assembly/index/choreIndicesPtr
+  i32.eqz
+  global.get $assembly/index/choreValuesPtr
+  i32.eqz
+  local.get $0
+  i32.const 0
+  i32.le_s
+  i32.or
+  i32.or
+  if
+   i32.const 0
+   return
+  end
+  local.get $0
+  global.get $assembly/index/choreValuesCapacity
+  local.tee $4
+  local.get $0
+  local.get $4
+  i32.lt_s
+  select
+  local.tee $0
+  global.get $assembly/index/choreIndicesCapacity
+  local.tee $4
+  local.get $0
+  local.get $4
+  i32.lt_s
+  select
+  local.set $0
+  loop $for-loop|0
+   local.get $0
+   local.get $3
+   i32.gt_s
+   if
+    global.get $assembly/index/choreValuesPtr
+    local.get $3
+    i32.const 2
+    i32.shl
+    i32.add
+    f32.load
+    f64.promote_f32
+    local.get $1
+    f64.gt
+    if
+     global.get $assembly/index/choreIndicesPtr
+     local.get $2
+     i32.const 2
+     i32.shl
+     i32.add
+     local.get $3
+     i32.store
+     local.get $2
+     i32.const 1
+     i32.add
+     local.set $2
+    end
+    local.get $3
+    i32.const 1
+    i32.add
+    local.set $3
+    br $for-loop|0
+   end
+  end
+  local.get $2
+ )
+ (func $assembly/index/choresReduce (param $0 i32) (param $1 i32) (result f64)
+  (local $2 f64)
+  (local $3 f64)
+  (local $4 i32)
+  (local $5 i32)
+  global.get $assembly/index/choreValuesPtr
+  i32.eqz
+  local.get $0
+  i32.const 0
+  i32.le_s
+  i32.or
+  if
+   f64.const 0
+   return
+  end
+  local.get $0
+  global.get $assembly/index/choreValuesCapacity
+  local.tee $5
+  local.get $0
+  local.get $5
+  i32.lt_s
+  select
+  local.tee $0
+  i32.const 0
+  i32.le_s
+  if
+   f64.const 0
+   return
+  end
+  local.get $1
+  i32.eqz
+  if
+   loop $for-loop|0
+    local.get $0
+    local.get $4
+    i32.gt_s
+    if
+     local.get $2
+     global.get $assembly/index/choreValuesPtr
+     local.get $4
+     i32.const 2
+     i32.shl
+     i32.add
+     f32.load
+     f64.promote_f32
+     f64.add
+     local.set $2
+     local.get $4
+     i32.const 1
+     i32.add
+     local.set $4
+     br $for-loop|0
+    end
+   end
+   local.get $2
+   return
+  end
+  global.get $assembly/index/choreValuesPtr
+  f32.load
+  f64.promote_f32
+  local.set $2
+  local.get $1
+  i32.const 1
+  i32.eq
+  if
+   i32.const 1
+   local.set $1
+   loop $for-loop|1
+    local.get $0
+    local.get $1
+    i32.gt_s
+    if
+     global.get $assembly/index/choreValuesPtr
+     local.get $1
+     i32.const 2
+     i32.shl
+     i32.add
+     f32.load
+     f64.promote_f32
+     local.tee $3
+     local.get $2
+     f64.gt
+     if
+      local.get $3
+      local.set $2
+     end
+     local.get $1
+     i32.const 1
+     i32.add
+     local.set $1
+     br $for-loop|1
+    end
+   end
+  else
+   i32.const 1
+   local.set $1
+   loop $for-loop|2
+    local.get $0
+    local.get $1
+    i32.gt_s
+    if
+     global.get $assembly/index/choreValuesPtr
+     local.get $1
+     i32.const 2
+     i32.shl
+     i32.add
+     f32.load
+     f64.promote_f32
+     local.tee $3
+     local.get $2
+     f64.lt
+     if
+      local.get $3
+      local.set $2
+     end
+     local.get $1
+     i32.const 1
+     i32.add
+     local.set $1
+     br $for-loop|2
+    end
+   end
+  end
+  local.get $2
  )
 )

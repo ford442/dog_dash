@@ -84,6 +84,12 @@ export class DebugSystem {
         if (fallbackReason) {
             this.rendererInfo += `\n${fallbackReason}`;
         }
+
+        const chores = typeof window !== 'undefined' ? window.gpuChores : undefined;
+        if (chores) {
+            this.rendererInfo += `\nchores: ${chores.backend} (sync ${chores.syncBackend}) — ${chores.reason}`;
+        }
+
         this.updateRendererInfoElement();
         this.updateOverlayText();
     }

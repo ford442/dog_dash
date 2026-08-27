@@ -28,6 +28,7 @@ import { applyCraftedLoadout } from './loadout';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
+import { getGpuChores } from '../gpu_chores';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import { biomeNoise } from '../biome_noise';
 import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
@@ -66,6 +67,8 @@ async function loadWasm(): Promise<void> {
     }
     jellyMossSoftBody.bindWasm(handle);
     biomeNoise.bindWasm(handle);
+    // Visual-only helper compute; ignored by WASM builds without chore exports.
+    getGpuChores().attachWasm(handle?.exports);
 }
 
 import {
