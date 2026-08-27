@@ -83,6 +83,7 @@ function makeRing(): (RingEntry | undefined)[] {
 export class BiomeNoiseSystem implements BiomeNoisePort {
     private handle: WasmHandle | null = null;
     private useCpp = false;
+    private runSeedOffset = 0;
     private rings: Record<BiomeNoiseChannel, (RingEntry | undefined)[]> = {
         foliage: makeRing(),
         spore: makeRing(),
@@ -91,6 +92,12 @@ export class BiomeNoiseSystem implements BiomeNoisePort {
 
     get backend(): 'cpp' | 'js' {
         return this.useCpp ? 'cpp' : 'js';
+    }
+
+    /** Mix active run seed into noise samples so identical worldX differs per run. */
+    bindRunSeed(rngSeed: number): void {
+        this.runSeedOffset = rngSeed >>> 0;
+        this.rings = { foliage: makeRing(), spore: makeRing(), candy: makeRing() };
     }
 
     /** Bind (or clear) the active WASM handle. Falls back to JS when not C++ or noise exports are missing. */
@@ -127,7 +134,7 @@ export class BiomeNoiseSystem implements BiomeNoisePort {
     }
 
     private computeSample(chunkX: number, channel: BiomeNoiseChannel): number {
-        const seed = CHANNEL_OFFSET[channel];
+        const seed = CHANNEL_OFFSET[channel] + this.runSeedOffset;
         let raw: number;
         if (this.useCpp && this.handle) {
             try {

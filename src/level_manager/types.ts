@@ -79,6 +79,9 @@ export type LevelEnvironmentPorts = {
     crystalChimeManager: CrystalChimeManager;
     nebulaSystem: NebulaSystem;
     asteroidFieldSystem: AsteroidFieldSystem;
+    godRaySystem: GodRaySystem;
+    auroraSystem: AuroraSystem;
+    butterflySwarmSystem: ButterflySwarmSystem;
     waterfallSystem: WaterfallSystem;
     industrialSystem: IndustrialBackgroundSystem;
     biologicalSystem: BiologicalBackgroundSystem;
@@ -116,14 +119,11 @@ export type LevelManagerOptions = {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     weaponLightManager: WeaponLightManager;
-    godRaySystem: GodRaySystem;
-    auroraSystem: AuroraSystem;
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
     debugSystem?: DebugSystem;
     friendsManager?: FriendsManager;
     industrialGeometryManager: IndustrialGeometryManager;
-    butterflySwarmSystem: ButterflySwarmSystem;
     pinwheelManager: PinwheelFloraManager;
     windChimeManager: WindChimeManager;
     solarSailFernManager: SolarSailFernManager;

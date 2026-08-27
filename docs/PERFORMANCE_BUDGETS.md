@@ -126,47 +126,73 @@ Use `?renderer=webgl` on headless/cloud; real GPU + WebGPU is preferred for the 
 
 ## JavaScript bundle budgets (production)
 
-Vite splits the production build so the title screen and Level 1 do not download later-level modules. Vendor libraries use stable `manualChunks`; level systems use per-module dynamic `import()` from [`src/level_systems_loader.ts`](../src/level_systems_loader.ts).
+Vite splits the production build so the title screen does not download post-title meta UI, victory/tutorial implementations, or later-level modules. Vendor + named domain chunks use `manualChunks` in [`vite.config.ts`](../vite.config.ts); level systems use per-module dynamic `import()` from [`src/level_systems_loader.ts`](../src/level_systems_loader.ts) / [`src/level_env_registry.ts`](../src/level_env_registry.ts); hub / journey / bestiary / victory / tutorial use [`src/meta_ui_loader.ts`](../src/meta_ui_loader.ts).
 
-### Cold-load chunks (title → Level 1)
+### Cold-load chunks (title screen)
 
 | Chunk | Role | Typical size (minified) | Notes |
 |-------|------|-------------------------|-------|
-| `index-*.js` | Boot, L1 loop, eager décor / pastel nebula / liquid metal | ~700 KB | Entry from `index.html`; Vite may warn (>500 KB) — still a clear multi-chunk split vs the former 1.85 MB monolith |
-| `three-*.js` | Three.js + WebGPU/TSL | ~1.1 MB | Cached vendor; `manualChunks` in `vite.config.ts` |
-| `audio-*.js` | Procedural audio | ~54 KB | Cached vendor split |
+| `index-*.js` | Boot, HUD shell, L1 loop, décor/manager stubs | **~413 KB** raw / **~113 KB gzip** (was ~774 / ~212) | Meets &lt;120 KB gzip budget; raw stretch &lt;350 KB still open |
+| `three-*.js` | Three.js + WebGPU/TSL | ~1.53 MB | Cached vendor; keep separate |
+| `audio-*.js` | Procedural audio | ~57 KB | Cached vendor split |
+| `meta-ui-*.js` | Hub / crafting / bestiary UI | ~59 KB | On hub / bestiary open |
+| `journey-map-*.js` | Journey map overlay | ~34 KB | On map open |
+| `victory-*.js` | Victory celebration | ~35 KB | First gameplay click |
+| `tutorial-*.js` | Tutorial system | ~117 KB | First gameplay click |
+| `game_managers_impl-*.js` | Friends / flora / candy / butterfly | ~43 KB | First gameplay click (`ensureGameManagers`) |
+| `clouds-*.js` | CloudSystem TSL layers | ~9 KB | First gameplay click |
 
-**Cold path:** ~1.85 MB minified / ~490 KB gzip for `index` + `three` + `audio`. Level 4–6 modules (waterfall, industrial, biological, boss, aquatic, …) are **not** downloaded until those levels are prefetched or entered.
+**Title Network:** only `index` + `three` + `audio`. Do **not** download `meta-ui`, `journey-map`, `victory`, `tutorial`, `game_managers_impl`, `clouds`, `boss_*`, `industrial_*`, or `aquatic_*` until those flows open / levels load.
 
 WASM collision (`public/build/optimized.wasm`, ~3 KB) stays on the critical path.
 
+### Named async chunks (`manualChunks` + dynamic import)
+
+| Chunk id | Modules | When loaded |
+|----------|---------|-------------|
+| `meta-ui` | `hub_screen`, `hub_integration`, `crafting_system`, `bestiary` (UI) | Hub open / bestiary key |
+| `journey-map` | `journey_map/**` | Journey map overlay |
+| `victory` | `victory_system/**` except `victory_state` | First gameplay click (`ensureGameplayReady`) |
+| `tutorial` | `tutorial_system/**` except `persistence` | Same gate as victory |
+| *(dynamic)* | `game_managers_impl` (friends / flora / candy / butterfly) | Same gate |
+| *(dynamic)* | `clouds/**`, pastel nebula, asteroid field, liquid metal, … | Same gate / per-level |
+
+Eager helpers kept out of those chunks on purpose: `bestiary_data`, `crafting_constants`, `hub_pending_chapter`, `journey_progress`, `victory_system/victory_state`, `tutorial_system/persistence`.
+
 ### Per-level async chunks
 
-[`ensureLevelSystemsForLevel(n)`](../src/level_systems_loader.ts) reads `LEVEL_CONFIG[n]` and loads only missing systems **before** `startLevel`. Prefetch runs at ~75% of the current segment (`maybePrefetchNextLevel`).
+[`ensureLevelSystemsForLevel(n)`](../src/level_systems_loader.ts) reads `LEVEL_CONFIG[n]` and loads only missing systems **before** `startLevel`. Prefetch runs at ~75% of the current segment (`maybePrefetchNextLevel`). Boot uses stubs from [`deferred_system_stubs.ts`](../src/deferred_system_stubs.ts) until install.
 
 | Level | Example async modules |
 |-------|------------------------|
-| 1 Neon Garden | *(none — pastel nebula + liquid metal are eager)* |
-| 2 Asteroid Belt | `ghost_debris`, `black_hole`, `chroma_shift`, `storm_geodes`, `slingable_objects`, `dream_portal` |
+| 1 Neon Garden | pastel nebula, liquid metal, asteroid field, god rays, lightning, crystal chimes, candy field, magic paintbrush (+ managers / clouds via `ensureGameplayReady`) |
+| 2 Asteroid Belt | `ghost_debris`, `black_hole`, `chroma_shift`, `storm_geodes`, `slingable_objects`, `dream_portal`, grav lens |
 | 3 Orbital Descent | `meteor_shower`, `planetary_horizon`, `reentry`, `bubble_coral`, `dream_portal` |
-| 4 Rusty Gauntlet | `industrial_background`, `industrial_geometry`, `bubble_coral`, slingables |
+| 4 Rusty Gauntlet | `industrial_background`, `industrial_geometry`, `bubble_coral`, slingables, buoys / monoliths |
 | 5 Astral Leviathan | `biological_background`, `cosmic_dust`, `void_jellyfish`, `starlight_koi`, `bubble_coral`, industrial geometry (whale ribs) |
 | 6 Aqua Expanse | `waterfall`, `aquatic_life`, `boss_system`, `galactic_core`, plus koi / coral / jellyfish as flagged |
 
-Typical async chunk sizes (minified): 2–13 KB each (e.g. `waterfall` ~8 KB, `boss_system` ~10 KB, `industrial_background` ~11 KB, `dream_portal` ~12 KB, `galactic_core` ~5 KB).
+Typical per-level async chunk sizes (minified): 2–13 KB each.
 
-Two guardrails for these: the deferred module must not be statically imported by
-anything in the entry graph (Vite prints "dynamically imported … but also
-statically imported by" and folds it back into `index-*.js`), and shared
-constants belong in an eager module — `DREAM_ROOM_Y` lives in `game_config.ts`
-for exactly that reason.
+**Guardrails:** a deferred module must not be statically imported by the entry graph (Vite prints "dynamically imported … but also statically imported by" and folds it back into `index-*.js`). Shared constants belong in an eager module — e.g. `DREAM_ROOM_Y` in `game_config.ts`, `BESTIARY_ENTRIES` in `bestiary_data.ts`. Prefer stubs + `ensure*` / registry install over constructing full managers at boot (aligns with GameContext shrink).
 
-Slingable prototype props load in the background after first click via `ensureSlingableSystems()` — they do not block Level 1 start.
+Slingable prototype props load in the background after first click via `ensureSlingableSystems()` — they do not block Level 1 start. Meta UI is prefetched after first click via `prefetchMetaUi()` without blocking start.
+
+### Compile / toolchain (keep; do not thrash)
+
+| Tool | Setting | Notes |
+|------|---------|-------|
+| AssemblyScript | `asc … --initialMemory 2 --optimize` | Supported collision product path |
+| C++ WASM | emsdk/docker, `VITE_CPP_WASM` | Experimental only — not in default entry |
+| Vite | `target: 'es2022'` | Keep |
+| tsc | `strict: true`, `moduleResolution: bundler` | Keep; no emit |
+| Node CI | 24 | Keep |
 
 ### Measure
 
-1. `npm run build` — inspect the chunk list; entry must only sync-import `three` and `audio`.
-2. `npm run preview`, Network → JS: title load should show `index` + `three` + `audio` only; later levels pull their modules at prefetch / transition.
-3. In-game: debug FPS panel (`` ` ``).
+1. `npm run build` — inspect the chunk list; title sync path is `index` + `three` + `audio` only.
+2. Record raw + gzip: `gzip -c dist/assets/index-*.js | wc -c`.
+3. `npm run preview`, Network → JS: title load should show `index` + `three` + `audio` only; open hub/journey → meta chunks; later levels pull modules at prefetch / transition.
+4. In-game: debug FPS panel (`` ` ``).
 
-Configuration: [`vite.config.ts`](../vite.config.ts) (`three` + `audio` only). Lazy wiring: [`src/level_systems_loader.ts`](../src/level_systems_loader.ts). Loop spawn predicates without pulling heavy managers: [`src/level_spawn_rules.ts`](../src/level_spawn_rules.ts).
+Configuration: [`vite.config.ts`](../vite.config.ts). Lazy wiring: [`src/level_systems_loader.ts`](../src/level_systems_loader.ts), [`src/meta_ui_loader.ts`](../src/meta_ui_loader.ts). Loop spawn predicates without pulling heavy managers: [`src/level_spawn_rules.ts`](../src/level_spawn_rules.ts).

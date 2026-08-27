@@ -24,8 +24,8 @@
     "typecheck:ci": "node tools/typecheck_baseline.cjs",
     "typecheck:baseline:update": "node tools/typecheck_baseline.cjs --update",
     "check:env-registry": "node tools/check_level_env_registry.cjs",
-    "check": "node tools/check_braces.cjs && node tools/check_level_env_registry.cjs && npm run typecheck:ci",
-    "test:unit": "node --test tests/*.test.mjs",
+    "check": "node tools/check_braces.cjs && node tools/check_level_env_registry.cjs && npm run typecheck:ci && npm run test:unit",
+    "test:unit": "node --import tsx --test tests/unit/**/*.test.ts tests/*.test.mjs",
     "test:smoke": "playwright test",
     "test": "npm run test:unit && npm run test:smoke"
   },
@@ -40,6 +40,7 @@
     "@types/node": "^25.0.3",
     "@types/three": "^0.182.0",
     "assemblyscript": "^0.27.37",
+    "tsx": "^4.23.12",
     "typescript": "^5.9.3",
     "vite": "^7.3.3"
   }

@@ -7,8 +7,6 @@ import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { PowerUpType } from '../powerup_manager';
 import { MagicalEffectType } from '../magical_effects';
-import { VictoryState } from '../victory_system';
-import { FlotillaMember } from '../space_friends';
 import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../candy_materials';
 import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
 import { getLevelSpan } from '../depth_layers';
@@ -34,6 +32,7 @@ import {
 import { updatePlayer } from './player_update';
 import { renderGameFrame, getCollisionDebugTargets, RESOLUTION_RATIOS } from './render_helpers';
 import { updateGpuLeakDetector } from '../gpu_leak_detector';
+import { ghostRunRecorder, buildActionFlags } from '../ghost_run';
 
 
 export function updateLoopCore(rawDelta: number, delta: number, _time: number): boolean {
@@ -124,6 +123,24 @@ export function updateLoopCore(rawDelta: number, delta: number, _time: number): 
         }
     
         updatePlayer(delta);
+
+        if (player) {
+            const touchInput = touchControls?.getInput();
+            ghostRunRecorder.tick(
+                delta,
+                player.position.x,
+                player.position.y,
+                buildActionFlags({
+                    wantsBoost: game.wantsBoost,
+                    wantsRoll: game.wantsRoll,
+                    wantsBark: game.wantsBark,
+                    wantsTether: game.wantsTether,
+                    wantsReleaseTether: game.wantsReleaseTether,
+                    fire: touchInput?.fire ?? false
+                })
+            );
+        }
+
         game.obstacleSystem.update(delta);
     
         // Bestiary creatures: Crystal Tarsier Guardian, Living Geode Titan, etc.

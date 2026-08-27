@@ -98,9 +98,14 @@ Breadcrumb: `window.biomeNoiseBackend` — `'cpp' | 'js'`.
 
 `game.wasmExports` is typed `WasmExports | null`. Load failure leaves it `null`; obstacle collision must not assume exports exist. Soft-body bind is a no-op when the handle is null or backend is AssemblyScript.
 
+## Rapier (`@dimforge/rapier3d-compat`)
+
+**Not a runtime physics backend.** There are no Rapier imports under `src/`. The package appears in the lockfile only as a **dev transitive** of `@types/three` (`npm ls @dimforge/rapier3d-compat`). Do not add it as a direct dependency or wire it as collision — AssemblyScript WASM remains the supported path (this document).
+
 ## Further reading
 
 - [`cpp/README.md`](../cpp/README.md) — emsdk / Docker for experimental builds
 - [`src/wasm_loader.ts`](../src/wasm_loader.ts) — loader API and export types
 - [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts) — Option A Verlet consumer
 - [`assembly/index.ts`](../assembly/index.ts) — supported collision source
+- [`docs/PERFORMANCE_BUDGETS.md`](PERFORMANCE_BUDGETS.md) — JS chunk budgets and compile settings

@@ -1,20 +1,13 @@
 import type * as THREE from 'three';
 import type {
     LevelConfig,
-    LevelEnvironments,
-    GodRaysEnvironmentConfig,
-    AuroraEnvironmentConfig,
-    LightningEnvironmentConfig,
-    AsteroidFieldEnvironmentConfig
+    LevelEnvironments
 } from '../level_config';
 import type { LevelEnvironmentPorts } from './types';
 
 /** Systems registry host for environment plugin activation. */
 export interface LevelPluginHost extends LevelEnvironmentPorts {
-    butterflySwarmSystem: { activate: () => void; deactivate: () => void };
     cloudSystem: { layers: { mesh: { visible: boolean } }[] };
-    godRaySystem: { activate: (config: GodRaysEnvironmentConfig) => void; deactivate: () => void };
-    auroraSystem: { activate: (config: AuroraEnvironmentConfig) => void; deactivate: () => void };
     ghostDebrisSystem: { activate: () => void; deactivate: () => void };
     voidJellyfishSystem: { activate: (config: NonNullable<LevelEnvironments['voidJellyfish']>) => void; deactivate: () => void };
     camera: { position: { x: number } };

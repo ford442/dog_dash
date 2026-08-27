@@ -15,7 +15,7 @@ import { playerState, DREAM_ROOM_Y } from '../game_config';
 import { game } from '../game_runtime';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
-import { VictoryState } from '../victory_system';
+import { VictoryState } from '../victory_system/victory_state';
 import type { DreamPortalCallbacks } from '../dream_portal';
 import type { PlayerMotionPort } from '../ports';
 import type { LevelConfig } from '../level_config';

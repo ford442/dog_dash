@@ -15,6 +15,7 @@ import { DEPTH_LAYERS, randomZInLayer, randomZInRange } from '../depth_layers';
 import { moonPlants } from '../visuals';
 import { decorationBudget } from '../decoration_budget';
 import { biomeNoise } from '../biome_noise';
+import { getRunRngFork } from '../run_seed';
 import { FOLIAGE_DENSITY_UNIT, MIN_FOLIAGE_STREAM_WIDTH, STREAM_AHEAD_END, STREAM_AHEAD_START } from './constants';
 import type { LevelFoliageHost } from './foliage_host';
 
@@ -224,8 +225,9 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.cloud - lm.geologicalCounts.sporeClouds())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+                const rng = getRunRngFork('foliage');
+                const x = startX + rng.random() * width;
+                const y = yRange[0] + rng.random() * (yRange[1] - yRange[0]);
                 const z = randomZInLayer('BACKGROUND');
                 lm.spawners.createSporeCloudAtPosition(x, y, z);
             }

@@ -12,8 +12,6 @@ import {
     resolveBubbleCoralClusterCount
 } from '../../level_spawn_rules';
 import { gravityAnchors } from '../../environment';
-import { FlotillaMember } from '../../space_friends';
-
 /** Space friends, aquatic life, starlight koi, bubble coral. */
 export function updateCombatFriends(delta: number): void {
     if (!player) return;
@@ -143,10 +141,12 @@ export function onBarnacleOpened(obs: THREE.Object3D): void {
         game.juiceManager.showFloatingText('Memory Fragment! +25', obs.position.clone(), '#aaffee', 24);
     }
     if (obs.userData.hasWhaleLice) {
-        const member = new FlotillaMember(scene, 0x88ffaa, game.friendsManager.flotilla.length);
-        game.friendsManager.flotilla.push(member);
-        game.juiceManager.showFloatingText('Whale Lice joined!', obs.position.clone(), '#88ffaa', 22);
-        game.dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
+        void import('../../space_friends').then(({ FlotillaMember }) => {
+            const member = new FlotillaMember(scene, 0x88ffaa, game.friendsManager.flotilla.length);
+            game.friendsManager.flotilla.push(member);
+            game.juiceManager.showFloatingText('Whale Lice joined!', obs.position.clone(), '#88ffaa', 22);
+            game.dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
+        });
     }
 }
 

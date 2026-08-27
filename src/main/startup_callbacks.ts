@@ -8,8 +8,8 @@ import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPopup } from './hud_displays';
 import { getMaterialDisplayName, getMaterialColor } from '../resource_inventory';
-import { recordChapterComplete } from '../journey_map';
-import { openHubScreen } from './hub_integration';
+import { recordChapterComplete } from '../journey_progress';
+import { openHubScreenLazy } from '../meta_ui_loader';
 
 export function reportComboObjectiveProgress(): void {
     const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
@@ -28,7 +28,7 @@ export function wireStartupCallbacks(): void {
     game.hudManager.getJourneyLevel = () => game.levelManager?.currentLevel ?? 1;
     game.hudManager.getRescuedFriendCount = () => game.friendsManager?.getRescuedCount?.() ?? 0;
     game.hudManager.getCompletedChapters = () => [...(game.completedChaptersThisRun || [])];
-    game.hudManager.openHub = (mode) => openHubScreen(mode);
+    game.hudManager.openHub = (mode) => { void openHubScreenLazy(mode); };
 
     game.resourceHarvester.onMaterialCollected = (evt) => {
         const name = getMaterialDisplayName(evt.id);
@@ -127,10 +127,10 @@ export function wireStartupCallbacks(): void {
 }
 
 function wireFriendsCallbacks(): void {
-    const { friendsManager, levelManager, hudManager, dogController, juiceManager, audioSystem,
-        saveManager, creatureCatalogManager, playerState, orbManager, slingComboManager, clock } = game;
-
-    friendsManager.onFriendRescued = (count, position, kind) => {
+    // Bind via game.friendsManager so callbacks survive ensureGameManagers() swap.
+    game.friendsManager.onFriendRescued = (count, position, kind) => {
+        const { levelManager, hudManager, dogController, juiceManager, audioSystem,
+            saveManager, creatureCatalogManager } = game;
         const objective = levelManager.config[levelManager.currentLevel]?.objective;
         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
         juiceManager.burstMagic(position.clone());
@@ -160,7 +160,8 @@ function wireFriendsCallbacks(): void {
         }
     };
 
-    friendsManager.onOtterGift = (position, cores) => {
+    game.friendsManager.onOtterGift = (position, cores) => {
+        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController } = game;
         const otterMemory = saveManager.hasMemory('cosmic_otter');
         const totalCores = cores + (otterMemory && Math.random() < 0.35 ? 1 : 0);
         playerState.cores += totalCores;
@@ -173,7 +174,8 @@ function wireFriendsCallbacks(): void {
         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
     };
 
-    friendsManager.onPenguinSlide = (position, cores, slideAssistDuration) => {
+    game.friendsManager.onPenguinSlide = (position, cores, slideAssistDuration) => {
+        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController } = game;
         const penguinMemory = saveManager.hasMemory('astro_penguin');
         const assistDuration = slideAssistDuration + (penguinMemory ? 1.5 : 0);
         playerState.cores += cores;
@@ -187,7 +189,8 @@ function wireFriendsCallbacks(): void {
         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
     };
 
-    friendsManager.onSealClap = (position, healthRestore) => {
+    game.friendsManager.onSealClap = (position, healthRestore) => {
+        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController, orbManager } = game;
         const sealMemory = saveManager.hasMemory('stellar_seal_pup');
         const glowDuration = sealMemory ? 5.5 : 3.5;
         const glowMultiplier = sealMemory ? 2.2 : 1.7;
@@ -207,7 +210,8 @@ function wireFriendsCallbacks(): void {
         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 0.8);
     };
 
-    friendsManager.onAstroBunnyLucky = (position, bonus) => {
+    game.friendsManager.onAstroBunnyLucky = (position, bonus) => {
+        const { saveManager, creatureCatalogManager, hudManager, juiceManager, dogController, slingComboManager } = game;
         const bunnyMemory = saveManager.hasMemory('astro_bunny');
         const totalBonus = bonus + (bunnyMemory ? 4 : 0);
         hudManager.addScore(totalBonus);
@@ -220,7 +224,8 @@ function wireFriendsCallbacks(): void {
         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.0);
     };
 
-    friendsManager.onLemurHeartGift = (position) => {
+    game.friendsManager.onLemurHeartGift = (position) => {
+        const { saveManager, creatureCatalogManager, juiceManager, dogController, orbManager } = game;
         const lemurMemory = saveManager.hasMemory('lunar_lemur');
         orbManager.spawnHeartOrb(position.x, position.y, position.z);
         creatureCatalogManager.catalog('lunar_lemur');

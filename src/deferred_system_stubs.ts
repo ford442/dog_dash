@@ -32,6 +32,7 @@ import type { CloudCastlesSystem } from './cloud_castles_system';
 import type { SingingGeodeSystem } from './singing_geodes';
 import type { WindCurrentsSystem } from './wind_currents';
 import type { TimeShiftZonesSystem } from './time_shift_zones';
+import { VictoryState } from './victory_system/victory_state';
 
 const noop = () => undefined;
 
@@ -380,4 +381,183 @@ export function createAirTokensSystemStub(): import('./air_tokens').AirTokensSys
 
 export function createShootingStarsSystemStub(): import('./shooting_stars').ShootingStarsSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {} } as unknown as import('./shooting_stars').ShootingStarsSystem;
+}
+
+export function createSkyRailTerminalSystemStub(): import('./sky_rail_terminal').SkyRailTerminalSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop
+    } as unknown as import('./sky_rail_terminal').SkyRailTerminalSystem;
+}
+
+export function createVictorySystemStub(): import('./victory_system').VictorySystem {
+    return {
+        getState: () => VictoryState.NONE,
+        startApproach: noop,
+        update: noop,
+        isActive: () => false,
+        land: noop,
+        celebrate: noop,
+        reset: noop
+    } as unknown as import('./victory_system').VictorySystem;
+}
+
+export function createTutorialSystemStub(): import('./tutorial_system').TutorialSystem {
+    return {
+        update: noop,
+        start: noop,
+        onComplete: noop,
+        skip: noop,
+        isRunning: () => false
+    } as unknown as import('./tutorial_system').TutorialSystem;
+}
+
+export function createPastelNebulaSystemStub(): import('./pastel_nebula').PastelNebulaSystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop
+    } as unknown as import('./pastel_nebula').PastelNebulaSystem;
+}
+
+export function createNebulaSystemStub(): import('./nebula').NebulaSystem {
+    return {
+        active: false,
+        ribbonsActive: false,
+        setCamera: noop,
+        setSkyColors: noop,
+        activateRibbons: noop,
+        deactivateRibbons: noop,
+        resyncBudgetCounts: noop,
+        setMagicActive: noop,
+        activate: noop,
+        deactivate: noop,
+        update: noop
+    } as unknown as import('./nebula').NebulaSystem;
+}
+
+export function createGodRaySystemStub(): import('./godrays').GodRaySystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        triggerLightningFlash: noop
+    } as unknown as import('./godrays').GodRaySystem;
+}
+
+export function createAuroraSystemStub(): import('./aurora').AuroraSystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop
+    } as unknown as import('./aurora').AuroraSystem;
+}
+
+export function createLightningBoltSystemStub(): import('./lightning_bolt').LightningBoltSystem {
+    return {
+        onBoltStrike: undefined,
+        activate: noop,
+        deactivate: noop,
+        update: noop
+    } as unknown as import('./lightning_bolt').LightningBoltSystem;
+}
+
+export function createAsteroidFieldSystemStub(): import('./asteroid_field').AsteroidFieldSystem {
+    return {
+        active: false,
+        layers: [],
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        setDensity: noop,
+        setCandyChance: noop,
+        setVisible: noop,
+        resetPositions: noop,
+        hitAsteroid: () => false
+    } as unknown as import('./asteroid_field').AsteroidFieldSystem;
+}
+
+export function createButterflySwarmSystemStub(): import('./butterfly_swarm').ButterflySwarmSystem {
+    return {
+        active: false,
+        resyncBudgetCounts: noop,
+        bindEffects: noop,
+        activate: noop,
+        deactivate: noop,
+        tryAbsorbHit: () => false,
+        hasActiveEscort: () => false,
+        update: noop
+    } as unknown as import('./butterfly_swarm').ButterflySwarmSystem;
+}
+
+export function createLiquidMetalSystemStub(): import('./geological/liquid_metal').LiquidMetalSystem {
+    return {
+        blobs: [],
+        createBlob: () => ({ group: { userData: {} } }),
+        checkCollisions: noop,
+        update: noop
+    } as unknown as import('./geological/liquid_metal').LiquidMetalSystem;
+}
+
+export function createCrystalChimeManagerStub(): import('./crystal_chimes').CrystalChimeManager {
+    return {
+        update: () => [],
+        cleanupFarBehind: noop,
+        clear: noop
+    } as unknown as import('./crystal_chimes').CrystalChimeManager;
+}
+
+export function createGravLensManagerStub(): import('./grav_lens').GravLensManager {
+    return {
+        getLenses: () => [],
+        getScannables: () => [],
+        clear: noop,
+        spawnCorridor: noop,
+        handleProjectileHits: noop,
+        isInInfluence: () => false,
+        update: () => ({
+            forceX: 0,
+            forceY: 0,
+            inCrushZone: false,
+            slingshotExits: [],
+            failedExits: []
+        })
+    } as unknown as import('./grav_lens').GravLensManager;
+}
+
+export function createDerelictBuoyManagerStub(): import('./derelict_buoy').DerelictBuoyManager {
+    return {
+        getBuoys: () => [],
+        getScannables: () => [],
+        hasBuoys: () => false,
+        clear: noop,
+        spawnForLevel: noop,
+        update: noop,
+        getDockableBuoy: () => null,
+        isInDock: () => false
+    } as unknown as import('./derelict_buoy').DerelictBuoyManager;
+}
+
+export function createDataMonolithManagerStub(): import('./data_monolith').DataMonolithManager {
+    return {
+        getScannables: () => [],
+        hasMonoliths: () => false,
+        clear: noop,
+        spawnForLevel: noop,
+        update: noop,
+        getInteractable: () => null
+    } as unknown as import('./data_monolith').DataMonolithManager;
+}
+
+export function createMagicPaintbrushSystemStub(): import('./magic_paintbrush').MagicPaintbrushSystem {
+    return {
+        setPainting: noop,
+        isActivePainting: () => false,
+        paintAt: noop,
+        applyGuideForce: (_playerPos: unknown, currentSpeedY: number) => currentSpeedY,
+        update: noop,
+        clear: noop
+    } as unknown as import('./magic_paintbrush').MagicPaintbrushSystem;
 }

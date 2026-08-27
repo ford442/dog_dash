@@ -12,12 +12,8 @@ import { playerState, setIsGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
-import {
-    generateMorseSequence, createBuoyHackUI, type DerelictBuoyInstance, type BuoyHackHandle
-} from '../derelict_buoy';
-import {
-    createMonolithPuzzle, createMonolithHackUI, type DataMonolithInstance, type MonolithHackHandle
-} from '../data_monolith';
+import type { DerelictBuoyInstance, BuoyHackHandle } from '../derelict_buoy';
+import type { DataMonolithInstance, MonolithHackHandle } from '../data_monolith';
 import {
     nextArchitectLoreId, ARCHITECT_LORE, hasFullArchitectSet,
     createLoreRevealUI
@@ -64,9 +60,10 @@ function endHack(): void {
     setIsGamePaused(false);
 }
 
-function beginBuoyHack(buoy: DerelictBuoyInstance): void {
+async function beginBuoyHack(buoy: DerelictBuoyInstance): Promise<void> {
     if (activeHack) return;
     setIsGamePaused(true);
+    const { generateMorseSequence, createBuoyHackUI } = await import('../derelict_buoy');
     const sequence = generateMorseSequence();
     buoy.sequence = sequence;
 
@@ -128,9 +125,10 @@ function triggerAlarm(position: THREE.Vector3): void {
     game.juiceManager.showFloatingText('⚠ Hack failed — alarm!', position.clone(), '#ff5577', 26);
 }
 
-function beginMonolithHack(monolith: DataMonolithInstance): void {
+async function beginMonolithHack(monolith: DataMonolithInstance): Promise<void> {
     if (activeHack) return;
     setIsGamePaused(true);
+    const { createMonolithPuzzle, createMonolithHackUI } = await import('../data_monolith');
     const puzzle = createMonolithPuzzle(monolith.tier);
 
     const handle = createMonolithHackUI(puzzle, {
@@ -225,7 +223,7 @@ export function updateArtifacts(delta: number): void {
             armed.delete(id);
             const inst = game.derelictBuoyManager.getDockableBuoy(player.position);
             if (inst && inst.group.uuid === id && !inst.consumed) {
-                beginBuoyHack(inst);
+                void beginBuoyHack(inst);
                 return;
             }
         }
@@ -240,7 +238,7 @@ export function updateArtifacts(delta: number): void {
             armed.delete(id);
             const inst = game.dataMonolithManager.getInteractable(player.position);
             if (inst && inst.group.uuid === id && !inst.consumed) {
-                beginMonolithHack(inst);
+                void beginMonolithHack(inst);
                 return;
             }
         }

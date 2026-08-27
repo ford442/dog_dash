@@ -60,26 +60,40 @@ npm run typecheck
 CI uses a **baseline ratchet** so existing known errors do not block PRs, but new strict-mode violations do. For a local pre-PR gate (brace balance + typecheck ratchet):
 
 ```bash
-npm run check                         # braces + typecheck:ci
+npm run check                         # braces + env-registry + typecheck:ci + test:unit
 npm run typecheck:ci                  # compare against .github/typecheck-baseline.txt
 npm run typecheck:baseline:update     # after fixing errors, ratchet the baseline down
 ```
 
 ### Testing
 
-Playwright smoke tests verify the **production build** on the WebGL2 fallback path (`/?renderer=webgl`). Headless/cloud VMs have no WebGPU adapter, so tests launch system Chrome with SwiftShader flags (see `playwright.config.ts`).
+Three layers — unit (fast, no GPU), smoke (browser bootstrap), and optional C++ WASM verify:
 
-**Run locally:**
+| Command | What it checks | GPU required |
+|---------|----------------|--------------|
+| `npm run test:unit` | Pure logic: spawn rules, crafting, env registry math, sling scoring, biome noise JS fallback, port contracts | No |
+| `npm run test:smoke` | Production build + Playwright on WebGL2 (`/?renderer=webgl`) | Software GL (SwiftShader in CI) |
+| `npm run verify:cpp-wasm` | Experimental C++ WASM instantiates in Node | No |
+
+`npm run check` includes unit tests. `npm run test` runs unit + smoke.
+
+**Unit tests** use Node's built-in test runner with `tsx` for TypeScript imports (`tests/unit/*.test.ts` and `tests/*.test.mjs`). No build step required.
+
+```bash
+npm run test:unit
+```
+
+**Smoke tests** verify the production build on the WebGL2 fallback path. Headless/cloud VMs have no WebGPU adapter, so tests launch system Chrome with SwiftShader flags (see `playwright.config.ts`).
 
 ```bash
 npm run build
 npm run test:smoke          # alias for: npx playwright test
 ```
 
-**Requirements:**
+**Requirements (smoke):**
 
-- Google Chrome (or Chromium) on the machine. The config checks common install paths and falls back to Playwright's bundled Chromium.
-- Optional: set `PLAYWRIGHT_CHROME_PATH` to override the Chrome executable.
+- Google Chrome (or Chromium). The config checks common install paths and falls back to Playwright's bundled Chromium.
+- Optional: set `PLAYWRIGHT_CHROME_PATH` to override the Chrome executable (cloud default: `/usr/local/bin/google-chrome`).
 
 **What the smoke test checks (DOM/state, not screenshot diffs):**
 
@@ -88,7 +102,9 @@ npm run test:smoke          # alias for: npx playwright test
 - Title screen dismisses on click; gameplay HUD elements appear
 - After ~2s, the debug FPS overlay (`` ` `` toggle) shows live stats and `renderer: webgl`
 
-CI runs the smoke job on PRs (currently `continue-on-error: true` while the suite stabilizes).
+**Smoke promotion (CI):** The smoke job currently uses `continue-on-error: true` (Phase A). Once `main` has **3 consecutive green smoke runs**, remove `continue-on-error` in `.github/workflows/ci.yml` (Phase C). If flakes appear, prefer `waitForFunction` over fixed `waitForTimeout` before promoting.
+
+**C++ WASM verify** (`npm run verify:cpp-wasm`) runs in the experimental `cpp-wasm` CI job (soft-fail). Not required for the default AssemblyScript path.
 
 ### Requirements
 

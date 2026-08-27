@@ -23,13 +23,14 @@ import { decorationBudget, registerDefaultDecorationBudgets } from '../decoratio
 import { attachGpuLeakDetector } from '../gpu_leak_detector';
 import { disposeObject } from '../utils';
 import { createGalaxy, createMoon } from '../visuals';
-import { shouldShowTutorial } from '../tutorial_system';
+import { shouldShowTutorial } from '../tutorial_system/persistence';
 import { applyCraftedLoadout } from './loadout';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import { biomeNoise } from '../biome_noise';
+import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -166,9 +167,6 @@ function createLevelManager(
         industrialGeometryManager,
         ghostDebrisSystem: deferred.ghostDebrisSystem,
         voidJellyfishSystem: deferred.voidJellyfishSystem,
-        godRaySystem: systems.godRaySystem,
-        auroraSystem: systems.auroraSystem,
-        butterflySwarmSystem: managers.butterflySwarmSystem,
         pinwheelManager: managers.pinwheelManager,
         windChimeManager: managers.windChimeManager,
         solarSailFernManager: managers.solarSailFernManager,
@@ -181,6 +179,9 @@ function createLevelManager(
             crystalChimeManager: systems.crystalChimeManager,
             nebulaSystem: systems.nebulaSystem,
             asteroidFieldSystem: systems.asteroidFieldSystem,
+            godRaySystem: systems.godRaySystem,
+            auroraSystem: systems.auroraSystem,
+            butterflySwarmSystem: managers.butterflySwarmSystem,
             waterfallSystem: systems.waterfallSystem,
             industrialSystem: systems.industrialSystem,
             biologicalSystem: systems.biologicalSystem,
@@ -308,11 +309,6 @@ export function initializeStartup(): void {
     playerState.autoScrollSpeed = systems.saveManager.applyToSpeed(8);
 
     const managers = createGameManagers(scene, systems.audioSystem, systems.particleSystem);
-    managers.butterflySwarmSystem.bindEffects(
-        systems.particleSystem,
-        systems.juiceManager,
-        systems.audioSystem
-    );
 
     const industrialGeometryManager = createIndustrialGeometryManagerStub() as IndustrialGeometryManager;
     const galaxy1 = createGalaxy(200, 30, -100, 0x8844ff);
@@ -411,11 +407,13 @@ export function initializeStartup(): void {
         ['pixelGlow', 'Retro Pixel-Glow', hasDebugUrlFlag('pixelGlow')],
         ['airTokens', 'Air Tokens', true],
         ['wireframe', 'Wireframe', hasDebugUrlFlag('wireframe')],
-        ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')]
+        ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')],
+        ['ghostReplay', 'Ghost Replay', true]
     ];
     for (const [id, label, enabled] of flags) {
         debugSystem.register(id, label, enabled);
     }
+    attachRunSeedDebugSection(debugSystem.getCustomSectionContainer());
 
     const ghostDebrisSystem = createGhostDebrisSystemStub();
     const voidJellyfishSystem = createVoidJellyfishSystemStub();

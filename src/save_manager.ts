@@ -25,6 +25,12 @@ export interface GameStats {
     totalPlayTime: number;       // seconds
 }
 
+export interface LastRunSummary {
+    seed: string;
+    distance: number;
+    endedAt: number;
+}
+
 export interface SaveData {
     cores: number;
     upgrades: PlayerUpgrades;
@@ -42,6 +48,8 @@ export interface SaveData {
     resources: ResourceInventory;
     /** Crafted items queued for the next run (recipeId -> charges). Consumed at boot. */
     loadout: Record<string, number>;
+    /** Last completed run seed + distance (Cosmic Architect foundation). */
+    lastRun?: LastRunSummary;
     version: string;
 }
 
@@ -74,6 +82,16 @@ function normalizeLoadout(raw: unknown): Record<string, number> {
         }
     }
     return out;
+}
+
+function normalizeLastRun(raw: unknown): LastRunSummary | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const r = raw as Record<string, unknown>;
+    const seed = typeof r.seed === 'string' ? r.seed : '';
+    const distance = Math.floor(Number(r.distance));
+    const endedAt = Math.floor(Number(r.endedAt));
+    if (!seed || !Number.isFinite(distance) || !Number.isFinite(endedAt)) return undefined;
+    return { seed, distance, endedAt };
 }
 
 export class SaveManager {
@@ -135,6 +153,7 @@ export class SaveManager {
             quantumCompassUnlocked: raw?.quantumCompassUnlocked === true,
             resources: normalizeInventory(raw?.resources),
             loadout: normalizeLoadout(raw?.loadout),
+            lastRun: normalizeLastRun(raw?.lastRun),
             version: CURRENT_VERSION
         };
     }
@@ -238,6 +257,15 @@ export class SaveManager {
 
     recordRunCompleted() {
         this.data.stats.runsCompleted++;
+        this.save();
+    }
+
+    getLastRun(): LastRunSummary | undefined {
+        return this.data.lastRun ? { ...this.data.lastRun } : undefined;
+    }
+
+    saveLastRun(summary: LastRunSummary): void {
+        this.data.lastRun = { ...summary };
         this.save();
     }
 

@@ -6,11 +6,18 @@ import * as THREE from 'three';
 import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { GravLensManager } from '../grav_lens';
+import type { SlingshotGrade } from '../grav_lens';
+import type { SlingQuality } from '../sling_combo';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { updateHealthDisplay } from '../ui_controls';
 import { handleGameOver } from './obstacle_setup';
+
+function slingQualityFromGrade(grade: SlingshotGrade): SlingQuality {
+    if (grade === 'perfect') return 'perfect';
+    if (grade === 'partial') return 'good';
+    return 'messy';
+}
 
 export function updateGravLensSystems(delta: number): void {
     if (!player || game.gravLensManager.getLenses().length === 0) return;
@@ -84,7 +91,7 @@ export function updateGravLensSystems(delta: number): void {
         playerState.gravLensBoostTimer = boostDuration;
         playerState.gravLensBoostMultiplier = boostMult;
 
-        const quality = GravLensManager.slingQualityFromGrade(grade);
+        const quality = slingQualityFromGrade(grade);
         const chainBonus = chain > 1 ? 1 + (chain - 1) * 0.25 : 1;
         game.slingComboManager.recordSlingAction(quality, position, chainBonus);
         game.slingObjectiveManager.recordSling(quality);

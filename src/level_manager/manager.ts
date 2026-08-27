@@ -1,6 +1,6 @@
 import { ShakeType } from '../juice_effects';
 import * as THREE from 'three';
-import { CloudSystem } from '../clouds';
+import type { CloudSystem } from '../clouds';
 import { AtmosphereSystem } from '../sky';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from '../level_config';
 import type { IndustrialGeometryManager } from '../industrial_geometry';
@@ -8,13 +8,11 @@ import { getLevelSpan } from '../depth_layers';
 import { playerState } from '../game_config';
 import { moonPlants } from '../visuals';
 import { disposeObject } from '../utils';
-import { GodRaySystem } from '../godrays';
-import { AuroraSystem } from '../aurora';
 import type { GhostDebrisSystem } from '../ghost_debris';
 import type { VoidJellyfishSystem } from '../void_jellyfish';
 import { DebugSystem } from '../debug_system';
-import { FriendsManager } from '../space_friends';
-import { ButterflySwarmSystem } from '../butterfly_swarm';
+import type { FriendsManager } from '../space_friends';
+import type { ButterflySwarmSystem } from '../butterfly_swarm';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
@@ -41,8 +39,8 @@ export class LevelManager {
     cloudSystem: CloudSystem;
     atmosphereSystem: AtmosphereSystem;
     lastPopulatedEndX: number;
-    godRaySystem: GodRaySystem;
-    auroraSystem: AuroraSystem;
+    godRaySystem: LevelEnvironmentPorts['godRaySystem'];
+    auroraSystem: LevelEnvironmentPorts['auroraSystem'];
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
     debugSystem?: DebugSystem;
@@ -51,11 +49,11 @@ export class LevelManager {
     objectDensityMultiplier: number;
     readonly scene: THREE.Scene;
     readonly camera: THREE.PerspectiveCamera;
-    readonly butterflySwarmSystem: ButterflySwarmSystem;
-    readonly pinwheelManager: PinwheelFloraManager;
-    readonly windChimeManager: WindChimeManager;
-    readonly solarSailFernManager: SolarSailFernManager;
-    private readonly candyManager: CandyBeltManager;
+    butterflySwarmSystem: LevelEnvironmentPorts['butterflySwarmSystem'];
+    pinwheelManager: PinwheelFloraManager;
+    windChimeManager: WindChimeManager;
+    solarSailFernManager: SolarSailFernManager;
+    candyManager: CandyBeltManager;
     readonly getPlayer: () => THREE.Group | null;
     readonly spawners: GeologicalSpawners;
     readonly geologicalCounts: GeologicalCounts;
@@ -98,7 +96,7 @@ export class LevelManager {
     readonly airTokensSystem: LevelEnvironmentPorts['airTokensSystem'];
     readonly shootingStarsSystem?: LevelEnvironmentPorts['shootingStarsSystem'];
     spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
-    readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
+    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
     windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
     timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
@@ -119,7 +117,6 @@ export class LevelManager {
     constructor(options: LevelManagerOptions) {
         this.scene = options.scene;
         this.camera = options.camera;
-        this.butterflySwarmSystem = options.butterflySwarmSystem;
         this.pinwheelManager = options.pinwheelManager;
         this.windChimeManager = options.windChimeManager;
         this.solarSailFernManager = options.solarSailFernManager;
@@ -168,19 +165,21 @@ export class LevelManager {
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
 
-        this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
+        // Stub until ensureGameplayReady loads the real CloudSystem chunk.
+        this.cloudSystem = {
+            __stub: true,
+            layers: [],
+            setLevel: () => undefined,
+            setCamera: () => undefined,
+            update: () => undefined,
+            triggerLightningAt: () => undefined
+        } as unknown as CloudSystem;
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
 
-        this.lightningBoltSystem.onBoltStrike = (pos, color) => {
-            this.cloudSystem.triggerLightningAt(pos, color);
-            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
-
-            // Add impact effects: subtle screen shake and spark particles
-            this.juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
-            this.particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
-        };
-        this.godRaySystem = options.godRaySystem;
-        this.auroraSystem = options.auroraSystem;
+        this.godRaySystem = options.env.godRaySystem;
+        this.auroraSystem = options.env.auroraSystem;
+        this.butterflySwarmSystem = options.env.butterflySwarmSystem;
+        this.wireLightningBoltStrike();
         this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.voidJellyfishSystem = options.voidJellyfishSystem;
         this.debugSystem = options.debugSystem;
@@ -194,9 +193,25 @@ export class LevelManager {
         this.objectDensityMultiplier = 1.0;
     }
 
+    /** Wires (or re-wires, after a deferred lightning-bolt chunk swap) the
+     * cloud-flash / god-ray-flash / juice reaction to a lightning strike. */
+    private wireLightningBoltStrike(): void {
+        this.lightningBoltSystem.onBoltStrike = (pos, color) => {
+            this.cloudSystem.triggerLightningAt(pos, color);
+            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
+
+            // Add impact effects: subtle screen shake and spark particles
+            this.juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
+            this.particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
+        };
+    }
+
     /** Refresh deferred env system refs after async chunk install. */
     installEnvironmentSystems(systems: Partial<LevelEnvironmentPorts>): void {
         Object.assign(this, systems);
+        if (systems.lightningBoltSystem) {
+            this.wireLightningBoltStrike();
+        }
     }
 
     setObjectDensityMultiplier(multiplier: number) {

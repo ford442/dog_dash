@@ -55,12 +55,13 @@ function fail(msg) {
 }
 
 function main() {
+    const deferredSrc = read('src/level_deferred_registry.ts');
     const registrySrc = read('src/level_env_registry.ts');
     const pluginsSrc = read('src/level_manager/environment_plugins.ts');
     const levelConfigSrc = read('src/level_config.ts');
 
-    const deferredFlags = parseStringArray(registrySrc, 'DEFERRED_ENV_FLAGS');
-    const eagerFlags = parseStringArray(registrySrc, 'EAGER_ENV_FLAGS');
+    const deferredFlags = parseStringArray(deferredSrc, 'DEFERRED_ENV_FLAGS');
+    const eagerFlags = parseStringArray(deferredSrc, 'EAGER_ENV_FLAGS');
     const registryKeys = parseRegistryKeys(registrySrc);
     const envTypeKeys = parseLevelEnvTypeKeys(levelConfigSrc);
     const pluginOrder = parsePluginOrder(pluginsSrc);

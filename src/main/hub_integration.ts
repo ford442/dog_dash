@@ -15,15 +15,18 @@ import {
     type HubMode,
     type HubRunSummary
 } from '../hub_screen';
+import { serializeRunSeed, tryGetRunSeed } from '../run_seed';
 
 let hubElement: HTMLDivElement | null = null;
 
 function buildRunSummary(): HubRunSummary {
+    const seed = tryGetRunSeed();
     return {
         distance: player ? Math.floor(player.position.x) : 0,
         coresEarned: playerState.cores,
         speciesDiscovered: game.discoveryManager?.getDiscoveredCount() ?? 0,
-        creaturesCataloged: game.creatureCatalogManager?.getCatalogedCountThisRun() ?? 0
+        creaturesCataloged: game.creatureCatalogManager?.getCatalogedCountThisRun() ?? 0,
+        runSeed: seed ? serializeRunSeed(seed) : undefined
     };
 }
 

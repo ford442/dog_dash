@@ -12,94 +12,31 @@ import type * as THREE from 'three';
 import type { LevelConfig, LevelEnvironments, AsteroidFieldEnvironmentConfig } from './level_config';
 import type { LevelEnvironmentPorts } from './level_manager/types';
 import type { LevelPluginHost, EnvPluginBuilder } from './level_manager/plugin_host';
-import { isEnvironmentEnabled } from './level_manager/types';
-import {
-    shouldSpawnStarlightKoi,
-    shouldSpawnBubbleCoral
-} from './level_spawn_rules';
 import type { ParticleSystem, DebrisSystem } from './particles';
 import type { AudioSystem } from './audio_system';
+import type { JuiceManager } from './juice_effects';
 import type { WeaponLightManager } from './lighting';
 import { createDreamPortalCallbacks } from './main/dream_portal_update';
+import { patchEnvironmentSystems } from './environment';
+import {
+    DEFERRED_ENV_FLAGS,
+    EAGER_ENV_FLAGS,
+    DEFERRED_LEVEL_SYSTEM_KEYS,
+    DEFERRED_LEVEL_NEEDS_LOAD,
+    type DeferredEnvSystemKey,
+    type DeferredLevelSystemKey,
+    type SystemKey
+} from './level_deferred_registry';
 
-// ---------------------------------------------------------------------------
-// Env flag classification — every `LevelEnvironments` key must appear here.
-// ---------------------------------------------------------------------------
-
-/** Environment flags whose real implementation is dynamically imported. */
-export const DEFERRED_ENV_FLAGS = [
-    'skyRailTerminal',
-    'candyPlanetRing',
-    'blackHole',
-    'industrial',
-    'waterfall',
-    'biological',
-    'cosmicDust',
-    'moonPalace',
-    'planetaryHorizon',
-    'reEntry',
-    'aquaticLife',
-    'ghostDebris',
-    'voidJellyfish',
-    'meteorShower',
-    'wishLanterns',
-    'dancingJellyMoss',
-    'spacePetsSwarm',
-    'weather',
-    'dynamicStarfield',
-    'dayNightCycle',
-    'galacticCore',
-    'dreamPortals',
-    'singingGeodes',
-    'cloudCastles',
-    'windCurrents',
-    'timeShiftZones',
-    'flowerConstellations',
-    'bouncePads',
-    'spaceGarden',
-    'aerialGuardPatrol',
-    'airTokens',
-    'shootingStars'
-] as const satisfies readonly (keyof LevelEnvironments)[];
-
-/** Environment flags constructed eagerly at bootstrap (stub or full). */
-export const EAGER_ENV_FLAGS = [
-    'pastelNebula',
-    'butterflySwarm',
-    'nebula',
-    'nebulaRibbons',
-    'godRays',
-    'aurora',
-    'lightning',
-    'asteroidField',
-    'candyField',
-    'bubbleCoral'
-] as const satisfies readonly (keyof LevelEnvironments)[];
-
-type AllClassifiedEnvFlags = (typeof DEFERRED_ENV_FLAGS)[number] | (typeof EAGER_ENV_FLAGS)[number];
-type AssertAllEnvFlagsClassified = Exclude<keyof LevelEnvironments, AllClassifiedEnvFlags> extends never
-    ? true
-    : never;
-const _envFlagCoverage: AssertAllEnvFlagsClassified = true;
-void _envFlagCoverage;
-
-// ---------------------------------------------------------------------------
-// Deferred system keys (env-flag-driven + level-config predicates)
-// ---------------------------------------------------------------------------
-
-export const DEFERRED_LEVEL_SYSTEM_KEYS = [
-    'boss',
-    'chromaShift',
-    'stormGeode',
-    'industrialGeometry',
-    'starlightKoi',
-    'bubbleCoral',
-    'slingables'
-] as const;
-
-export type DeferredEnvSystemKey = (typeof DEFERRED_ENV_FLAGS)[number];
-export type DeferredLevelSystemKey = (typeof DEFERRED_LEVEL_SYSTEM_KEYS)[number];
-export type SystemKey = DeferredEnvSystemKey | DeferredLevelSystemKey;
+export {
+    DEFERRED_ENV_FLAGS,
+    EAGER_ENV_FLAGS,
+    DEFERRED_LEVEL_SYSTEM_KEYS,
+    type DeferredEnvSystemKey,
+    type DeferredLevelSystemKey,
+    type SystemKey,
+    systemsNeededForLevel
+} from './level_deferred_registry';
 
 /** Runtime context passed to registry install hooks (kept narrow to avoid import cycles). */
 export type DeferredLoaderContext = {
@@ -114,6 +51,7 @@ export type DeferredGamePorts = {
     weaponLightManager: WeaponLightManager;
     audioSystem: AudioSystem;
     particleSystem: ParticleSystem;
+    juiceManager: JuiceManager;
     flowerConstellationsSystem?: unknown;
     skyRailTerminalSystem?: unknown;
     debrisSystem: DebrisSystem;
@@ -136,6 +74,13 @@ export type DeferredGamePorts = {
     rewireSlingableCallbacks?: () => void;
     bossManager: unknown;
     dreamPortalSystem: unknown;
+    liquidMetalSystem: unknown;
+    gravLensManager: unknown;
+    derelictBuoyManager: unknown;
+    dataMonolithManager: unknown;
+    magicPaintbrushSystem: unknown;
+    crystalChimeManager: unknown;
+    butterflySwarmSystem: unknown;
 };
 
 type DeferredEnvRegistryEntry<F extends DeferredEnvSystemKey> = {
@@ -509,9 +454,9 @@ export const DEFERRED_ENV_REGISTRY: {
     candyPlanetRing: {
         flag: 'candyPlanetRing',
         systemKey: 'candyPlanetRing',
-        load: () => import('./candy_obstacles'),
+        load: () => import('./candy_obstacles/candy_field_system'),
         install: (ctx, mod) => {
-            const { CandyFieldSystem } = mod as typeof import('./candy_obstacles');
+            const { CandyFieldSystem } = mod as typeof import('./candy_obstacles/candy_field_system');
             ctx.installEnvPartial({ candyFieldSystem: new CandyFieldSystem(ctx.scene) });
         },
         plugin: (host) => ({
@@ -674,6 +619,146 @@ export const DEFERRED_ENV_REGISTRY: {
             activate: () => undefined,
             deactivate: () => undefined
         })
+    },
+    pastelNebula: {
+        flag: 'pastelNebula',
+        systemKey: 'pastelNebula',
+        load: () => import('./pastel_nebula'),
+        install: (ctx, mod) => {
+            const { PastelNebulaSystem } = mod as typeof import('./pastel_nebula');
+            ctx.installEnvPartial({
+                pastelNebulaSystem: new PastelNebulaSystem(ctx.scene, ctx.game.weaponLightManager)
+            });
+        },
+        plugin: (host) => ({
+            flag: 'pastelNebula',
+            activate: () => host.pastelNebulaSystem.activate(),
+            deactivate: () => host.pastelNebulaSystem.deactivate()
+        })
+    },
+    nebula: {
+        flag: 'nebula',
+        systemKey: 'nebula',
+        load: () => import('./nebula'),
+        install: (ctx, mod) => {
+            const { NebulaSystem } = mod as typeof import('./nebula');
+            const instance = new NebulaSystem(ctx.scene, ctx.game.weaponLightManager);
+            instance.setCamera(ctx.camera);
+            ctx.installEnvPartial({ nebulaSystem: instance });
+        },
+        plugin: (host) => ({
+            flag: 'nebula',
+            activate: () => {
+                host.nebulaSystem.activate();
+                host.nebulaSystem.activateRibbons();
+            },
+            deactivate: () => {
+                host.nebulaSystem.deactivate();
+                host.nebulaSystem.deactivateRibbons();
+            }
+        })
+    },
+    nebulaRibbons: {
+        flag: 'nebulaRibbons',
+        systemKey: 'nebula',
+        load: () => import('./nebula'),
+        install: (ctx, mod) => {
+            const { NebulaSystem } = mod as typeof import('./nebula');
+            const instance = new NebulaSystem(ctx.scene, ctx.game.weaponLightManager);
+            instance.setCamera(ctx.camera);
+            ctx.installEnvPartial({ nebulaSystem: instance });
+        },
+        plugin: (host) => ({
+            flag: 'nebulaRibbons',
+            activate: () => host.nebulaSystem.activateRibbons(),
+            deactivate: () => host.nebulaSystem.deactivateRibbons()
+        })
+    },
+    godRays: {
+        flag: 'godRays',
+        systemKey: 'godRays',
+        load: () => import('./godrays'),
+        install: (ctx, mod) => {
+            const { GodRaySystem } = mod as typeof import('./godrays');
+            ctx.installEnvPartial({ godRaySystem: new GodRaySystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'godRays',
+            activate: (config) => host.godRaySystem.activate(config),
+            deactivate: () => host.godRaySystem.deactivate()
+        })
+    },
+    aurora: {
+        flag: 'aurora',
+        systemKey: 'aurora',
+        load: () => import('./aurora'),
+        install: (ctx, mod) => {
+            const { AuroraSystem } = mod as typeof import('./aurora');
+            ctx.installEnvPartial({
+                auroraSystem: new AuroraSystem(ctx.scene, ctx.game.weaponLightManager)
+            });
+        },
+        plugin: (host) => ({
+            flag: 'aurora',
+            activate: (config) => host.auroraSystem.activate(config),
+            deactivate: () => host.auroraSystem.deactivate()
+        })
+    },
+    lightning: {
+        flag: 'lightning',
+        systemKey: 'lightning',
+        load: () => import('./lightning_bolt'),
+        install: (ctx, mod) => {
+            const { LightningBoltSystem } = mod as typeof import('./lightning_bolt');
+            const instance = new LightningBoltSystem(ctx.scene, ctx.game.weaponLightManager);
+            // `LevelManager.installEnvironmentSystems` re-wires `onBoltStrike`
+            // whenever `lightningBoltSystem` is replaced (see wireLightningBoltStrike).
+            ctx.installEnvPartial({ lightningBoltSystem: instance });
+        },
+        plugin: (host) => ({
+            flag: 'lightning',
+            activate: (config) => host.lightningBoltSystem.activate(config),
+            deactivate: () => host.lightningBoltSystem.deactivate()
+        })
+    },
+    asteroidField: {
+        flag: 'asteroidField',
+        systemKey: 'asteroidField',
+        load: () => import('./asteroid_field'),
+        install: (ctx, mod) => {
+            const { AsteroidFieldSystem } = mod as typeof import('./asteroid_field');
+            ctx.installEnvPartial({
+                asteroidFieldSystem: new AsteroidFieldSystem(ctx.scene, ctx.game.weaponLightManager)
+            });
+        },
+        plugin: (host, cfg) => ({
+            flag: 'asteroidField',
+            activate: (config: AsteroidFieldEnvironmentConfig) => {
+                host.asteroidFieldSystem.activate();
+                host.baseAsteroidDensity = config.rate * 0.5;
+                host.asteroidFieldSystem.setDensity(host.baseAsteroidDensity * host.objectDensityMultiplier);
+                host.asteroidFieldSystem.setCandyChance(cfg.candyAsteroidChance ?? 0);
+                host.asteroidFieldSystem.resetPositions(host.camera.position.x);
+            },
+            deactivate: () => {
+                host.baseAsteroidDensity = 0;
+                host.asteroidFieldSystem.deactivate();
+            }
+        })
+    },
+    candyField: {
+        flag: 'candyField',
+        systemKey: 'candyPlanetRing',
+        load: () => import('./candy_obstacles/candy_field_system'),
+        install: (ctx, mod) => {
+            const { CandyFieldSystem } = mod as typeof import('./candy_obstacles/candy_field_system');
+            ctx.installEnvPartial({ candyFieldSystem: new CandyFieldSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'candyField',
+            activate: () => host.candyFieldSystem.activate(),
+            deactivate: () => host.candyFieldSystem.deactivate()
+        })
     }
 };
 
@@ -684,7 +769,7 @@ export const DEFERRED_ENV_REGISTRY: {
 export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLevelRegistryEntry> = {
     boss: {
         systemKey: 'boss',
-        needsLoad: (cfg) => cfg.objective?.type === 'boss',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.boss,
         load: () => import('./boss_system'),
         install: (ctx, mod) => {
             const { BossManager } = mod as typeof import('./boss_system');
@@ -693,7 +778,7 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
     },
     chromaShift: {
         systemKey: 'chromaShift',
-        needsLoad: (cfg) => (cfg.chromaShiftDensity ?? 0) > 0,
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.chromaShift,
         load: () => import('./chroma_shift'),
         install: (ctx, mod) => {
             const { ChromaShiftSystem } = mod as typeof import('./chroma_shift');
@@ -702,7 +787,7 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
     },
     stormGeode: {
         systemKey: 'stormGeode',
-        needsLoad: (cfg) => (cfg.stormGeodeDensity ?? 0) > 0,
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.stormGeode,
         load: () => import('./storm_geodes'),
         install: (ctx, mod) => {
             const { StormGeodeSystem } = mod as typeof import('./storm_geodes');
@@ -716,7 +801,7 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
     },
     industrialGeometry: {
         systemKey: 'industrialGeometry',
-        needsLoad: (cfg) => cfg.levelType === 'tunnel' || cfg.levelType === 'organic_tunnel',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.industrialGeometry,
         load: () => import('./industrial_geometry'),
         install: (ctx, mod) => {
             const { IndustrialGeometryManager } = mod as typeof import('./industrial_geometry');
@@ -729,7 +814,7 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
     },
     starlightKoi: {
         systemKey: 'starlightKoi',
-        needsLoad: (cfg) => shouldSpawnStarlightKoi(cfg.environments, cfg.koiSchoolDensity),
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.starlightKoi,
         load: () => import('./starlight_koi'),
         install: (ctx, mod) => {
             const { StarlightKoiManager } = mod as typeof import('./starlight_koi');
@@ -738,7 +823,7 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
     },
     bubbleCoral: {
         systemKey: 'bubbleCoral',
-        needsLoad: (cfg) => shouldSpawnBubbleCoral(cfg.environments, cfg.bubbleCoralDensity),
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.bubbleCoral,
         load: () => import('./bubble_coral'),
         install: (ctx, mod) => {
             const { RainbowBubbleCoralManager } = mod as typeof import('./bubble_coral');
@@ -747,7 +832,7 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
     },
     slingables: {
         systemKey: 'slingables',
-        needsLoad: (cfg) => (cfg.toyRocketCount ?? 0) > 0 || cfg.objective?.type === 'sling',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.slingables,
         load: async () => {
             const [slingables, rockets] = await Promise.all([
                 import('./slingable_objects'),
@@ -768,6 +853,64 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
             if (typeof ctx.game.rewireSlingableCallbacks === 'function') {
                 ctx.game.rewireSlingableCallbacks();
             }
+        }
+    },
+    liquidMetal: {
+        systemKey: 'liquidMetal',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.liquidMetal,
+        load: () => import('./geological/liquid_metal'),
+        install: (ctx, mod) => {
+            const { LiquidMetalSystem } = mod as typeof import('./geological/liquid_metal');
+            const instance = new LiquidMetalSystem(ctx.scene);
+            ctx.assignGameSystem('liquidMetalSystem', instance);
+            patchEnvironmentSystems({ liquidMetalSystem: instance });
+        }
+    },
+    crystalChimes: {
+        systemKey: 'crystalChimes',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.crystalChimes,
+        load: () => import('./crystal_chimes'),
+        install: (ctx, mod) => {
+            const { CrystalChimeManager } = mod as typeof import('./crystal_chimes');
+            ctx.installEnvPartial({
+                crystalChimeManager: new CrystalChimeManager(ctx.scene, ctx.game.particleSystem, ctx.game.audioSystem)
+            });
+        }
+    },
+    gravLens: {
+        systemKey: 'gravLens',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.gravLens,
+        load: () => import('./grav_lens'),
+        install: (ctx, mod) => {
+            const { GravLensManager } = mod as typeof import('./grav_lens');
+            ctx.assignGameSystem('gravLensManager', new GravLensManager(ctx.scene));
+        }
+    },
+    derelictBuoys: {
+        systemKey: 'derelictBuoys',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.derelictBuoys,
+        load: () => import('./derelict_buoy'),
+        install: (ctx, mod) => {
+            const { DerelictBuoyManager } = mod as typeof import('./derelict_buoy');
+            ctx.assignGameSystem('derelictBuoyManager', new DerelictBuoyManager(ctx.scene));
+        }
+    },
+    dataMonoliths: {
+        systemKey: 'dataMonoliths',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.dataMonoliths,
+        load: () => import('./data_monolith'),
+        install: (ctx, mod) => {
+            const { DataMonolithManager } = mod as typeof import('./data_monolith');
+            ctx.assignGameSystem('dataMonolithManager', new DataMonolithManager(ctx.scene));
+        }
+    },
+    magicPaintbrush: {
+        systemKey: 'magicPaintbrush',
+        needsLoad: DEFERRED_LEVEL_NEEDS_LOAD.magicPaintbrush,
+        load: () => import('./magic_paintbrush'),
+        install: (ctx, mod) => {
+            const { MagicPaintbrushSystem } = mod as typeof import('./magic_paintbrush');
+            ctx.assignGameSystem('magicPaintbrushSystem', new MagicPaintbrushSystem(ctx.scene));
         }
     }
 };
@@ -796,39 +939,24 @@ void _levelRegistryCoverage;
 // ---------------------------------------------------------------------------
 
 export const EAGER_ENV_PLUGIN_ORDER = [
-    'pastelNebula',
-    'candyField',
-    'butterflySwarm',
-    'nebula',
-    'nebulaRibbons',
-    'godRays',
-    'aurora',
-    'lightning',
-    'asteroidField',
-    'bubbleCoral'
+    'bubbleCoral',
+    'butterflySwarm'
 ] as const satisfies readonly (typeof EAGER_ENV_FLAGS)[number][];
 
 export function buildEagerEnvPlugins(
     host: LevelPluginHost,
-    cfg: LevelConfig,
-    levelLength: number
+    _cfg: LevelConfig,
+    _levelLength: number
 ): ReturnType<EnvPluginBuilder>[] {
     const plugins: ReturnType<EnvPluginBuilder>[] = [];
 
     for (const flag of EAGER_ENV_PLUGIN_ORDER) {
         switch (flag) {
-            case 'pastelNebula':
+            case 'bubbleCoral':
                 plugins.push({
                     flag,
-                    activate: () => host.pastelNebulaSystem.activate(),
-                    deactivate: () => host.pastelNebulaSystem.deactivate()
-                });
-                break;
-            case 'candyField':
-                plugins.push({
-                    flag,
-                    activate: () => host.candyFieldSystem.activate(),
-                    deactivate: () => host.candyFieldSystem.deactivate()
+                    activate: () => undefined,
+                    deactivate: () => undefined
                 });
                 break;
             case 'butterflySwarm':
@@ -836,70 +964,6 @@ export function buildEagerEnvPlugins(
                     flag,
                     activate: () => host.butterflySwarmSystem.activate(),
                     deactivate: () => host.butterflySwarmSystem.deactivate()
-                });
-                break;
-            case 'nebula':
-                plugins.push({
-                    flag,
-                    activate: () => {
-                        host.nebulaSystem.activate();
-                        host.nebulaSystem.activateRibbons();
-                    },
-                    deactivate: () => {
-                        host.nebulaSystem.deactivate();
-                        host.nebulaSystem.deactivateRibbons();
-                    }
-                });
-                break;
-            case 'nebulaRibbons':
-                plugins.push({
-                    flag,
-                    activate: () => host.nebulaSystem.activateRibbons(),
-                    deactivate: () => host.nebulaSystem.deactivateRibbons()
-                });
-                break;
-            case 'godRays':
-                plugins.push({
-                    flag,
-                    activate: (config) => host.godRaySystem.activate(config),
-                    deactivate: () => host.godRaySystem.deactivate()
-                });
-                break;
-            case 'aurora':
-                plugins.push({
-                    flag,
-                    activate: (config) => host.auroraSystem.activate(config),
-                    deactivate: () => host.auroraSystem.deactivate()
-                });
-                break;
-            case 'lightning':
-                plugins.push({
-                    flag,
-                    activate: (config) => host.lightningBoltSystem.activate(config),
-                    deactivate: () => host.lightningBoltSystem.deactivate()
-                });
-                break;
-            case 'asteroidField':
-                plugins.push({
-                    flag,
-                    activate: (config: AsteroidFieldEnvironmentConfig) => {
-                        host.asteroidFieldSystem.activate();
-                        host.baseAsteroidDensity = config.rate * 0.5;
-                        host.asteroidFieldSystem.setDensity(host.baseAsteroidDensity * host.objectDensityMultiplier);
-                        host.asteroidFieldSystem.setCandyChance(cfg.candyAsteroidChance ?? 0);
-                        host.asteroidFieldSystem.resetPositions(host.camera.position.x);
-                    },
-                    deactivate: () => {
-                        host.baseAsteroidDensity = 0;
-                        host.asteroidFieldSystem.deactivate();
-                    }
-                });
-                break;
-            case 'bubbleCoral':
-                plugins.push({
-                    flag,
-                    activate: () => undefined,
-                    deactivate: () => undefined
                 });
                 break;
         }
@@ -913,7 +977,10 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'dynamicStarfield',
     'dayNightCycle',
     'candyPlanetRing',
+    'pastelNebula',
+    'candyField',
     'wishLanterns',
+    'spacePetsSwarm',
     'blackHole',
     'galacticCore',
     'industrial',
@@ -922,12 +989,17 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'moonPalace',
     'reEntry',
     'biological',
+    'nebula',
+    'nebulaRibbons',
     'cosmicDust',
+    'godRays',
+    'aurora',
+    'lightning',
+    'asteroidField',
     'ghostDebris',
     'voidJellyfish',
     'meteorShower',
     'dancingJellyMoss',
-    'spacePetsSwarm',
     'weather',
     'singingGeodes',
     'cloudCastles',
@@ -950,26 +1022,6 @@ export function buildDeferredEnvPlugins(
     return DEFERRED_ENV_PLUGIN_ORDER.map((flag) =>
         DEFERRED_ENV_REGISTRY[flag].plugin(host, cfg, levelLength)
     );
-}
-
-export function systemsNeededForLevel(cfg: LevelConfig | undefined): SystemKey[] {
-    if (!cfg) return [];
-    const keys = new Set<SystemKey>();
-    const env = cfg.environments || {};
-
-    for (const flag of DEFERRED_ENV_FLAGS) {
-        if (isEnvironmentEnabled(env[flag])) {
-            keys.add(DEFERRED_ENV_REGISTRY[flag].systemKey);
-        }
-    }
-
-    for (const entry of Object.values(DEFERRED_LEVEL_REGISTRY)) {
-        if (entry.needsLoad(cfg)) {
-            keys.add(entry.systemKey);
-        }
-    }
-
-    return [...keys];
 }
 
 const SYSTEM_LOADERS: Record<SystemKey, () => Promise<Record<string, unknown>>> = {

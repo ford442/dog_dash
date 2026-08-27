@@ -6,7 +6,7 @@ import { game } from '../../game_runtime';
 import { updateHealthDisplay } from '../../ui_controls';
 import { DogAnimationState } from '../../dog_cockpit';
 import { ShakeType } from '../../juice_effects';
-import { VictoryState } from '../../victory_system';
+import { VictoryState } from '../../victory_system/victory_state';
 import { updateBossHealthBar } from '../boss_health_ui';
 import { writeBossHitboxesToWasm, checkCircleCollisionJs } from '../../physics_utils';
 import { WasmBackend, type WasmHandle } from '../../wasm_loader';

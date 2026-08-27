@@ -17,6 +17,8 @@ import {
     type DeferredGamePorts
 } from './level_env_registry';
 import { scene, camera } from './scene_context';
+import { ensureVictoryAndTutorial } from './meta_ui_loader';
+import { ensureGameManagers } from './game_managers';
 
 export type SystemKey = ImportedSystemKey;
 export { systemsNeededForLevel };
@@ -67,9 +69,24 @@ async function loadKeys(keys: SystemKey[]): Promise<void> {
     await Promise.all(keys.map((k) => loadSystem(k)));
 }
 
-/** Loads async chunks needed before the first gameplay click (Level 1 only). */
-export function ensureGameplayReady(): Promise<void> {
-    return ensureLevelSystemsForLevel(1);
+/** Loads async chunks needed before the first gameplay click (Level 1 + victory/tutorial). */
+export async function ensureGameplayReady(): Promise<void> {
+    await Promise.all([
+        ensureLevelSystemsForLevel(1),
+        ensureVictoryAndTutorial(),
+        ensureGameManagers(),
+        ensureCloudSystem()
+    ]);
+}
+
+/** Construct real CloudSystem before first gameplay (keeps clouds TSL out of title entry). */
+async function ensureCloudSystem(): Promise<void> {
+    const lm = game.levelManager;
+    if (!lm || (lm.cloudSystem as { __stub?: boolean }).__stub !== true) return;
+    const { CloudSystem } = await import('./clouds');
+    const real = new CloudSystem(lm.scene, game.weaponLightManager);
+    if (camera) real.setCamera(camera);
+    lm.cloudSystem = real;
 }
 
 /** Prefetch chunks for a target level (no-op if already covered). */

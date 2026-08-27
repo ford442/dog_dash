@@ -2,8 +2,9 @@ import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
 import { keys, updateDistanceDisplay } from '../ui_controls';
-import { VictoryState } from '../victory_system';
+import { VictoryState } from '../victory_system/victory_state';
 import { DogAnimationState } from '../dog_cockpit';
+import { saveLastRunSummary } from '../run_seed/save_last_run';
 import { updateHeatBar, updateCoresDisplay, updateBoostDisplay, updateRollDisplay, updateBarkDisplay, updateTetherDisplay, updateGrenadeDisplay } from './hud_displays';
 
 export function updateLoopFinish(_time: number): void {
@@ -27,6 +28,7 @@ export function updateLoopFinish(_time: number): void {
                 // Trigger boss
             } else {
                 playerState.hasWon = true;
+                saveLastRunSummary();
                 game.saveManager.updateHighScore(Math.floor(player.position.x));
                 game.saveManager.addCores(playerState.cores);
 
