@@ -38,6 +38,7 @@ import {
     createDynamicStarfieldSystemStub,
     createDayNightCycleSystemStub,
     createCloudCastlesSystemStub,
+    createGrappleIslesSystemStub,
     createCandyFieldSystemStub,
     createSingingGeodeSystemStub,
     createWindCurrentsSystemStub,
@@ -81,6 +82,7 @@ import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
+import type { GrappleIslesSystem } from './grapple_isles';
 import type { CandyFieldSystem } from './candy_obstacles';
 import type { SingingGeodeSystem } from './singing_geodes';
 import type { FlowerConstellationsSystem } from './flower_constellations_system';
@@ -174,6 +176,7 @@ export type GameSystems = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    grappleIslesSystem: GrappleIslesSystem;
     windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
     timeShiftZonesSystem: import('./time_shift_zones').TimeShiftZonesSystem;
 
@@ -207,6 +210,7 @@ export type LevelEnvironmentSystemExports = {
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    grappleIslesSystem: GrappleIslesSystem;
     windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
 
     candyFieldSystem: CandyFieldSystem;
@@ -416,6 +420,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
+    const grappleIslesSystem = createGrappleIslesSystemStub();
     const windCurrentsSystem = createWindCurrentsSystemStub();
     const timeShiftZonesSystem = createTimeShiftZonesSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
@@ -483,6 +488,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dynamicStarfieldSystem,
         dayNightCycleSystem,
         cloudCastlesSystem,
+        grappleIslesSystem,
         windCurrentsSystem,
         timeShiftZonesSystem,
         candyFieldSystem,

@@ -29,6 +29,7 @@ import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
+import type { GrappleIslesSystem } from './grapple_isles';
 import type { SingingGeodeSystem } from './singing_geodes';
 import type { WindCurrentsSystem } from './wind_currents';
 import type { TimeShiftZonesSystem } from './time_shift_zones';
@@ -310,6 +311,16 @@ export function createCloudCastlesSystemStub(): CloudCastlesSystem {
         update: noop,
         cleanup: noop
     } as unknown as CloudCastlesSystem;
+}
+
+export function createGrappleIslesSystemStub(): GrappleIslesSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as GrappleIslesSystem;
 }
 
 export function createWindCurrentsSystemStub(): WindCurrentsSystem {

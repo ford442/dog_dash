@@ -49,6 +49,7 @@ const PLUGIN_ORDER = [
     'weather',
     'singingGeodes',
     'cloudCastles',
+    'grappleIsles',
     'windCurrents',
     'timeShiftZones',
     'bubbleCoral',

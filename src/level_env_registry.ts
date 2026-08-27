@@ -180,6 +180,20 @@ export const DEFERRED_ENV_REGISTRY: {
             deactivate: () => host.cloudCastlesSystem.deactivate()
         })
     },
+    grappleIsles: {
+        flag: 'grappleIsles',
+        systemKey: 'grappleIsles',
+        load: () => import('./grapple_isles'),
+        install: (ctx, mod) => {
+            const { GrappleIslesSystem } = mod as typeof import('./grapple_isles');
+            ctx.installEnvPartial({ grappleIslesSystem: new GrappleIslesSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'grappleIsles',
+            activate: (config) => host.grappleIslesSystem.activate(objectConfig(config)),
+            deactivate: () => host.grappleIslesSystem.deactivate()
+        })
+    },
     skyRailTerminal: {
         flag: 'skyRailTerminal',
         systemKey: 'skyRailTerminal',
@@ -1003,6 +1017,7 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'weather',
     'singingGeodes',
     'cloudCastles',
+    'grappleIsles',
     'skyRailTerminal',
     'windCurrents',
     'flowerConstellations',
