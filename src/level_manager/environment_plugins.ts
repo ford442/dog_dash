@@ -91,9 +91,9 @@ export function applyEnvironmentPlugins(
 ): void {
     const plugins = buildEnvironmentPlugins(host, cfg, levelLength);
     for (const plugin of plugins) {
-        const value = environments[plugin.flag];
+        const value = environments[plugin.flag as keyof LevelEnvironments];
         if (isEnvironmentEnabled(value)) {
-            plugin.activate(value as never);
+            (plugin.activate as (config: unknown) => void)(value);
         } else {
             plugin.deactivate();
         }
