@@ -91,6 +91,7 @@ import type { BiologicalBackgroundSystem } from './biological_background';
 import type { LiquidMetalSystem } from './geological/liquid_metal';
 import type { BossManager } from './boss_system';
 import { getAudioSystem, initAudioOnInteraction, type AudioSystem } from './audio_system';
+import { loadAndApplyAudioSettings } from './audio_settings';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager, type SaveManager } from './save_manager';
 import { StarfieldSystem } from './stars';
@@ -245,6 +246,8 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
     const audioSystem = getAudioSystem();
     initAudioOnInteraction();
+    // Restore persisted master/music/SFX levels and the reduced-audio choice.
+    loadAndApplyAudioSettings();
 
     const upgradeSystem = new UpgradeSystem(scene, {
         onUpgradeStart: (type) => {
@@ -388,7 +391,8 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         getOrbChargeProgress: () => orbManager.getPowerUpProgress(),
         spendOrbCharge: () => orbManager.spendOrbCharge(),
         onActivate: (position) => {
-            audioSystem.playDogBark();
+            // A bark blast is the dog's big moment — the excited triple yip.
+            audioSystem.playDogBarkVariant('excited');
             dogController.triggerAnimation(DogAnimationState.BARK, 0.65);
             juiceManager.shakeScreen(ShakeType.MEDIUM, 0.35);
             juiceManager.burstMagic(position);

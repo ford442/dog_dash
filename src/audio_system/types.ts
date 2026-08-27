@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { ChapterDynamics, ChapterGraph, ChapterMusicProfile, MusicLayerId } from './chapter_music';
 
 export type SoundType = 
     | 'shoot' 
@@ -144,6 +145,18 @@ export interface AudioSystemHost {
     droneGain: GainNode | null;
     soundConfigs: Record<SoundType, SoundConfig>;
 
+    // ===== Per-chapter adaptive music =====
+    /** Live chapter graph, or null when no chapter bed is playing. */
+    chapterGraph: ChapterGraph | null;
+    /** Sequencer interval handle for the chapter bed. */
+    chapterInterval: number | null;
+    /** Current sequencer tempo, after speed scaling. */
+    chapterBpm: number;
+    /** Latest gameplay signals fed to `updateAdaptiveMusic`. */
+    chapterDynamics: ChapterDynamics;
+    /** Fewer layers, no noise bed (accessibility / perf). */
+    reducedAudio: boolean;
+
     init(): void;
     play(type: SoundType, volumeMultiplier?: number, priority?: number): void;
     playHarmonic(frequency: number, config: SoundConfig, volumeMultiplier: number, delay: number, priority: number, baseDurationSecs: number): void;
@@ -174,6 +187,33 @@ export interface AudioSystemHost {
     stopHover(): void;
     stopGravityHum(): void;
     updateEngineState(currentSpeedY: number, isMovingUp: boolean, isMovingDown: boolean, isBoosting?: boolean): void;
+
+    // ===== Per-chapter adaptive music (mixins/chapter_music.ts) =====
+    setChapterMusic(level: number, fadeMs?: number): void;
+    setHubMusic(fadeMs?: number): void;
+    applyChapterProfile(profile: ChapterMusicProfile, fadeMs?: number): void;
+    buildChapterGraph(profile: ChapterMusicProfile, fadeSecs: number): ChapterGraph | null;
+    activeChapterLayers(profile: ChapterMusicProfile): MusicLayerId[];
+    startChapterNoiseBed(profile: ChapterMusicProfile, bus: GainNode): AudioBufferSourceNode | null;
+    fadeOutChapterGraph(fadeSecs: number): void;
+    suspendLegacyMusicBed(fadeSecs: number): void;
+    stopChapterMusic(fadeMs?: number): void;
+    startChapterSequencer(): void;
+    stepChapterSequencer(): void;
+    playChapterLayerStep(graph: ChapterGraph, layer: MusicLayerId, step: number, bar: number, time: number): void;
+    playChapterDangerStep(graph: ChapterGraph, step: number, time: number): void;
+    playChapterTone(dest: GainNode, opts: { freq: number; wave: OscillatorType; time: number; attack: number; duration: number; peak: number }): void;
+    playChapterKick(dest: GainNode, time: number, rootHz: number): void;
+    playChapterHat(dest: GainNode, time: number, level: number): void;
+    playChapterWhaleCall(dest: GainNode, time: number, profile: ChapterMusicProfile): void;
+    updateAdaptiveMusic(input: { speed?: number; boost?: number; danger?: number; quiet?: number }): void;
+    setReducedAudio(reduced: boolean): void;
+    getChapterMusicId(): string | null;
+    getChapterMusicLabel(): string | null;
+    playChapterCompleteStinger(): void;
+
+    /** Dog bark variants (mixins/reactive_sounds_2.ts). */
+    playDogBarkVariant(kind?: 'happy' | 'alert' | 'excited' | 'grumble'): void;
 }
 
 /** @deprecated Use AudioSystemHost */

@@ -3,8 +3,10 @@
  */
 import * as THREE from 'three';
 import type { SoundType, SoundConfig, MusicLayer, SpatialSound, MusicState, MagicSequence } from './types';
+import type { ChapterDynamics, ChapterGraph } from './chapter_music';
 import { SOUND_CONFIGS } from './sound_configs';
 import { musicLayerMixin } from './mixins/music_layers';
+import { chapterMusicMixin } from './mixins/chapter_music';
 import { proceduralMusicMixin } from './mixins/procedural_music';
 import { spatialAudioMixin } from './mixins/spatial_audio';
 import { mixingMixin } from './mixins/mixing';
@@ -86,6 +88,13 @@ export class AudioSystem {
     protected gravHumGain: GainNode | null = null;
     protected gravHumActive: boolean = false;
     
+    // ========== PER-CHAPTER ADAPTIVE MUSIC ==========
+    protected chapterGraph: ChapterGraph | null = null;
+    protected chapterInterval: number | null = null;
+    protected chapterBpm: number = 90;
+    protected chapterDynamics: ChapterDynamics = { speed: 0, boost: 0, danger: 0, quiet: 0 };
+    protected reducedAudio: boolean = false;
+
     protected droneNode: OscillatorNode | null = null;
     protected droneGain: GainNode | null = null;
     protected soundConfigs: Record<SoundType, SoundConfig> = SOUND_CONFIGS;
@@ -352,6 +361,7 @@ export class AudioSystem {
 Object.assign(
     AudioSystem.prototype,
     musicLayerMixin,
+    chapterMusicMixin,
     proceduralMusicMixin,
     spatialAudioMixin,
     mixingMixin,
@@ -370,6 +380,7 @@ type StripMixinThisMethods<T extends Record<string, unknown>> = {
 };
 
 type RawAudioSystemMixins = typeof musicLayerMixin
+    & typeof chapterMusicMixin
     & typeof proceduralMusicMixin
     & typeof spatialAudioMixin
     & typeof mixingMixin
