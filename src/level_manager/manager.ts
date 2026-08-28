@@ -92,6 +92,7 @@ export class LevelManager {
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
+    grappleIslesSystem: LevelEnvironmentPorts['grappleIslesSystem'];
     readonly bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
     readonly aerialGuardPatrolSystem: LevelEnvironmentPorts['aerialGuardPatrolSystem'];
     readonly airTokensSystem: LevelEnvironmentPorts['airTokensSystem'];
@@ -154,6 +155,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
         this.dayNightCycleSystem = options.dayNightCycleSystem;
         this.cloudCastlesSystem = options.cloudCastlesSystem;
+        this.grappleIslesSystem = options.grappleIslesSystem;
         this.bouncePadsSystem = options.bouncePadsSystem;
         this.aerialGuardPatrolSystem = options.aerialGuardPatrolSystem;
         this.airTokensSystem = options.airTokensSystem;
@@ -408,6 +410,7 @@ export class LevelManager {
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         if (enabled('cloudCastles') && this.cloudCastlesSystem) this.cloudCastlesSystem.update(delta, cameraX, playerPos);
+        if (enabled('grappleIsles') && this.grappleIslesSystem) this.grappleIslesSystem.update(delta, cameraX, playerPos);
         if (enabled('spaceGarden') && this.spaceGardenSystem) this.spaceGardenSystem.update(delta, cameraX, playerPos);
         if (enabled('aerialGuardPatrol') && this.aerialGuardPatrolSystem) this.aerialGuardPatrolSystem.update(delta, cameraX, playerPos);
         if (enabled('airTokens') && this.airTokensSystem) this.airTokensSystem.update(delta, cameraX, playerPos);
@@ -453,6 +456,7 @@ export class LevelManager {
 
         // Newly added to clean up decorative leaks
         if ((this as any).cloudCastlesSystem) (this as any).cloudCastlesSystem.cleanup?.();
+        if ((this as any).grappleIslesSystem) (this as any).grappleIslesSystem.cleanup?.();
         if ((this as any).skyRailTerminalSystem) (this as any).skyRailTerminalSystem.cleanup?.();
         if ((this as any).flowerConstellationsSystem) (this as any).flowerConstellationsSystem.cleanup?.();
         if ((this as any).spacePetsSwarmSystem) (this as any).spacePetsSwarmSystem.cleanup?.();

@@ -185,6 +185,7 @@ export type LevelEnvironments = {
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
+    grappleIsles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     bouncePads?: boolean | BouncePadsEnvironmentConfig;
     /** Glowing air-tokens that refill boost / grant a lift (ideas.md §18.1 1H). */
@@ -353,6 +354,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },
+            grappleIsles: true,
             spaceGarden: true,
             flowerConstellations: true,
             airTokens: {
