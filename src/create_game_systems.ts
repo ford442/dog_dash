@@ -49,6 +49,7 @@ import {
     createAirTokensSystemStub,
     createShootingStarsSystemStub,
     createSkyRailTerminalSystemStub,
+    createComboCorridorSystemStub,
     createVictorySystemStub,
     createTutorialSystemStub,
     createPastelNebulaSystemStub,
@@ -189,6 +190,7 @@ export type GameSystems = {
     shootingStarsSystem: import('./shooting_stars').ShootingStarsSystem;
     spaceGardenSystem: SpaceGardenSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
+    comboCorridorSystem: import('./combo_corridor').ComboCorridorSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -432,6 +434,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const spaceGardenSystem = createSpaceGardenSystemStub();
     const shootingStarsSystem = createShootingStarsSystemStub();
     const skyRailTerminalSystem = createSkyRailTerminalSystemStub();
+    const comboCorridorSystem = createComboCorridorSystemStub();
     const gravLensManager: GravLensManager = createGravLensManagerStub();
     const derelictBuoyManager: DerelictBuoyManager = createDerelictBuoyManagerStub();
     const dataMonolithManager: DataMonolithManager = createDataMonolithManagerStub();
@@ -502,6 +505,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager,
-        skyRailTerminalSystem
+        skyRailTerminalSystem,
+        comboCorridorSystem
     };
 }

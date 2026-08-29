@@ -572,3 +572,12 @@ export function createMagicPaintbrushSystemStub(): import('./magic_paintbrush').
         clear: noop
     } as unknown as import('./magic_paintbrush').MagicPaintbrushSystem;
 }
+
+export function createComboCorridorSystemStub(): import('./combo_corridor').ComboCorridorSystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as import('./combo_corridor').ComboCorridorSystem;
+}

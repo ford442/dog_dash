@@ -194,6 +194,7 @@ export type LevelEnvironments = {
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
+    comboCorridor?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -587,6 +588,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
             bubbleCoral: { density: 0.85 },
             skyRailTerminal: true,
+            comboCorridor: true,
             bouncePads: {
                 pads: [
                     { x: 300, y: 0, z: 0, bounceStrength: 45 },

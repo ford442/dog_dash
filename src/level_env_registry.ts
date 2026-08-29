@@ -322,6 +322,20 @@ export const DEFERRED_ENV_REGISTRY: {
             deactivate: () => host.shootingStarsSystem?.deactivate()
         })
     },
+    comboCorridor: {
+        flag: 'comboCorridor',
+        systemKey: 'comboCorridor',
+        load: () => import('./combo_corridor'),
+        install: (ctx, mod) => {
+            const { ComboCorridorSystem } = mod as typeof import('./combo_corridor');
+            ctx.installEnvPartial({ comboCorridorSystem: new ComboCorridorSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'comboCorridor',
+            activate: (config) => host.comboCorridorSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.comboCorridorSystem.deactivate()
+        })
+    },
     dayNightCycle: {
         flag: 'dayNightCycle',
         systemKey: 'dayNightCycle',
@@ -1026,7 +1040,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'timeShiftZones',
     'aerialGuardPatrol',
     'airTokens',
-    'shootingStars'
+    'shootingStars',
+    'comboCorridor'
 ];
 
 export function buildDeferredEnvPlugins(

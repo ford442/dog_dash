@@ -104,6 +104,7 @@ export class LevelManager {
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
+    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -167,6 +168,7 @@ export class LevelManager {
         this.singingGeodeSystem = options.env.singingGeodeSystem;
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
+        this.comboCorridorSystem = options.comboCorridorSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -421,6 +423,7 @@ export class LevelManager {
         this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);
         if (enabled('skyRailTerminal') && this.skyRailTerminalSystem) this.skyRailTerminalSystem.update(delta, cameraX, playerPos);
+        if (enabled('comboCorridor') && this.comboCorridorSystem) this.comboCorridorSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
