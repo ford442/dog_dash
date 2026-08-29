@@ -189,6 +189,7 @@ export type LevelEnvironments = {
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
+    comboCorridor?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -657,7 +658,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             voidJellyfish: { density: 45 },
             dancingJellyMoss: { density: 1.5 },
             cloudCastles: true,
-            singingGeodes: { density: 15 }
+            singingGeodes: { density: 15 },
+            comboCorridor: true
         },
         vignettes: {
             treeGroves: 0.8,

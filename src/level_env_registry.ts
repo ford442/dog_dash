@@ -56,7 +56,8 @@ export const DEFERRED_ENV_FLAGS = [
     'timeShiftZones',
     'flowerConstellations',
     'bouncePads',
-    'spaceGarden'
+    'spaceGarden',
+    'comboCorridor'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -316,6 +317,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'spaceGarden',
             activate: () => host.spaceGardenSystem.activate(),
             deactivate: () => host.spaceGardenSystem.deactivate()
+        })
+    },
+    comboCorridor: {
+        flag: 'comboCorridor',
+        systemKey: 'comboCorridor',
+        load: () => import('./combo_corridor'),
+        install: (ctx, mod) => {
+            const { ComboCorridorSystem } = mod as typeof import('./combo_corridor');
+            ctx.installEnvPartial({ comboCorridorSystem: new ComboCorridorSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'comboCorridor',
+            activate: (config) => host.comboCorridorSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.comboCorridorSystem.deactivate()
         })
     },
     dayNightCycle: {
@@ -890,7 +905,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'windCurrents',
     'flowerConstellations',
     'bouncePads',
-    'spaceGarden'
+    'spaceGarden',
+    'comboCorridor'
 ];
 
 export function buildDeferredEnvPlugins(

@@ -207,7 +207,8 @@ function createLevelManager(
             timeShiftZonesSystem: systems.timeShiftZonesSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             bouncePadsSystem: systems.bouncePadsSystem,
-            spaceGardenSystem: systems.spaceGardenSystem
+            spaceGardenSystem: systems.spaceGardenSystem,
+            comboCorridorSystem: systems.comboCorridorSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -274,7 +275,8 @@ function createLevelManager(
         windCurrentsSystem: systems.windCurrentsSystem,
         bouncePadsSystem: systems.bouncePadsSystem,
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
-        spaceGardenSystem: systems.spaceGardenSystem
+        spaceGardenSystem: systems.spaceGardenSystem,
+        comboCorridorSystem: systems.comboCorridorSystem
     });
 }
 

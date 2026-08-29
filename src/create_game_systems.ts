@@ -41,7 +41,8 @@ import {
     createWindCurrentsSystemStub,
     createFlowerConstellationsSystemStub,
     createBouncePadsSystemStub,
-    createSpaceGardenSystemStub
+    createSpaceGardenSystemStub,
+    createComboCorridorSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -160,6 +161,7 @@ export type GameSystems = {
     flowerConstellationsSystem: FlowerConstellationsSystem;
     bouncePadsSystem: BouncePadsSystem;
     spaceGardenSystem: SpaceGardenSystem;
+    comboCorridorSystem: import('./combo_corridor').ComboCorridorSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
@@ -399,6 +401,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
     const bouncePadsSystem = createBouncePadsSystemStub();
     const spaceGardenSystem = createSpaceGardenSystemStub();
+    const comboCorridorSystem = createComboCorridorSystemStub();
     const skyRailTerminalSystem = new SkyRailTerminalSystem(scene);
     const gravLensManager = new GravLensManager(scene);
     const derelictBuoyManager = new DerelictBuoyManager(scene);
@@ -463,6 +466,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         flowerConstellationsSystem,
         bouncePadsSystem,
         spaceGardenSystem,
+        comboCorridorSystem,
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager,
