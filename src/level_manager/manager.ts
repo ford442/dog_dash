@@ -105,6 +105,7 @@ export class LevelManager {
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
+    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -169,6 +170,7 @@ export class LevelManager {
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
         this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
+        this.comboCorridorSystem = options.comboCorridorSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {

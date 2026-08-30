@@ -34,6 +34,7 @@ import type { SingingGeodeSystem } from './singing_geodes';
 import type { WindCurrentsSystem } from './wind_currents';
 import type { TimeShiftZonesSystem } from './time_shift_zones';
 import { VictoryState } from './victory_system/victory_state';
+import type { ComboCorridorSystem } from './combo_corridor';
 
 const noop = () => undefined;
 
@@ -380,6 +381,16 @@ export function createSpaceGardenSystemStub(): import('./space_garden').SpaceGar
 
 export function createBouncePadsSystemStub(): import('./bounce_pads').BouncePadsSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, checkCollision: () => null } as unknown as import('./bounce_pads').BouncePadsSystem;
+
+export function createComboCorridorSystemStub(): ComboCorridorSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as ComboCorridorSystem;
+}
 }
 
 export function createAerialGuardPatrolSystemStub(): import('./aerial_guard_patrol').AerialGuardPatrolSystem {

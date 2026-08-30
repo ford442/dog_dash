@@ -192,8 +192,8 @@ export type LevelEnvironments = {
     airTokens?: boolean | import('./air_tokens').AirTokensEnvironmentConfig;
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
-    comboCorridor?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
+    comboCorridor?: boolean | { density?: number };
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
 };
 
@@ -683,8 +683,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             voidJellyfish: { density: 45 },
             dancingJellyMoss: { density: 1.5 },
             cloudCastles: true,
-            comboCorridor: true,
-            singingGeodes: { density: 15 }
+            singingGeodes: { density: 15 },
+            comboCorridor: true
         },
         vignettes: {
             treeGroves: 0.8,

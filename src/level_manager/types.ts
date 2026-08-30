@@ -115,6 +115,7 @@ export type LevelEnvironmentPorts = {
     aerialGuardPatrolSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkDetection: (playerPos: THREE.Vector3) => number; };
     airTokensSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; collectNear: (pos: THREE.Vector3, radius?: number) => { lift: number } | null; };
     skyRailTerminalSystem: SkyRailTerminalSystem;
+    comboCorridorSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
 };
 
 export type LevelManagerOptions = {

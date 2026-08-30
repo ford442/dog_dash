@@ -1,74 +1,60 @@
 import * as THREE from 'three';
-import { time, vec3, color, uniform, sin, mix, positionWorld, length, smoothstep } from 'three/tsl';
+import { time, vec3, color, positionLocal, distance, mix, smoothstep, uniform } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { disposeObject } from './utils';
 
-export interface ComboCorridorConfig {
+export type ComboCorridorEnvironmentConfig = {
     density?: number;
-}
+};
 
 export class ComboCorridorSystem {
     scene: THREE.Scene;
     active: boolean = false;
-    private mesh!: THREE.InstancedMesh;
-    private ringCount: number = 40;
-
-    // TSL Uniforms
-    private uTime = uniform(0.0);
+    mesh: THREE.InstancedMesh;
+    private count = 50; // default count
     private uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
-    private uInteractionRadius = uniform(30.0);
+    private spacing = 40; // spacing between rings
+    private width: number;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
-        this.initRings();
-        this.deactivate();
-    }
+        this.width = this.count * this.spacing;
 
-    private initRings() {
-        const geo = new THREE.TorusGeometry(8, 0.4, 8, 24);
-        geo.rotateY(Math.PI / 2); // Face forward/backward
+        const geo = new THREE.TorusGeometry(12, 0.4, 8, 32);
 
         const mat = new MeshBasicNodeMaterial({
             transparent: true,
             depthWrite: false,
-            side: THREE.DoubleSide,
-            blending: THREE.AdditiveBlending
+            blending: THREE.AdditiveBlending,
+            side: THREE.DoubleSide
         });
 
-        const baseColor = color(0xff00ff); // Neon magenta
-        const pulse = sin(this.uTime.mul(4.0).add(positionWorld.x.mul(0.05))).mul(0.5).add(0.5);
+        // TSL Shader
+        const distToPlayer = distance(positionLocal, this.uPlayerPos);
+        const glowIntensity = smoothstep(50.0, 5.0, distToPlayer);
 
-        // Player proximity glow
-        const distToPlayer = length(positionWorld.sub(this.uPlayerPos));
-        const glowIntensity = smoothstep(this.uInteractionRadius, 0.0, distToPlayer);
+        const baseColor = color(0x004488);
+        const highlightColor = color(0x00ffff);
 
-        const finalColor = baseColor.mul(pulse.add(0.3)).add(color(0x00ffff).mul(glowIntensity));
-        mat.colorNode = finalColor;
+        // Add some breathing animation
+        const pulse = mix(0.8, 1.0, time.mul(2.0).sin().add(1.0).mul(0.5));
 
-        this.mesh = new THREE.InstancedMesh(geo, mat, this.ringCount);
+        mat.colorNode = mix(baseColor, highlightColor, glowIntensity).mul(pulse);
+
+        this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false;
 
         const dummy = new THREE.Object3D();
-        for (let i = 0; i < this.ringCount; i++) {
-            const x = (Math.random() - 0.5) * 400;
-            const y = (Math.random() - 0.5) * 60;
-            const z = -10 - Math.random() * 80;
-
-            dummy.position.set(x, y, z);
-            // Slight tilt
-            dummy.rotation.x = (Math.random() - 0.5) * 0.2;
-            dummy.rotation.z = (Math.random() - 0.5) * 0.2;
-
-            const s = 1 + Math.random() * 1.5;
-            dummy.scale.setScalar(s);
+        for (let i = 0; i < this.count; i++) {
+            dummy.position.set(i * this.spacing, 0, -10); // positioned in the background
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
         }
 
         this.scene.add(this.mesh);
+        this.deactivate();
     }
 
-    activate(config?: ComboCorridorConfig) {
+    activate(config?: ComboCorridorEnvironmentConfig) {
         if (this.active) return;
         this.active = true;
         this.mesh.visible = true;
@@ -83,40 +69,31 @@ export class ComboCorridorSystem {
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
 
-        this.uTime.value += delta;
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }
 
-        const width = 400;
-        const margin = 50;
-        const limitBack = cameraX - (width / 2) - margin;
-        const limitFront = cameraX + (width / 2) + margin;
-
+        // Parallax wrap
         const dummy = new THREE.Object3D();
-        const position = new THREE.Vector3();
-        const quaternion = new THREE.Quaternion();
-        const scale = new THREE.Vector3();
+        let position = new THREE.Vector3();
+        let quaternion = new THREE.Quaternion();
+        let scale = new THREE.Vector3();
 
-        for (let i = 0; i < this.ringCount; i++) {
+        for (let i = 0; i < this.count; i++) {
             this.mesh.getMatrixAt(i, dummy.matrix);
             dummy.matrix.decompose(position, quaternion, scale);
 
-            // Parallax effect
-            const speed = 1.0 + (position.z / 100);
-            position.x -= delta * 30 * speed;
+            const margin = this.spacing;
+            const limitBack = cameraX - margin;
+            const limitFront = cameraX + this.width - margin;
 
             if (position.x < limitBack) {
-                position.x += width + margin * 2;
-                position.y = (Math.random() - 0.5) * 60;
+                position.x += this.width;
             } else if (position.x > limitFront) {
-                position.x -= width + margin * 2;
-                position.y = (Math.random() - 0.5) * 60;
+                position.x -= this.width;
             }
 
             dummy.position.copy(position);
-            dummy.quaternion.copy(quaternion);
-            dummy.scale.copy(scale);
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
         }
@@ -125,9 +102,8 @@ export class ComboCorridorSystem {
     }
 
     cleanup() {
-        if (this.mesh) {
-            this.scene.remove(this.mesh);
-            disposeObject(this.mesh);
-        }
+        this.scene.remove(this.mesh);
+        this.mesh.geometry.dispose();
+        (this.mesh.material as any).dispose?.();
     }
 }
