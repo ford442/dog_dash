@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeObject } from '../utils';
 import { FlowerType, FLOWER_CONFIGS } from './types';
 import { HeartPollenSystem } from './pollen';
 import { createPetalForType, createFlowerCenter } from './constellation_geometry';
@@ -262,24 +263,10 @@ export class FlowerConstellation {
 
     /** Cleanup resources */
     destroy(): void {
-        this.petals.forEach(petal => {
-            petal.geometry.dispose();
-            (petal.material as THREE.Material).dispose();
-        });
-        this.petals = [];
-
-        if (this.center) {
-            this.center.geometry.dispose();
-            (this.center.material as THREE.Material).dispose();
-        }
-
-        this.sparkleOrbs.forEach(orb => {
-            orb.geometry.dispose();
-            (orb.material as THREE.Material).dispose();
-        });
-        this.sparkleOrbs = [];
-
         this.scene.remove(this.group);
+        disposeObject(this.group);
+        this.petals = [];
+        this.sparkleOrbs = [];
     }
 }
 

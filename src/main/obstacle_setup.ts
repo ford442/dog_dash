@@ -12,8 +12,10 @@ import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
 import { sporeClouds } from '../environment';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
+import { saveLastRunSummary } from '../run_seed/save_last_run';
 
 export function handleGameOver(): void {
+    saveLastRunSummary();
     if (player) {
         game.dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
         game.juiceManager.burstDamage(player.position.clone());

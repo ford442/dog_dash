@@ -6,7 +6,6 @@ import { game } from '../game_runtime';
 import { sporeClouds } from '../environment';
 import { PowerUpType } from '../powerup_manager';
 import { createUI, setupKeyboardControls } from '../ui_controls';
-import { createBestiaryUI } from '../bestiary';
 import { createArchitectCodexUI } from '../architect_lore';
 import {
     createHeatBar, createBoostDisplay, createRollDisplay,
@@ -15,14 +14,42 @@ import {
 import { throwGrenade } from './grenade';
 import { RESOLUTION_RATIOS } from './render_helpers';
 import { ensureGameplayReady } from '../level_systems_loader';
-import { consumePendingStartChapter } from '../hub_screen';
+import { consumePendingStartChapter } from '../hub_pending_chapter';
+import { consumePendingRunSeed, parseSeedFromUrl } from '../hub_pending_seed';
+import { beginRun, createDefaultRunSeed, getRunRng } from '../run_seed';
+import { biomeNoise } from '../biome_noise';
+import {
+    ghostRunRecorder,
+    ghostRunReplayer,
+    loadGhostRecording,
+    ghostMatchesSeed
+} from '../ghost_run';
 import { getLevelSpan } from '../depth_layers';
 import { spawnDeferredPrototypeContent, spawnDeferredVideoStars } from './startup';
+import { ensureBestiaryUi, prefetchMetaUi } from '../meta_ui_loader';
 
 async function beginGameplay(): Promise<void> {
     await ensureGameplayReady();
     void spawnDeferredPrototypeContent();
     void spawnDeferredVideoStars();
+    prefetchMetaUi();
+
+    const urlSeed = parseSeedFromUrl();
+    const pendingSeed = consumePendingRunSeed();
+    const seed = urlSeed ?? pendingSeed ?? createDefaultRunSeed();
+    beginRun(seed);
+    biomeNoise.bindRunSeed(seed.rngSeed);
+    game.activeRunSeed = seed;
+    game.runRng = getRunRng();
+
+    ghostRunRecorder.begin(seed);
+    const prevGhost = loadGhostRecording();
+    if (prevGhost && ghostMatchesSeed(prevGhost, seed)) {
+        ghostRunReplayer.setRecording(prevGhost);
+    } else {
+        ghostRunReplayer.setRecording(null);
+    }
+
     // A hub "Go to chapter" request survives the reload via localStorage.
     const pending = consumePendingStartChapter();
     const startChapter = pending && game.saveManager.isLevelUnlocked(pending) ? pending : 1;
@@ -125,11 +152,14 @@ export function setupInputBindings(): void {
                 setIsGamePaused(false);
             } else {
                 setIsGamePaused(true);
-                game.bestiaryUI = createBestiaryUI(game.saveManager, () => {
-                    game.bestiaryUI = null;
-                    setIsGamePaused(false);
+                void ensureBestiaryUi().then(({ createBestiaryUI }) => {
+                    if (game.bestiaryUI) return;
+                    game.bestiaryUI = createBestiaryUI(game.saveManager, () => {
+                        game.bestiaryUI = null;
+                        setIsGamePaused(false);
+                    });
+                    document.body.appendChild(game.bestiaryUI);
                 });
-                document.body.appendChild(game.bestiaryUI);
             }
         }
         if (e.code === 'KeyJ') {
@@ -163,6 +193,11 @@ export function setupInputBindings(): void {
             game.currentPixelRatio = Math.min(2, window.devicePixelRatio * next);
             renderer.setPixelRatio(game.currentPixelRatio);
             console.log(`🔧 Resolution set to ${Math.round(next * 100)}% (pixel ratio ${game.currentPixelRatio.toFixed(2)})`);
+        }
+        if (e.code === 'KeyP') {
+            if (game.pixelGlowSystem) {
+                game.pixelGlowSystem.toggle();
+            }
         }
     });
 

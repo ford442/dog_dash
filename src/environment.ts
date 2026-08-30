@@ -25,7 +25,7 @@ import { createSolarSail, updateSolarSail } from './foliage';
 import { createSubwooferLotus, createFiberOpticWillow, createGlowingFlower } from './foliage';
 import type { ParticleSystem } from './particles';
 import type { WeaponSystem } from './weapons';
-import type { LiquidMetalSystem } from './geological';
+import type { LiquidMetalSystem } from './geological/liquid_metal';
 import { disposeObject } from './utils';
 import { jellyMossSoftBody } from './jelly_moss_softbody';
 
@@ -40,6 +40,12 @@ let envSystems: EnvironmentSystems | null = null;
 
 export function bindEnvironmentSystems(systems: EnvironmentSystems): void {
     envSystems = systems;
+}
+
+/** Refresh deferred environment system refs after an async chunk install. */
+export function patchEnvironmentSystems(partial: Partial<EnvironmentSystems>): void {
+    if (!envSystems) throw new Error('Environment systems not bound');
+    Object.assign(envSystems, partial);
 }
 
 function requireEnvSystems(): EnvironmentSystems {

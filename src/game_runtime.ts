@@ -26,6 +26,9 @@ import type {
     WebGLMaterialFallbackRenderer,
     WireframeDebugHelper
 } from './render_debug_helpers';
+import type { PixelGlowSystem } from './pixel_glow';
+import type { RunSeed } from './run_seed';
+import type { SeededRng } from './run_seed/rng';
 
 // ---------------------------------------------------------------------------
 // GameContext field groups (Phase 2 slices — flat on `game`, typed for docs/tests)
@@ -55,6 +58,12 @@ export type FrameCounters = {
     shadowCullingWarningIssued: boolean;
     renderDebugWarningIssued: boolean;
     geologicalUpdateFrame: number;
+};
+
+/** Active run seed and PRNG (Cosmic Architect foundation). */
+export type SeedRuntime = {
+    activeRunSeed: RunSeed | null;
+    runRng: SeededRng | null;
 };
 
 /** Single-run progression, crafted loadout, and input latch flags. */
@@ -118,6 +127,7 @@ export type GameContextExtensions = {
     wireframeDebugHelper: WireframeDebugHelper;
     collisionDebugOverlay: CollisionDebugOverlay;
     webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
+    pixelGlowSystem: PixelGlowSystem;
     reportComboObjectiveProgress: () => void;
     handleGameOver: () => void;
     /** Re-attach slingable callbacks after deferred manager swap. */
@@ -131,6 +141,7 @@ export interface GameContext
         GameManagers,
         CoreRuntime,
         FrameCounters,
+        SeedRuntime,
         RunState,
         GameContextExtensions {}
 
@@ -140,6 +151,7 @@ type _GameContextSliceKeys =
     | keyof GameManagers
     | keyof CoreRuntime
     | keyof FrameCounters
+    | keyof SeedRuntime
     | keyof RunState
     | keyof GameContextExtensions;
 type _AssertNoUnscopedGameContextFields = Exclude<keyof GameContext, _GameContextSliceKeys> extends never ? true : never;
@@ -190,6 +202,8 @@ export function createGameContextFrameState(): Pick<
     | 'shadowCullingWarningIssued'
     | 'renderDebugWarningIssued'
     | 'geologicalUpdateFrame'
+    | 'activeRunSeed'
+    | 'runRng'
     | 'bestiaryUI'
     | 'completedChaptersThisRun'
     | 'wantsBoost'
@@ -237,6 +251,8 @@ export function createGameContextFrameState(): Pick<
         shadowCullingWarningIssued: false,
         renderDebugWarningIssued: false,
         geologicalUpdateFrame: 0,
+        activeRunSeed: null,
+        runRng: null,
         bestiaryUI: null,
         completedChaptersThisRun: [],
         wantsBoost: false,

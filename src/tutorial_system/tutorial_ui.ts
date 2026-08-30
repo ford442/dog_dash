@@ -333,7 +333,11 @@ export abstract class TutorialSystemUI extends TutorialSystemCore {
         setTimeout(() => encouragement.remove(), 2000);
 
         if (Math.random() < 0.3) {
-            this.audio.playMagicSound('happy');
+            if (typeof this.audio.playMagicSound === 'function') {
+                this.audio.playMagicSound('happy');
+            } else {
+                this.audio.play('giggle');
+            }
         }
     }
 

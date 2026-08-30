@@ -1,20 +1,25 @@
 /// <reference types="vite/client" />
 
-declare module 'three/examples/jsm/capabilities/WebGPU.js' {
-  const WebGPU: {
-    isAvailable: () => boolean;
-    getErrorMessage: () => HTMLElement;
-  };
-  export default WebGPU;
-}
-
 declare module 'three/webgpu' {
     export * from 'three';
     import { WebGLRenderer, WebGLRendererParameters, MeshStandardMaterial, MeshPhysicalMaterial, PointsMaterial, MeshBasicMaterial } from 'three';
 
-    // Minimal mock for WebGPURenderer as it's not in standard @types/three yet or might differ
+    // Minimal mock for WebGPURenderer as it's not in standard @types/three yet or might differ.
+    // `device`/`context` let us hand the renderer the GPUDevice our boot probe
+    // already created, so the page never runs a second adapter/device request
+    // (see src/webgpu_probe.ts).
+    export interface WebGPURendererParameters extends WebGLRendererParameters {
+        device?: GPUDevice;
+        context?: GPUCanvasContext | WebGLRenderingContext;
+        forceWebGL?: boolean;
+    }
+
     export class WebGPURenderer extends WebGLRenderer {
-        constructor(parameters?: WebGLRendererParameters);
+        constructor(parameters?: WebGPURendererParameters);
+        /** Resolves once the backend has finished initialising. */
+        init(): Promise<void>;
+        /** Active backend; `backend.device` is the live GPUDevice. */
+        readonly backend?: { device?: GPUDevice | null };
     }
 
     // Node materials (often just extended versions or using node logic)

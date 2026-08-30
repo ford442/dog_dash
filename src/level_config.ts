@@ -150,6 +150,7 @@ export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
     butterflySwarm?: boolean;
+    shootingStars?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
     industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
     waterfall?: boolean;
@@ -184,12 +185,16 @@ export type LevelEnvironments = {
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
+    grappleIsles?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     bouncePads?: boolean | BouncePadsEnvironmentConfig;
+    /** Glowing air-tokens that refill boost / grant a lift (ideas.md §18.1 1H). */
+    airTokens?: boolean | import('./air_tokens').AirTokensEnvironmentConfig;
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
     comboCorridor?: boolean | { density?: number };
+    aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -306,24 +311,24 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             description: "Catalog 8 alien plants"
         },
         foliageDensity: {
-            fern: 80,
-            rose: 50,
-            lotus: 20,
-            glowingFlower: 60,
-            tree: 70,
-            floweringTree: 50,
-            shrub: 60,
-            vine: 30,
-            orb: 40,
-            mushroom: 45,
-            cloud: 40,
-            voidRootBall: 8,
-            vacuumKelp: 10,
-            iceNeedle: 15,
-            liquidMetal: 8,
-            magmaHeart: 5,
-            gravityAnchor: 3,
-            solarSail: 3
+            fern: 12,
+            rose: 8,
+            lotus: 4,
+            glowingFlower: 10,
+            tree: 8,
+            floweringTree: 6,
+            shrub: 8,
+            vine: 5,
+            orb: 8,
+            mushroom: 6,
+            cloud: 6,
+            voidRootBall: 3,
+            vacuumKelp: 3,
+            iceNeedle: 4,
+            liquidMetal: 3,
+            magmaHeart: 2,
+            gravityAnchor: 2,
+            solarSail: 2
         },
         speed: 8,
         bgColor: 0x1a1a2e,
@@ -339,9 +344,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         environments: {
             dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
-            godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
+            godRays: { enabled: true, density: 0.45, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true,
+            shootingStars: true,
             pastelNebula: true,
             candyPlanetRing: true,
             wishLanterns: true,
@@ -349,8 +355,19 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dancingJellyMoss: true,
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },
+            grappleIsles: true,
             spaceGarden: true,
-            flowerConstellations: true
+            flowerConstellations: true,
+            airTokens: {
+                tokens: [
+                    { x: 70, y: 6 },
+                    { x: 140, y: -3 },
+                    { x: 210, y: 10 },
+                    { x: 280, y: 3 },
+                    { x: 350, y: -5 },
+                    { x: 430, y: 8 }
+                ]
+            }
         },
         vignettes: {
             treeGroves: 1.5,
@@ -406,6 +423,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             ghostDebris: { density: 100 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
+            shootingStars: true,
             blackHole: { enabled: true, baseX: 3000, baseY: 100 },
             windCurrents: {
                 zones: [
@@ -574,6 +592,13 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 pads: [
                     { x: 300, y: 0, z: 0, bounceStrength: 45 },
                     { x: 400, y: 5, z: 0, bounceStrength: 40 }
+                ]
+            },
+            aerialGuardPatrol: {
+                zones: [
+                    { x: 500, y: 8, z: 0, width: 100, searchRadius: 20 },
+                    { x: 900, y: -5, z: 0, width: 150, searchRadius: 25 },
+                    { x: 1400, y: 10, z: -5, width: 80, searchRadius: 15 }
                 ]
             },
             timeShiftZones: {

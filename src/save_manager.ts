@@ -25,6 +25,24 @@ export interface GameStats {
     totalPlayTime: number;       // seconds
 }
 
+export interface LastRunSummary {
+    seed: string;
+    distance: number;
+    endedAt: number;
+}
+
+/** Persisted audio preferences (accessibility + mixing). */
+export interface AudioSettings {
+    /** 0..1 master output level. */
+    master: number;
+    /** 0..1 music bus level. */
+    music: number;
+    /** 0..1 SFX bus level. */
+    sfx: number;
+    /** Fewer music layers and no noise beds (sensory + perf). */
+    reducedAudio: boolean;
+}
+
 export interface SaveData {
     cores: number;
     upgrades: PlayerUpgrades;
@@ -42,6 +60,10 @@ export interface SaveData {
     resources: ResourceInventory;
     /** Crafted items queued for the next run (recipeId -> charges). Consumed at boot. */
     loadout: Record<string, number>;
+    /** Last completed run seed + distance (Cosmic Architect foundation). */
+    lastRun?: LastRunSummary;
+    /** Master / music / SFX levels and the reduced-audio preference. */
+    audio: AudioSettings;
     version: string;
 }
 
@@ -54,6 +76,28 @@ const DEFAULT_UPGRADES: PlayerUpgrades = {
     speedBonus: 0,
     startingHealth: 0
 };
+
+export const DEFAULT_AUDIO_SETTINGS: AudioSettings = {
+    master: 0.7,
+    music: 0.7,
+    sfx: 0.8,
+    reducedAudio: false
+};
+
+/** Coerce a raw audio payload, clamping levels into 0..1. */
+function normalizeAudioSettings(raw: unknown): AudioSettings {
+    const source = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+    const level = (value: unknown, fallback: number): number => {
+        const n = Number(value);
+        return Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : fallback;
+    };
+    return {
+        master: level(source.master, DEFAULT_AUDIO_SETTINGS.master),
+        music: level(source.music, DEFAULT_AUDIO_SETTINGS.music),
+        sfx: level(source.sfx, DEFAULT_AUDIO_SETTINGS.sfx),
+        reducedAudio: source.reducedAudio === true
+    };
+}
 
 const DEFAULT_STATS: GameStats = {
     totalCoresCollected: 0,
@@ -74,6 +118,16 @@ function normalizeLoadout(raw: unknown): Record<string, number> {
         }
     }
     return out;
+}
+
+function normalizeLastRun(raw: unknown): LastRunSummary | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const r = raw as Record<string, unknown>;
+    const seed = typeof r.seed === 'string' ? r.seed : '';
+    const distance = Math.floor(Number(r.distance));
+    const endedAt = Math.floor(Number(r.endedAt));
+    if (!seed || !Number.isFinite(distance) || !Number.isFinite(endedAt)) return undefined;
+    return { seed, distance, endedAt };
 }
 
 export class SaveManager {
@@ -115,6 +169,7 @@ export class SaveManager {
             quantumCompassUnlocked: false,
             resources: createEmptyInventory(),
             loadout: {},
+            audio: { ...DEFAULT_AUDIO_SETTINGS },
             version: CURRENT_VERSION
         };
     }
@@ -135,6 +190,8 @@ export class SaveManager {
             quantumCompassUnlocked: raw?.quantumCompassUnlocked === true,
             resources: normalizeInventory(raw?.resources),
             loadout: normalizeLoadout(raw?.loadout),
+            lastRun: normalizeLastRun(raw?.lastRun),
+            audio: normalizeAudioSettings(raw?.audio),
             version: CURRENT_VERSION
         };
     }
@@ -142,6 +199,18 @@ export class SaveManager {
     private migrateSave(oldData: any): SaveData {
         // Preserve known fields across version bumps; fill gaps via normalize.
         return this.normalizeSave(oldData);
+    }
+
+    /** Persisted audio preferences. Always fully populated. */
+    getAudioSettings(): AudioSettings {
+        return { ...this.data.audio };
+    }
+
+    /** Merge a partial audio update and persist it. */
+    setAudioSettings(update: Partial<AudioSettings>): AudioSettings {
+        this.data.audio = normalizeAudioSettings({ ...this.data.audio, ...update });
+        this.save();
+        return { ...this.data.audio };
     }
 
     save(): boolean {
@@ -238,6 +307,15 @@ export class SaveManager {
 
     recordRunCompleted() {
         this.data.stats.runsCompleted++;
+        this.save();
+    }
+
+    getLastRun(): LastRunSummary | undefined {
+        return this.data.lastRun ? { ...this.data.lastRun } : undefined;
+    }
+
+    saveLastRun(summary: LastRunSummary): void {
+        this.data.lastRun = { ...summary };
         this.save();
     }
 

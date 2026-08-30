@@ -84,6 +84,12 @@ export class DebugSystem {
         if (fallbackReason) {
             this.rendererInfo += `\n${fallbackReason}`;
         }
+
+        const chores = typeof window !== 'undefined' ? window.gpuChores : undefined;
+        if (chores) {
+            this.rendererInfo += `\nchores: ${chores.backend} (sync ${chores.syncBackend}) — ${chores.reason}`;
+        }
+
         this.updateRendererInfoElement();
         this.updateOverlayText();
     }
@@ -246,6 +252,11 @@ export class DebugSystem {
         this.panel.appendChild(this.customSectionContainer);
 
         document.body.appendChild(this.panel);
+    }
+
+    /** Chapter music profile currently playing (debug breadcrumb). */
+    getMusicProfileId(): string | null {
+        return typeof window !== 'undefined' ? (window.currentMusicProfileId ?? null) : null;
     }
 
     private updateRendererInfoElement(): void {

@@ -21,20 +21,10 @@ const valueNoise = (v: any) => {
 };
 
 const fbm = (v: any) => {
-    let total = float(0.0).toVar();
-    let amplitude = float(0.5).toVar();
-    let frequency = float(1.0).toVar();
-
-    total.addAssign(valueNoise(v.mul(frequency)).mul(amplitude));
-    frequency.mulAssign(2.0);
-    amplitude.mulAssign(0.5);
-
-    total.addAssign(valueNoise(v.mul(frequency)).mul(amplitude));
-    frequency.mulAssign(2.0);
-    amplitude.mulAssign(0.5);
-
-    total.addAssign(valueNoise(v.mul(frequency)).mul(amplitude));
-    return total;
+    const o1 = valueNoise(v).mul(0.5);
+    const o2 = valueNoise(v.mul(2.0)).mul(0.25);
+    const o3 = valueNoise(v.mul(4.0)).mul(0.125);
+    return o1.add(o2).add(o3);
 };
 
 // Heart SDF for craters
@@ -184,12 +174,8 @@ export class MoonPalaceSystem {
         const distToPlayer = length(positionWorld.sub(this.uPlayerPos));
         const playerLight = smoothstep(150.0, 50.0, distToPlayer);
 
-        const finalColor = baseColor.toVar();
-        finalColor.addAssign(glow.mul(0.5));
-        finalColor.addAssign(color(0xffffff).mul(playerLight).mul(0.5));
-
-        // Mix in craters
-        finalColor.assign(mix(finalColor, craterColor, craterDetail));
+        const litColor = baseColor.add(glow.mul(0.5)).add(color(0xffffff).mul(playerLight).mul(0.5));
+        const finalColor = mix(litColor, craterColor, craterDetail);
 
         mat.colorNode = vec4(finalColor, 0.95);
         mat.emissiveNode = mix(color(0x88ccff).mul(0.2).add(crystalDetail.mul(0.1)), craterColor.mul(0.8), craterDetail);

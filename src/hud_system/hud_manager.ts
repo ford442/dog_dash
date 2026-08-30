@@ -14,14 +14,8 @@ import {
     updateHighScoreDisplay
 } from './hud_elements';
 import { HUDScreens } from './hud_screens';
-import {
-    showJourneyMap,
-    hideJourneyMap,
-    isJourneyMapOpen,
-    createJourneyMapSnapshot,
-    type JourneyMapMode,
-    type JourneyMapSnapshot
-} from '../journey_map';
+import { ensureJourneyMap } from '../meta_ui_loader';
+import type { JourneyMapMode, JourneyMapSnapshot } from '../journey_map/types';
 
 export class HUDManager {
     private saveManager: SaveManager;
@@ -48,6 +42,7 @@ export class HUDManager {
 
     private activePowerUps: Map<PowerUpType, { element: HTMLDivElement; timeout: number }> = new Map();
     private soundEnabled: boolean = true;
+    private journeyMapMod: typeof import('../journey_map') | null = null;
 
     constructor(saveManager: SaveManager, audioSystem: AudioSystem) {
         this.saveManager = saveManager;
@@ -465,29 +460,48 @@ export class HUDManager {
         mode: JourneyMapMode = 'pause',
         opts?: { completedChapter?: number; autoCloseMs?: number; onClose?: () => void }
     ): void {
-        const snapshot = this.buildJourneySnapshot();
-        showJourneyMap({
-            mode,
-            snapshot,
-            completedChapter: opts?.completedChapter,
-            autoCloseMs: opts?.autoCloseMs,
-            onClose: opts?.onClose
+        void ensureJourneyMap().then((jm) => {
+            this.journeyMapMod = jm;
+            const snapshot = this.buildJourneySnapshotWith(jm);
+            jm.showJourneyMap({
+                mode,
+                snapshot,
+                completedChapter: opts?.completedChapter,
+                autoCloseMs: opts?.autoCloseMs,
+                onClose: opts?.onClose
+            });
         });
     }
 
     hideJourneyMapOverlay(): void {
-        hideJourneyMap();
+        this.journeyMapMod?.hideJourneyMap();
     }
 
     isJourneyMapOpen(): boolean {
-        return isJourneyMapOpen();
+        return this.journeyMapMod?.isJourneyMapOpen() ?? false;
     }
 
     buildJourneySnapshot(): JourneyMapSnapshot {
+        if (!this.journeyMapMod) {
+            const currentLevel = this.getJourneyLevel?.() ?? 1;
+            const rescuedCount = this.getRescuedFriendCount?.() ?? 0;
+            const completedLevels = this.getCompletedChapters?.() ?? [];
+            return {
+                currentLevel,
+                completedLevels,
+                rescuedCount,
+                discoveredSpeciesCount: this.saveManager.getDiscoveredSpecies().length,
+                catalogedCreaturesCount: this.saveManager.getCatalogedCreatures().length
+            };
+        }
+        return this.buildJourneySnapshotWith(this.journeyMapMod);
+    }
+
+    private buildJourneySnapshotWith(jm: typeof import('../journey_map')): JourneyMapSnapshot {
         const currentLevel = this.getJourneyLevel?.() ?? 1;
         const rescuedCount = this.getRescuedFriendCount?.() ?? 0;
         const completedLevels = this.getCompletedChapters?.();
-        return createJourneyMapSnapshot(this.saveManager, currentLevel, rescuedCount, completedLevels);
+        return jm.createJourneyMapSnapshot(this.saveManager, currentLevel, rescuedCount, completedLevels);
     }
 
     showGameOverScreen(stats: GameStats, onRestart: () => void): void {
@@ -609,7 +623,7 @@ export class HUDManager {
         if (this.screens.pauseMenu) this.screens.hidePauseMenu();
         if (this.screens.victoryScreen) this.screens.victoryScreen.remove();
         if (this.screens.gameOverScreen) this.screens.gameOverScreen.remove();
-        hideJourneyMap();
+        this.journeyMapMod?.hideJourneyMap();
     }
 }
 

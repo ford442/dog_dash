@@ -26,6 +26,11 @@ import {
 } from './collision_hooks';
 import { disposeObject } from '../utils';
 import { checkCircleCollisionJs, checkSphereCollisionJs } from '../physics_utils';
+import { getRunRngFork } from '../run_seed';
+
+function obstacleRng() {
+    return getRunRngFork('obstacles');
+}
 
 export class ObstacleSystem implements ObstacleSystemHost {
     readonly scene: THREE.Scene;
@@ -91,25 +96,25 @@ export class ObstacleSystem implements ObstacleSystemHost {
         this.patternSpawnTimer += delta;
         if (playerX > this.nextPatternDistance) {
             spawnPatternFormation(this, playerX + 50, playerY);
-            this.nextPatternDistance = playerX + 80 + Math.random() * 100;
+            this.nextPatternDistance = playerX + 80 + obstacleRng().random() * 100;
         }
 
         this.lastSpawn += delta;
         if (this.lastSpawn > this.spawnInterval * 1.5) {
             this.lastSpawn = 0;
-            const spawnX = playerX + 50 + Math.random() * 30;
+            const spawnX = playerX + 50 + obstacleRng().random() * 30;
             const waveY = Math.sin(playerX * 0.1) * 5 + Math.cos(playerX * 0.05) * 3;
-            const spawnY = waveY + (Math.random() - 0.5) * 8;
+            const spawnY = waveY + (obstacleRng().random() - 0.5) * 8;
 
             const mineRate = currentCfg?.mineRobotRate || 0;
             const barnacleRate = currentCfg?.barnaclePodRate || 0;
-            if (mineRate > 0 && Math.random() < mineRate) {
+            if (mineRate > 0 && obstacleRng().chance(mineRate)) {
                 createMineRobot(this, spawnX, spawnY, 0);
-            } else if (barnacleRate > 0 && Math.random() < barnacleRate) {
+            } else if (barnacleRate > 0 && obstacleRng().chance(barnacleRate)) {
                 createBarnaclePod(this, spawnX, spawnY, 0);
             } else {
                 const candyChance = currentCfg?.candyAsteroidChance ?? 0;
-                if (candyChance > 0 && Math.random() < candyChance) {
+                if (candyChance > 0 && obstacleRng().chance(candyChance)) {
                     createCandyAsteroidFn(this, spawnX, spawnY, 0);
                 } else {
                     createAsteroidFn(this, spawnX, spawnY, 0);
@@ -196,9 +201,9 @@ export class ObstacleSystem implements ObstacleSystemHost {
         // L6 capstone is the Star-Eater Pitcher (boss_system); Kraken still spawns randomly elsewhere.
         const isLevel6Capstone = false;
 
-        if (isLevel6Capstone || (squidRate > 0 && this.squids.length === 0 && Math.random() < squidRate)) {
+        if (isLevel6Capstone || (squidRate > 0 && this.squids.length === 0 && obstacleRng().chance(squidRate))) {
             const spawnX = playerX + 55;
-            const spawnY = (Math.random() - 0.5) * 12;
+            const spawnY = (obstacleRng().random() - 0.5) * 12;
             const squid = new NebulaKraken({
                 scene: this.scene,
                 particleSystem: this.options.particleSystem,

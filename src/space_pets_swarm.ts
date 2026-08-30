@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { disposeObject } from './utils';
 import { time, vec3, color, uniform, sin, cos, positionLocal, positionWorld, length, smoothstep, normalLocal } from 'three/tsl';
 import { MeshPhysicalNodeMaterial } from 'three/webgpu';
 import type { ParticleSystem } from './particles';
@@ -152,9 +153,6 @@ export class SpacePetsSwarmSystem {
 
     cleanup() {
         this.scene.remove(this.mesh);
-        this.mesh.geometry.dispose();
-        if ((this.mesh.material as THREE.Material).dispose) {
-            (this.mesh.material as THREE.Material).dispose();
-        }
+        disposeObject(this.mesh);
     }
 }

@@ -6,6 +6,7 @@ import { updateLoopCombat } from './loop_combat';
 import { updateLoopWorld } from './loop_world';
 import { updateLoopGeological } from './loop_geological';
 import { updateLoopFinish } from './loop_finish';
+import { renderGameFrame } from './render_helpers';
 
 export function startGameLoop(): void {
     game.clock = new THREE.Clock();
@@ -17,10 +18,10 @@ function animate(): void {
     const delta = game.juiceManager.update(rawDelta);
     const time = game.clock.getElapsedTime();
 
-    if (updateLoopCore(rawDelta, delta, time)) return;
-    if (updateLoopCombat(rawDelta, delta, time)) return;
-
-    updateLoopWorld(delta, time);
-    updateLoopGeological(delta, time);
-    updateLoopFinish(time);
+    if (!updateLoopCore(rawDelta, delta, time) && !updateLoopCombat(rawDelta, delta, time)) {
+        updateLoopWorld(delta, time);
+        updateLoopGeological(delta, time);
+        updateLoopFinish(time);
+    }
+    renderGameFrame();
 }

@@ -49,6 +49,7 @@ const PLUGIN_ORDER = [
     'weather',
     'singingGeodes',
     'cloudCastles',
+    'grappleIsles',
     'windCurrents',
     'timeShiftZones',
     'bubbleCoral',
@@ -56,7 +57,10 @@ const PLUGIN_ORDER = [
     'skyRailTerminal',
     'bouncePads',
     'spaceGarden',
-    'comboCorridor'
+    'comboCorridor',
+    'aerialGuardPatrol',
+    'airTokens',
+    'shootingStars'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(
@@ -88,9 +92,9 @@ export function applyEnvironmentPlugins(
 ): void {
     const plugins = buildEnvironmentPlugins(host, cfg, levelLength);
     for (const plugin of plugins) {
-        const value = environments[plugin.flag];
+        const value = environments[plugin.flag as keyof LevelEnvironments];
         if (isEnvironmentEnabled(value)) {
-            plugin.activate(value as never);
+            (plugin.activate as (config: unknown) => void)(value);
         } else {
             plugin.deactivate();
         }

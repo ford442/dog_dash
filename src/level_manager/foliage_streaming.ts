@@ -15,7 +15,8 @@ import { DEPTH_LAYERS, randomZInLayer, randomZInRange } from '../depth_layers';
 import { moonPlants } from '../visuals';
 import { decorationBudget } from '../decoration_budget';
 import { biomeNoise } from '../biome_noise';
-import { STREAM_AHEAD_END, STREAM_AHEAD_START } from './constants';
+import { getRunRngFork } from '../run_seed';
+import { FOLIAGE_DENSITY_UNIT, MIN_FOLIAGE_STREAM_WIDTH, STREAM_AHEAD_END, STREAM_AHEAD_START } from './constants';
 import type { LevelFoliageHost } from './foliage_host';
 
 
@@ -27,6 +28,7 @@ export function maybeStreamFoliage(lm: LevelFoliageHost, cameraX: number) {
         if (targetEnd <= lm.lastPopulatedEndX) return;
 
         const startX = Math.max(lm.lastPopulatedEndX, cameraX + STREAM_AHEAD_START);
+        if (targetEnd - startX < MIN_FOLIAGE_STREAM_WIDTH) return;
         populateZone(lm, startX, targetEnd, cfg);
     }
 export function populateZone(lm: LevelFoliageHost, startX: number, endX: number, config: LevelConfig) {
@@ -110,7 +112,12 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
         // varies foliage/void-root scatter density per world X instead of a flat multiplier.
         const foliageDensityMul = biomeNoise.densityMultiplier(startX + width / 2, 'foliage');
         const scaledCount = (count: number) =>
-            Math.max(0, Math.floor(count * lm.objectDensityMultiplier * foliageDensityMul));
+            Math.max(
+                0,
+                Math.floor(
+                    count * (width / FOLIAGE_DENSITY_UNIT) * lm.objectDensityMultiplier * foliageDensityMul
+                )
+            );
         const foliageZ: [number, number] = [DEPTH_LAYERS.MIDGROUND.min, DEPTH_LAYERS.MIDGROUND.max];
         const geoZ: [number, number] = [DEPTH_LAYERS.BACKGROUND.min + 5, DEPTH_LAYERS.MIDGROUND.max];
         const vignettes = levelConfig.vignettes || {};
@@ -149,6 +156,7 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
             rejectPosition?: (x: number, y: number) => boolean
         ) => {
             for (let i = 0; i < scaledCount(count); i++) {
+                if (!decorationBudget.canSpawn('foliage_scatter')) break;
                 let x = 0;
                 let y = 0;
                 let placed = false;
@@ -205,12 +213,21 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
             // Independent noise sample (own channel) so spore-cloud rate doesn't move in lockstep with foliage.
             const sporeDensityMul = biomeNoise.densityMultiplier(startX + width / 2, 'spore');
             const targetCount = Math.min(
-                Math.max(0, Math.floor(density.cloud * lm.objectDensityMultiplier * sporeDensityMul)),
+                Math.max(
+                    0,
+                    Math.floor(
+                        density.cloud *
+                            (width / FOLIAGE_DENSITY_UNIT) *
+                            lm.objectDensityMultiplier *
+                            sporeDensityMul
+                    )
+                ),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.cloud - lm.geologicalCounts.sporeClouds())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+                const rng = getRunRngFork('foliage');
+                const x = startX + rng.random() * width;
+                const y = yRange[0] + rng.random() * (yRange[1] - yRange[0]);
                 const z = randomZInLayer('BACKGROUND');
                 lm.spawners.createSporeCloudAtPosition(x, y, z);
             }

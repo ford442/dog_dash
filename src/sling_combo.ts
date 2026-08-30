@@ -16,24 +16,9 @@ import { ShakeType, BurstType } from './juice_effects';
 import { DogCockpitController, DogAnimationState } from './dog_cockpit';
 import { ParticleSystem } from './particles';
 import type { AudioPort, HudPort, JuicePort } from './ports';
+import { computeSlingScoreBonus, type SlingQuality } from './sling_combo_scoring';
 
-/** Quality level of a sling action */
-export type SlingQuality = 'perfect' | 'good' | 'messy';
-
-/** Score bonus per quality tier */
-const QUALITY_SCORE: Record<SlingQuality, number> = {
-    perfect: 150,
-    good: 75,
-    messy: 25
-};
-
-/** Combo multipliers applied to score bonuses */
-const comboMultiplier = (combo: number): number => {
-    if (combo >= 7) return 4;
-    if (combo >= 5) return 2.5;
-    if (combo >= 3) return 1.5;
-    return 1;
-};
+export type { SlingQuality } from './sling_combo_scoring';
 
 /** Seconds without a sling action before the combo resets */
 const COMBO_TIMEOUT = 4.0;
@@ -102,8 +87,7 @@ export class SlingComboManager {
         const { juiceManager, hudManager, dogController, audioSystem, particleSystem, onScoreBonus } = this.options;
 
         // Score bonus
-        const baseScore = QUALITY_SCORE[quality];
-        const bonus = Math.round(baseScore * comboMultiplier(this.combo) * bonusMultiplier);
+        const bonus = computeSlingScoreBonus(quality, this.combo, bonusMultiplier);
         onScoreBonus?.(bonus);
         juiceManager.showScoreText(bonus, position.clone());
 

@@ -36,6 +36,19 @@ const CATEGORY_LABELS: Record<DecorationCategory, string> = {
 
 /** Visible streaming window used to derive foliage caps from level density. */
 export const FOLIAGE_VIEWPORT_WIDTH = 470; // STREAM_AHEAD_END - STREAM_AHEAD_START
+/** Hard cap on unique scattered plants in the stream window (each is a multi-mesh group). */
+export const FOLIAGE_SCATTER_HARD_CAP = 140;
+
+const GEOLOGICAL_DENSITY_KEYS = new Set([
+    'cloud',
+    'voidRootBall',
+    'vacuumKelp',
+    'iceNeedle',
+    'liquidMetal',
+    'magmaHeart',
+    'gravityAnchor',
+    'solarSail'
+]);
 
 class DecorationBudgetRegistry {
     private entries = new Map<string, BudgetEntry>();
@@ -199,8 +212,8 @@ export const decorationBudget = new DecorationBudgetRegistry();
 
 export function sumFoliageDensity(density: LevelConfig['foliageDensity']): number {
     let total = 0;
-    for (const value of Object.values(density)) {
-        if (typeof value === 'number') total += value;
+    for (const [key, value] of Object.entries(density)) {
+        if (typeof value === 'number' && !GEOLOGICAL_DENSITY_KEYS.has(key)) total += value;
     }
     return total;
 }
@@ -213,7 +226,10 @@ export function foliageViewportMax(
 ): number {
     const sum = sumFoliageDensity(density);
     if (sum <= 0) return 0;
-    return Math.max(1, Math.floor(sum * (viewportWidth / 100) * multiplier * 1.15));
+    return Math.min(
+        FOLIAGE_SCATTER_HARD_CAP,
+        Math.max(1, Math.floor(sum * (viewportWidth / 100) * multiplier * 1.15))
+    );
 }
 
 export function applyLevelDecorationBudgets(
@@ -295,6 +311,11 @@ export function registerDefaultDecorationBudgets(): void {
         label: 'Rainbow paint path',
         category: 'effects',
         maxActive: 36
+    });
+    decorationBudget.register('air_tokens', {
+        label: 'Air tokens',
+        category: 'effects',
+        maxActive: 32
     });
     decorationBudget.register('star_eater_boss', {
         label: 'Star-Eater Pitcher (boss)',

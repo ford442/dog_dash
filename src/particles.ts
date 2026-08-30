@@ -1,7 +1,18 @@
 import * as THREE from 'three';
+import { getGpuChores } from './gpu_chores';
 
 const _dummy = new THREE.Object3D();
 const _color = new THREE.Color();
+
+/**
+ * Instances whose world-space scale falls below this are sub-pixel at any
+ * sane camera distance, so they are dropped from the draw list by the chores
+ * compact pass. Purely cosmetic — the simulation still ages them normally.
+ */
+const DRAW_SCALE_EPSILON = 0.01;
+
+/** Shared tumble phase for particle instances (cosmetic only). */
+let _particleSpin = 0;
 
 export class ParticleSystem {
     maxParticles: number;
@@ -27,6 +38,15 @@ export class ParticleSystem {
 
     mesh: THREE.InstancedMesh;
 
+    /** Per-particle draw scale, input to the chores compact pass. */
+    drawScale: Float32Array;
+    /** Tumble phase captured during simulation, replayed when building matrices. */
+    drawRotation: Float32Array;
+    /** Compacted draw list produced by the chores layer. */
+    drawIndices: Uint32Array;
+    /** Instances actually submitted last frame (`<= count`). */
+    drawCount: number = 0;
+
     constructor(scene: THREE.Scene, maxParticles: number = 2000) {
         this.maxParticles = maxParticles;
         this.count = 0;
@@ -48,6 +68,10 @@ export class ParticleSystem {
         this.colorR = new Float32Array(maxParticles);
         this.colorG = new Float32Array(maxParticles);
         this.colorB = new Float32Array(maxParticles);
+
+        this.drawScale = new Float32Array(maxParticles);
+        this.drawRotation = new Float32Array(maxParticles);
+        this.drawIndices = new Uint32Array(maxParticles);
 
         // Geometry: More varied shapes for visual interest
         const geometries = [
@@ -160,27 +184,53 @@ export class ParticleSystem {
             // Gravity
             this.velocityY[i] -= 2.0 * delta;
 
-            // Update Instance Matrix
-            _dummy.position.set(this.positionX[i], this.positionY[i], this.positionZ[i]);
-            
-            // Scale
-            const scale = this.size[i] * (this.life[i] / this.maxLife[i]);
-            _dummy.scale.setScalar(scale);
-            
-            _dummy.rotation.x += delta * 2;
-            _dummy.rotation.z += delta * 2;
-            
-            _dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, matrix);
-            
-            // Update Color
-            _color.setRGB(this.colorR[i], this.colorG[i], this.colorB[i]);
-            this.mesh.setColorAt(i, _color);
+            _particleSpin += delta * 2;
+            this.drawRotation[i] = _particleSpin;
+            this.drawScale[i] = this.size[i] * (this.life[i] / this.maxLife[i]);
         }
 
-        this.mesh.count = this.count;
+        // ── Chore: compact the draw list ────────────────────────────────────
+        // Non-authoritative. The SoA above is already final for this frame;
+        // all this does is decide which instances are worth submitting.
+        const kept = getGpuChores().compact(
+            this.drawScale,
+            this.count,
+            this.drawIndices,
+            DRAW_SCALE_EPSILON
+        );
+        this.drawCount = kept;
+
+        for (let slot = 0; slot < kept; slot++) {
+            const i = this.drawIndices[slot];
+
+            _dummy.position.set(this.positionX[i], this.positionY[i], this.positionZ[i]);
+            _dummy.scale.setScalar(this.drawScale[i]);
+            _dummy.rotation.set(this.drawRotation[i], _dummy.rotation.y, this.drawRotation[i]);
+
+            _dummy.updateMatrix();
+            this.mesh.setMatrixAt(slot, matrix);
+
+            _color.setRGB(this.colorR[i], this.colorG[i], this.colorB[i]);
+            this.mesh.setColorAt(slot, _color);
+        }
+
+        this.mesh.count = kept;
         this.mesh.instanceMatrix.needsUpdate = true;
         if (this.mesh.instanceColor) this.mesh.instanceColor.needsUpdate = true;
+    }
+
+    /**
+     * Cosmetic draw statistics for the debug panel. Uses the chores `reduce`
+     * tier; called on demand, never per frame from the render path.
+     */
+    getDrawStats(): { alive: number; drawn: number; culled: number; peakScale: number } {
+        const peakScale = getGpuChores().reduce(this.drawScale, this.count, 'max');
+        return {
+            alive: this.count,
+            drawn: this.drawCount,
+            culled: this.count - this.drawCount,
+            peakScale
+        };
     }
 }
 
@@ -213,6 +263,13 @@ export class DebrisSystem {
 
     mesh: THREE.InstancedMesh;
 
+    /** Per-instance draw scale, input to the chores compact pass. */
+    drawScale: Float32Array;
+    /** Compacted draw list produced by the chores layer. */
+    drawIndices: Uint32Array;
+    /** Instances actually submitted last frame (`<= count`). */
+    drawCount: number = 0;
+
     constructor(scene: THREE.Scene, maxParticles: number = 500) {
         this.maxParticles = maxParticles;
         this.count = 0;
@@ -235,6 +292,9 @@ export class DebrisSystem {
         this.life = new Float32Array(maxParticles);
         this.maxLife = new Float32Array(maxParticles);
         this.size = new Float32Array(maxParticles);
+
+        this.drawScale = new Float32Array(maxParticles);
+        this.drawIndices = new Uint32Array(maxParticles);
 
         // Rocky geometry
         const geometry = new THREE.IcosahedronGeometry(0.2, 0);
@@ -332,22 +392,46 @@ export class DebrisSystem {
             this.rotationX[i] += this.rotSpeedX[i] * delta;
             this.rotationY[i] += this.rotSpeedY[i] * delta;
 
-            // Update Matrix
-            _dummy.position.set(this.positionX[i], this.positionY[i], this.positionZ[i]);
-            _dummy.rotation.set(this.rotationX[i], this.rotationY[i], this.rotationZ[i]);
-
             // Shrink only at very end
             let s = this.size[i];
             if (this.life[i] < 0.5) {
                 s *= (this.life[i] / 0.5);
             }
-            _dummy.scale.setScalar(s);
-
-            _dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, matrix);
+            this.drawScale[i] = s;
         }
 
-        this.mesh.count = this.count;
+        // ── Chore: compact the draw list (cosmetic; simulation untouched) ───
+        const kept = getGpuChores().compact(
+            this.drawScale,
+            this.count,
+            this.drawIndices,
+            DRAW_SCALE_EPSILON
+        );
+        this.drawCount = kept;
+
+        for (let slot = 0; slot < kept; slot++) {
+            const i = this.drawIndices[slot];
+
+            _dummy.position.set(this.positionX[i], this.positionY[i], this.positionZ[i]);
+            _dummy.rotation.set(this.rotationX[i], this.rotationY[i], this.rotationZ[i]);
+            _dummy.scale.setScalar(this.drawScale[i]);
+
+            _dummy.updateMatrix();
+            this.mesh.setMatrixAt(slot, matrix);
+        }
+
+        this.mesh.count = kept;
         this.mesh.instanceMatrix.needsUpdate = true;
+    }
+
+    /** Cosmetic draw statistics for the debug panel. */
+    getDrawStats(): { alive: number; drawn: number; culled: number; peakScale: number } {
+        const peakScale = getGpuChores().reduce(this.drawScale, this.count, 'max');
+        return {
+            alive: this.count,
+            drawn: this.drawCount,
+            culled: this.count - this.drawCount,
+            peakScale
+        };
     }
 }

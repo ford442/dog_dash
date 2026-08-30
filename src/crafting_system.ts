@@ -122,7 +122,7 @@ export function canCraft(inv: ResourceInventory, recipe: Recipe): boolean {
 }
 
 /** Grenade ammo granted per craft (shown on the HUD counter). */
-export const GRENADES_PER_CRAFT = 3;
+export { GRENADES_PER_CRAFT } from './crafting_constants';
 
 /**
  * Crafts a recipe: deducts materials from the persistent bag and queues the
