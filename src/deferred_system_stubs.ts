@@ -381,6 +381,16 @@ export function createSpaceGardenSystemStub(): import('./space_garden').SpaceGar
 
 export function createBouncePadsSystemStub(): import('./bounce_pads').BouncePadsSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {}, checkCollision: () => null } as unknown as import('./bounce_pads').BouncePadsSystem;
+
+export function createComboCorridorSystemStub(): ComboCorridorSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as ComboCorridorSystem;
+}
 }
 
 export function createAerialGuardPatrolSystemStub(): import('./aerial_guard_patrol').AerialGuardPatrolSystem {
