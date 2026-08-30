@@ -103,6 +103,7 @@ export class LevelManager {
     timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
+    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
@@ -166,6 +167,7 @@ export class LevelManager {
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
+        this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
@@ -421,6 +423,7 @@ export class LevelManager {
         this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);
         if (enabled('skyRailTerminal') && this.skyRailTerminalSystem) this.skyRailTerminalSystem.update(delta, cameraX, playerPos);
+        if (enabled('comboCorridor') && this.comboCorridorSystem) this.comboCorridorSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
@@ -459,6 +462,7 @@ export class LevelManager {
         if ((this as any).grappleIslesSystem) (this as any).grappleIslesSystem.cleanup?.();
         if ((this as any).skyRailTerminalSystem) (this as any).skyRailTerminalSystem.cleanup?.();
         if ((this as any).flowerConstellationsSystem) (this as any).flowerConstellationsSystem.cleanup?.();
+        if ((this as any).comboCorridorSystem) (this as any).comboCorridorSystem.cleanup?.();
         if ((this as any).spacePetsSwarmSystem) (this as any).spacePetsSwarmSystem.cleanup?.();
         if ((this as any).windCurrentsSystem) (this as any).windCurrentsSystem.cleanup?.();
         if (this.shootingStarsSystem) this.shootingStarsSystem.cleanup?.();

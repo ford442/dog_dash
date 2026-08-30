@@ -57,6 +57,7 @@ const PLUGIN_ORDER = [
     'skyRailTerminal',
     'bouncePads',
     'spaceGarden',
+    'comboCorridor',
     'aerialGuardPatrol',
     'airTokens',
     'shootingStars'

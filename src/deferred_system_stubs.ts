@@ -403,6 +403,16 @@ export function createSkyRailTerminalSystemStub(): import('./sky_rail_terminal')
     } as unknown as import('./sky_rail_terminal').SkyRailTerminalSystem;
 }
 
+export function createComboCorridorSystemStub(): import('./combo_corridor').ComboCorridorSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as import('./combo_corridor').ComboCorridorSystem;
+}
+
 export function createVictorySystemStub(): import('./victory_system').VictorySystem {
     return {
         getState: () => VictoryState.NONE,

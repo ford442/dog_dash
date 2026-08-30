@@ -54,6 +54,7 @@ export type DeferredGamePorts = {
     juiceManager: JuiceManager;
     flowerConstellationsSystem?: unknown;
     skyRailTerminalSystem?: unknown;
+    comboCorridorSystem?: unknown;
     debrisSystem: DebrisSystem;
     lightningBoltSystem: { onBoltStrike?: (pos: THREE.Vector3, color: THREE.Color) => void };
     levelManager: {
@@ -278,6 +279,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'spaceGarden',
             activate: () => host.spaceGardenSystem.activate(),
             deactivate: () => host.spaceGardenSystem.deactivate()
+        })
+    },
+    comboCorridor: {
+        flag: 'comboCorridor',
+        systemKey: 'comboCorridor',
+        load: () => import('./combo_corridor'),
+        install: (ctx, mod) => {
+            const { ComboCorridorSystem } = mod as typeof import('./combo_corridor');
+            ctx.installEnvPartial({ comboCorridorSystem: new ComboCorridorSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'comboCorridor',
+            activate: (config) => host.comboCorridorSystem.activate(typeof config === 'object' ? config : undefined),
+            deactivate: () => host.comboCorridorSystem.deactivate()
         })
     },
     aerialGuardPatrol: {
@@ -1023,6 +1038,7 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'flowerConstellations',
     'bouncePads',
     'spaceGarden',
+    'comboCorridor',
     'timeShiftZones',
     'aerialGuardPatrol',
     'airTokens',
