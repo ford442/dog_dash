@@ -1,4 +1,5 @@
 import type { SpaceGardenSystem } from './space_garden';
+import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
 import type { AerialGuardPatrolSystem } from './aerial_guard_patrol';
 import type { AirTokensSystem } from './air_tokens';
@@ -45,6 +46,7 @@ import {
     createFlowerConstellationsSystemStub,
     createBouncePadsSystemStub,
     createSpaceGardenSystemStub,
+    createComboCorridorSystemStub,
     createAerialGuardPatrolSystemStub,
     createAirTokensSystemStub,
     createShootingStarsSystemStub,
@@ -188,6 +190,7 @@ export type GameSystems = {
     airTokensSystem: AirTokensSystem;
     shootingStarsSystem: import('./shooting_stars').ShootingStarsSystem;
     spaceGardenSystem: SpaceGardenSystem;
+    comboCorridorSystem: ComboCorridorSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
@@ -430,6 +433,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const aerialGuardPatrolSystem = createAerialGuardPatrolSystemStub();
     const airTokensSystem = createAirTokensSystemStub();
     const spaceGardenSystem = createSpaceGardenSystemStub();
+    const comboCorridorSystem = createComboCorridorSystemStub();
     const shootingStarsSystem = createShootingStarsSystemStub();
     const skyRailTerminalSystem = createSkyRailTerminalSystemStub();
     const gravLensManager: GravLensManager = createGravLensManagerStub();
@@ -498,6 +502,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         aerialGuardPatrolSystem,
         airTokensSystem,
         spaceGardenSystem,
+        comboCorridorSystem,
         shootingStarsSystem,
         gravLensManager,
         derelictBuoyManager,
