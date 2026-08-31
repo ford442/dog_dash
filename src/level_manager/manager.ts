@@ -103,6 +103,7 @@ export class LevelManager {
     timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
+    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
 
@@ -167,6 +168,7 @@ export class LevelManager {
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
+        this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
         this.comboCorridorSystem = options.comboCorridorSystem;
 
@@ -462,6 +464,7 @@ export class LevelManager {
         if ((this as any).grappleIslesSystem) (this as any).grappleIslesSystem.cleanup?.();
         if ((this as any).skyRailTerminalSystem) (this as any).skyRailTerminalSystem.cleanup?.();
         if ((this as any).flowerConstellationsSystem) (this as any).flowerConstellationsSystem.cleanup?.();
+        if ((this as any).comboCorridorSystem) (this as any).comboCorridorSystem.cleanup?.();
         if ((this as any).spacePetsSwarmSystem) (this as any).spacePetsSwarmSystem.cleanup?.();
         if ((this as any).windCurrentsSystem) (this as any).windCurrentsSystem.cleanup?.();
         if (this.shootingStarsSystem) this.shootingStarsSystem.cleanup?.();

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time, color, uniform, positionWorld } from 'three/tsl';
+import { time, color, positionWorld, mix, smoothstep, uniform } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import type { TSLNode } from './tsl_types';
 
@@ -20,6 +20,8 @@ export class ComboCorridorSystem {
     private _quaternion = new THREE.Quaternion();
     private _scale = new THREE.Vector3();
     private _speed: number = 1.0;
+    private readonly corridorWidth = 800;
+    private readonly wrapMargin = 100;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -39,14 +41,14 @@ export class ComboCorridorSystem {
             blending: THREE.AdditiveBlending
         });
 
-        // World-space proximity: distance from ring fragment to player position
-        const dist = positionWorld.sub(this.uPlayerPos).length();
-        const proximity: TSLNode = dist.oneMinus().clamp(0, 1);
+        // World-space proximity (correct for InstancedMesh; positionLocal is instance-local)
+        const dist: TSLNode = positionWorld.sub(this.uPlayerPos).length();
+        const glowIntensity: TSLNode = smoothstep(50.0, 5.0, dist);
         const pulse: TSLNode = time.mul(4.0).add(positionWorld.x.mul(0.05)).sin().mul(0.5).add(0.5);
-        const combined: TSLNode = pulse.add(proximity.mul(0.5)).clamp(0, 1);
+        const combined: TSLNode = pulse.add(glowIntensity.mul(0.5)).clamp(0, 1);
         mat.colorNode = color(0xff00ff).mul(combined).add(color(0x00ffff).mul(combined.oneMinus()));
 
-        const spacing = 800 / this.ringCount;
+        const spacing = this.corridorWidth / this.ringCount;
         this.mesh = new THREE.InstancedMesh(geo, mat, this.ringCount);
         this.mesh.frustumCulled = false;
 
@@ -80,43 +82,47 @@ export class ComboCorridorSystem {
         this.mesh.visible = false;
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(_delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
 
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }
 
-        const width = 800;
-        const margin = 100;
-        const limitBack = cameraX - width * 0.5 - margin;
-        const wrapRange = width + margin * 2;
+        const limitBack = cameraX - this.corridorWidth * 0.5 - this.wrapMargin;
+        const limitFront = cameraX + this.corridorWidth * 0.5 + this.wrapMargin;
+        const wrapRange = this.corridorWidth + this.wrapMargin * 2;
 
+        let dirty = false;
         for (let i = 0; i < this.ringCount; i++) {
             this.mesh.getMatrixAt(i, this._dummy.matrix);
             this._dummy.matrix.decompose(this._position, this._quaternion, this._scale);
 
-            // Wrap ring back into view when it falls behind the camera
             if (this._position.x < limitBack) {
                 this._position.x += wrapRange + this._speed * 50;
                 this._position.y = (Math.random() - 0.5) * 20;
                 this._position.z = (Math.random() - 0.5) * 20;
-
-                this._dummy.position.copy(this._position);
-                this._dummy.quaternion.copy(this._quaternion);
-                this._dummy.scale.copy(this._scale);
-                this._dummy.updateMatrix();
-                this.mesh.setMatrixAt(i, this._dummy.matrix);
+            } else if (this._position.x > limitFront) {
+                this._position.x -= wrapRange;
+            } else {
+                continue;
             }
+
+            this._dummy.position.copy(this._position);
+            this._dummy.quaternion.copy(this._quaternion);
+            this._dummy.scale.copy(this._scale);
+            this._dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this._dummy.matrix);
+            dirty = true;
         }
-        this.mesh.instanceMatrix.needsUpdate = true;
+
+        if (dirty) this.mesh.instanceMatrix.needsUpdate = true;
     }
 
     cleanup() {
-        if (this.mesh) {
-            this.scene.remove(this.mesh);
-            this.mesh.geometry.dispose();
-            (this.mesh.material as THREE.Material).dispose?.();
-        }
+        if (!this.mesh) return;
+        this.scene.remove(this.mesh);
+        this.mesh.geometry.dispose();
+        (this.mesh.material as THREE.Material).dispose?.();
     }
 }
