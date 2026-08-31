@@ -268,11 +268,6 @@ export function updateLoopWorld(delta: number, time: number): void {
             if (game.moonPalaceSystem) {
                 game.moonPalaceSystem.update(delta, camera.position.x, player.position);
             }
-
-            // Update Combo Corridor
-            if (game.comboCorridorSystem) {
-                game.comboCorridorSystem.update(delta, camera.position.x, player.position);
-            }
         }
     
         // Rotate galaxies slowly

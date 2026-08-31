@@ -105,7 +105,6 @@ export class LevelManager {
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
-    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -170,7 +169,6 @@ export class LevelManager {
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
         this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
-        this.comboCorridorSystem = options.comboCorridorSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -422,7 +420,6 @@ export class LevelManager {
         if (enabled('windCurrents') && this.windCurrentsSystem) this.windCurrentsSystem.update(delta, cameraX, playerPos);
         if (enabled('timeShiftZones') && this.timeShiftZonesSystem) this.timeShiftZonesSystem.update(delta, cameraX, playerPos);
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
-        this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);
         if (enabled('skyRailTerminal') && this.skyRailTerminalSystem) this.skyRailTerminalSystem.update(delta, cameraX, playerPos);
         if (enabled('comboCorridor') && this.comboCorridorSystem) this.comboCorridorSystem.update(delta, cameraX, playerPos);
@@ -460,13 +457,13 @@ export class LevelManager {
         this.crystalChimeManager.clear();
 
         // Newly added to clean up decorative leaks
-        if ((this as any).cloudCastlesSystem) (this as any).cloudCastlesSystem.cleanup?.();
-        if ((this as any).grappleIslesSystem) (this as any).grappleIslesSystem.cleanup?.();
-        if ((this as any).skyRailTerminalSystem) (this as any).skyRailTerminalSystem.cleanup?.();
-        if ((this as any).flowerConstellationsSystem) (this as any).flowerConstellationsSystem.cleanup?.();
-        if ((this as any).comboCorridorSystem) (this as any).comboCorridorSystem.cleanup?.();
-        if ((this as any).spacePetsSwarmSystem) (this as any).spacePetsSwarmSystem.cleanup?.();
-        if ((this as any).windCurrentsSystem) (this as any).windCurrentsSystem.cleanup?.();
+        if (this.cloudCastlesSystem) this.cloudCastlesSystem.cleanup?.();
+        if (this.grappleIslesSystem) this.grappleIslesSystem.cleanup?.();
+        if (this.skyRailTerminalSystem) this.skyRailTerminalSystem.cleanup?.();
+        if (this.flowerConstellationsSystem) this.flowerConstellationsSystem.cleanup?.();
+        if (this.comboCorridorSystem) this.comboCorridorSystem.cleanup?.();
+        if (this.spacePetsSwarmSystem) this.spacePetsSwarmSystem.cleanup?.();
+        if (this.windCurrentsSystem) this.windCurrentsSystem.cleanup?.();
         if (this.shootingStarsSystem) this.shootingStarsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
