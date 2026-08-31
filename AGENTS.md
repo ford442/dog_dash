@@ -38,9 +38,9 @@ Strict TypeScript currently reports **zero errors**; a **baseline ratchet** keep
 - `npm run typecheck` — raw `tsc --noEmit` (must stay clean)
 - `npm run typecheck:ci` — fail on any error newer than `.github/typecheck-baseline.txt`
 - `npm run typecheck:baseline:update` — regenerate the baseline (only when intentionally accepting debt)
-- `npm run check` — local pre-PR gate: brace balance + typecheck ratchet
+- `npm run check` — local pre-PR gate: brace balance + env-registry check + typecheck ratchet + unit tests
 
-CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci` then `npm run build` on PRs/pushes to `main`. Prefer `npm run check` locally before opening a PR.
+CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci`, `npm run test:unit`, then `npm run build` on PRs/pushes to `main`. Prefer `npm run check` locally before opening a PR.
 
 ### TSL typing convention
 
@@ -54,7 +54,7 @@ Gameplay systems are constructed in `createGameSystems()` / bootstrap (`src/main
 
 ## Cursor Cloud specific instructions
 
-Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + typecheck ratchet). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint or unit-test suite; quality gates are brace check, typecheck baseline, production build, and Playwright smoke.
+Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + typecheck ratchet). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint config; quality gates are brace check, env-registry check, typecheck baseline, the `tests/unit/` `node --test` suite, production build, and Playwright smoke.
 
 Non-obvious caveats for headless/cloud verification:
 

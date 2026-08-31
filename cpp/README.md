@@ -4,7 +4,7 @@
 
 Optional WebAssembly backend compiled with [Emscripten](https://emscripten.org/). It mirrors the AssemblyScript collision API and also exports **Verlet physics** (`stepPhysics`, body accessors) and **fractal noise** (`fractalNoise2D`, `fractalNoise3D`).
 
-**Gameplay consumer (Option A):** Verlet drives soft-body nets for up to 3 hero Nebula Jelly-Moss cores via [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts). Fractal noise remains unused by TypeScript for now.
+**Gameplay consumer (Option A):** Verlet drives soft-body nets for up to 3 hero Nebula Jelly-Moss cores via [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts). Fractal noise drives streaming spawn density via [`src/biome_noise.ts`](../src/biome_noise.ts) (Option B) — but only under `VITE_CPP_WASM=true`; the default AssemblyScript build uses the JS value-noise fallback.
 
 The default game build uses AssemblyScript only. Enable the C++ backend at runtime with `VITE_CPP_WASM=true` after building and copying `game_cpp.wasm` (falls back to AS if the binary is missing — no crash).
 
