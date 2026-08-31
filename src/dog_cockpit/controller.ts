@@ -1,10 +1,28 @@
 import * as THREE from 'three';
+import { decorationBudget } from '../decoration_budget';
 import { DogAnimationState, DogAccessory, DogBones, BoneAnimationData, DogAnimationHost } from './types';
 import { HappyParticle } from './happy_particle';
 import { createTutu, createCape, createBow, createGlasses, createCrown } from './accessory_meshes';
 import * as animationStates from './animation_states';
 import { wagTail as applyWagTail, perkEars as applyPerkEars, tiltHead as applyTiltHead, bounceBody as applyBounceBody } from './dog_motion';
 import { twitchEars as applyTwitchEars, raisePaws as applyRaisePaws, boopNose as applyBoopNose, spawnHappyParticles as applySpawnHappyParticles } from './animation_helpers';
+import { createProceduralDog, placeProceduralDogOnRocket, EXPECTED_DOG_BONE_SLOTS } from './procedural_dog';
+
+const BONE_PATTERNS: Record<string, string[]> = {
+    root: ['root', 'Root', 'dog_root', 'DogRoot', 'Armature'],
+    body: ['body', 'Body', 'torso', 'Torso', 'spine', 'Spine', 'chest', 'Chest'],
+    head: ['head', 'Head', 'pilotHead', 'PilotHead', 'dog_head', 'Head_Mesh'],
+    neck: ['neck', 'Neck', 'head_neck', 'Neck_01'],
+    tail: ['tail', 'Tail', 'tail_01', 'Tail_01', 'tail_base', 'TailBase'],
+    tailTip: ['tail_tip', 'TailTip', 'tail_02', 'Tail_02', 'tail_end', 'TailEnd'],
+    leftEar: ['leftEar', 'LeftEar', 'ear_L', 'Ear_L', 'ear_left', 'EarLeft', 'L_ear'],
+    rightEar: ['rightEar', 'RightEar', 'ear_R', 'Ear_R', 'ear_right', 'EarRight', 'R_ear'],
+    leftFrontPaw: ['leftFrontPaw', 'LeftFrontPaw', 'paw_L_F', 'Paw_L_F', 'hand_L'],
+    rightFrontPaw: ['rightFrontPaw', 'RightFrontPaw', 'paw_R_F', 'Paw_R_F', 'hand_R'],
+    leftBackPaw: ['leftBackPaw', 'LeftBackPaw', 'paw_L_B', 'Paw_L_B', 'foot_L'],
+    rightBackPaw: ['rightBackPaw', 'RightBackPaw', 'paw_R_B', 'Paw_R_B', 'foot_R'],
+    nose: ['nose', 'Nose', 'snout', 'Snout']
+};
 
 /**
  * Main controller for dog astronaut animations
@@ -42,6 +60,8 @@ export class DogCockpitController {
     private accessories: Map<DogAccessory, THREE.Object3D> = new Map();
     private equippedAccessories: Set<DogAccessory> = new Set();
     private accessoryGroup?: THREE.Group;
+    private proceduralGroup?: THREE.Group;
+    private usedProceduralFallback = false;
     
     // Particles
     private happyParticles: HappyParticle[] = [];
@@ -68,6 +88,9 @@ export class DogCockpitController {
         console.log('🐕 Initializing Dog Cockpit Controller...');
         
         this.findBones(rocketMesh);
+        if (!this.hasUsableRig()) {
+            this.attachProceduralDog(rocketMesh);
+        }
         this.storeBaseTransforms();
         this.createAccessoryGroup();
         this.setupEyes();
@@ -78,47 +101,30 @@ export class DogCockpitController {
         console.log('✅ Dog Cockpit Controller initialized!');
         this.logBoneStatus();
     }
+
+    private hasUsableRig(): boolean {
+        return !!(this.bones.body || this.bones.head || this.bones.pilotGroup);
+    }
+
+    private attachProceduralDog(rocketMesh: THREE.Group): void {
+        const { group, bones } = createProceduralDog();
+        placeProceduralDogOnRocket(group, rocketMesh);
+        rocketMesh.add(group);
+        this.proceduralGroup = group;
+        this.usedProceduralFallback = true;
+        this.bones = { ...this.bones, ...bones };
+        decorationBudget.reportSpawn('dog_cockpit');
+        console.log('🐕 No GLB armature — using procedural cockpit dog');
+    }
     
     /** Find all dog bones in the rocket mesh */
     private findBones(rocketMesh: THREE.Group): void {
-        // Common bone naming patterns
-        const bonePatterns = {
-            root: ['root', 'Root', 'dog_root', 'DogRoot', 'Armature'],
-            body: ['body', 'Body', 'torso', 'Torso', 'spine', 'Spine', 'chest', 'Chest'],
-            head: ['head', 'Head', 'pilotHead', 'PilotHead', 'dog_head', 'Head_Mesh'],
-            neck: ['neck', 'Neck', 'head_neck', 'Neck_01'],
-            tail: ['tail', 'Tail', 'tail_01', 'Tail_01', 'tail_base', 'TailBase'],
-            tailTip: ['tail_tip', 'TailTip', 'tail_02', 'Tail_02', 'tail_end', 'TailEnd'],
-            leftEar: ['leftEar', 'LeftEar', 'ear_L', 'Ear_L', 'ear_left', 'EarLeft', 'L_ear'],
-            rightEar: ['rightEar', 'RightEar', 'ear_R', 'Ear_R', 'ear_right', 'EarRight', 'R_ear'],
-            leftFrontPaw: ['leftFrontPaw', 'LeftFrontPaw', 'paw_L_F', 'Paw_L_F', 'hand_L'],
-            rightFrontPaw: ['rightFrontPaw', 'RightFrontPaw', 'paw_R_F', 'Paw_R_F', 'hand_R'],
-            leftBackPaw: ['leftBackPaw', 'LeftBackPaw', 'paw_L_B', 'Paw_L_B', 'foot_L'],
-            rightBackPaw: ['rightBackPaw', 'RightBackPaw', 'paw_R_B', 'Paw_R_B', 'foot_R'],
-            nose: ['nose', 'Nose', 'snout', 'Snout']
-        };
-        
         rocketMesh.traverse((child) => {
-            const name = child.name;
-            
-            // Check each bone pattern
-            for (const [boneName, patterns] of Object.entries(bonePatterns)) {
-                if (patterns.some(pattern => name === pattern || name.includes(pattern))) {
-                    if (child.type === 'Bone' || child instanceof THREE.Bone) {
-                        (this.bones as any)[boneName] = child;
-                    } else if (child instanceof THREE.Object3D) {
-                        // Also accept Object3D for non-skinned meshes
-                        (this.bones as any)[boneName] = child;
-                    }
+            this.bindNamedNode(child);
+            if (child instanceof THREE.SkinnedMesh && child.skeleton) {
+                for (const bone of child.skeleton.bones) {
+                    this.bindNamedNode(bone);
                 }
-            }
-            
-            // Special case for pilot group (from existing code)
-            if (name === 'pilotGroup' || name === 'PilotGroup') {
-                this.bones.pilotGroup = child;
-            }
-            if (name === 'pilotHead') {
-                this.bones.pilotHead = child;
             }
         });
         
@@ -134,6 +140,24 @@ export class DogCockpitController {
                     }
                 }
             });
+        }
+    }
+
+    private bindNamedNode(child: THREE.Object3D): void {
+        const name = child.name;
+        if (!name) return;
+
+        for (const [boneName, patterns] of Object.entries(BONE_PATTERNS)) {
+            if (patterns.some(pattern => name === pattern || name.includes(pattern))) {
+                (this.bones as Record<string, THREE.Object3D>)[boneName] = child;
+            }
+        }
+
+        if (name === 'pilotGroup' || name === 'PilotGroup') {
+            this.bones.pilotGroup = child;
+        }
+        if (name === 'pilotHead') {
+            this.bones.pilotHead = child;
         }
     }
     
@@ -551,11 +575,14 @@ export class DogCockpitController {
     
     /** Log the status of all bones (for debugging) */
     private logBoneStatus(): void {
-        const boneNames = Object.keys(this.bones);
-        const found = boneNames.filter(name => (this.bones as any)[name]);
-        const missing = boneNames.filter(name => !(this.bones as any)[name]);
+        const found = EXPECTED_DOG_BONE_SLOTS.filter(name => this.bones[name]);
+        const missing = EXPECTED_DOG_BONE_SLOTS.filter(name => !this.bones[name]);
+        const suffix = this.usedProceduralFallback ? ' (procedural fallback)' : '';
         
-        console.log('🦴 Bones found:', found.join(', ') || 'None');
+        console.log('🦴 Bones found:', (found.join(', ') || 'None') + suffix);
+        if (this.usedProceduralFallback && found.length > 0) {
+            console.log('🦴 Source: procedural fallback (GLB had no armature)');
+        }
         if (missing.length > 0) {
             console.log('🦴 Bones missing:', missing.join(', '));
         }
@@ -612,5 +639,23 @@ export class DogCockpitController {
             });
         });
         this.accessories.clear();
+
+        if (this.proceduralGroup) {
+            const materials = new Set<THREE.Material>();
+            this.proceduralGroup.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.geometry.dispose();
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => materials.add(m));
+                    } else {
+                        materials.add(child.material);
+                    }
+                }
+            });
+            materials.forEach(m => m.dispose());
+            this.proceduralGroup.parent?.remove(this.proceduralGroup);
+            this.proceduralGroup = undefined;
+            decorationBudget.reportDestroy('dog_cockpit');
+        }
     }
 }

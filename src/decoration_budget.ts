@@ -343,4 +343,9 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'effects',
         maxActive: 2
     });
+    decorationBudget.register('dog_cockpit', {
+        label: 'Cockpit dog (procedural fallback)',
+        category: 'creatures',
+        maxActive: 1
+    });
 }
