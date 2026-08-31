@@ -219,7 +219,8 @@ function createLevelManager(
             comboCorridorSystem: systems.comboCorridorSystem,
             aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
             airTokensSystem: systems.airTokensSystem,
-            shootingStarsSystem: systems.shootingStarsSystem
+            shootingStarsSystem: systems.shootingStarsSystem,
+            comboCorridorSystem: systems.comboCorridorSystem
         },
         spawners: {
             createSporeCloudAtPosition,

@@ -1,63 +1,79 @@
 import * as THREE from 'three';
-import { time, vec3, color, positionLocal, distance, mix, smoothstep, uniform } from 'three/tsl';
+import { time, color, positionWorld, mix, smoothstep, uniform } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
+import type { TSLNode } from './tsl_types';
 
-export type ComboCorridorEnvironmentConfig = {
+export interface ComboCorridorEnvironmentConfig {
     density?: number;
-};
+    speed?: number;
+}
 
 export class ComboCorridorSystem {
     scene: THREE.Scene;
     active: boolean = false;
-    mesh: THREE.InstancedMesh;
-    private count = 50; // default count
-    private uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
-    private spacing = 40; // spacing between rings
-    private width: number;
+    mesh!: THREE.InstancedMesh;
+    ringCount: number = 40;
+
+    private uPlayerPos: ReturnType<typeof uniform>;
+    private _dummy = new THREE.Object3D();
+    private _position = new THREE.Vector3();
+    private _quaternion = new THREE.Quaternion();
+    private _scale = new THREE.Vector3();
+    private _speed: number = 1.0;
+    private readonly corridorWidth = 800;
+    private readonly wrapMargin = 100;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
-        this.width = this.count * this.spacing;
+        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
+        this.initRings();
+        this.deactivate();
+    }
 
+    private initRings() {
         const geo = new THREE.TorusGeometry(12, 0.4, 8, 32);
+        geo.rotateY(Math.PI / 2);
 
         const mat = new MeshBasicNodeMaterial({
             transparent: true,
             depthWrite: false,
-            blending: THREE.AdditiveBlending,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            blending: THREE.AdditiveBlending
         });
 
-        // TSL Shader
-        const distToPlayer = distance(positionLocal, this.uPlayerPos);
-        const glowIntensity = smoothstep(50.0, 5.0, distToPlayer);
+        // World-space proximity (correct for InstancedMesh; positionLocal is instance-local)
+        const dist: TSLNode = positionWorld.sub(this.uPlayerPos).length();
+        const glowIntensity: TSLNode = smoothstep(50.0, 5.0, dist);
+        const pulse: TSLNode = time.mul(4.0).add(positionWorld.x.mul(0.05)).sin().mul(0.5).add(0.5);
+        const combined: TSLNode = pulse.add(glowIntensity.mul(0.5)).clamp(0, 1);
+        mat.colorNode = color(0xff00ff).mul(combined).add(color(0x00ffff).mul(combined.oneMinus()));
 
-        const baseColor = color(0x004488);
-        const highlightColor = color(0x00ffff);
-
-        // Add some breathing animation
-        const pulse = mix(0.8, 1.0, time.mul(2.0).sin().add(1.0).mul(0.5));
-
-        mat.colorNode = mix(baseColor, highlightColor, glowIntensity).mul(pulse);
-
-        this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
+        const spacing = this.corridorWidth / this.ringCount;
+        this.mesh = new THREE.InstancedMesh(geo, mat, this.ringCount);
         this.mesh.frustumCulled = false;
 
-        const dummy = new THREE.Object3D();
-        for (let i = 0; i < this.count; i++) {
-            dummy.position.set(i * this.spacing, 0, -10); // positioned in the background
-            dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, dummy.matrix);
+        for (let i = 0; i < this.ringCount; i++) {
+            this._dummy.position.set(
+                i * spacing,
+                (Math.random() - 0.5) * 20,
+                (Math.random() - 0.5) * 20
+            );
+            this._dummy.scale.setScalar(0.5 + Math.random() * 1.5);
+            this._dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this._dummy.matrix);
         }
 
         this.scene.add(this.mesh);
-        this.deactivate();
     }
 
     activate(config?: ComboCorridorEnvironmentConfig) {
         if (this.active) return;
         this.active = true;
+        this._speed = config?.speed ?? 1.0;
         this.mesh.visible = true;
+        if (config?.density !== undefined) {
+            this.mesh.scale.setScalar(config.density);
+        }
     }
 
     deactivate() {
@@ -66,44 +82,47 @@ export class ComboCorridorSystem {
         this.mesh.visible = false;
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(_delta: number, cameraX: number, playerPos?: THREE.Vector3) {
         if (!this.active) return;
 
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }
 
-        // Parallax wrap
-        const dummy = new THREE.Object3D();
-        let position = new THREE.Vector3();
-        let quaternion = new THREE.Quaternion();
-        let scale = new THREE.Vector3();
+        const limitBack = cameraX - this.corridorWidth * 0.5 - this.wrapMargin;
+        const limitFront = cameraX + this.corridorWidth * 0.5 + this.wrapMargin;
+        const wrapRange = this.corridorWidth + this.wrapMargin * 2;
 
-        for (let i = 0; i < this.count; i++) {
-            this.mesh.getMatrixAt(i, dummy.matrix);
-            dummy.matrix.decompose(position, quaternion, scale);
+        let dirty = false;
+        for (let i = 0; i < this.ringCount; i++) {
+            this.mesh.getMatrixAt(i, this._dummy.matrix);
+            this._dummy.matrix.decompose(this._position, this._quaternion, this._scale);
 
-            const margin = this.spacing;
-            const limitBack = cameraX - margin;
-            const limitFront = cameraX + this.width - margin;
-
-            if (position.x < limitBack) {
-                position.x += this.width;
-            } else if (position.x > limitFront) {
-                position.x -= this.width;
+            if (this._position.x < limitBack) {
+                this._position.x += wrapRange + this._speed * 50;
+                this._position.y = (Math.random() - 0.5) * 20;
+                this._position.z = (Math.random() - 0.5) * 20;
+            } else if (this._position.x > limitFront) {
+                this._position.x -= wrapRange;
+            } else {
+                continue;
             }
 
-            dummy.position.copy(position);
-            dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, dummy.matrix);
+            this._dummy.position.copy(this._position);
+            this._dummy.quaternion.copy(this._quaternion);
+            this._dummy.scale.copy(this._scale);
+            this._dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this._dummy.matrix);
+            dirty = true;
         }
 
-        this.mesh.instanceMatrix.needsUpdate = true;
+        if (dirty) this.mesh.instanceMatrix.needsUpdate = true;
     }
 
     cleanup() {
+        if (!this.mesh) return;
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
-        (this.mesh.material as any).dispose?.();
+        (this.mesh.material as THREE.Material).dispose?.();
     }
 }

@@ -1056,7 +1056,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'timeShiftZones',
     'aerialGuardPatrol',
     'airTokens',
-    'shootingStars'
+    'shootingStars',
+    'comboCorridor'
 ];
 
 export function buildDeferredEnvPlugins(

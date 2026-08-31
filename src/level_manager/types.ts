@@ -151,4 +151,5 @@ export type LevelManagerOptions = {
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     shootingStarsSystem?: LevelEnvironmentPorts['shootingStarsSystem'];
+    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
 };
