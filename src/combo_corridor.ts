@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { time, color, positionWorld, mix, smoothstep, uniform } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import type { TSLNode, TSLUniform } from './tsl_types';
+import { comboCorridorRandom } from './combo_corridor_rng';
 
 export interface ComboCorridorEnvironmentConfig {
     density?: number;
