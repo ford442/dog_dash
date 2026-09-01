@@ -4,6 +4,7 @@
 
 Optional WebAssembly backend compiled with [Emscripten](https://emscripten.org/). It mirrors the AssemblyScript collision API and also exports **Verlet physics** (`stepPhysics`, body accessors) and **fractal noise** (`fractalNoise2D`, `fractalNoise3D`) — the same algorithms that now live in `assembly/physics.ts` and `assembly/noise.ts`.
 
+**Gameplay consumer (Option A):** Verlet drives soft-body nets for up to 3 hero Nebula Jelly-Moss cores via [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts). Fractal noise drives streaming spawn density via [`src/biome_noise.ts`](../src/biome_noise.ts) (Option B) — but only under `VITE_CPP_WASM=true`; the default AssemblyScript build uses the JS value-noise fallback.
 **No gameplay feature depends on this tree anymore.** Soft-body Jelly-Moss ([`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts)) and streaming biome density ([`src/biome_noise.ts`](../src/biome_noise.ts)) both run on the default AssemblyScript build's `stepPhysics` / `fractalNoise2D` exports, with no `VITE_CPP_WASM` flag required. `cpp/` stays useful as a reference implementation and for native/SIMD experiments that AssemblyScript can't do.
 
 The default game build uses AssemblyScript only. `VITE_CPP_WASM=true` still loads `game_cpp.wasm` for research/comparison purposes if you build it (falls back to AS if the binary is missing — no crash) — but it changes nothing observable in gameplay, since both binaries expose the same soft-body and noise API.
