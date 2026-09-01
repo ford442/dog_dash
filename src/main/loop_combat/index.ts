@@ -11,7 +11,7 @@ import { updateCombatWeapons } from './weapons';
  * Combat-phase loop: boss, pickups, power-ups, friends, weapons.
  * Returns true on mouth-snap game-over (early exit from animate).
  */
-export function updateLoopCombat(_rawDelta: number, delta: number, time: number): boolean {
+export function updateLoopCombat(delta: number, time: number): boolean {
     if (updateCombatBoss(delta)) return true;
 
     let timeScale = game.powerUpManager.getCombinedModifiers().timeScale;

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { time, color, positionWorld, mix, smoothstep, uniform } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import type { TSLNode, TSLUniform } from './tsl_types';
+import { comboCorridorRandom } from './combo_corridor_rng';
 
 export interface ComboCorridorEnvironmentConfig {
     density?: number;
@@ -55,10 +56,10 @@ export class ComboCorridorSystem {
         for (let i = 0; i < this.ringCount; i++) {
             this._dummy.position.set(
                 i * spacing,
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 20
+                (comboCorridorRandom() - 0.5) * 20,
+                (comboCorridorRandom() - 0.5) * 20
             );
-            this._dummy.scale.setScalar(0.5 + Math.random() * 1.5);
+            this._dummy.scale.setScalar(0.5 + comboCorridorRandom() * 1.5);
             this._dummy.updateMatrix();
             this.mesh.setMatrixAt(i, this._dummy.matrix);
         }
@@ -100,8 +101,8 @@ export class ComboCorridorSystem {
 
             if (this._position.x < limitBack) {
                 this._position.x += wrapRange + this._speed * 50;
-                this._position.y = (Math.random() - 0.5) * 20;
-                this._position.z = (Math.random() - 0.5) * 20;
+                this._position.y = (comboCorridorRandom() - 0.5) * 20;
+                this._position.z = (comboCorridorRandom() - 0.5) * 20;
             } else if (this._position.x > limitFront) {
                 this._position.x -= wrapRange;
             } else {
