@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Renderer**: Three.js + WebGPU (`three/webgpu` renderer, `three/tsl` for node-based shader materials)
 - **Language**: TypeScript, ES2022, ES modules, strict mode
 - **Build Tool**: Vite v7
-- **Physics**: AssemblyScript WASM for collision detection (supported). Experimental C++/Emscripten tree under `cpp/` — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
+- **Physics**: AssemblyScript WASM for collision detection, Verlet soft-body physics, and fractal noise — the single supported, always-built backend. Experimental C++/Emscripten tree under `cpp/` is research-only (SIMD prototyping, native profiling), not a shipping target — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
 - **Audio**: 100% procedural synthesis via Web Audio API (`audio_system.ts`) — no external audio files
 - **Entry point**: `index.html` → `src/main.ts`
 
@@ -78,7 +78,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
 | GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
-| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (C++ Verlet opt-in), `assembly/index.ts` (supported); `cpp/` experimental — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
+| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `assembly/noise.ts` + `assembly/physics.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
 | Audio | `audio_system/` (incl. `chapter_music.ts` + `mixins/chapter_music.ts`), `audio_settings.ts`, `ui_audio_settings.ts`, `main/music_update.ts` — [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md). 100% procedural; never add audio files to `public/` |
 | Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |
 

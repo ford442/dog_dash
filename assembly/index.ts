@@ -1,3 +1,12 @@
+// ---------------------------------------------------------------------------
+// Ported C++ algorithms (see docs/WASM_BACKENDS.md — decision: AssemblyScript
+// is the single supported, always-built backend). `cpp/` is kept only as an
+// experimental research tree (SIMD prototyping, native profiling) and is no
+// longer required for either of these to ship.
+// ---------------------------------------------------------------------------
+export * from './noise';
+export * from './physics';
+
 // --- GENERIC OBJECT ALLOCATOR ---
 let objectsPtr: usize = 0;
 let objectsCapacity: i32 = 0;

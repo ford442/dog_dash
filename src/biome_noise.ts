@@ -1,23 +1,22 @@
 /**
  * biome_noise.ts
  *
- * Option B consumer of the experimental C++ WASM noise exports
- * (`fractalNoise2D` in cpp/src/noise.cpp — see docs/WASM_BACKENDS.md).
- * Streaming hosts (foliage/void-root scatter, spore-cloud spawn rate,
- * candy-belt gaps) sample a chunk-cached density value here instead of
- * pure `Math.random()`, so density varies organically and deterministically
- * per world X.
+ * Consumer of the WASM `fractalNoise2D` export (`assembly/noise.ts`, ported
+ * from the experimental C++ tree's `cpp/src/noise.cpp` — see
+ * docs/WASM_BACKENDS.md). Streaming hosts (foliage/void-root scatter,
+ * spore-cloud spawn rate, candy-belt gaps) sample a chunk-cached density
+ * value here instead of pure `Math.random()`, so density varies organically
+ * and deterministically per world X.
  *
- * C++ backend (`VITE_CPP_WASM=true` + game_cpp.wasm present): calls
- * `fractalNoise2D` once per streaming chunk, cached in a small ring buffer.
- * Default AssemblyScript backend: a tiny JS value-noise fallback keeps
- * `npm run dev` / CI green with no emsdk required.
+ * `fractalNoise2D` ships in the default AssemblyScript build, so this runs
+ * on real fractal noise with no env flag. A tiny JS value-noise fallback
+ * (same fBm shape) covers the rare case where WASM fails to load entirely.
  *
  * Mirrors the direct-singleton-import wiring used by `jelly_moss_softbody.ts`
- * (Option A) rather than growing `GameContext` with a noise field.
+ * rather than growing `GameContext` with a noise field.
  */
 
-import { WasmBackend, type WasmExports, type WasmHandle } from './wasm_loader';
+import { type WasmExports, type WasmHandle } from './wasm_loader';
 import type { BiomeNoiseChannel, BiomeNoisePort } from './ports/biome_noise_port';
 
 /** World-X size of one cached noise sample. Matches streaming-zone granularity, not per-vertex. */
@@ -82,7 +81,7 @@ function makeRing(): (RingEntry | undefined)[] {
  */
 export class BiomeNoiseSystem implements BiomeNoisePort {
     private handle: WasmHandle | null = null;
-    private useCpp = false;
+    private useWasm = false;
     private runSeedOffset = 0;
     private rings: Record<BiomeNoiseChannel, (RingEntry | undefined)[]> = {
         foliage: makeRing(),
@@ -90,8 +89,8 @@ export class BiomeNoiseSystem implements BiomeNoisePort {
         candy: makeRing(),
     };
 
-    get backend(): 'cpp' | 'js' {
-        return this.useCpp ? 'cpp' : 'js';
+    get backend(): 'wasm' | 'js' {
+        return this.useWasm ? 'wasm' : 'js';
     }
 
     /** Mix active run seed into noise samples so identical worldX differs per run. */
@@ -100,14 +99,14 @@ export class BiomeNoiseSystem implements BiomeNoisePort {
         this.rings = { foliage: makeRing(), spore: makeRing(), candy: makeRing() };
     }
 
-    /** Bind (or clear) the active WASM handle. Falls back to JS when not C++ or noise exports are missing. */
+    /** Bind (or clear) the active WASM handle. Falls back to JS when noise exports are missing. */
     bindWasm(handle: WasmHandle | null): void {
         this.handle = handle;
-        this.useCpp = handle?.backend === WasmBackend.Cpp && hasFractalNoise(handle.exports);
+        this.useWasm = hasFractalNoise(handle?.exports);
         this.rings = { foliage: makeRing(), spore: makeRing(), candy: makeRing() };
         this.publishBreadcrumb();
-        if (this.useCpp) {
-            console.log('[biome-noise] C++ fractalNoise2D active for streaming density');
+        if (this.useWasm) {
+            console.log('[biome-noise] WASM fractalNoise2D active for streaming density');
         }
     }
 
@@ -136,7 +135,7 @@ export class BiomeNoiseSystem implements BiomeNoisePort {
     private computeSample(chunkX: number, channel: BiomeNoiseChannel): number {
         const seed = CHANNEL_OFFSET[channel] + this.runSeedOffset;
         let raw: number;
-        if (this.useCpp && this.handle) {
+        if (this.useWasm && this.handle) {
             try {
                 raw = this.handle.exports.fractalNoise2D!(
                     chunkX * NOISE_SCALE,
@@ -148,7 +147,7 @@ export class BiomeNoiseSystem implements BiomeNoisePort {
                 raw = raw * 0.5 + 0.5; // [-1, 1] -> [0, 1]
             } catch (err) {
                 console.warn('[biome-noise] fractalNoise2D failed, falling back to JS:', err);
-                this.useCpp = false;
+                this.useWasm = false;
                 this.publishBreadcrumb();
                 raw = jsFractalNoise(chunkX * NOISE_SCALE, seed * NOISE_SCALE);
             }
@@ -169,6 +168,6 @@ export const biomeNoise = new BiomeNoiseSystem();
 
 declare global {
     interface Window {
-        biomeNoiseBackend?: 'cpp' | 'js';
+        biomeNoiseBackend?: 'wasm' | 'js';
     }
 }

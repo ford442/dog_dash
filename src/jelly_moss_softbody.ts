@@ -1,20 +1,23 @@
 /**
  * jelly_moss_softbody.ts
  *
- * Option A consumer of the experimental C++ WASM Verlet exports.
- * When `wasm.backend === Cpp`, up to MAX_HERO_MOSSES Nebula Jelly-Moss instances
- * get a small soft-body net for their fractal-moss cores. Springs live in TS;
+ * Consumer of the WASM Verlet physics exports (`assembly/physics.ts`, ported
+ * from the experimental C++ tree's `cpp/src/physics.cpp` — see
+ * docs/WASM_BACKENDS.md). Once a handle exposing the Verlet exports is
+ * bound, up to MAX_HERO_MOSSES Nebula Jelly-Moss instances get a small
+ * soft-body net for their fractal-moss cores. Springs live in TS;
  * integration runs in WASM via `stepPhysics`.
  *
- * Default AssemblyScript builds leave this idle — membrane sine/fbm wobble stays.
- *
- * Enable: `VITE_CPP_WASM=true` after `npm run build:cpp-wasm`.
+ * `stepPhysics` ships in the default AssemblyScript build, so soft-body
+ * Jelly-Moss is active out of the box — no env flag needed. If WASM fails
+ * to load entirely (`handle` is null), this stays idle and membrane
+ * sine/fbm shader wobble covers the visual.
  */
 
 import * as THREE from 'three';
 import {
-    WasmBackend,
     refreshMemoryView,
+    type WasmBackend,
     type WasmExports,
     type WasmHandle,
 } from './wasm_loader';
@@ -39,7 +42,7 @@ export type SoftBodySlot = {
     baseScale: number;
 };
 
-function hasCppPhysics(exports: WasmExports | null | undefined): boolean {
+function hasSoftBodyPhysics(exports: WasmExports | null | undefined): boolean {
     return !!(
         exports &&
         typeof exports.allocPhysicsBodies === 'function' &&
@@ -52,7 +55,7 @@ function hasCppPhysics(exports: WasmExports | null | undefined): boolean {
 }
 
 /**
- * Soft-body controller for hero Jelly-Moss cores (C++ WASM only).
+ * Soft-body controller for hero Jelly-Moss cores.
  */
 export class JellyMossSoftBodySystem {
     private handle: WasmHandle | null = null;
@@ -81,13 +84,13 @@ export class JellyMossSoftBodySystem {
         this.bodyCount = 0;
         this.bound = true;
 
-        if (!handle || handle.backend !== WasmBackend.Cpp) {
+        if (!handle) {
             this.pendingMeshes = [];
             this.publishBreadcrumb();
             return;
         }
-        if (!hasCppPhysics(handle.exports)) {
-            console.warn('[jelly-moss softbody] C++ WASM missing Verlet exports; staying on shader wobble');
+        if (!hasSoftBodyPhysics(handle.exports)) {
+            console.warn('[jelly-moss softbody] WASM missing Verlet exports; staying on shader wobble');
             this.pendingMeshes = [];
             this.publishBreadcrumb();
             return;
@@ -100,7 +103,7 @@ export class JellyMossSoftBodySystem {
             this.tryAttach(mesh);
         }
         this.publishBreadcrumb();
-        console.log('[jelly-moss softbody] C++ Verlet ready (hero moss cores)');
+        console.log('[jelly-moss softbody] Verlet ready (hero moss cores)');
     }
 
     /**
@@ -258,7 +261,7 @@ export class JellyMossSoftBodySystem {
     }
 
     private ensureAllocation(needed: number): boolean {
-        if (!this.handle || !hasCppPhysics(this.handle.exports)) return false;
+        if (!this.handle || !hasSoftBodyPhysics(this.handle.exports)) return false;
         try {
             this.handle.exports.allocPhysicsBodies!(Math.max(needed, MAX_BODIES));
             refreshMemoryView(this.handle);
