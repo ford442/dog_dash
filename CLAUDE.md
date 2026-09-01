@@ -81,6 +81,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `assembly/noise.ts` + `assembly/physics.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
 | Audio | `audio_system/` (incl. `chapter_music.ts` + `mixins/chapter_music.ts`), `audio_settings.ts`, `ui_audio_settings.ts`, `main/music_update.ts` — [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md). 100% procedural; never add audio files to `public/` |
 | Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |
+| Env system metadata (biome/role/palette/difficulty per system) | `env_system_descriptors.ts` — see `docs/ENV_SYSTEM_DESCRIPTORS.md` |
 
 ## Code Style
 
