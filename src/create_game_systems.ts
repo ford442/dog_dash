@@ -4,7 +4,6 @@ import type { BouncePadsSystem } from './bounce_pads';
 import type { AerialGuardPatrolSystem } from './aerial_guard_patrol';
 import type { AirTokensSystem } from './air_tokens';
 import type { SkyRailTerminalSystem } from './sky_rail_terminal';
-import type { ComboCorridorSystem } from './combo_corridor';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
 import type { CrystalChimeManager } from './crystal_chimes';
@@ -52,7 +51,6 @@ import {
     createAirTokensSystemStub,
     createShootingStarsSystemStub,
     createSkyRailTerminalSystemStub,
-    createComboCorridorSystemStub,
     createVictorySystemStub,
     createTutorialSystemStub,
     createPastelNebulaSystemStub,
@@ -194,7 +192,6 @@ export type GameSystems = {
     spaceGardenSystem: SpaceGardenSystem;
     comboCorridorSystem: ComboCorridorSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
-    comboCorridorSystem: ComboCorridorSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -440,7 +437,6 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const comboCorridorSystem = createComboCorridorSystemStub();
     const shootingStarsSystem = createShootingStarsSystemStub();
     const skyRailTerminalSystem = createSkyRailTerminalSystemStub();
-    const comboCorridorSystem = createComboCorridorSystemStub();
     const gravLensManager: GravLensManager = createGravLensManagerStub();
     const derelictBuoyManager: DerelictBuoyManager = createDerelictBuoyManagerStub();
     const dataMonolithManager: DataMonolithManager = createDataMonolithManagerStub();
@@ -512,7 +508,6 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         gravLensManager,
         derelictBuoyManager,
         dataMonolithManager,
-        skyRailTerminalSystem,
-        comboCorridorSystem
+        skyRailTerminalSystem
     };
 }

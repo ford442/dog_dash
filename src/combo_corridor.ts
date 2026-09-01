@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { time, color, positionWorld, mix, smoothstep, uniform } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import type { TSLNode } from './tsl_types';
+import type { TSLNode, TSLUniform } from './tsl_types';
 
 export interface ComboCorridorEnvironmentConfig {
     density?: number;
@@ -14,7 +14,7 @@ export class ComboCorridorSystem {
     mesh!: THREE.InstancedMesh;
     ringCount: number = 40;
 
-    private uPlayerPos: ReturnType<typeof uniform>;
+    private uPlayerPos: TSLUniform<THREE.Vector3>;
     private _dummy = new THREE.Object3D();
     private _position = new THREE.Vector3();
     private _quaternion = new THREE.Quaternion();
@@ -25,7 +25,7 @@ export class ComboCorridorSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
-        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
+        this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0)) as TSLUniform<THREE.Vector3>;
         this.initRings();
         this.deactivate();
     }

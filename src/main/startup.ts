@@ -216,11 +216,9 @@ function createLevelManager(
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             bouncePadsSystem: systems.bouncePadsSystem,
             spaceGardenSystem: systems.spaceGardenSystem,
-            comboCorridorSystem: systems.comboCorridorSystem,
             aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
             airTokensSystem: systems.airTokensSystem,
-            shootingStarsSystem: systems.shootingStarsSystem,
-            comboCorridorSystem: systems.comboCorridorSystem
+            shootingStarsSystem: systems.shootingStarsSystem
         },
         spawners: {
             createSporeCloudAtPosition,

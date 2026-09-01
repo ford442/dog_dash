@@ -96,7 +96,7 @@ export type LevelEnvironmentPorts = {
     stormGeodeSystem: StormGeodeSystem;
     pastelNebulaSystem: PastelNebulaSystem;
     wishLanternSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
-    spacePetsSwarmSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
+    spacePetsSwarmSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     weatherSystem: { activate: () => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; };
@@ -115,7 +115,6 @@ export type LevelEnvironmentPorts = {
     aerialGuardPatrolSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkDetection: (playerPos: THREE.Vector3) => number; };
     airTokensSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; collectNear: (pos: THREE.Vector3, radius?: number) => { lift: number } | null; };
     skyRailTerminalSystem: SkyRailTerminalSystem;
-    comboCorridorSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
 };
 
 export type LevelManagerOptions = {
@@ -151,5 +150,4 @@ export type LevelManagerOptions = {
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     shootingStarsSystem?: LevelEnvironmentPorts['shootingStarsSystem'];
-    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
 };

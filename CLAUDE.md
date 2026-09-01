@@ -39,12 +39,15 @@ npm run check                     # local gate: brace balance + typecheck:ci
 npm run test:smoke                # Playwright smoke test (WebGL path, SwiftShader in CI)
 ```
 
-There is no ESLint or unit-test suite. The automated quality gates are:
+There is no ESLint config. The automated quality gates are:
 
 - `tools/check_braces.cjs` — runs on `prebuild`, verifies brace balance in `.ts`/`.js`/`.cjs` files
-- `npm run typecheck:ci` — compares `tsc --noEmit` against a tracked baseline (currently ~142 known strict-mode violations); CI fails only when **new** errors appear. After fixing errors locally, run `npm run typecheck:baseline:update` to ratchet the baseline down.
-- `npm run check` — local workflow helper: brace check + typecheck ratchet (use before PRs)
-- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, production build, and Playwright smoke test on PRs to `main`.
+- `npm run typecheck:ci` — compares `tsc --noEmit` against a tracked baseline. The baseline is currently **0 errors**: strict mode is clean, so any new violation fails CI. After fixing errors locally, run `npm run typecheck:baseline:update` to ratchet the baseline down.
+- `npm run check:env-registry` — validates the level environment registry closed loop (flags, registry keys, plugin order, `LEVEL_CONFIG` references)
+- `npm run test:unit` — `node --test` suite under `tests/unit/` (70 tests; no browser needed)
+- `npm run check` — local pre-PR gate: brace check + env-registry check + typecheck ratchet + unit tests
+- `npm run test:smoke` — Playwright WebGPU boot-probe test. Needs a Chrome binary; point `PLAYWRIGHT_CHROME_PATH` at one if it is not on a standard path.
+- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, unit tests, production build, then a smoke job (currently `continue-on-error`) and an experimental C++ WASM job on PRs to `main`.
 
 WebGPU is unavailable headlessly, so runtime verification requires a browser with WebGPU enabled (Chrome/Edge 113+).
 

@@ -195,7 +195,6 @@ export type LevelEnvironments = {
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
     comboCorridor?: boolean | { density?: number };
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
-    comboCorridor?: boolean | { density?: number };
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
