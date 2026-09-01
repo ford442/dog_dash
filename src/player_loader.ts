@@ -75,6 +75,19 @@ gltfLoader.load(
         // Set as the player
         player = tiltGroup;
         scene.add(player);
+
+        // Dog's shadow blob (added to scene, not player, so it doesn't pitch/roll)
+        const shadowGeo = new THREE.PlaneGeometry(1.5, 0.8);
+        const shadowMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.5,
+            depthWrite: false
+        });
+        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        shadow.rotation.x = -Math.PI / 2; // Flat on the ground
+        scene.add(shadow);
+        player.userData.shadow = shadow;
         
         // Notify callbacks
         playerLoadCallbacks.forEach(cb => cb(player!, rocketModel));
@@ -115,6 +128,19 @@ gltfLoader.load(
         
         player = tiltGroup;
         scene.add(player);
+
+        // Dog's shadow blob
+        const shadowGeo = new THREE.PlaneGeometry(1.5, 0.8);
+        const shadowMat = new THREE.MeshBasicMaterial({
+            color: 0x000000,
+            transparent: true,
+            opacity: 0.5,
+            depthWrite: false
+        });
+        const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+        shadow.rotation.x = -Math.PI / 2; // Flat on the ground
+        scene.add(shadow);
+        player.userData.shadow = shadow;
         
         // Notify callbacks
         playerLoadCallbacks.forEach(cb => cb(player!, group));

@@ -172,6 +172,32 @@ export function updatePlayer(delta: number) {
         const hoverY = Math.sin(Date.now() * 0.004) * 0.03;
         rocket.position.y = hoverY;
 
+        // Update dog's shadow
+        if (player.userData.shadow) {
+            const shadow = player.userData.shadow as THREE.Mesh;
+            const shadowsOn = game.debugSystem.isEnabled('shadows');
+
+            if (shadowsOn) {
+                shadow.visible = false;
+            } else {
+                shadow.visible = true;
+                const altitude = Math.max(0, player.position.y - originY);
+
+                // Set scale based on altitude (higher = smaller)
+                const scale = THREE.MathUtils.clamp(1 - altitude / 15, 0.3, 1);
+                shadow.scale.setScalar(scale);
+
+                // Set opacity based on altitude (higher = more faint)
+                const opacity = THREE.MathUtils.clamp(1 - altitude / 20, 0.1, 0.5);
+                (shadow.material as THREE.MeshBasicMaterial).opacity = opacity;
+
+                // Position shadow directly beneath the player on the ground plane
+                shadow.position.x = player.position.x;
+                shadow.position.z = player.position.z;
+                shadow.position.y = originY + 0.1; // +0.1 to avoid z-fighting
+            }
+        }
+
         // Engine VFX based on thrust vs glide vs dive
         if (rocket.userData.flame) {
             const speedRatioAbs = Math.abs(speedRatio);
