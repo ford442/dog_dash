@@ -127,6 +127,11 @@ export function updateCombatBoss(delta: number): boolean {
             const pullDir = bossPos.y - playerPos.y;
             playerState.currentSpeedY += pullDir * bossResult.pullForce * delta * 0.1;
 
+            // Add vertical pull force from Zephyr boss
+            if (bossResult.pullForceY) {
+                 playerState.currentSpeedY += bossResult.pullForceY * delta;
+            }
+
             if (bossResult.isSnapping) {
                 const distToMouth = Math.abs(playerPos.x - (bossPos.x + 8));
                 if (distToMouth < 3 && Math.abs(playerPos.y - bossPos.y) < 3) {
