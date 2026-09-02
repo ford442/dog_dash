@@ -540,9 +540,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         name: "The Rusty Gauntlet",
         distance: 3200,
         objective: {
-            type: 'survive',
+            type: 'boss',
             target: 1,
-            description: "Survive the rusty gauntlet"
+            description: "Defeat The Zephyr"
         },
         stormGeodeDensity: 40,
         chimeDensity: 8,
