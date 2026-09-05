@@ -44,6 +44,7 @@ import {
     createSingingGeodeSystemStub,
     createWindCurrentsSystemStub,
     createFlowerConstellationsSystemStub,
+    createHideAndSeekStarsSystemStub,
     createBouncePadsSystemStub,
     createSpaceGardenSystemStub,
     createComboCorridorSystemStub,
@@ -88,6 +89,7 @@ import type { GrappleIslesSystem } from './grapple_isles';
 import type { CandyFieldSystem } from './candy_obstacles';
 import type { SingingGeodeSystem } from './singing_geodes';
 import type { FlowerConstellationsSystem } from './flower_constellations_system';
+import type { HideAndSeekStarsSystem } from './hide_and_seek_stars';
 import type { GravLensManager } from './grav_lens';
 import type { DerelictBuoyManager } from './derelict_buoy';
 import type { DataMonolithManager } from './data_monolith';
@@ -185,6 +187,7 @@ export type GameSystems = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
+    hideAndSeekStarsSystem: HideAndSeekStarsSystem;
     bouncePadsSystem: BouncePadsSystem;
     aerialGuardPatrolSystem: AerialGuardPatrolSystem;
     airTokensSystem: AirTokensSystem;
@@ -219,6 +222,7 @@ export type LevelEnvironmentSystemExports = {
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
     flowerConstellationsSystem: FlowerConstellationsSystem;
+    hideAndSeekStarsSystem: HideAndSeekStarsSystem;
     skyRailTerminalSystem: SkyRailTerminalSystem;
     comboCorridorSystem: ComboCorridorSystem;
 };
@@ -430,6 +434,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
+    const hideAndSeekStarsSystem: HideAndSeekStarsSystem = createHideAndSeekStarsSystemStub();
     const bouncePadsSystem = createBouncePadsSystemStub();
     const aerialGuardPatrolSystem = createAerialGuardPatrolSystemStub();
     const airTokensSystem = createAirTokensSystemStub();
@@ -499,6 +504,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
+        hideAndSeekStarsSystem,
         bouncePadsSystem,
         aerialGuardPatrolSystem,
         airTokensSystem,

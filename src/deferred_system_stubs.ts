@@ -373,6 +373,15 @@ export function createFlowerConstellationsSystemStub(): FlowerConstellationsSyst
         cleanup: noop
     } as unknown as FlowerConstellationsSystem;
 }
+import type { HideAndSeekStarsSystem } from './hide_and_seek_stars';
+export function createHideAndSeekStarsSystemStub(): HideAndSeekStarsSystem {
+    return {
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop
+    } as unknown as HideAndSeekStarsSystem;
+}
 
 export function createSpaceGardenSystemStub(): import('./space_garden').SpaceGardenSystem {
     return { activate: () => {}, deactivate: () => {}, update: () => {}, cleanup: () => {} } as unknown as import('./space_garden').SpaceGardenSystem;

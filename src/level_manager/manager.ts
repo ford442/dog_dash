@@ -103,6 +103,7 @@ export class LevelManager {
     timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
     flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
+    hideAndSeekStarsSystem: LevelEnvironmentPorts['hideAndSeekStarsSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
 
@@ -167,6 +168,7 @@ export class LevelManager {
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
         this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
+        this.hideAndSeekStarsSystem = options.env.hideAndSeekStarsSystem;
         this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
 
@@ -396,6 +398,7 @@ export class LevelManager {
             this.nebulaSystem.update(delta, cameraX, playerPos, speed);
         }
         if (enabled('meteorShower')) this.meteorShowerSystem.update(delta, cameraX, playerPos);
+        if (enabled('hideAndSeekStars')) this.hideAndSeekStarsSystem.update(delta, playerPos);
         if (enabled('cosmicDust')) this.cosmicDustSystem.update(delta, cameraX, playerPos);
         if (enabled('asteroidField') && this.asteroidFieldSystem) this.asteroidFieldSystem.update(delta, cameraX, playerPos);
         if (enabled('planetaryHorizon') && this.planetaryHorizonSystem) this.planetaryHorizonSystem.update(cameraX, delta);
