@@ -192,6 +192,7 @@ export type LevelEnvironments = {
     airTokens?: boolean | import('./air_tokens').AirTokensEnvironmentConfig;
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
     flowerConstellations?: boolean | { density?: number };
+    hideAndSeekStars?: boolean;
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
     comboCorridor?: boolean | { density?: number };
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
@@ -358,6 +359,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             grappleIsles: true,
             spaceGarden: true,
             flowerConstellations: true,
+            hideAndSeekStars: true,
             airTokens: {
                 tokens: [
                     { x: 70, y: 6 },
@@ -438,7 +440,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                     { x: 820, y: 7, z: -1, theme: 'candy', durationSeconds: 32 }
                 ]
             },
-            flowerConstellations: true
+            flowerConstellations: true,
+            hideAndSeekStars: true
         },
         vignettes: {
             geodeClearings: 0.5

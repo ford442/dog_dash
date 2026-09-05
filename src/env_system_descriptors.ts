@@ -88,6 +88,14 @@ export const ENV_SYSTEM_DESCRIPTORS: Record<EnvDescriptorKey, EnvSystemDescripto
         paletteTags: ['pastel', 'neon'],
         difficultyWeight: 1
     }),
+    hideAndSeekStars: defineEnvSystem({
+        key: 'hideAndSeekStars',
+        label: 'Hide-and-Seek Stars',
+        role: 'flavor',
+        biomes: ['candy', 'nebula'],
+        paletteTags: ['pastel', 'warm'],
+        difficultyWeight: 1
+    }),
     blackHole: defineEnvSystem({
         key: 'blackHole',
         label: 'Black Hole',
