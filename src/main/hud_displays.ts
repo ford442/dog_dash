@@ -86,7 +86,8 @@ export function createHeatBar() {
 export function updateHeatBar() {
     const fill = document.getElementById('heat-fill');
     const text = document.getElementById('heat-text');
-    if (!fill || !text) return;
+    const container = document.getElementById('heat-display');
+    if (!fill || !text || !container) return;
     
     const percent = game.heatSystem.getHeatPercent() * 100;
     fill.style.width = `${percent}%`;
@@ -97,17 +98,22 @@ export function updateHeatBar() {
         text.style.color = '#ff0000';
         text.classList.add('hud-danger-pulse');
         text.style.animation = ''; // Clear inline animation
+        container.classList.add('hud-pulse-fast');
+        container.classList.remove('hud-pulse');
     } else if (percent > 80) {
         fill.style.background = 'linear-gradient(90deg, #ff4400, #ff0000)';
         text.textContent = 'HEAT (CRITICAL)';
         text.style.color = '#ff4400';
         text.classList.remove('hud-danger-pulse');
+        container.classList.add('hud-pulse');
+        container.classList.remove('hud-pulse-fast');
     } else {
         fill.style.background = 'linear-gradient(90deg, #ff8800, #ff0000)';
         text.textContent = 'HEAT';
         text.style.color = '#ff8800';
         text.style.animation = 'none';
         text.classList.remove('hud-danger-pulse');
+        container.classList.remove('hud-pulse', 'hud-pulse-fast');
     }
 }
 
@@ -131,6 +137,7 @@ export function createBoostDisplay() {
     `;
     
     const label = document.createElement('span');
+    label.id = 'boost-label';
     label.textContent = 'BOOST';
     label.style.marginRight = '4px';
     boostDiv.appendChild(label);
@@ -156,6 +163,15 @@ export function updateBoostDisplay() {
     const charges = game.boostSystem.getCharges();
     const isCooldown = game.boostSystem.getCooldownRatio() > 0;
     
+    const label = document.getElementById('boost-label');
+    if (label) {
+        if (charges > 0) {
+            label.classList.add('hud-pulse');
+        } else {
+            label.classList.remove('hud-pulse');
+        }
+    }
+
     for (let i = 0; i < maxCharges; i++) {
         const icon = document.getElementById(`boost-charge-${i}`);
         if (!icon) continue;
@@ -163,16 +179,16 @@ export function updateBoostDisplay() {
         icon.classList.remove('hud-danger-pulse');
         if (i < charges) {
             icon.style.opacity = '1';
-            icon.style.transform = 'scale(1.2)';
+            icon.classList.add('hud-pulse');
             icon.style.filter = 'grayscale(0) drop-shadow(0 0 6px #ff6600)';
         } else if (i === charges && isCooldown) {
             // Recharging: pulse
             icon.style.opacity = String(0.3 + game.boostSystem.getCooldownRatio() * 0.5);
-            icon.style.transform = 'scale(1.0)';
+            icon.classList.remove('hud-pulse');
             icon.style.filter = 'grayscale(0.5)';
         } else {
             icon.style.opacity = '0.3';
-            icon.style.transform = 'scale(1.0)';
+            icon.classList.remove('hud-pulse');
             icon.style.filter = 'grayscale(0.8)';
             if (charges === 0 && !isCooldown) {
                 icon.classList.add('hud-danger-pulse');
@@ -245,17 +261,23 @@ export function updateRollDisplay() {
 
     if (isRolling) {
         circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
+        circle.classList.remove('hud-pulse');
+        dot.classList.remove('hud-pulse');
         circle.style.transform = 'scale(1.3)';
         dot.style.opacity = '0';
         dot.classList.remove('hud-glow');
     } else if (canRoll) {
         circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
-        circle.style.transform = 'scale(1.0)';
+        circle.classList.add('hud-pulse');
+        dot.classList.add('hud-pulse');
+        circle.style.transform = '';
         dot.style.opacity = '1';
         dot.classList.add('hud-glow');
     } else {
         const percent = Math.floor(cooldownRatio * 100);
         circle.style.background = `conic-gradient(#00ccff ${percent}%, transparent ${percent}%)`;
+        circle.classList.remove('hud-pulse');
+        dot.classList.remove('hud-pulse');
         circle.style.transform = 'scale(1.0)';
         dot.style.opacity = '0.3';
         dot.classList.remove('hud-glow');

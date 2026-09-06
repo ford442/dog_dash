@@ -164,6 +164,10 @@ export const HUD_STYLES = `
     animation: hud-pulse 1.5s ease-in-out infinite;
 }
 
+.hud-pulse-fast {
+    animation: hud-pulse 0.6s ease-in-out infinite;
+}
+
 .hud-shake {
     animation: hud-shake 0.3s ease-in-out;
 }
