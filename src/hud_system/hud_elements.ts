@@ -23,6 +23,9 @@ export interface HUDElementRefs {
     gravLensGrade: HTMLDivElement | null;
     resourcePopDisplay: HTMLDivElement | null;
     lastMaterialLabel: HTMLDivElement | null;
+    actionContainer: HTMLDivElement | null;
+    boostMeterFill: HTMLDivElement | null;
+    dashIcon: HTMLDivElement | null;
 }
 
 export function injectHUDStyles(): void {
@@ -74,12 +77,50 @@ export function updateHealthDisplay(currentHealth: number, maxHealth: number): v
 
         if (isFilled) {
             heart.textContent = isBonus ? '💛' : '💖';
+            if (currentHealth === 1) {
+                heart.classList.add('hud-danger-pulse');
+            } else {
+                heart.classList.remove('hud-danger-pulse');
+            }
         } else {
             heart.textContent = '🤍';
             heart.style.opacity = '0.4';
+            heart.classList.remove('hud-danger-pulse');
         }
 
         heartsRow.appendChild(heart);
+    }
+}
+
+export function updateBoostDisplay(boostMeterFill: HTMLDivElement | null, ratio: number): void {
+    if (!boostMeterFill) return;
+
+    // Clamp between 0 and 1
+    const safeRatio = Math.max(0, Math.min(1, ratio));
+    boostMeterFill.style.width = `${safeRatio * 100}%`;
+
+    if (safeRatio <= 0.2) {
+        boostMeterFill.style.background = `linear-gradient(90deg, #ff3333, #ff0000)`;
+        boostMeterFill.classList.add('hud-danger-pulse');
+    } else {
+        boostMeterFill.style.background = `linear-gradient(90deg, ${COLORS.gold}, #ff8c00)`;
+        boostMeterFill.classList.remove('hud-danger-pulse');
+    }
+}
+
+export function updateDashDisplay(dashIcon: HTMLDivElement | null, ready: boolean, cooldownRatio: number): void {
+    if (!dashIcon) return;
+
+    if (ready) {
+        dashIcon.style.filter = 'grayscale(0%) opacity(1)';
+        dashIcon.style.transform = 'scale(1.1)';
+        dashIcon.classList.add('hud-pulse-fast');
+    } else {
+        dashIcon.classList.remove('hud-pulse-fast');
+        // Smoothly fade back in as cooldown completes
+        const opacity = 0.5 + (cooldownRatio * 0.5);
+        dashIcon.style.filter = `grayscale(${100 - cooldownRatio * 100}%) opacity(${opacity})`;
+        dashIcon.style.transform = 'scale(0.9)';
     }
 }
 
@@ -123,6 +164,9 @@ export class HUDElementsBuilder {
     gravLensGrade: HTMLDivElement | null = null;
     resourcePopDisplay: HTMLDivElement | null = null;
     lastMaterialLabel: HTMLDivElement | null = null;
+    actionContainer: HTMLDivElement | null = null;
+    boostMeterFill: HTMLDivElement | null = null;
+    dashIcon: HTMLDivElement | null = null;
 
     createAll(callbacks: HUDElementsCallbacks): void {
         this.createScoreDisplay(callbacks.updateHighScoreDisplay);
@@ -136,6 +180,7 @@ export class HUDElementsBuilder {
         this.createGravLensDisplay();
         this.createResourcePopDisplay();
         this.createJourneyMapDisplay();
+        this.createActionDisplay();
     }
 
     private createScoreDisplay(updateHighScoreDisplay: () => void): void {
@@ -675,5 +720,80 @@ export class HUDElementsBuilder {
         this.journeyMapContainer.appendChild(moon);
         this.journeyMapContainer.appendChild(label);
         document.body.appendChild(this.journeyMapContainer);
+    }
+
+    private createActionDisplay(): void {
+        this.actionContainer = document.createElement('div');
+        this.actionContainer.className = 'hud-element';
+        this.actionContainer.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.75);
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 15px ${COLORS.shadow};
+            border: 2px solid ${COLORS.white};
+            animation: hud-slide-in 0.5s ease-out 0.6s both;
+        `;
+
+        // Dash Icon
+        this.dashIcon = document.createElement('div');
+        this.dashIcon.textContent = '💨';
+        this.dashIcon.style.cssText = `
+            font-size: 28px;
+            transition: all 0.2s ease-out;
+            filter: grayscale(100%) opacity(0.5);
+            transform: scale(0.9);
+        `;
+        this.actionContainer.appendChild(this.dashIcon);
+
+        // Boost Meter Container
+        const boostMeterContainer = document.createElement('div');
+        boostMeterContainer.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        `;
+
+        const boostLabel = document.createElement('div');
+        boostLabel.textContent = 'BOOST';
+        boostLabel.style.cssText = `
+            font-size: 10px;
+            font-weight: 800;
+            color: ${COLORS.textDark};
+            letter-spacing: 1px;
+        `;
+        boostMeterContainer.appendChild(boostLabel);
+
+        const boostMeterTrack = document.createElement('div');
+        boostMeterTrack.style.cssText = `
+            width: 80px;
+            height: 12px;
+            background: ${COLORS.lavenderDark};
+            border-radius: 6px;
+            border: 2px solid ${COLORS.white};
+            overflow: hidden;
+            position: relative;
+        `;
+
+        this.boostMeterFill = document.createElement('div');
+        this.boostMeterFill.style.cssText = `
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, ${COLORS.gold}, #ff8c00);
+            border-radius: 4px;
+            transition: width 0.1s linear, background 0.3s ease;
+        `;
+        boostMeterTrack.appendChild(this.boostMeterFill);
+        boostMeterContainer.appendChild(boostMeterTrack);
+
+        this.actionContainer.appendChild(boostMeterContainer);
+        document.body.appendChild(this.actionContainer);
     }
 }
