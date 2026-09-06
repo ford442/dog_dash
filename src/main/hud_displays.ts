@@ -95,16 +95,19 @@ export function updateHeatBar() {
         fill.style.background = '#ff0000';
         text.textContent = 'OVERHEATED!';
         text.style.color = '#ff0000';
-        text.style.animation = 'pulse 0.5s infinite';
+        text.classList.add('hud-danger-pulse');
+        text.style.animation = ''; // Clear inline animation
     } else if (percent > 80) {
         fill.style.background = 'linear-gradient(90deg, #ff4400, #ff0000)';
         text.textContent = 'HEAT (CRITICAL)';
         text.style.color = '#ff4400';
+        text.classList.remove('hud-danger-pulse');
     } else {
         fill.style.background = 'linear-gradient(90deg, #ff8800, #ff0000)';
         text.textContent = 'HEAT';
         text.style.color = '#ff8800';
         text.style.animation = 'none';
+        text.classList.remove('hud-danger-pulse');
     }
 }
 
@@ -157,6 +160,7 @@ export function updateBoostDisplay() {
         const icon = document.getElementById(`boost-charge-${i}`);
         if (!icon) continue;
         
+        icon.classList.remove('hud-danger-pulse');
         if (i < charges) {
             icon.style.opacity = '1';
             icon.style.transform = 'scale(1.2)';
@@ -170,6 +174,9 @@ export function updateBoostDisplay() {
             icon.style.opacity = '0.3';
             icon.style.transform = 'scale(1.0)';
             icon.style.filter = 'grayscale(0.8)';
+            if (charges === 0 && !isCooldown) {
+                icon.classList.add('hud-danger-pulse');
+            }
         }
     }
 }
@@ -240,15 +247,18 @@ export function updateRollDisplay() {
         circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
         circle.style.transform = 'scale(1.3)';
         dot.style.opacity = '0';
+        dot.classList.remove('hud-glow');
     } else if (canRoll) {
         circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
         circle.style.transform = 'scale(1.0)';
         dot.style.opacity = '1';
+        dot.classList.add('hud-glow');
     } else {
         const percent = Math.floor(cooldownRatio * 100);
         circle.style.background = `conic-gradient(#00ccff ${percent}%, transparent ${percent}%)`;
         circle.style.transform = 'scale(1.0)';
         dot.style.opacity = '0.3';
+        dot.classList.remove('hud-glow');
     }
 }
 
@@ -322,10 +332,14 @@ export function updateBarkDisplay() {
         const icon = document.getElementById(`bark-charge-${i}`);
         if (!icon) continue;
 
+        icon.classList.remove('hud-glow');
         if (i < charges) {
             icon.style.opacity = '1';
             icon.style.transform = 'scale(1.15)';
             icon.style.filter = 'grayscale(0) drop-shadow(0 0 6px #ffcc88)';
+            if (canBark) {
+                icon.classList.add('hud-glow');
+            }
         } else if (canBark && charges === 0) {
             icon.style.opacity = String(0.5 + (1 - cooldownRatio) * 0.3);
             icon.style.transform = 'scale(1.0)';
@@ -402,17 +416,20 @@ export function updateTetherDisplay() {
         circle.style.transform = 'scale(1.3)';
         circle.style.borderColor = '#00ffcc';
         dot.style.opacity = '0';
+        dot.classList.remove('hud-glow');
     } else if (canTether) {
         circle.style.background = 'conic-gradient(#00ffcc 100%, transparent 100%)';
         circle.style.transform = 'scale(1.0)';
         circle.style.borderColor = 'rgba(0,255,204,0.4)';
         dot.style.opacity = '1';
+        dot.classList.add('hud-glow');
     } else {
         const percent = Math.floor(cooldownRatio * 100);
         circle.style.background = `conic-gradient(#00ffcc ${percent}%, transparent ${percent}%)`;
         circle.style.transform = 'scale(1.0)';
         circle.style.borderColor = 'rgba(0,255,204,0.4)';
         dot.style.opacity = '0.3';
+        dot.classList.remove('hud-glow');
     }
 }
 
