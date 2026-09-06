@@ -97,6 +97,16 @@ export const HUD_STYLES = `
     75% { transform: rotate(5deg); }
 }
 
+@keyframes hud-glow-pulse {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5)); transform: scale(1); opacity: 0.9; }
+    50% { filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9)); transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes hud-danger-pulse {
+    0%, 100% { filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.9)); transform: scale(1.05); }
+}
+
 @keyframes hud-star-rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }

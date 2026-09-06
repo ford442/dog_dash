@@ -63,15 +63,19 @@ export function updateHeatBar(heatSystem: HeatSystem) {
         text.textContent = 'OVERHEATED!';
         text.style.color = '#ff0000';
         text.style.animation = 'pulse 0.5s infinite';
+        fill.parentElement!.style.animation = 'hud-danger-pulse 0.5s infinite';
     } else if (percent > 80) {
         fill.style.background = 'linear-gradient(90deg, #ff4400, #ff0000)';
         text.textContent = 'HEAT (CRITICAL)';
         text.style.color = '#ff4400';
+        text.style.animation = 'hud-danger-pulse 0.8s infinite';
+        fill.parentElement!.style.animation = 'none';
     } else {
         fill.style.background = 'linear-gradient(90deg, #ff8800, #ff0000)';
         text.textContent = 'HEAT';
         text.style.color = '#ff8800';
         text.style.animation = 'none';
+        fill.parentElement!.style.animation = 'none';
     }
 }
 
@@ -126,14 +130,16 @@ export function updateBoostDisplay(boostSystem: BoostSystem) {
         
         if (i < charges) {
             icon.style.opacity = '1';
-            icon.style.transform = 'scale(1.2)';
             icon.style.filter = 'grayscale(0) drop-shadow(0 0 6px #ff6600)';
+            icon.style.animation = 'hud-glow-pulse 1.5s infinite';
         } else if (i === charges && isCooldown) {
             // Recharging: pulse
+            icon.style.animation = 'none';
             icon.style.opacity = String(0.3 + boostSystem.getCooldownRatio() * 0.5);
             icon.style.transform = 'scale(1.0)';
             icon.style.filter = 'grayscale(0.5)';
         } else {
+            icon.style.animation = 'none';
             icon.style.opacity = '0.3';
             icon.style.transform = 'scale(1.0)';
             icon.style.filter = 'grayscale(0.8)';
@@ -206,15 +212,18 @@ export function updateRollDisplay(rollSystem: RollSystem) {
     if (isRolling) {
         circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
         circle.style.transform = 'scale(1.3)';
+        dot.style.animation = 'none';
         dot.style.opacity = '0';
     } else if (canRoll) {
         circle.style.background = 'conic-gradient(#00ccff 100%, transparent 100%)';
         circle.style.transform = 'scale(1.0)';
         dot.style.opacity = '1';
+        dot.style.animation = 'hud-glow-pulse 1.5s infinite';
     } else {
         const percent = Math.floor(cooldownRatio * 100);
         circle.style.background = `conic-gradient(#00ccff ${percent}%, transparent ${percent}%)`;
         circle.style.transform = 'scale(1.0)';
+        dot.style.animation = 'none';
         dot.style.opacity = '0.3';
     }
 }
