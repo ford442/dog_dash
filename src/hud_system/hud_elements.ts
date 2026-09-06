@@ -57,6 +57,10 @@ export function updateHealthDisplay(currentHealth: number, maxHealth: number): v
     const heartsRow = document.getElementById('hud-hearts-row');
     if (!heartsRow) return;
 
+    if (currentHealth === 1) {
+        heartsRow.classList.add('hud-danger-pulse');
+    } else {
+        heartsRow.classList.remove('hud-danger-pulse');
     if (currentHealth <= 1) {
         heartsRow.classList.add('hud-pulse-fast');
     } else {
