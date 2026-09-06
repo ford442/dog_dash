@@ -1,13 +1,13 @@
 import type { NebulaKraken } from '../space_robot_squid';
-import type { StarEaterBoss } from '../boss_system';
-import { NEBULA_KRAKEN_NAME as KRAKEN_NAME, STAR_EATER_PITCHER_NAME as PITCHER_NAME } from '../boss_display_names';
+import type { StarEaterBoss, ZephyrBoss } from '../boss_system';
+import { NEBULA_KRAKEN_NAME as KRAKEN_NAME, STAR_EATER_PITCHER_NAME as PITCHER_NAME, ZEPHYR_NAME } from '../boss_display_names';
 
 // BOSS HEALTH BAR UI
 // =============================================================================
 let bossHealthBar: HTMLDivElement | null = null;
 let bossHealthFill: HTMLDivElement | null = null;
 let bossHealthLabel: HTMLDivElement | null = null;
-let activeBossKind: 'kraken' | 'pitcher' | null = null;
+let activeBossKind: 'kraken' | 'pitcher' | 'zephyr' | null = null;
 
 function ensureBossHealthBar(borderColor: string, gradient: string): void {
     if (bossHealthBar) return;
@@ -45,18 +45,30 @@ function hideBossHealthBar(): void {
     activeBossKind = null;
 }
 
-export function updateBossHealthBar(squids: NebulaKraken[], pitcher?: StarEaterBoss | null): void {
+export function updateBossHealthBar(squids: NebulaKraken[], pitcher?: StarEaterBoss | ZephyrBoss | null): void {
     const activeSquid = squids.find(s => !s.isDestroyed);
+
+    // Check if the boss is Zephyr
+    const isZephyr = pitcher && 'windRings' in pitcher;
     const activePitcher = pitcher?.isActive && pitcher.phase !== 'defeated' ? pitcher : null;
 
     if (activePitcher) {
-        if (activeBossKind !== 'pitcher') {
+        if (isZephyr && activeBossKind !== 'zephyr') {
+            bossHealthBar = null;
+            bossHealthFill = null;
+            bossHealthLabel = null;
+            activeBossKind = 'zephyr';
+        } else if (!isZephyr && activeBossKind !== 'pitcher') {
             bossHealthBar = null;
             bossHealthFill = null;
             bossHealthLabel = null;
             activeBossKind = 'pitcher';
         }
-        ensureBossHealthBar('#ff0044', 'linear-gradient(90deg, #660022, #ff0044, #ff66aa)');
+        if (isZephyr) {
+            ensureBossHealthBar('#00ffff', 'linear-gradient(90deg, #0066aa, #00ffff, #aaffff)');
+        } else {
+            ensureBossHealthBar('#ff0044', 'linear-gradient(90deg, #660022, #ff0044, #ff66aa)');
+        }
 
         bossHealthBar!.style.display = 'block';
         if (bossHealthLabel) bossHealthLabel.style.display = 'block';
@@ -68,8 +80,9 @@ export function updateBossHealthBar(squids: NebulaKraken[], pitcher?: StarEaterB
 
         const rageTag = activePitcher.isRaging() ? ' [RAGE]' : '';
         if (bossHealthLabel) {
+            const displayName = isZephyr ? ZEPHYR_NAME : PITCHER_NAME;
             bossHealthLabel.textContent =
-                `⚠ ${PITCHER_NAME} — ${activePitcher.getPhaseName()}${rageTag} ⚠`;
+                `⚠ ${displayName} — ${activePitcher.getPhaseName()}${rageTag} ⚠`;
         }
         return;
     }

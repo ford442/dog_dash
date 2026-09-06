@@ -54,6 +54,7 @@ const PLUGIN_ORDER = [
     'timeShiftZones',
     'bubbleCoral',
     'flowerConstellations',
+    'hideAndSeekStars',
     'skyRailTerminal',
     'bouncePads',
     'spaceGarden',

@@ -53,6 +53,7 @@ export type DeferredGamePorts = {
     particleSystem: ParticleSystem;
     juiceManager: JuiceManager;
     flowerConstellationsSystem?: unknown;
+    hideAndSeekStarsSystem?: unknown;
     skyRailTerminalSystem?: unknown;
     comboCorridorSystem?: unknown;
     debrisSystem: DebrisSystem;
@@ -265,6 +266,20 @@ export const DEFERRED_ENV_REGISTRY: {
             flag: 'flowerConstellations',
             activate: (config) => host.flowerConstellationsSystem.activate(config, levelLength),
             deactivate: () => host.flowerConstellationsSystem.deactivate()
+        })
+    },
+    hideAndSeekStars: {
+        flag: 'hideAndSeekStars',
+        systemKey: 'hideAndSeekStars',
+        load: () => import('./hide_and_seek_stars'),
+        install: (ctx, mod) => {
+            const { HideAndSeekStarsSystem } = mod as typeof import('./hide_and_seek_stars');
+            ctx.installEnvPartial({ hideAndSeekStarsSystem: new HideAndSeekStarsSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'hideAndSeekStars',
+            activate: () => host.hideAndSeekStarsSystem.activate(),
+            deactivate: () => host.hideAndSeekStarsSystem.deactivate()
         })
     },
     spaceGarden: {
@@ -1036,6 +1051,7 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'skyRailTerminal',
     'windCurrents',
     'flowerConstellations',
+    'hideAndSeekStars',
     'bouncePads',
     'spaceGarden',
     'comboCorridor',
