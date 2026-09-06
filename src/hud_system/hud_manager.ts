@@ -11,7 +11,9 @@ import {
     formatNumber,
     createSparkle,
     updateHealthDisplay,
-    updateHighScoreDisplay
+    updateHighScoreDisplay,
+    updateBoostDisplay,
+    updateDashDisplay
 } from './hud_elements';
 import { HUDScreens } from './hud_screens';
 import { ensureJourneyMap } from '../meta_ui_loader';
@@ -72,6 +74,14 @@ export class HUDManager {
 
     private refreshHighScoreDisplay(): void {
         updateHighScoreDisplay(this.elements.highScoreDisplay, this.highScore);
+    }
+
+    updateBoost(ratio: number): void {
+        updateBoostDisplay(this.elements.boostMeterFill, ratio);
+    }
+
+    updateDash(ready: boolean, cooldownRatio: number): void {
+        updateDashDisplay(this.elements.dashIcon, ready, cooldownRatio);
     }
 
     showGrazeCombo(combo: number): void {

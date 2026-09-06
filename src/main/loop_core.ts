@@ -158,6 +158,15 @@ export function updateLoopCore(delta: number, _time: number): void {
             game.hudManager.hideGrazeCombo();
         }
 
+        // Update Action UI (Boost & Dash)
+        if (game.boostSystem && game.boostSystem.getMaxCharges() > 0) {
+            const boostRatio = game.boostSystem.getCharges() / game.boostSystem.getMaxCharges();
+            game.hudManager.updateBoost(boostRatio);
+        }
+        if (game.rollSystem) {
+            game.hudManager.updateDash(game.rollSystem.canRoll(), game.rollSystem.getCooldownRatio());
+        }
+
         // Feed speed / boost / danger / quiet into the chapter music mix.
         updateChapterMusicDynamics();
 }
