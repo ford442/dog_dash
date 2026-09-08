@@ -37,6 +37,7 @@ const PLUGIN_ORDER = [
     'biological',
     'nebula',
     'nebulaRibbons',
+    'clouds',
     'cosmicDust',
     'godRays',
     'aurora',

@@ -146,6 +146,11 @@ export type BouncePadsEnvironmentConfig = {
     pads: { x: number; y: number; z?: number; bounceStrength?: number }[];
 };
 
+export type CloudsEnvironmentConfig = {
+    density: number;
+    lightningFromWithin?: boolean;
+};
+
 export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
@@ -154,6 +159,7 @@ export type LevelEnvironments = {
     blackHole?: BlackHoleEnvironmentConfig;
     industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
     waterfall?: boolean;
+    clouds?: boolean | CloudsEnvironmentConfig;
     biological?: boolean;
     nebula?: boolean;
     /** Parallax ribbon/veil sheets (cheap depth); uses level skyColors. */
@@ -219,7 +225,6 @@ export type LevelConfig = {
         vine?: number;
         orb?: number;
         mushroom?: number;
-        cloud?: number;
         voidRootBall?: number;
         vacuumKelp?: number;
         iceNeedle?: number;
@@ -322,7 +327,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 5,
             orb: 8,
             mushroom: 6,
-            cloud: 6,
             voidRootBall: 3,
             vacuumKelp: 3,
             iceNeedle: 4,
@@ -354,6 +358,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             wishLanterns: true,
             spacePetsSwarm: true,
             dancingJellyMoss: true,
+            clouds: { density: 6 },
             dayNightCycle: { cycleDuration: 30 },
             cloudCastles: { density: 0.6 },
             grappleIsles: true,
@@ -398,7 +403,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 5,
             orb: 10,
             mushroom: 10,
-            cloud: 10,
             voidRootBall: 8,
             vacuumKelp: 3,
             iceNeedle: 15,
@@ -483,7 +487,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 15,
             orb: 30,
             mushroom: 5,
-            cloud: 20,
             voidRootBall: 12,
             vacuumKelp: 15,
             iceNeedle: 10,
@@ -522,7 +525,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                     { x: 1660, y: -3, z: -1, theme: 'aurora', durationSeconds: 38, toyCount: 16 }
                 ]
             },
-            flowerConstellations: true
+            flowerConstellations: true,
+            aurora: { enabled: true, density: 0.6, color1: 0x44aaff, color2: 0xffaa44, speed: 0.8 },
         },
         vignettes: {
             roseArches: 1.2
@@ -560,7 +564,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 5,
             orb: 15,
             mushroom: 4,
-            cloud: 4,
             voidRootBall: 3,
             vacuumKelp: 3,
             iceNeedle: 3,
@@ -649,7 +652,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 10,
             orb: 30,
             mushroom: 8,
-            cloud: 5,
             voidRootBall: 5,
             vacuumKelp: 8,
             iceNeedle: 4,
@@ -686,6 +688,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebulaRibbons: true,
             cosmicDust: true,
             voidJellyfish: { density: 45 },
+            clouds: { density: 5 },
             dancingJellyMoss: { density: 1.5 },
             cloudCastles: true,
             singingGeodes: { density: 15 },
@@ -725,7 +728,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 30,
             orb: 20,
             mushroom: 10,
-            cloud: 20,
             voidRootBall: 0,
             vacuumKelp: 10,
             iceNeedle: 5,
@@ -757,6 +759,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebulaRibbons: true,
             voidJellyfish: { density: 40 },
             moonPalace: true,
+            clouds: { density: 20 },
             weather: true,
             singingGeodes: { density: 20 },
             // Finale beat: the Galactic Core swells across the last stretch of

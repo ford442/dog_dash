@@ -209,29 +209,6 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
             lm.crystalChimeManager.streamChunk(startX, width, levelConfig.chimeDensity, yRange);
         }
         spawnFoliageVignettes(lm, startX, width, density, yRange, treeYRange, foliageZ, geoZ, vignettes, vignetteCount, geodeClearings);
-        if (density.cloud) {
-            // Independent noise sample (own channel) so spore-cloud rate doesn't move in lockstep with foliage.
-            const sporeDensityMul = biomeNoise.densityMultiplier(startX + width / 2, 'spore');
-            const targetCount = Math.min(
-                Math.max(
-                    0,
-                    Math.floor(
-                        density.cloud *
-                            (width / FOLIAGE_DENSITY_UNIT) *
-                            lm.objectDensityMultiplier *
-                            sporeDensityMul
-                    )
-                ),
-                Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.cloud - lm.geologicalCounts.sporeClouds())
-            );
-            for (let i = 0; i < targetCount; i++) {
-                const rng = getRunRngFork('foliage');
-                const x = startX + rng.random() * width;
-                const y = yRange[0] + rng.random() * (yRange[1] - yRange[0]);
-                const z = randomZInLayer('BACKGROUND');
-                lm.spawners.createSporeCloudAtPosition(x, y, z);
-            }
-        }
         if (density.voidRootBall) {
             const targetCount = Math.min(
                 scaledCount(density.voidRootBall),

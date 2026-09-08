@@ -63,6 +63,7 @@ export const DEFERRED_ENV_FLAGS = [
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
 export const EAGER_ENV_FLAGS = [
     'bubbleCoral',
+    'clouds',
     /** Owned by ensureGameManagers — plugin only, no dynamic import. */
     'butterflySwarm'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
@@ -85,6 +86,7 @@ export const DEFERRED_LEVEL_SYSTEM_KEYS = [
     'industrialGeometry',
     'starlightKoi',
     'bubbleCoral',
+    'clouds',
     'slingables',
     'liquidMetal',
     'crystalChimes',

@@ -480,19 +480,8 @@ export const DEFERRED_ENV_REGISTRY: {
         },
         plugin: (host, cfg) => ({
             flag: 'biological',
-            activate: () => {
-                host.biologicalSystem.activate();
-                host.cloudSystem.layers.forEach((l) => {
-                    l.mesh.visible = false;
-                });
-            },
-            deactivate: () => {
-                host.biologicalSystem.deactivate();
-                const cloudsVisible = (cfg.foliageDensity.cloud ?? 20) > 0;
-                host.cloudSystem.layers.forEach((l) => {
-                    l.mesh.visible = cloudsVisible;
-                });
-            }
+            activate: () => host.biologicalSystem.activate(),
+            deactivate: () => host.biologicalSystem.deactivate()
         })
     },
     candyPlanetRing: {
@@ -984,7 +973,8 @@ void _levelRegistryCoverage;
 
 export const EAGER_ENV_PLUGIN_ORDER = [
     'bubbleCoral',
-    'butterflySwarm'
+    'butterflySwarm',
+    'clouds'
 ] as const satisfies readonly (typeof EAGER_ENV_FLAGS)[number][];
 
 export function buildEagerEnvPlugins(
@@ -1008,6 +998,17 @@ export function buildEagerEnvPlugins(
                     flag,
                     activate: () => host.butterflySwarmSystem.activate(),
                     deactivate: () => host.butterflySwarmSystem.deactivate()
+                });
+                break;
+        }
+            case 'clouds':
+                plugins.push({
+                    flag,
+                    activate: (config) => {
+                        host.cloudSystem.setSkyColors(_cfg.skyColors.bottom);
+                        host.cloudSystem.activate(config);
+                    },
+                    deactivate: () => host.cloudSystem.deactivate()
                 });
                 break;
         }
