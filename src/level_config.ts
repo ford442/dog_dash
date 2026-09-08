@@ -513,6 +513,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             lightning: { enabled: true, density: 2.0, color: 0xaa44ff },
             planetaryHorizon: true,
             reEntry: true,
+            aurora: { enabled: true, density: 1.0, color1: 0xffaa00, color2: 0xff00ff, speed: 1.5 },
             bubbleCoral: { density: 0.7 },
             // Second Dream Portal, before the level-3 grav-lens corridor.
             dreamPortals: {
