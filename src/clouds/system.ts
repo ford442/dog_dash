@@ -8,6 +8,7 @@ import { GodRayOverlay, LightningFlashOverlay } from './overlays';
 export class CloudSystem {
 
     scene: THREE.Scene;
+    active: boolean = false;
     layers: CloudLayer[] = [];
     lightningTimer: number = 0;
     currentCameraX: number = 0;
@@ -30,38 +31,56 @@ export class CloudSystem {
         this.godRayOverlay.init(camera);
     }
 
-    setLevel(config: LevelConfig) {
-        const baseColor = new THREE.Color(config.skyColors.bottom);
-        const cloudDensity = config.foliageDensity?.cloud ?? 20;
+    activate(config: any) {
+        if (this.active) return;
+        this.active = true;
+
+        let cloudDensity = 20;
+        if (typeof config === 'object' && config.density !== undefined) {
+            cloudDensity = config.density;
+        } else if (typeof config === 'number') {
+            cloudDensity = config;
+        }
 
         // Base opacity multiplier based on density config (20 is baseline)
         const densityFactor = Math.min(1.0, cloudDensity / 20.0);
 
         if (this.layers.length >= 5) {
-            // Layer 1: Deep Background (Slowest, Faint, Huge)
-            this.layers[0].uColor.value.copy(baseColor).lerp(new THREE.Color(0x000000), 0.5); // Very dark
             this.layers[0].uOpacity.value = 0.9 * densityFactor;
-
-            // Layer 2: Background (Dark, slightly faster)
-            this.layers[1].uColor.value.copy(baseColor).lerp(new THREE.Color(0x000000), 0.3); // Dark
             this.layers[1].uOpacity.value = 0.8 * densityFactor;
-
-            // Layer 3: Mid-Ground (Main cloud layer, semi-transparent)
-            this.layers[2].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.1); // Slightly lighter
             this.layers[2].uOpacity.value = 0.6 * densityFactor;
-
-            // Layer 4: Near-Mid (Lighter, faster)
-            this.layers[3].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.3); // Lighter
             this.layers[3].uOpacity.value = 0.4 * densityFactor;
-
-            // Layer 5: Foreground (Passes in front/very close, fast, transparent, detailed)
-            this.layers[4].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.5); // Lightest
             this.layers[4].uOpacity.value = 0.2 * densityFactor;
         }
 
-        // Handle fully hiding if density is 0
         const visible = cloudDensity > 0;
         this.layers.forEach(layer => layer.mesh.visible = visible);
+    }
+
+    deactivate() {
+        if (!this.active) return;
+        this.active = false;
+        this.layers.forEach(layer => layer.mesh.visible = false);
+    }
+
+    setSkyColors(bottomHex: number) {
+        const baseColor = new THREE.Color(bottomHex);
+        if (this.layers.length >= 5) {
+            // Layer 1: Deep Background (Slowest, Faint, Huge)
+            this.layers[0].uColor.value.copy(baseColor).lerp(new THREE.Color(0x000000), 0.5); // Very dark
+
+            // Layer 2: Background (Dark, slightly faster)
+            this.layers[1].uColor.value.copy(baseColor).lerp(new THREE.Color(0x000000), 0.3); // Dark
+
+            // Layer 3: Mid-Ground (Main cloud layer, semi-transparent)
+            this.layers[2].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.1); // Slightly lighter
+
+            // Layer 4: Near-Mid (Lighter, faster)
+            this.layers[3].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.3); // Lighter
+
+            // Layer 5: Foreground (Passes in front/very close, fast, transparent, detailed)
+            this.layers[4].uColor.value.copy(baseColor).lerp(new THREE.Color(0xffffff), 0.5); // Lightest
+        }
     }
 
 
@@ -161,6 +180,7 @@ export class CloudSystem {
     }
 
     update(delta: number, cameraX: number, playerSpeed: number, playerPos?: THREE.Vector3) {
+        if (!this.active) return;
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }
@@ -203,6 +223,7 @@ export class CloudSystem {
     }
 
     triggerLightningAt(strikePos: THREE.Vector3, lightningColor?: THREE.Color) {
+        if (!this.active) return;
         if (this.layers.length === 0) return;
 
         // Find the closest layer by Z distance to the strike

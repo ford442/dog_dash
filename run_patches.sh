@@ -1,0 +1,15 @@
+python3 patch_hud_elements.py
+python3 patch_level_config_1.py
+python3 patch_clouds_system.py
+python3 patch_env_system_descriptors.py
+python3 patch_deferred.py
+python3 patch_eager2.py
+python3 patch_plugins2.py
+python3 patch_manager.py
+python3 patch_manager_warp.py
+python3 patch_starfield2.py
+python3 patch_plugin_host.py
+python3 patch_foliage_streaming.py
+python3 patch_level_env_registry3.py
+python3 patch_tests.py
+python3 patch_brushes.py

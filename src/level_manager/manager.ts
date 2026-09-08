@@ -176,7 +176,9 @@ export class LevelManager {
         this.cloudSystem = {
             __stub: true,
             layers: [],
-            setLevel: () => undefined,
+            activate: () => undefined,
+            deactivate: () => undefined,
+            setSkyColors: () => undefined,
             setCamera: () => undefined,
             update: () => undefined,
             triggerLightningAt: () => undefined
@@ -293,7 +295,6 @@ export class LevelManager {
 
         populateZone(this, playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
 
-        this.cloudSystem.setLevel(cfg);
 
         this.chromaShiftSystem.clearRocks();
         if (cfg.chromaShiftDensity && cfg.chromaShiftDensity > 0) {

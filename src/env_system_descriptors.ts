@@ -39,7 +39,7 @@ export type EnvRole = 'backdrop' | 'traversal' | 'hazard' | 'flavor' | 'boss';
 export type PaletteTag = 'warm' | 'cool' | 'pastel' | 'neon' | 'iridescent' | 'monochrome';
 
 /** `butterflySwarm` is eager (bootstrap-owned, no dynamic import) so it has no `SystemKey`. */
-export type EnvDescriptorKey = SystemKey | 'butterflySwarm';
+export type EnvDescriptorKey = SystemKey | 'butterflySwarm' | 'clouds';
 
 export interface EnvSystemDescriptor {
     /** Matches the key this descriptor is registered under in `ENV_SYSTEM_DESCRIPTORS`. */
@@ -72,6 +72,14 @@ function defineEnvSystem(descriptor: EnvSystemDescriptor): EnvSystemDescriptor {
 // ---------------------------------------------------------------------------
 
 export const ENV_SYSTEM_DESCRIPTORS: Record<EnvDescriptorKey, EnvSystemDescriptor> = {
+    clouds: defineEnvSystem({
+        key: 'clouds',
+        label: 'Multi-Layered Cloudscapes',
+        role: 'backdrop',
+        biomes: ['candy', 'nebula'],
+        paletteTags: ['cool', 'pastel'],
+        difficultyWeight: 1
+    }),
     skyRailTerminal: defineEnvSystem({
         key: 'skyRailTerminal',
         label: 'Sky Rail Terminal',

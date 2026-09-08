@@ -38,8 +38,8 @@ export const BRUSH_REGISTRY: Record<BrushId, BrushDef> = {
         decorationCost: 12,
         allowedLevelTypes: ['scan', 'survive', 'combo'],
         toEnvPatch: (density) => ({
-            foliageDensity: {
-                cloud: Math.max(0.2, density * 2)
+            environments: {
+                clouds: { density: Math.max(0.2, density * 2) }
             }
         })
     },

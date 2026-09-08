@@ -7,7 +7,12 @@ import type { LevelEnvironmentPorts } from './types';
 
 /** Systems registry host for environment plugin activation. */
 export interface LevelPluginHost extends LevelEnvironmentPorts {
-    cloudSystem: { layers: { mesh: { visible: boolean } }[] };
+    cloudSystem: {
+        layers: { mesh: { visible: boolean } }[];
+        activate: (config: any) => void;
+        deactivate: () => void;
+        setSkyColors: (bottomHex: number) => void;
+    };
     ghostDebrisSystem: { activate: () => void; deactivate: () => void };
     voidJellyfishSystem: { activate: (config: NonNullable<LevelEnvironments['voidJellyfish']>) => void; deactivate: () => void };
     camera: { position: { x: number } };

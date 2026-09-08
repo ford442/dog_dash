@@ -30,7 +30,7 @@ test('every DEFERRED_LEVEL_SYSTEM_KEYS entry has a descriptor', () => {
 });
 
 test('descriptor table has no keys outside the known registries + eager butterflySwarm', () => {
-    const known = new Set<string>([...DEFERRED_ENV_FLAGS, ...DEFERRED_LEVEL_SYSTEM_KEYS, 'butterflySwarm']);
+    const known = new Set<string>([...DEFERRED_ENV_FLAGS, ...DEFERRED_LEVEL_SYSTEM_KEYS, 'butterflySwarm', 'clouds']);
     for (const key of Object.keys(ENV_SYSTEM_DESCRIPTORS)) {
         assert.ok(known.has(key), `descriptor "${key}" does not correspond to any registered system`);
     }
