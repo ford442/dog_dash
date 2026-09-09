@@ -2,6 +2,9 @@ import * as THREE from 'three';
 import { time, color, uniform, sin, mix, positionWorld, uv, length, smoothstep } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
+/** Foreground glitter instance count (nearest layer, highest per-pixel cost). */
+const GLITTER_COUNT = 16;
+
 function shouldUseLiteMaterials(): boolean {
     return typeof window !== 'undefined' && window.usingWebGL === true;
 }
@@ -209,9 +212,10 @@ export class PastelNebulaSystem {
             count: 20, z: -40, zRange: 10, width: 250, yRange: 60, scaleMin: 15, scaleMax: 35
         }));
 
-        // Floating glitter particles
+        // Floating glitter particles — 16 instances. These sit closest to the
+        // camera and are the most expensive per pixel, so the layer stays small.
         this.layers.push(new PastelNebulaLayer(this.scene, puffGeo, createGlitterMaterial(this.uPlayerPos), {
-            count: 80, z: -20, zRange: 20, width: 200, yRange: 50, scaleMin: 0.5, scaleMax: 1.5
+            count: GLITTER_COUNT, z: -20, zRange: 20, width: 200, yRange: 50, scaleMin: 0.5, scaleMax: 1.5
         }));
 
         this.deactivate();

@@ -8,10 +8,12 @@
  * soft-body net for their fractal-moss cores. Springs live in TS;
  * integration runs in WASM via `stepPhysics`.
  *
- * `stepPhysics` ships in the default AssemblyScript build, so soft-body
- * Jelly-Moss is active out of the box — no env flag needed. If WASM fails
- * to load entirely (`handle` is null), this stays idle and membrane
- * sine/fbm shader wobble covers the visual.
+ * `stepPhysics` ships in the default AssemblyScript build, but soft-body
+ * Jelly-Moss is *opt-in per level*: `setLevelEnabled()` is driven from the
+ * level's `environments.dancingJellyMoss` flag, so levels that do not ask for
+ * dancing moss pay nothing. When it is off — or when WASM fails to load
+ * entirely (`handle` is null) — this stays idle and the membrane sine/fbm
+ * shader wobble covers the visual.
  */
 
 import * as THREE from 'three';
@@ -64,6 +66,7 @@ export class JellyMossSoftBodySystem {
     private allocated = false;
     private active = false;
     private bound = false;
+    private levelEnabled = false;
     private pendingMeshes: THREE.Mesh[] = [];
 
     /** True when C++ Verlet is bound and at least one hero moss is attached. */
@@ -107,10 +110,24 @@ export class JellyMossSoftBodySystem {
     }
 
     /**
+     * Per-level opt-in, driven from `environments.dancingJellyMoss`.
+     * Turning it off drops every attached hero moss back to shader wobble.
+     */
+    setLevelEnabled(enabled: boolean): void {
+        if (this.levelEnabled === enabled) return;
+        this.levelEnabled = enabled;
+        if (!enabled) {
+            this.pendingMeshes = [];
+            this.clear();
+        }
+    }
+
+    /**
      * Attach soft-body net to a Nebula Jelly-Moss if capacity remains.
      * Returns true when Verlet will drive its cores.
      */
     tryAttach(mesh: THREE.Mesh): boolean {
+        if (!this.levelEnabled) return false;
         if (!this.active || !this.handle) {
             // Queue only while WASM load is still outstanding
             if (!this.bound && !this.pendingMeshes.includes(mesh) && this.pendingMeshes.length < MAX_HERO_MOSSES) {

@@ -1,6 +1,71 @@
 import * as THREE from 'three';
 import { CandyType, CandyFlavor, CANDY_COLORS, LOLLIPOP_SWIRLS } from './shared';
 import { disposeObject } from '../utils';
+import { markShared } from '../gpu_resources';
+
+// ---------------------------------------------------------------------------
+// Shared lollipop resources
+//
+// The swirl banding used to be baked into a fresh 256x256 CanvasTexture (plus a
+// fresh material) per lollipop. There are only LOLLIPOP_SWIRLS.length distinct
+// colourways, so build each one once and share it across every lollipop.
+// Shared => marked, so mesh teardown (disposeObject) leaves them alive.
+// ---------------------------------------------------------------------------
+
+const lollipopHeadMaterials: (THREE.MeshStandardMaterial | undefined)[] = [];
+let lollipopStickMaterial: THREE.MeshStandardMaterial | undefined;
+
+function createSwirlTexture(primary: number, secondary: number): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d')!;
+
+    const centerX = 128;
+    const centerY = 128;
+    const maxRadius = 180;
+    const bands = 8;
+
+    for (let r = maxRadius; r > 0; r -= maxRadius / bands / 2) {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+        ctx.fillStyle = (Math.floor(r / (maxRadius / bands)) % 2 === 0)
+            ? '#' + primary.toString(16).padStart(6, '0')
+            : '#' + secondary.toString(16).padStart(6, '0');
+        ctx.fill();
+    }
+
+    return markShared(new THREE.CanvasTexture(canvas));
+}
+
+function getLollipopHeadMaterial(swirlIndex: number): THREE.MeshStandardMaterial {
+    const cached = lollipopHeadMaterials[swirlIndex];
+    if (cached) return cached;
+
+    const swirlColors = LOLLIPOP_SWIRLS[swirlIndex];
+    const mat = new THREE.MeshStandardMaterial({
+        map: createSwirlTexture(swirlColors.primary, swirlColors.secondary),
+        color: 0xffffff,
+        roughness: 0.3,
+        metalness: 0.2,
+        emissive: swirlColors.primary,
+        emissiveIntensity: 0.1
+    });
+    markShared(mat);
+    lollipopHeadMaterials[swirlIndex] = mat;
+    return mat;
+}
+
+function getLollipopStickMaterial(): THREE.MeshStandardMaterial {
+    if (!lollipopStickMaterial) {
+        lollipopStickMaterial = markShared(new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            roughness: 0.8,
+            metalness: 0.1
+        }));
+    }
+    return lollipopStickMaterial;
+}
 
 export class CandyAsteroid {
     mesh!: THREE.Mesh;
@@ -27,9 +92,6 @@ export class CandyAsteroid {
     // Cotton candy specific
     dissolveProgress: number = 0;
     isDissolving: boolean = false;
-    
-    // Lollipop specific
-    swirlRotation: number = 0;
     
     private originalScale!: THREE.Vector3;
     private wobbleDirection: THREE.Vector3;
@@ -134,52 +196,15 @@ export class CandyAsteroid {
         
         // Lollipop stick
         const stickGeo = new THREE.CylinderGeometry(0.08, 0.08, 3, 8);
-        const stickMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            roughness: 0.8,
-            metalness: 0.1
-        });
-        const stick = new THREE.Mesh(stickGeo, stickMat);
+        const stick = new THREE.Mesh(stickGeo, getLollipopStickMaterial());
         stick.position.y = -1.5;
         group.add(stick);
-        
-        // Lollipop candy head with spiral texture
-        const headGeo = new THREE.SphereGeometry(1, 32, 32);
-        const swirlColors = LOLLIPOP_SWIRLS[Math.floor(Math.random() * LOLLIPOP_SWIRLS.length)];
-        
-        // Create spiral texture using canvas
-        const canvas = document.createElement('canvas');
-        canvas.width = 256;
-        canvas.height = 256;
-        const ctx = canvas.getContext('2d')!;
-        
-        // Draw spiral
-        const centerX = 128;
-        const centerY = 128;
-        const maxRadius = 180;
-        const bands = 8;
-        
-        for (let r = maxRadius; r > 0; r -= maxRadius / bands / 2) {
-            ctx.beginPath();
-            ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
-            ctx.fillStyle = (Math.floor(r / (maxRadius / bands)) % 2 === 0) 
-                ? '#' + swirlColors.primary.toString(16).padStart(6, '0')
-                : '#' + swirlColors.secondary.toString(16).padStart(6, '0');
-            ctx.fill();
-        }
-        
-        const texture = new THREE.CanvasTexture(canvas);
-        
-        const headMat = new THREE.MeshStandardMaterial({
-            map: texture,
-            color: 0xffffff,
-            roughness: 0.3,
-            metalness: 0.2,
-            emissive: swirlColors.primary,
-            emissiveIntensity: 0.1
-        });
-        
-        const head = new THREE.Mesh(headGeo, headMat);
+
+        // Lollipop candy head — shared swirl material, one per colourway.
+        const headGeo = new THREE.SphereGeometry(1, 16, 16);
+        const swirlIndex = Math.floor(Math.random() * LOLLIPOP_SWIRLS.length);
+
+        const head = new THREE.Mesh(headGeo, getLollipopHeadMaterial(swirlIndex));
         head.position.y = 0.5;
         group.add(head);
         
@@ -477,16 +502,9 @@ export class CandyAsteroid {
         );
     }
 
-    private updateLollipop(dt: number): void {
-        // Slow spiral rotation
-        this.swirlRotation += this.spinSpeed * dt;
-        
-        const visualGroup = (this.mesh as any).visualGroup;
-        const headMesh = (this.mesh as any).headMesh;
-        
-        if (visualGroup && headMesh) {
-            headMesh.rotation.y = this.swirlRotation;
-        }
+    private updateLollipop(_dt: number): void {
+        // The wrapper already tumbles in updateRotation(); the extra per-frame
+        // head swirl was redundant CPU work, so the head just rides the wrapper.
     }
 
     private updateCottonCandy(dt: number): void {

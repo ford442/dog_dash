@@ -24,7 +24,6 @@ const AMBIENT_EFFECTS = new Set<MagicalEffectType>([
     MagicalEffectType.CONFETTI_BURST,
     MagicalEffectType.HEART_RAIN,
     MagicalEffectType.STAR_CASCADE,
-    MagicalEffectType.RAINBOW_SPIRAL,
     MagicalEffectType.SPARKLE_FIELD,
 ]);
 
@@ -52,9 +51,6 @@ function activateMagicalEffect(ctx: PowerUpHookContext, type: PowerUpType, durat
                 break;
             case MagicalEffectType.STAR_CASCADE:
                 ctx.effectManager.spawnStarCascade(pos, duration);
-                break;
-            case MagicalEffectType.RAINBOW_SPIRAL:
-                ctx.effectManager.spawnRainbowSpiral(pos, duration);
                 break;
             case MagicalEffectType.SPARKLE_FIELD:
                 ctx.effectManager.spawnSparkleField(pos, duration);

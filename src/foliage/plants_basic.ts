@@ -85,17 +85,6 @@ export function createFlower(options: any = {}) {
             petal.position.set(Math.cos(angle) * 0.2, Math.sin(i * 0.5) * 0.1, Math.sin(angle) * 0.2);
             head.add(petal);
         }
-    } else if (shape === 'spiral') {
-        const petalCount = 10;
-        const petalGeo = new THREE.ConeGeometry(0.1, 0.2, 6);
-        for (let i = 0; i < petalCount; i++) {
-            const angle = (i / petalCount) * Math.PI * 4;
-            const radius = 0.05 + (i / petalCount) * 0.15;
-            const petal = new THREE.Mesh(petalGeo, petalMat);
-            petal.position.set(Math.cos(angle) * radius, (i / petalCount) * 0.1, Math.sin(angle) * radius);
-            petal.rotation.z = angle;
-            head.add(petal);
-        }
     } else if (shape === 'layered') {
         for (let layer = 0; layer < 2; layer++) {
             const petalCount = 6;
@@ -471,50 +460,6 @@ export function createPuffballFlower(options: any = {}) {
     group.userData.animationType = 'sway';
     group.userData.animationOffset = Math.random() * 10;
     group.userData.type = 'flower';
-    return group;
-}
-
-export function createHelixPlant(options: any = {}) {
-    const { color = 0x00FA9A } = options;
-    const group = new THREE.Group();
-
-    class SpiralCurve extends THREE.Curve<THREE.Vector3> {
-        scale: number;
-        constructor(scale = 1) {
-            super();
-            this.scale = scale;
-        }
-        getPoint(t: number, optionalTarget = new THREE.Vector3()) {
-            const tx = Math.cos(t * Math.PI * 4) * 0.2 * t * this.scale;
-            const ty = t * 2.0 * this.scale;
-            const tz = Math.sin(t * Math.PI * 4) * 0.2 * t * this.scale;
-            return optionalTarget.set(tx, ty, tz);
-        }
-    }
-
-    const path = new SpiralCurve(1.0 + Math.random() * 0.5);
-    const tubeGeo = new THREE.TubeGeometry(path, 20, 0.08, 8, false);
-    const mat = createClayMaterial(color);
-    registerReactiveMaterial(mat);
-
-    const mesh = new THREE.Mesh(tubeGeo, mat);
-    mesh.castShadow = true;
-    group.add(mesh);
-
-    const tipGeo = new THREE.SphereGeometry(0.15, 8, 8);
-    const tipMat = new THREE.MeshStandardMaterial({
-        color: 0xFFFFFF, emissive: 0xFFFACD, emissiveIntensity: 0.5, roughness: 0.5
-    });
-    registerReactiveMaterial(tipMat);
-
-    const tip = new THREE.Mesh(tipGeo, tipMat);
-    const endPoint = path.getPoint(1);
-    tip.position.copy(endPoint);
-    group.add(tip);
-
-    group.userData.animationType = 'spring';
-    group.userData.animationOffset = Math.random() * 10;
-    group.userData.type = 'shrub';
     return group;
 }
 

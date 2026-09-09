@@ -10,6 +10,7 @@ import {
     buildDeferredEnvPlugins,
     buildEagerEnvPlugins
 } from '../level_env_registry';
+import { jellyMossSoftBody } from '../jelly_moss_softbody';
 
 export type { LevelPluginHost } from './plugin_host';
 
@@ -93,6 +94,10 @@ export function applyEnvironmentPlugins(
     environments: LevelEnvironments,
     levelLength: number
 ): void {
+    // Verlet soft-body moss is opt-in per level: only levels that ask for
+    // dancing jelly-moss pay for the hero-moss nets.
+    jellyMossSoftBody.setLevelEnabled(isEnvironmentEnabled(environments.dancingJellyMoss));
+
     const plugins = buildEnvironmentPlugins(host, cfg, levelLength);
     for (const plugin of plugins) {
         const value = environments[plugin.flag as keyof LevelEnvironments];

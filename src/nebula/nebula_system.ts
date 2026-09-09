@@ -3,14 +3,29 @@ import { uniform } from 'three/tsl';
 import { WeaponLightManager } from '../lighting';
 import { decorationBudget } from '../decoration_budget';
 import { PulseOverlay } from './pulse_overlay';
-import { NebulaCloudLayer, EnergyParticleLayer, ButterflyEnergyMoteLayer } from './cloud_layers';
+import { NebulaCloudLayer, ButterflyEnergyMoteLayer } from './cloud_layers';
 import { NebulaRibbonLayer, type NebulaRibbonLayerConfig } from './ribbon_layers';
+
+/**
+ * Fixed-pool sizes. Keep in sync with `decoration_budget.ts` maxActive for
+ * `nebula_cloud_puffs` / `nebula_energy_motes` / `nebula_ribbons`.
+ */
+const NEBULA_CLOUD_PUFF_COUNT = 20;
+const NEBULA_MOTE_COUNT = 20;
+const NEBULA_RIBBON_COUNT = 8;
+
+/**
+ * Full-screen pulse overlay: an extra fullscreen transparent pass every frame
+ * for a subtle brightness throb. Off by default; opt in per level only if a
+ * beat actually needs it.
+ */
+const PULSE_OVERLAY_ENABLED = false;
 
 export class NebulaSystem {
     scene: THREE.Scene;
     active: boolean = false;
     ribbonsActive: boolean = false;
-    layers: (NebulaCloudLayer | EnergyParticleLayer | ButterflyEnergyMoteLayer)[] = [];
+    layers: (NebulaCloudLayer | ButterflyEnergyMoteLayer)[] = [];
     ribbonLayers: NebulaRibbonLayer[] = [];
     uGlobalPulse: any;
     uMagicIntensity: any;
@@ -30,6 +45,7 @@ export class NebulaSystem {
     }
 
     setCamera(camera: THREE.Camera) {
+        if (!PULSE_OVERLAY_ENABLED) return;
         this.pulseOverlay.init(this.uGlobalPulse, camera);
     }
 
@@ -39,7 +55,7 @@ export class NebulaSystem {
     }
 
     /**
-     * Parallax ribbon/veil sheets only (3 draw calls).
+     * Parallax ribbon/veil sheets — a single 8-instance layer (1 draw call).
      * Background only — ignore for collision and interaction systems.
      */
     initRibbonLayers(topColor: number = 0x0a001a, bottomColor: number = 0x1a0033): void {
@@ -47,7 +63,7 @@ export class NebulaSystem {
 
         const configs: NebulaRibbonLayerConfig[] = [
             {
-                count: 8,
+                count: NEBULA_RIBBON_COUNT,
                 width: 420,
                 height: 55,
                 baseZ: -145,
@@ -60,36 +76,6 @@ export class NebulaSystem {
                 topColor,
                 bottomColor,
                 uvPhase: 0.0
-            },
-            {
-                count: 10,
-                width: 380,
-                height: 48,
-                baseZ: -98,
-                zSpread: 14,
-                ribbonWidth: 52,
-                ribbonHeight: 16,
-                opacity: 0.16,
-                parallaxFactor: 0.14,
-                driftSpeed: 0.55,
-                topColor,
-                bottomColor,
-                uvPhase: 1.7
-            },
-            {
-                count: 6,
-                width: 340,
-                height: 42,
-                baseZ: -72,
-                zSpread: 10,
-                ribbonWidth: 44,
-                ribbonHeight: 20,
-                opacity: 0.1,
-                parallaxFactor: 0.22,
-                driftSpeed: 0.75,
-                topColor,
-                bottomColor,
-                uvPhase: 3.1
             }
         ];
 
@@ -97,7 +83,7 @@ export class NebulaSystem {
             this.ribbonLayers.push(new NebulaRibbonLayer(this.scene, cfg));
         }
 
-        decorationBudget.syncCount('nebula_ribbons', 24);
+        decorationBudget.syncCount('nebula_ribbons', NEBULA_RIBBON_COUNT);
         this.deactivateRibbons();
     }
 
@@ -114,8 +100,10 @@ export class NebulaSystem {
     initLayers() {
         const weaponLights = this.weaponLightManager.storageNode;
 
+        // One cloud layer only. The old three-layer stack (20 + 15 + 10 puffs at
+        // three depths) was almost pure overdraw on top of the starfield.
         this.layers.push(new NebulaCloudLayer(this.scene, {
-            count: 20,
+            count: NEBULA_CLOUD_PUFF_COUNT,
             color1: 0x4b0082,
             color2: 0x8a2be2,
             opacity: 0.4,
@@ -130,53 +118,25 @@ export class NebulaSystem {
             uMagicIntensity: this.uMagicIntensity
         }));
 
-        this.layers.push(new NebulaCloudLayer(this.scene, {
-            count: 15,
-            color1: 0x00008b,
-            color2: 0x00ced1,
-            opacity: 0.3,
-            sizeMin: 15,
-            sizeMax: 25,
-            z: -40,
-            zRange: 15,
-            width: 250,
-            height: 50,
-            uGlobalPulse: this.uGlobalPulse,
-            weaponLights: weaponLights,
-            uMagicIntensity: this.uMagicIntensity
-        }));
+        this.layers.push(new ButterflyEnergyMoteLayer(
+            this.scene,
+            NEBULA_MOTE_COUNT,
+            -25,
+            200,
+            this.uGlobalPulse,
+            this.uMagicIntensity
+        ));
 
-        this.layers.push(new NebulaCloudLayer(this.scene, {
-            count: 10,
-            color1: 0xff1493,
-            color2: 0xff69b4,
-            opacity: 0.15,
-            sizeMin: 10,
-            sizeMax: 20,
-            z: -20,
-            zRange: 10,
-            width: 200,
-            height: 40,
-            uGlobalPulse: this.uGlobalPulse,
-            weaponLights: weaponLights,
-            uMagicIntensity: this.uMagicIntensity
-        }));
-
-        this.layers.push(new EnergyParticleLayer(this.scene, 30, -30, 200, this.uGlobalPulse));
-        this.layers.push(new ButterflyEnergyMoteLayer(this.scene, 20, -25, 200, this.uGlobalPulse, this.uMagicIntensity));
-
-        decorationBudget.syncCount('nebula_cloud_puffs', 45);
-        decorationBudget.syncCount('nebula_energy_motes', 50);
-        decorationBudget.syncCount('nebula_ribbons', 24);
+        this.resyncBudgetCounts();
 
         this.deactivate();
     }
 
     /** Re-sync fixed-pool budget counters after decorationBudget.resetCounts(). */
     resyncBudgetCounts(): void {
-        decorationBudget.syncCount('nebula_cloud_puffs', 45);
-        decorationBudget.syncCount('nebula_energy_motes', 50);
-        decorationBudget.syncCount('nebula_ribbons', 24);
+        decorationBudget.syncCount('nebula_cloud_puffs', NEBULA_CLOUD_PUFF_COUNT);
+        decorationBudget.syncCount('nebula_energy_motes', NEBULA_MOTE_COUNT);
+        decorationBudget.syncCount('nebula_ribbons', NEBULA_RIBBON_COUNT);
     }
 
     setMagicActive(isActive: boolean) {

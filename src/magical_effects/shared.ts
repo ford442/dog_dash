@@ -24,7 +24,6 @@ export enum MagicalEffectType {
     CONFETTI_BURST = 'confetti_burst',
     HEART_RAIN = 'heart_rain',
     STAR_CASCADE = 'star_cascade',
-    RAINBOW_SPIRAL = 'rainbow_spiral',
     SPARKLE_FIELD = 'sparkle_field'
 }
 

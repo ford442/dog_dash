@@ -10,7 +10,6 @@ import {
     ConfettiBurstEffect,
     HeartRainEffect,
     StarCascadeEffect,
-    RainbowSpiralEffect,
     SparkleFieldEffect
 } from './burst_effects';
 
@@ -28,7 +27,6 @@ export class EffectManager {
     confetti?: ConfettiBurstEffect;
     heartRain?: HeartRainEffect;
     starCascade?: StarCascadeEffect;
-    rainbowSpiral?: RainbowSpiralEffect;
     sparkleField?: SparkleFieldEffect;
   } = {};
   
@@ -41,7 +39,6 @@ export class EffectManager {
     this.ambientEffects.confetti = new ConfettiBurstEffect(scene);
     this.ambientEffects.heartRain = new HeartRainEffect(scene);
     this.ambientEffects.starCascade = new StarCascadeEffect(scene);
-    this.ambientEffects.rainbowSpiral = new RainbowSpiralEffect(scene);
     this.ambientEffects.sparkleField = new SparkleFieldEffect(scene);
   }
   
@@ -205,10 +202,6 @@ export class EffectManager {
   
   spawnStarCascade(position: THREE.Vector3, duration?: number): void {
     this.ambientEffects.starCascade?.spawn(position, duration);
-  }
-  
-  spawnRainbowSpiral(position: THREE.Vector3, duration?: number): void {
-    this.ambientEffects.rainbowSpiral?.spawn(position, duration);
   }
   
   spawnSparkleField(position: THREE.Vector3, duration?: number): void {

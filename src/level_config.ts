@@ -162,7 +162,11 @@ export type LevelEnvironments = {
     clouds?: boolean | CloudsEnvironmentConfig;
     biological?: boolean;
     nebula?: boolean;
-    /** Parallax ribbon/veil sheets (cheap depth); uses level skyColors. */
+    /**
+     * Parallax ribbon/veil sheets (one 8-instance layer); uses level skyColors.
+     * Off on every level — the sheets are large, overdrawing and read as
+     * generic swirl. Opt in per level only if a beat actually needs them.
+     */
     nebulaRibbons?: boolean;
     cosmicDust?: boolean;
     moonPalace?: boolean;
@@ -350,22 +354,13 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         environments: {
             dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
-            godRays: { enabled: true, density: 0.45, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
-            lightning: { enabled: true, density: 1.0 },
+            // Level 1 is the tutorial level and the first thing anyone sees, so
+            // it runs a deliberately thin décor set. Everything below was on at
+            // once and cost more frame time than every other level combined;
+            // the modules still exist and are used by later levels.
             butterflySwarm: true,
             shootingStars: true,
-            pastelNebula: true,
-            candyPlanetRing: true,
-            wishLanterns: true,
-            spacePetsSwarm: true,
-            dancingJellyMoss: true,
-            clouds: { density: 6 },
-            dayNightCycle: { cycleDuration: 30 },
-            cloudCastles: { density: 0.6 },
-            grappleIsles: true,
-            spaceGarden: true,
-            flowerConstellations: true,
-            hideAndSeekStars: true,
+            clouds: { density: 3 },
             airTokens: {
                 tokens: [
                     { x: 70, y: 6 },
@@ -684,7 +679,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             lightning: { enabled: true, density: 2.5, color: 0xff00ff },
             biological: true,
             nebula: true,
-            nebulaRibbons: true,
             cosmicDust: true,
             voidJellyfish: { density: 45 },
             clouds: { density: 5 },
@@ -756,7 +750,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             aurora: { enabled: true, density: 1.0, color1: 0x00ffff, color2: 0xff00ff, speed: 1.5 },
             waterfall: true,
             aquaticLife: true,
-            nebulaRibbons: true,
             voidJellyfish: { density: 40 },
             moonPalace: true,
             clouds: { density: 20 },

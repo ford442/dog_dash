@@ -1,527 +1,468 @@
 import * as THREE from 'three';
-import { PASTEL_RAINBOW, STARDUST_COLORS, getRainbowColor, randomRange, createHeartShape } from './shared';
+import { PASTEL_RAINBOW, STARDUST_COLORS, randomRange, createHeartShape } from './shared';
 
 // =============================================================================
-// PARTICLE PRESETS - CONFETTI BURST
+// POOLED PARTICLE BURSTS
+//
+// Every burst preset draws from a fixed-size pool allocated once at
+// construction: one shared geometry per pool plus one long-lived material per
+// slot (colour/opacity are written on acquire, never re-created). Nothing here
+// allocates geometry, materials or meshes per frame or per spawn.
 // =============================================================================
 
-interface ParticleData {
-  mesh: THREE.Mesh;
-  velocity: THREE.Vector3;
-  rotationAxis: THREE.Vector3;
-  rotationSpeed: number;
-  life: number;
-  gravity: number;
+interface PooledParticle {
+    mesh: THREE.Mesh;
+    material: THREE.MeshBasicMaterial;
+    velocity: THREE.Vector3;
+    rotationAxis: THREE.Vector3;
+    rotationSpeed: number;
+    life: number;
+    maxLife: number;
+    gravity: number;
+    phase: number;
+    active: boolean;
 }
+
+/**
+ * Fixed pool of meshes sharing one geometry. Slots are recycled; the scene
+ * graph only ever sees `capacity` meshes for the lifetime of the pool.
+ */
+class ParticlePool {
+    private readonly scene: THREE.Scene;
+    private readonly geometry: THREE.BufferGeometry;
+    private readonly particles: PooledParticle[] = [];
+    private activeCount = 0;
+
+    constructor(
+        scene: THREE.Scene,
+        geometry: THREE.BufferGeometry,
+        capacity: number,
+        materialOptions: THREE.MeshBasicMaterialParameters = {}
+    ) {
+        this.scene = scene;
+        this.geometry = geometry;
+
+        for (let i = 0; i < capacity; i++) {
+            const material = new THREE.MeshBasicMaterial({
+                transparent: true,
+                opacity: 0,
+                ...materialOptions
+            });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.visible = false;
+            mesh.frustumCulled = false;
+            scene.add(mesh);
+
+            this.particles.push({
+                mesh,
+                material,
+                velocity: new THREE.Vector3(),
+                rotationAxis: new THREE.Vector3(0, 0, 1),
+                rotationSpeed: 0,
+                life: 0,
+                maxLife: 1,
+                gravity: 0,
+                phase: 0,
+                active: false
+            });
+        }
+    }
+
+    get hasActive(): boolean {
+        return this.activeCount > 0;
+    }
+
+    /** Grab a free slot, or null when the pool is saturated (hard cap). */
+    acquire(): PooledParticle | null {
+        for (let i = 0; i < this.particles.length; i++) {
+            const p = this.particles[i];
+            if (!p.active) {
+                p.active = true;
+                p.mesh.visible = true;
+                p.mesh.rotation.set(0, 0, 0);
+                p.mesh.scale.setScalar(1);
+                this.activeCount++;
+                return p;
+            }
+        }
+        return null;
+    }
+
+    release(p: PooledParticle): void {
+        if (!p.active) return;
+        p.active = false;
+        p.mesh.visible = false;
+        p.material.opacity = 0;
+        this.activeCount--;
+    }
+
+    forEachActive(fn: (p: PooledParticle) => void): void {
+        for (let i = 0; i < this.particles.length; i++) {
+            if (this.particles[i].active) fn(this.particles[i]);
+        }
+    }
+
+    releaseAll(): void {
+        for (let i = 0; i < this.particles.length; i++) {
+            this.release(this.particles[i]);
+        }
+    }
+
+    dispose(): void {
+        for (const p of this.particles) {
+            this.scene.remove(p.mesh);
+            p.material.dispose();
+        }
+        this.particles.length = 0;
+        this.activeCount = 0;
+        this.geometry.dispose();
+    }
+}
+
+function pickColor(palette: readonly number[]): number {
+    return palette[Math.floor(Math.random() * palette.length)];
+}
+
+// =============================================================================
+// CONFETTI BURST
+// =============================================================================
+
+const CONFETTI_CAPACITY = 32;
 
 export class ConfettiBurstEffect {
-  private scene: THREE.Scene;
-  private particles: ParticleData[] = [];
-  private isActive: boolean = false;
-  
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;
-  }
-  
-  spawn(position: THREE.Vector3, count: number = 30): void {
-    this.isActive = true;
-    
-    const shapes = [
-      () => new THREE.PlaneGeometry(0.1, 0.15),
-      () => new THREE.CircleGeometry(0.06, 6),
-      () => new THREE.BoxGeometry(0.08, 0.08, 0.02)
-    ];
-    
-    for (let i = 0; i < count; i++) {
-      const geometry = shapes[i % shapes.length]();
-      const color = PASTEL_RAINBOW[Math.floor(Math.random() * PASTEL_RAINBOW.length)];
-      
-      const material = new THREE.MeshBasicMaterial({
-        color: color,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.9
-      });
-      
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.position.copy(position);
-      mesh.position.x += randomRange(-0.5, 0.5);
-      mesh.position.y += randomRange(-0.5, 0.5);
-      mesh.position.z += randomRange(-0.5, 0.5);
-      
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 3 + Math.random() * 4;
-      const elevation = randomRange(-0.5, 1);
-      
-      const particle: ParticleData = {
-        mesh,
-        velocity: new THREE.Vector3(
-          Math.cos(angle) * speed,
-          elevation * speed + 2,
-          Math.sin(angle) * speed * 0.5
-        ),
-        rotationAxis: new THREE.Vector3(randomRange(-1, 1), randomRange(-1, 1), randomRange(-1, 1)).normalize(),
-        rotationSpeed: randomRange(3, 8),
-        life: 1.5 + Math.random() * 0.5,
-        gravity: 2 + Math.random() * 2
-      };
-      
-      this.scene.add(mesh);
-      this.particles.push(particle);
+    private pool: ParticlePool;
+    private isActive: boolean = false;
+
+    constructor(scene: THREE.Scene) {
+        // One shared flake geometry for the whole pool — confetti reads as
+        // shape variety through rotation, not through per-particle geometry.
+        this.pool = new ParticlePool(
+            scene,
+            new THREE.PlaneGeometry(0.1, 0.15),
+            CONFETTI_CAPACITY,
+            { side: THREE.DoubleSide }
+        );
     }
-  }
-  
-  update(dt: number): boolean {
-    if (!this.isActive) return false;
-    
-    let hasActiveParticles = false;
-    
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.life -= dt;
-      
-      if (p.life <= 0) {
-        this.scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        (p.mesh.material as THREE.Material).dispose();
-        this.particles.splice(i, 1);
-        continue;
-      }
-      
-      hasActiveParticles = true;
-      
-      // Physics
-      p.velocity.y -= p.gravity * dt;
-      p.mesh.position.add(p.velocity.clone().multiplyScalar(dt));
-      
-      // Rotation
-      p.mesh.rotateOnAxis(p.rotationAxis, p.rotationSpeed * dt);
-      
-      // Fade
-      (p.mesh.material as THREE.MeshBasicMaterial).opacity = p.life;
+
+    spawn(position: THREE.Vector3, count: number = CONFETTI_CAPACITY): void {
+        this.isActive = true;
+
+        const wanted = Math.min(count, CONFETTI_CAPACITY);
+        for (let i = 0; i < wanted; i++) {
+            const p = this.pool.acquire();
+            if (!p) break;
+
+            p.material.color.setHex(pickColor(PASTEL_RAINBOW));
+            p.material.opacity = 0.9;
+
+            p.mesh.position.set(
+                position.x + randomRange(-0.5, 0.5),
+                position.y + randomRange(-0.5, 0.5),
+                position.z + randomRange(-0.5, 0.5)
+            );
+
+            const angle = Math.random() * Math.PI * 2;
+            const speed = 3 + Math.random() * 4;
+            const elevation = randomRange(-0.5, 1);
+
+            p.velocity.set(
+                Math.cos(angle) * speed,
+                elevation * speed + 2,
+                Math.sin(angle) * speed * 0.5
+            );
+            p.rotationAxis
+                .set(randomRange(-1, 1), randomRange(-1, 1), randomRange(-1, 1))
+                .normalize();
+            p.rotationSpeed = randomRange(3, 8);
+            p.life = 1.5 + Math.random() * 0.5;
+            p.maxLife = p.life;
+            p.gravity = 2 + Math.random() * 2;
+        }
     }
-    
-    if (!hasActiveParticles) {
-      this.isActive = false;
+
+    update(dt: number): boolean {
+        if (!this.isActive) return false;
+
+        this.pool.forEachActive((p) => {
+            p.life -= dt;
+            if (p.life <= 0) {
+                this.pool.release(p);
+                return;
+            }
+
+            p.velocity.y -= p.gravity * dt;
+            p.mesh.position.addScaledVector(p.velocity, dt);
+            p.mesh.rotateOnAxis(p.rotationAxis, p.rotationSpeed * dt);
+            p.material.opacity = Math.min(1, p.life);
+        });
+
+        if (!this.pool.hasActive) {
+            this.isActive = false;
+        }
+
+        return this.isActive;
     }
-    
-    return hasActiveParticles;
-  }
+
+    destroy(): void {
+        this.pool.dispose();
+        this.isActive = false;
+    }
 }
 
 // =============================================================================
-// PARTICLE PRESETS - HEART RAIN
+// HEART RAIN
 // =============================================================================
+
+const HEART_CAPACITY = 24;
+const HEART_COLORS = [0xff69b4, 0xff1493, 0xffb6c1, 0xffa0c9];
 
 export class HeartRainEffect {
-  private scene: THREE.Scene;
-  private hearts: ParticleData[] = [];
-  private isActive: boolean = false;
-  private spawnTimer: number = 0;
-  private duration: number = 5;
-  private elapsed: number = 0;
-  
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;
-  }
-  
-  spawn(position: THREE.Vector3, duration: number = 5): void {
-    this.isActive = true;
-    this.duration = duration;
-    this.elapsed = 0;
-  }
-  
-  update(dt: number): boolean {
-    if (!this.isActive) return false;
-    
-    this.elapsed += dt;
-    
-    if (this.elapsed < this.duration) {
-      // Spawn new hearts
-      this.spawnTimer += dt;
-      if (this.spawnTimer > 0.1) {
-        this.spawnHeart();
+    private pool: ParticlePool;
+    private isActive: boolean = false;
+    private spawnTimer: number = 0;
+    private duration: number = 5;
+    private elapsed: number = 0;
+
+    constructor(scene: THREE.Scene) {
+        this.pool = new ParticlePool(
+            scene,
+            new THREE.ShapeGeometry(createHeartShape(0.15)),
+            HEART_CAPACITY,
+            { side: THREE.DoubleSide }
+        );
+    }
+
+    spawn(position: THREE.Vector3, duration: number = 5): void {
+        this.isActive = true;
+        this.duration = duration;
+        this.elapsed = 0;
         this.spawnTimer = 0;
-      }
-    } else if (this.hearts.length === 0) {
-      this.isActive = false;
-      return false;
     }
-    
-    // Update hearts
-    for (let i = this.hearts.length - 1; i >= 0; i--) {
-      const h = this.hearts[i];
-      h.life -= dt;
-      
-      if (h.life <= 0) {
-        this.scene.remove(h.mesh);
-        h.mesh.geometry.dispose();
-        (h.mesh.material as THREE.Material).dispose();
-        this.hearts.splice(i, 1);
-        continue;
-      }
-      
-      // Float down
-      h.velocity.y -= h.gravity * dt;
-      h.mesh.position.add(h.velocity.clone().multiplyScalar(dt));
-      h.mesh.rotation.z += Math.sin(h.life * 3) * 0.02;
-      
-      // Fade
-      (h.mesh.material as THREE.MeshBasicMaterial).opacity = Math.min(1, h.life * 2);
+
+    update(dt: number): boolean {
+        if (!this.isActive) return false;
+
+        this.elapsed += dt;
+
+        if (this.elapsed < this.duration) {
+            this.spawnTimer += dt;
+            if (this.spawnTimer > 0.1) {
+                this.spawnHeart();
+                this.spawnTimer = 0;
+            }
+        } else if (!this.pool.hasActive) {
+            this.isActive = false;
+            return false;
+        }
+
+        this.pool.forEachActive((h) => {
+            h.life -= dt;
+            if (h.life <= 0) {
+                this.pool.release(h);
+                return;
+            }
+
+            h.velocity.y -= h.gravity * dt;
+            h.mesh.position.addScaledVector(h.velocity, dt);
+            h.mesh.rotation.z += Math.sin(h.life * 3) * 0.02;
+            h.material.opacity = Math.min(1, h.life * 2);
+        });
+
+        return true;
     }
-    
-    return this.isActive || this.hearts.length > 0;
-  }
-  
-  private spawnHeart(): void {
-    const geometry = new THREE.ShapeGeometry(createHeartShape(0.15));
-    const colors = [0xff69b4, 0xff1493, 0xffb6c1, 0xffa0c9];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-    
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.9
-    });
-    
-    const heart = new THREE.Mesh(geometry, material);
-    heart.position.set(
-      randomRange(-8, 8),
-      10 + randomRange(0, 5),
-      randomRange(-2, 2)
-    );
-    
-    const heartParticle: ParticleData = {
-      mesh: heart,
-      velocity: new THREE.Vector3(randomRange(-0.5, 0.5), randomRange(-1, -2), 0),
-      rotationAxis: new THREE.Vector3(0, 0, 1),
-      rotationSpeed: randomRange(-1, 1),
-      life: 3 + Math.random(),
-      gravity: 0.5
-    };
-    
-    this.scene.add(heart);
-    this.hearts.push(heartParticle);
-  }
+
+    private spawnHeart(): void {
+        const h = this.pool.acquire();
+        if (!h) return;
+
+        h.material.color.setHex(HEART_COLORS[Math.floor(Math.random() * HEART_COLORS.length)]);
+        h.material.opacity = 0.9;
+
+        h.mesh.position.set(randomRange(-8, 8), 10 + randomRange(0, 5), randomRange(-2, 2));
+        h.velocity.set(randomRange(-0.5, 0.5), randomRange(-1, -2), 0);
+        h.rotationAxis.set(0, 0, 1);
+        h.rotationSpeed = randomRange(-1, 1);
+        h.life = 3 + Math.random();
+        h.maxLife = h.life;
+        h.gravity = 0.5;
+    }
+
+    destroy(): void {
+        this.pool.dispose();
+        this.isActive = false;
+    }
 }
 
 // =============================================================================
-// PARTICLE PRESETS - STAR CASCADE
+// STAR CASCADE
 // =============================================================================
+
+const STAR_CAPACITY = 32;
 
 export class StarCascadeEffect {
-  private scene: THREE.Scene;
-  private stars: ParticleData[] = [];
-  private isActive: boolean = false;
-  private spawnTimer: number = 0;
-  private duration: number = 5;
-  private elapsed: number = 0;
-  
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;
-  }
-  
-  spawn(position: THREE.Vector3, duration: number = 5): void {
-    this.isActive = true;
-    this.duration = duration;
-    this.elapsed = 0;
-  }
-  
-  update(dt: number): boolean {
-    if (!this.isActive) return false;
-    
-    this.elapsed += dt;
-    
-    if (this.elapsed < this.duration) {
-      this.spawnTimer += dt;
-      if (this.spawnTimer > 0.05) {
-        this.spawnStar();
+    private pool: ParticlePool;
+    private isActive: boolean = false;
+    private spawnTimer: number = 0;
+    private duration: number = 5;
+    private elapsed: number = 0;
+
+    constructor(scene: THREE.Scene) {
+        this.pool = new ParticlePool(
+            scene,
+            new THREE.OctahedronGeometry(0.1, 0),
+            STAR_CAPACITY
+        );
+    }
+
+    spawn(position: THREE.Vector3, duration: number = 5): void {
+        this.isActive = true;
+        this.duration = duration;
+        this.elapsed = 0;
         this.spawnTimer = 0;
-      }
-    } else if (this.stars.length === 0) {
-      this.isActive = false;
-      return false;
     }
-    
-    // Update stars
-    for (let i = this.stars.length - 1; i >= 0; i--) {
-      const s = this.stars[i];
-      s.life -= dt;
-      
-      if (s.life <= 0) {
-        this.scene.remove(s.mesh);
-        s.mesh.geometry.dispose();
-        (s.mesh.material as THREE.Material).dispose();
-        this.stars.splice(i, 1);
-        continue;
-      }
-      
-      // Trail motion
-      s.mesh.position.add(s.velocity.clone().multiplyScalar(dt));
-      s.velocity.y -= s.gravity * dt;
-      s.mesh.rotation.z += s.rotationSpeed * dt;
-      
-      // Twinkle
-      const twinkle = 0.5 + Math.sin(s.life * 10) * 0.5;
-      (s.mesh.material as THREE.MeshBasicMaterial).opacity = s.life * twinkle;
+
+    update(dt: number): boolean {
+        if (!this.isActive) return false;
+
+        this.elapsed += dt;
+
+        if (this.elapsed < this.duration) {
+            this.spawnTimer += dt;
+            // 0.1s cadence against a 32-slot pool keeps the cascade readable
+            // without the pool ever saturating.
+            if (this.spawnTimer > 0.1) {
+                this.spawnStar();
+                this.spawnTimer = 0;
+            }
+        } else if (!this.pool.hasActive) {
+            this.isActive = false;
+            return false;
+        }
+
+        this.pool.forEachActive((s) => {
+            s.life -= dt;
+            if (s.life <= 0) {
+                this.pool.release(s);
+                return;
+            }
+
+            s.mesh.position.addScaledVector(s.velocity, dt);
+            s.velocity.y -= s.gravity * dt;
+            s.mesh.rotation.z += s.rotationSpeed * dt;
+
+            const twinkle = 0.5 + Math.sin(s.life * 10) * 0.5;
+            s.material.opacity = Math.min(1, s.life * twinkle);
+        });
+
+        return true;
     }
-    
-    return this.isActive || this.stars.length > 0;
-  }
-  
-  private spawnStar(): void {
-    const geometry = new THREE.OctahedronGeometry(0.1, 0);
-    const color = STARDUST_COLORS[Math.floor(Math.random() * STARDUST_COLORS.length)];
-    
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.9
-    });
-    
-    const star = new THREE.Mesh(geometry, material);
-    star.position.set(
-      randomRange(-10, 10),
-      12,
-      randomRange(-3, 3)
-    );
-    
-    const starParticle: ParticleData = {
-      mesh: star,
-      velocity: new THREE.Vector3(
-        randomRange(-1, 1),
-        randomRange(-3, -5),
-        randomRange(-0.5, 0.5)
-      ),
-      rotationAxis: new THREE.Vector3(0, 0, 1),
-      rotationSpeed: randomRange(3, 8),
-      life: 2 + Math.random(),
-      gravity: 1
-    };
-    
-    this.scene.add(star);
-    this.stars.push(starParticle);
-  }
+
+    private spawnStar(): void {
+        const s = this.pool.acquire();
+        if (!s) return;
+
+        s.material.color.setHex(pickColor(STARDUST_COLORS));
+        s.material.opacity = 0.9;
+
+        s.mesh.position.set(randomRange(-10, 10), 12, randomRange(-3, 3));
+        s.velocity.set(randomRange(-1, 1), randomRange(-3, -5), randomRange(-0.5, 0.5));
+        s.rotationAxis.set(0, 0, 1);
+        s.rotationSpeed = randomRange(3, 8);
+        s.life = 2 + Math.random();
+        s.maxLife = s.life;
+        s.gravity = 1;
+    }
+
+    destroy(): void {
+        this.pool.dispose();
+        this.isActive = false;
+    }
 }
 
 // =============================================================================
-// PARTICLE PRESETS - RAINBOW SPIRAL
+// SPARKLE FIELD
 // =============================================================================
 
-export class RainbowSpiralEffect {
-  private scene: THREE.Scene;
-  private particles: ParticleData[] = [];
-  private isActive: boolean = false;
-  private angle: number = 0;
-  private duration: number = 5;
-  private elapsed: number = 0;
-  private centerPosition: THREE.Vector3 = new THREE.Vector3();
-  
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;
-  }
-  
-  spawn(position: THREE.Vector3, duration: number = 5): void {
-    this.isActive = true;
-    this.duration = duration;
-    this.elapsed = 0;
-    this.centerPosition.copy(position);
-    this.angle = 0;
-  }
-  
-  update(dt: number): boolean {
-    if (!this.isActive) return false;
-    
-    this.elapsed += dt;
-    this.angle += dt * 3;
-    
-    if (this.elapsed < this.duration) {
-      // Spawn spiral particles
-      for (let i = 0; i < 3; i++) {
-        this.spawnSpiralParticle(this.angle + i * 2);
-      }
-    }
-    
-    // Update particles
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
-      p.life -= dt;
-      
-      if (p.life <= 0) {
-        this.scene.remove(p.mesh);
-        p.mesh.geometry.dispose();
-        (p.mesh.material as THREE.Material).dispose();
-        this.particles.splice(i, 1);
-        continue;
-      }
-      
-      // Spiral outward
-      p.velocity.multiplyScalar(0.98); // Slow down
-      p.mesh.position.add(p.velocity.clone().multiplyScalar(dt));
-      p.mesh.rotation.z += p.rotationSpeed * dt;
-      
-      (p.mesh.material as THREE.MeshBasicMaterial).opacity = p.life;
-    }
-    
-    if (this.elapsed >= this.duration && this.particles.length === 0) {
-      this.isActive = false;
-      return false;
-    }
-    
-    return true;
-  }
-  
-  private spawnSpiralParticle(spiralAngle: number): void {
-    const geometry = new THREE.SphereGeometry(0.08, 8, 8);
-    const hue = (spiralAngle / (Math.PI * 2)) % 1;
-    const color = new THREE.Color().setHSL(hue, 0.9, 0.6);
-    
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.9
-    });
-    
-    const particle = new THREE.Mesh(geometry, material);
-    
-    const radius = 0.5 + this.elapsed * 0.5;
-    particle.position.set(
-      this.centerPosition.x + Math.cos(spiralAngle) * radius,
-      this.centerPosition.y + Math.sin(spiralAngle) * radius * 0.5,
-      this.centerPosition.z + Math.sin(spiralAngle * 2) * 0.3
-    );
-    
-    const velocityAngle = spiralAngle + Math.PI / 2;
-    const particleData: ParticleData = {
-      mesh: particle,
-      velocity: new THREE.Vector3(
-        Math.cos(velocityAngle) * 2,
-        Math.sin(velocityAngle) * 2 + 1,
-        randomRange(-0.5, 0.5)
-      ),
-      rotationAxis: new THREE.Vector3(0, 0, 1),
-      rotationSpeed: randomRange(2, 5),
-      life: 1 + Math.random() * 0.5,
-      gravity: 0
-    };
-    
-    this.scene.add(particle);
-    this.particles.push(particleData);
-  }
-}
-
-// =============================================================================
-// PARTICLE PRESETS - SPARKLE FIELD
-// =============================================================================
+const SPARKLE_CAPACITY = 24;
 
 export class SparkleFieldEffect {
-  private scene: THREE.Scene;
-  private sparkles: THREE.Mesh[] = [];
-  private isActive: boolean = false;
-  private duration: number = 5;
-  private elapsed: number = 0;
-  private centerPosition: THREE.Vector3 = new THREE.Vector3();
-  
-  constructor(scene: THREE.Scene) {
-    this.scene = scene;
-  }
-  
-  spawn(position: THREE.Vector3, duration: number = 5): void {
-    this.isActive = true;
-    this.duration = duration;
-    this.elapsed = 0;
-    this.centerPosition.copy(position);
-    
-    // Create initial field of sparkles
-    for (let i = 0; i < 50; i++) {
-      this.createSparkle();
+    private pool: ParticlePool;
+    private isActive: boolean = false;
+    private duration: number = 5;
+    private elapsed: number = 0;
+    private centerPosition: THREE.Vector3 = new THREE.Vector3();
+
+    constructor(scene: THREE.Scene) {
+        this.pool = new ParticlePool(
+            scene,
+            new THREE.OctahedronGeometry(0.07, 0),
+            SPARKLE_CAPACITY
+        );
     }
-  }
-  
-  update(dt: number): boolean {
-    if (!this.isActive) return false;
-    
-    this.elapsed += dt;
-    
-    if (this.elapsed >= this.duration) {
-      // Fade out all sparkles
-      this.sparkles.forEach(s => {
-        const mat = s.material as THREE.MeshBasicMaterial;
-        mat.opacity -= dt;
-      });
-      
-      // Remove faded sparkles
-      for (let i = this.sparkles.length - 1; i >= 0; i--) {
-        const s = this.sparkles[i];
-        if ((s.material as THREE.MeshBasicMaterial).opacity <= 0) {
-          this.scene.remove(s);
-          s.geometry.dispose();
-          (s.material as THREE.Material).dispose();
-          this.sparkles.splice(i, 1);
+
+    spawn(position: THREE.Vector3, duration: number = 5): void {
+        this.isActive = true;
+        this.duration = duration;
+        this.elapsed = 0;
+        this.centerPosition.copy(position);
+
+        for (let i = 0; i < SPARKLE_CAPACITY; i++) {
+            this.createSparkle();
         }
-      }
-      
-      if (this.sparkles.length === 0) {
-        this.isActive = false;
-        return false;
-      }
-    } else {
-      // Spawn new sparkles to maintain density
-      if (this.sparkles.length < 60 && Math.random() < 0.3) {
-        this.createSparkle();
-      }
-      
-      // Update existing sparkles
-      this.sparkles.forEach(s => {
-        s.rotation.z += dt * 2;
-        const twinkle = 0.3 + Math.sin(this.elapsed * 5 + s.userData.phase) * 0.3;
-        (s.material as THREE.MeshBasicMaterial).opacity = twinkle;
-        
-        // Gentle drift
-        s.position.x += Math.sin(this.elapsed + s.userData.phase) * dt * 0.5;
-        s.position.y += Math.cos(this.elapsed + s.userData.phase) * dt * 0.3;
-      });
     }
-    
-    return true;
-  }
-  
-  private createSparkle(): void {
-    const geometry = new THREE.OctahedronGeometry(0.05 + Math.random() * 0.05, 0);
-    const color = STARDUST_COLORS[Math.floor(Math.random() * STARDUST_COLORS.length)];
-    
-    const material = new THREE.MeshBasicMaterial({
-      color: color,
-      transparent: true,
-      opacity: 0.5
-    });
-    
-    const sparkle = new THREE.Mesh(geometry, material);
-    
-    const angle = Math.random() * Math.PI * 2;
-    const radius = Math.random() * 5;
-    sparkle.position.set(
-      this.centerPosition.x + Math.cos(angle) * radius,
-      this.centerPosition.y + Math.sin(angle) * radius * 0.6,
-      this.centerPosition.z + randomRange(-2, 2)
-    );
-    
-    sparkle.userData = {
-      phase: Math.random() * Math.PI * 2
-    };
-    
-    this.scene.add(sparkle);
-    this.sparkles.push(sparkle);
-  }
-  
-  destroy(): void {
-    this.sparkles.forEach(s => {
-      this.scene.remove(s);
-      s.geometry.dispose();
-      (s.material as THREE.Material).dispose();
-    });
-    this.sparkles = [];
-    this.isActive = false;
-  }
+
+    update(dt: number): boolean {
+        if (!this.isActive) return false;
+
+        this.elapsed += dt;
+
+        if (this.elapsed >= this.duration) {
+            this.pool.forEachActive((s) => {
+                s.material.opacity -= dt;
+                if (s.material.opacity <= 0) {
+                    this.pool.release(s);
+                }
+            });
+
+            if (!this.pool.hasActive) {
+                this.isActive = false;
+                return false;
+            }
+        } else {
+            this.pool.forEachActive((s) => {
+                s.mesh.rotation.z += dt * 2;
+                s.material.opacity = 0.3 + Math.sin(this.elapsed * 5 + s.phase) * 0.3;
+                s.mesh.position.x += Math.sin(this.elapsed + s.phase) * dt * 0.5;
+                s.mesh.position.y += Math.cos(this.elapsed + s.phase) * dt * 0.3;
+            });
+        }
+
+        return true;
+    }
+
+    private createSparkle(): void {
+        const s = this.pool.acquire();
+        if (!s) return;
+
+        s.material.color.setHex(pickColor(STARDUST_COLORS));
+        s.material.opacity = 0.5;
+
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.random() * 5;
+        s.mesh.position.set(
+            this.centerPosition.x + Math.cos(angle) * radius,
+            this.centerPosition.y + Math.sin(angle) * radius * 0.6,
+            this.centerPosition.z + randomRange(-2, 2)
+        );
+        // Size variety without a second geometry.
+        s.mesh.scale.setScalar(0.7 + Math.random() * 0.7);
+        s.phase = Math.random() * Math.PI * 2;
+        s.life = Number.POSITIVE_INFINITY;
+        s.maxLife = s.life;
+    }
+
+    destroy(): void {
+        this.pool.dispose();
+        this.isActive = false;
+    }
 }

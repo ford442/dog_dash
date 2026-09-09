@@ -4,7 +4,7 @@ import { MagicalEffect, MagicalEffectType } from './shared';
 import { RainbowTrailEffect } from './rainbow_trail';
 import { ButterflySwarmEffect } from './butterfly_swarm_effect';
 import { HeartBubbleEffect } from './heart_bubble';
-import { ConfettiBurstEffect, HeartRainEffect, StarCascadeEffect, RainbowSpiralEffect, SparkleFieldEffect } from './burst_effects';
+import { ConfettiBurstEffect, HeartRainEffect, StarCascadeEffect, SparkleFieldEffect } from './burst_effects';
 import { createHeartShape } from './shared';
 
 // =============================================================================
@@ -76,22 +76,6 @@ export function spawnStarCascade(
   duration: number = 5
 ): void {
   const effect = new StarCascadeEffect(scene);
-  effect.spawn(position, duration);
-  
-  const update = () => {
-    if (effect.update(1/60)) {
-      requestAnimationFrame(update);
-    }
-  };
-  update();
-}
-
-export function spawnRainbowSpiral(
-  position: THREE.Vector3,
-  scene: THREE.Scene,
-  duration: number = 5
-): void {
-  const effect = new RainbowSpiralEffect(scene);
   effect.spawn(position, duration);
   
   const update = () => {
@@ -189,7 +173,9 @@ export function getEffectForPowerUp(powerUpType: string): MagicalEffectType | nu
     'candy_cane_vortex': MagicalEffectType.CONFETTI_BURST,
     'puppy_hug_hug': MagicalEffectType.HEART_RAIN,
     'starlight_tiara': MagicalEffectType.STAR_CASCADE,
-    'fairy_godmother_sparkle': MagicalEffectType.RAINBOW_SPIRAL
+    // Fairy Godmother reuses the pooled confetti burst (the old rainbow-spiral
+    // preset allocated a fresh mesh per particle per frame).
+    'fairy_godmother_sparkle': MagicalEffectType.CONFETTI_BURST
   };
   
   return mapping[powerUpType] || null;

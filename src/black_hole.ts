@@ -1,11 +1,8 @@
 import * as THREE from 'three';
-import { MeshBasicNodeMaterial, MeshPhysicalNodeMaterial } from 'three/webgpu';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
     time,
-    normalLocal,
-    uv,
     vec2,
-    vec3,
     vec4,
     color,
     uniform,
@@ -15,7 +12,6 @@ import {
     float,
     length,
     smoothstep,
-    fract,
     positionLocal
 } from 'three/tsl';
 
@@ -30,39 +26,30 @@ const FLARE_DECAY = 3.2; // units per second back to baseline
  */
 
 /**
- * Creates a TSL material for gravitational lensing using transmission and normal bending.
+ * Cheap stand-in for gravitational lensing: a soft additive ring just outside
+ * the photon halo.
+ *
+ * The previous version was a MeshPhysicalNodeMaterial with `transmission: 1.0`
+ * on a 110x110 plane, which forces the renderer into a transmission pass (an
+ * extra scene resolve) for a subtle smear. The ring reads close enough at the
+ * distances the core is actually seen from, for one additive draw.
  */
 function createLensingMaterial() {
-    const mat = new MeshPhysicalNodeMaterial({
-        color: 0xffffff,
-        transmission: 1.0,
-        ior: 2.0,
-        thickness: 5.0,
-        roughness: 0.0,
-        metalness: 0.0,
+    const mat = new MeshBasicNodeMaterial({
         transparent: true,
+        blending: THREE.AdditiveBlending,
         side: THREE.FrontSide,
         depthWrite: false
     });
 
-    const pos = positionLocal;
-    // Plane geometry: length of xy varies from center to edge.
-    const dist = length(pos.xy);
+    const dist = length(positionLocal.xy);
+    // Plane spans +/-55; the halo sits at r=35, so band the glow just outside it.
+    const normalizedDist = dist.div(55.0);
 
-    // Bend normal based on distance from center (Plane goes from -55 to 55)
-    // At center, dist is 0, at edge it is 55.
-    const normalizedDist = dist.div(55.0); // 0 at center, 1 at edge
+    const band = smoothstep(0.55, 0.68, normalizedDist)
+        .mul(smoothstep(1.0, 0.72, normalizedDist));
 
-    // Create a bowl-like normal distortion that pulls towards the center
-    // normalLocal is (0,0,1) for plane. We bend it by adding a vector pointing towards the center.
-    // The inward vector on the plane is -pos.xy normalized.
-    const inwardDir = vec3(pos.xy.normalize().negate(), float(0.5)).normalize();
-
-    // We want the strongest pull just outside the event horizon (radius 30)
-    // We can use a bump or smoothstep. Let's make it strong near center and fade out.
-    const strength = float(1.0).sub(normalizedDist).pow(1.5).mul(0.6); // 0.6 max bending
-
-    mat.normalNode = mix(normalLocal, inwardDir, strength);
+    mat.colorNode = vec4(mix(color(0x88aaff), color(0xffffff), band), band.mul(0.22));
 
     return mat;
 }

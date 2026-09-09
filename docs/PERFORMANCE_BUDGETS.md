@@ -108,9 +108,9 @@ Headless/cloud cannot render at all (WebGL is deferred — see [RENDERER_FALLBAC
 | `dog_cockpit` | `dog_cockpit/procedural_dog.ts` | 1 procedural astronaut dog when the rocket GLB has no armature |
 | `crystal_chimes` | `crystal_chimes.ts` | ≤12 clusters, instanced rods |
 | `wind_chimes` | `wind_chimes.ts` | ≤8 hero mobiles |
-| `nebula_cloud_puffs` | `nebula.ts` | 45 cloud instances (3 layers) |
-| `nebula_energy_motes` | `nebula.ts` | 50 particle/mote instances |
-| `nebula_ribbons` | `nebula.ts` | 24 ribbon sheets (3 layers) |
+| `nebula_cloud_puffs` | `nebula/nebula_system.ts` | 20 cloud instances (1 layer) |
+| `nebula_energy_motes` | `nebula/nebula_system.ts` | 20 butterfly mote instances |
+| `nebula_ribbons` | `nebula/nebula_system.ts` | 8 ribbon sheets (1 layer, off by default) |
 | `dream_portal` | `dream_portal.ts` | ≤3 bonus-room doors per level |
 | `dream_room_props` | `dream_portal.ts` | Bonus-room contents: instanced toys + jellies + exit ring/lantern |
 | `galactic_core` | `galactic_core.ts` | Single finale backdrop set-piece (4 meshes, additive) |

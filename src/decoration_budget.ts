@@ -295,17 +295,17 @@ export function registerDefaultDecorationBudgets(): void {
     decorationBudget.register('nebula_cloud_puffs', {
         label: 'Nebula cloud puffs',
         category: 'background3d',
-        maxActive: 45
+        maxActive: 20
     });
     decorationBudget.register('nebula_energy_motes', {
         label: 'Nebula energy motes',
         category: 'background3d',
-        maxActive: 50
+        maxActive: 20
     });
     decorationBudget.register('nebula_ribbons', {
         label: 'Nebula ribbon sheets',
         category: 'background3d',
-        maxActive: 24
+        maxActive: 8
     });
     decorationBudget.register('magic_paintbrush_path', {
         label: 'Rainbow paint path',

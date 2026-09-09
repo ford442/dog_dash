@@ -2,10 +2,9 @@
  * Galactic Core / Accretion Disk — finale background set-piece (future-plan §10).
  *
  * A massive, slowly spinning singularity parked deep in the background with a
- * glowing accretion disk, a photon halo, and a swirl veil that fakes mild
- * gravitational lensing. Everything is additive + unlit and lives on a single
- * parallax group, so the cost is a handful of draw calls regardless of level
- * length.
+ * glowing accretion disk and a photon halo. Everything is additive + unlit and
+ * lives on a single parallax group, so the cost is a handful of draw calls
+ * regardless of level length.
  *
  * Gameplay hooks are deliberately small (this is a backdrop, not a boss):
  *  - `getProjectilePull()` bends plasma bolts that fly near the core.
@@ -21,9 +20,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
     time,
-    uv,
     vec2,
-    vec3,
     vec4,
     color,
     uniform,
@@ -73,7 +70,6 @@ const EVENT_HORIZON_RADIUS = 26;
 const DISK_INNER_RADIUS = 34;
 const DISK_OUTER_RADIUS = 150;
 const HALO_OUTER_RADIUS = 44;
-const VEIL_RADIUS = 190;
 /** Projectiles only feel the core inside this radius (gameplay toy, not GR). */
 const PROJECTILE_PULL_RADIUS = 240;
 const PROJECTILE_PULL_STRENGTH = 5.5;
@@ -197,46 +193,6 @@ function createHaloMaterial(
     return mat;
 }
 
-/**
- * Swirl veil: a wide, very faint disc whose UVs spiral inward. Read against the
- * starfield it approximates lensing smear without any postprocessing pass.
- */
-function createVeilMaterial(intensityUniform: ReturnType<typeof uniform>): THREE.Material {
-    if (useLiteMaterials()) {
-        return new THREE.MeshBasicMaterial({
-            color: 0x223355,
-            transparent: true,
-            opacity: 0.12,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false
-        });
-    }
-
-    const mat = new MeshBasicNodeMaterial({
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        side: THREE.FrontSide,
-        depthWrite: false
-    });
-
-    const centered = uv().sub(0.5);
-    const r = length(centered).mul(2.0); // 0 at centre, 1 at rim
-    const theta = centered.y.atan2(centered.x);
-
-    // Spiral arms tighten toward the horizon — the "bend" cue.
-    const spiral = sin(theta.mul(2.0).add(r.mul(-9.0)).add(time.mul(0.5)));
-    const falloff = smoothstep(1.0, 0.15, r).mul(smoothstep(0.05, 0.2, r));
-    const alpha = spiral
-        .mul(0.5)
-        .add(0.5)
-        .mul(falloff)
-        .mul(0.28)
-        .mul(float(0.35).add(intensityUniform.mul(0.65)));
-
-    mat.colorNode = vec4(mix(color(0x6688ff), color(0xffccee), r), alpha);
-    return mat;
-}
-
 export class GalacticCoreSystem {
     readonly scene: THREE.Scene;
     active = false;
@@ -245,7 +201,6 @@ export class GalacticCoreSystem {
     private readonly eventHorizon: THREE.Mesh;
     private readonly disk: THREE.Mesh;
     private readonly halo: THREE.Mesh;
-    private readonly veil: THREE.Mesh;
 
     private approachStartX = 4200;
     private approachEndX = 5200;
@@ -292,13 +247,7 @@ export class GalacticCoreSystem {
         );
         this.halo.position.z = 1;
 
-        this.veil = new THREE.Mesh(
-            new THREE.PlaneGeometry(VEIL_RADIUS * 2, VEIL_RADIUS * 2),
-            createVeilMaterial(this.intensityUniform)
-        );
-        this.veil.position.z = -4;
-
-        this.group.add(this.veil, this.disk, this.eventHorizon, this.halo);
+        this.group.add(this.disk, this.eventHorizon, this.halo);
         this.group.visible = false;
         this.group.frustumCulled = false;
         scene.add(this.group);
@@ -396,7 +345,6 @@ export class GalacticCoreSystem {
         // Lazy tumble on the disk so the silhouette keeps changing.
         this.disk.rotation.z = this.elapsed * 0.05;
         this.disk.rotation.x = -Math.PI * 0.42 + Math.sin(this.elapsed * 0.12) * 0.04;
-        this.veil.rotation.z = -this.elapsed * 0.02;
     }
 
     cleanup(): void {

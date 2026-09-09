@@ -97,7 +97,8 @@ export function createJellyMossAtPosition(x: number, y: number, z: number, size?
     jellyMoss.userData.speciesId = 'nebulaJellyMoss';
     scene.add(jellyMoss);
     jellyMosses.push(jellyMoss);
-    // Opt-in C++ Verlet soft-body for up to 3 hero mosses; no-op on AS default.
+    // Verlet soft-body for up to 3 hero mosses. No-op unless the active level
+    // opted in via environments.dancingJellyMoss (see applyEnvironmentPlugins).
     jellyMossSoftBody.tryAttach(jellyMoss);
     return jellyMoss;
 }

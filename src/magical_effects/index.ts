@@ -20,7 +20,6 @@ export {
     ConfettiBurstEffect,
     HeartRainEffect,
     StarCascadeEffect,
-    RainbowSpiralEffect,
     SparkleFieldEffect
 } from './burst_effects';
 export { EffectManager } from './effect_manager';
@@ -31,7 +30,6 @@ export {
     spawnConfettiBurst,
     spawnHeartRain,
     spawnStarCascade,
-    spawnRainbowSpiral,
     spawnSparkleField,
     createHeartShape,
     sparkleNoise,
