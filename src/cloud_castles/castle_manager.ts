@@ -4,6 +4,7 @@
 
 import * as THREE from 'three';
 import { CloudCastle, ShootingStarSystem } from './cloud_castle';
+import { decorationBudget } from '../decoration_budget';
 
 export class CastleBackgroundManager {
     scene: THREE.Scene;
@@ -68,6 +69,8 @@ export class CastleBackgroundManager {
 
         this.scene.add(castle.group);
         this.castles.push(castle);
+        // Bookkeeping only — return value intentionally ignored, never gates spawning.
+        decorationBudget.reportSpawn('cloud_castles');
 
         return castle;
     }
@@ -136,6 +139,7 @@ export class CastleBackgroundManager {
             const index = this.castles.indexOf(castle);
             if (index > -1) {
                 this.castles.splice(index, 1);
+                decorationBudget.reportDestroy('cloud_castles');
             }
         });
     }
@@ -149,6 +153,9 @@ export class CastleBackgroundManager {
     }
 
     clear(): void {
+        if (this.castles.length > 0) {
+            decorationBudget.reportDestroy('cloud_castles', this.castles.length);
+        }
         this.castles.forEach(castle => {
             this.scene.remove(castle.group);
             castle.dispose();

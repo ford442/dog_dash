@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { disposeObject } from './utils';
 import { time, color, uniform, sin, positionWorld, length, uv, smoothstep } from 'three/tsl';
 import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export interface SkyRailConfig {
     density?: number;
@@ -27,6 +28,20 @@ export class SkyRailTerminalSystem {
         this.uTime = uniform(0);
         this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
         this.uInteractionRadius = uniform(40.0);
+
+        // Registered as two ids (rails / terminals) rather than one summed id —
+        // they're visually and structurally distinct InstancedMesh pools, so
+        // separate rows are more honest in the debug panel than a merged total.
+        decorationBudget.register('sky_rail_terminal_rails', {
+            label: 'Sky-rail rails',
+            category: 'background3d',
+            maxActive: 60 // fixed railCount
+        });
+        decorationBudget.register('sky_rail_terminal_terminals', {
+            label: 'Sky-rail terminals',
+            category: 'background3d',
+            maxActive: 10 // fixed terminalCount
+        });
 
         this.initRails();
         this.initTerminals();
@@ -123,6 +138,8 @@ export class SkyRailTerminalSystem {
         this.active = true;
         this.railMesh.visible = true;
         this.terminalMesh.visible = true;
+        decorationBudget.syncCount('sky_rail_terminal_rails', this.railCount);
+        decorationBudget.syncCount('sky_rail_terminal_terminals', this.terminalCount);
     }
 
     deactivate() {
@@ -130,6 +147,8 @@ export class SkyRailTerminalSystem {
         this.active = false;
         this.railMesh.visible = false;
         this.terminalMesh.visible = false;
+        decorationBudget.syncCount('sky_rail_terminal_rails', 0);
+        decorationBudget.syncCount('sky_rail_terminal_terminals', 0);
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
@@ -195,6 +214,8 @@ export class SkyRailTerminalSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('sky_rail_terminal_rails', 0);
+        decorationBudget.syncCount('sky_rail_terminal_terminals', 0);
         if (this.railMesh) {
             this.scene.remove(this.railMesh);
             disposeObject(this.railMesh);

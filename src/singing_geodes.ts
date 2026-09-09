@@ -23,6 +23,7 @@ import {
 } from 'three/tsl';
 import type { AudioPort } from './ports';
 import type { ParticleSystem } from './particles';
+import { decorationBudget } from './decoration_budget';
 
 /**
  * Creates a TSL material for Singing Crystal Geodes.
@@ -84,6 +85,12 @@ export class SingingGeodeSystem {
         this.audioSystem = audioSystem;
         this.particleSystem = particleSystem;
 
+        decorationBudget.register('singing_geodes', {
+            label: 'Singing crystal geodes',
+            category: 'background3d',
+            maxActive: 80 // pool maxCount, not active count — actual count is density-driven (level configs use 15, 20)
+        });
+
         // Geodes are typically icosahedrons for a low-poly crystal look
         const geo = new THREE.IcosahedronGeometry(1.5, 2);
         const mat = createSingingGeodeMaterial();
@@ -125,12 +132,14 @@ export class SingingGeodeSystem {
         }
 
         this.mesh.instanceMatrix.needsUpdate = true;
+        decorationBudget.syncCount('singing_geodes', this.count);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
+        decorationBudget.syncCount('singing_geodes', 0);
     }
 
     resetGeode(index: number, cameraX: number, initial: boolean = false) {
@@ -230,6 +239,7 @@ export class SingingGeodeSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('singing_geodes', 0);
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if (this.mesh.material && (this.mesh.material as any).dispose) {

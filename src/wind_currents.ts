@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { disposeObject } from './utils';
 import { time, vec3, color, uniform, sin, float, mod, positionLocal } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export type WindZoneConfig = {
     x: number;
@@ -25,6 +26,16 @@ export class WindCurrentsSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+        // Covers level 2's 2 zones (200x20 each -> Math.max(10, floor(200*20/10)) = 400
+        // instances per zone via buildMeshes(), summed across zones) — see
+        // level_config.ts's `windCurrents` entry. Level 2 is currently the only
+        // user of this flag, and its total (800) is a meaningfully large hidden
+        // instance cost worth calling out (see docs/PERFORMANCE_BUDGETS.md).
+        decorationBudget.register('wind_currents', {
+            label: 'Wind current streak zones',
+            category: 'effects',
+            maxActive: 800
+        });
         this.deactivate();
     }
 
@@ -40,6 +51,8 @@ export class WindCurrentsSystem {
         this.meshes.forEach(mesh => {
             mesh.visible = true;
         });
+        const total = this.meshes.reduce((sum, m) => sum + m.count, 0);
+        decorationBudget.syncCount('wind_currents', total);
     }
 
     deactivate() {
@@ -49,6 +62,7 @@ export class WindCurrentsSystem {
         this.meshes.forEach(mesh => {
             mesh.visible = false;
         });
+        decorationBudget.syncCount('wind_currents', 0);
     }
 
     private buildMeshes() {
@@ -131,6 +145,7 @@ export class WindCurrentsSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('wind_currents', 0);
         for (const mesh of this.meshes) {
             this.scene.remove(mesh);
             disposeObject(mesh);

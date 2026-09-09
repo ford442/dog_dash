@@ -49,6 +49,55 @@ Add new density fields in `level_config.ts`, then wire them in `applyLevelDecora
 
 Production builds keep counter enforcement with **no DOM overlay** unless `?debug` is present.
 
+## Enforcement path
+
+Registering with `decoration_budget.ts` is still opt-in — nothing forces a
+new system to call `register`/`syncCount`/`reportSpawn`. Three layers exist
+today (or are landing) to catch a system that skips it, at different points
+in the workflow:
+
+1. **Debug-panel drift auditor** (dev-time, manual) — `src/decoration_budget_auditor.ts`
+   walks the live scene graph (`scene.traverse()`, summing `InstancedMesh.count`
+   + 1 per plain `Mesh`) and compares that total against the sum of
+   `decorationBudget.getSnapshot()`'s `currentActive` values. It cannot
+   attribute a specific mesh to a specific system (that would need invasive
+   per-object tagging across ~70 env systems and everything else in the
+   scene), so instead it tracks that gap *relative to a baseline* captured the
+   first time it samples the scene, and flags when the gap grows meaningfully
+   beyond that baseline — i.e. something new is adding scene nodes without a
+   matching registry update. It renders as its own section in the debug panel
+   (`` ` `` in dev or `?debug`), next to the Decoration Budgets section it
+   cross-checks. This is a manual, dev-time signal — nobody is forced to look
+   at it.
+2. **CI unit coverage** — `tests/unit/decoration_budget_coverage.test.ts`
+   constructs each of a set of env systems directly against a bare
+   `THREE.Scene` (no renderer, no DOM, bypassing the whole game bootstrap) and
+   asserts their `decorationBudget` counts are present and within their
+   declared `maxActive`. This catches a *regression* in an already-covered
+   system's registration (e.g. someone changes a spawn path and forgets to
+   update the `syncCount` call), but does not by itself catch a *new* system
+   that never gets added to this test file — that's a human review step, same
+   as remembering to register at all.
+3. **`defineEnvSystem`'s `budget` field** (`src/level_manager/define_env_system.ts`,
+   `src/level_manager/env_manifest.ts`) — a required
+   `{ category: DecorationCategory; instances: number }` on every manifest
+   entry. This is the intended **structural** guard for new systems: once a
+   later phase makes `env_manifest.ts` the live activation path (replacing
+   `level_env_registry.ts`'s hand-written `DEFERRED_ENV_REGISTRY`), a new
+   entry literally cannot compile without stating its decoration-budget
+   category and instance estimate, the same way `activate`/`deactivate` are
+   already required today. **This is not live yet** — `env_manifest.ts` is
+   still a parallel, additive structure that nothing imports at runtime (see
+   its own header comment), so today `budget` is populated but unenforced;
+   only when a later phase migrates real consumers over does it become a
+   compile-time gate on new systems, and it still can't catch a system that
+   never gets a manifest entry in the first place.
+
+None of these three fully closes the loop on their own — (1) is manual and
+coarse, (2) only guards systems someone remembered to add a test for, and (3)
+isn't live. Together they're a meaningfully better trail than "grep
+CLAUDE.md's rule and hope," which is what existed before this pass.
+
 ## Authoring rules
 
 1. **Prefer `InstancedMesh`** for anything that repeats (flowers in a field, bubbles, nebula puffs, butterfly swarms).
@@ -114,6 +163,58 @@ Headless/cloud cannot render at all (WebGL is deferred — see [RENDERER_FALLBAC
 | `dream_portal` | `dream_portal.ts` | ≤3 bonus-room doors per level |
 | `dream_room_props` | `dream_portal.ts` | Bonus-room contents: instanced toys + jellies + exit ring/lantern |
 | `galactic_core` | `galactic_core.ts` | Single finale backdrop set-piece (4 meshes, additive) |
+| `combo_corridor` | `combo_corridor.ts` | Fixed 40-instance corridor ring `InstancedMesh`; `frustumCulled = false` |
+| `grapple_isles` | `grapple_isles.ts` | 4 parallax-layer `InstancedMesh`es, 20+15+10+5 = 50 fixed; `frustumCulled = false` on all 4 |
+| `sky_rail_terminal_rails` | `sky_rail_terminal.ts` | Fixed 60-instance rail `InstancedMesh`; `frustumCulled = false`. Registered as a separate id from `sky_rail_terminal_terminals` (two structurally distinct meshes) rather than one summed id |
+| `sky_rail_terminal_terminals` | `sky_rail_terminal.ts` | Fixed 10-instance terminal `InstancedMesh`; `frustumCulled = false` |
+| `space_garden` | `space_garden.ts` | Fixed 80-instance orb `InstancedMesh`; `frustumCulled = false` |
+| `bounce_pads` | `bounce_pads.ts` | 50-slot `InstancedMesh` pool; `.count` synced to the config-driven pad count (e.g. 2 in level 4), not the pool size; `frustumCulled = false` |
+| `shooting_stars` | `shooting_stars.ts` | Fixed 25-instance streak `InstancedMesh`; `frustumCulled = false` |
+| `flower_constellations` | `flower_constellations_system.ts` (wraps `flower_constellations/manager.ts`) | Non-instanced: `Math.floor(15 * densityMultiplier)` flower groups, each several individual meshes. `level_config.ts` only ever passes `true` (multiplier 1.0) for this flag, so 15 is the real observed max, not a guess |
+| `cloud_castles` | `cloud_castles_system.ts` (wraps `cloud_castles/castle_manager.ts`) | Organic spawn/despawn via `maintainCastles()` / `cleanupFarCastles()`, bookkept with `reportSpawn`/`reportDestroy` per castle (not `syncCount`) — the code enforces only a floor (≥3 ahead, ≥2 background-layer behind), not a ceiling, so 20 is a generous documented estimate, not a derived maximum. Each castle is a `THREE.Group` of ~15 individual meshes, not instanced |
+| `aerial_guard_patrol` | `aerial_guard_patrol.ts` | 20-slot drone + searchlight `InstancedMesh` pool (two meshes, tracked as one id); `.count` synced to the config-driven zone count (e.g. 3 in level 4); `frustumCulled = false` |
+| `time_shift_zones` | `time_shift_zones.ts` | `InstancedMesh` rebuilt per activation, one instance per configured zone (2 is the max across `level_config.ts`, in level 4); `frustumCulled = false` |
+| `wind_currents` | `wind_currents.ts` | One `InstancedMesh` **per zone**, `Math.max(10, Math.floor(width * height / 10))` instances each, summed across zones — see "Wind currents: a hidden instance cost" below; `frustumCulled = false` on every zone mesh |
+| `singing_geodes` | `singing_geodes.ts` | 80-slot `InstancedMesh` pool; `.count`/live-instance array synced to the density-driven count (level configs use 15, 20), not the pool size; `frustumCulled = false` |
+
+### Wind currents: a hidden instance cost
+
+`wind_currents.ts` builds one `InstancedMesh` per configured zone, sized
+`Math.max(10, Math.floor(zone.width * zone.height / 10))`. Level 2's
+`windCurrents` entry (`level_config.ts`) configures two 200×20 zones, each
+producing `Math.floor(200 * 20 / 10) = 400` instances — **800 instances total**
+for a system whose flag name gives no hint of that cost. This was flagged
+during the decoration-budget audit specifically because it's easy to add a
+new `windCurrents` zone (or widen an existing one) without realizing the
+instance count scales with `width * height`, not with an obvious "how many
+things" knob. If a future level widens or adds zones, re-check this sum —
+`docs/PERFORMANCE_BUDGETS.md`'s registrar entry (`wind_currents`, `maxActive:
+800`) will start reporting "over budget" in the debug panel as a signal, but
+the underlying render cost (and any downstream animation-loop work per
+instance) grows immediately, before that panel is ever opened.
+
+### `frustumCulled` — when `false` is correct, and the one exception
+
+Every one of the systems above (and most of the existing registrar) sets
+`mesh.frustumCulled = false` on its `InstancedMesh`. This is deliberate, not
+an oversight: Three.js computes an `InstancedMesh`'s culling bounds once from
+its base geometry and the instances' transforms, but these are
+camera-relative wrapping/parallax systems — they reposition individual
+instances every frame (`setMatrixAt` in the wrap/scroll logic) without
+recomputing that bounding volume, so the built-in frustum test can cull
+instances that are actually on-screen (or fail to cull ones that aren't) as
+they scroll past the wrap boundary. Disabling culling and relying on the
+system's own streaming/wrap logic to keep the active set reasonable is the
+correct trade-off for anything that manages its own positioning this way.
+
+Static, non-wrapping meshes should leave the default (`frustumCulled = true`)
+alone — the one deliberate counterexample in the codebase is
+`src/chroma_shift.ts:214`, which explicitly sets `frustumCulled = true` on
+its rock `InstancedMesh`: those instances are placed once (`.count` starts at
+0 and grows as rocks are revealed, but placed instances don't get
+repositioned every frame the way a wrap/parallax layer does), so the default
+per-instance culling behaves correctly and there's no reason to pay for
+rendering off-screen rocks.
 
 ## Related files
 

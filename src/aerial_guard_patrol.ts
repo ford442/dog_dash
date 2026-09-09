@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { time, vec3, vec4, color, positionLocal, length, uv, smoothstep, mix, sin, positionWorld, uniform, float } from 'three/tsl';
 import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export type AerialGuardPatrolConfig = {
     zones: { x: number; y: number; z: number; width: number; searchRadius: number }[];
@@ -23,6 +24,12 @@ export class AerialGuardPatrolSystem {
         this.scene = scene;
         this.uPlayerPos = uniform(new THREE.Vector3(9999, 9999, 9999));
         this.uDetectionLevel = uniform(0.0);
+
+        decorationBudget.register('aerial_guard_patrol', {
+            label: 'Aerial guard drones',
+            category: 'creatures',
+            maxActive: 20 // pool size, not active count — actual drone count is config-driven (e.g. 3 in level 4)
+        });
 
         // Drone Body
         const droneGeo = new THREE.CapsuleGeometry(1.5, 1, 4, 8);
@@ -114,6 +121,7 @@ export class AerialGuardPatrolSystem {
 
         this.droneMesh.count = this.zones.length;
         this.lightMesh.count = this.zones.length;
+        decorationBudget.syncCount('aerial_guard_patrol', this.zones.length);
     }
 
     deactivate() {
@@ -121,6 +129,7 @@ export class AerialGuardPatrolSystem {
         this.active = false;
         this.droneMesh.visible = false;
         this.lightMesh.visible = false;
+        decorationBudget.syncCount('aerial_guard_patrol', 0);
     }
 
     private detectionLevelRaw = 0;
@@ -194,6 +203,7 @@ export class AerialGuardPatrolSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('aerial_guard_patrol', 0);
         this.scene.remove(this.droneMesh);
         this.scene.remove(this.lightMesh);
         this.droneMesh.geometry.dispose();
