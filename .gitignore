@@ -27,5 +27,8 @@ Thumbs.db
 *.swo
 *~
 
+# Claude Code local state (agent worktrees, local settings)
+.claude/
+
 # Vite
 .vite/
