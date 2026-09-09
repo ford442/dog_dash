@@ -192,6 +192,7 @@ export type LevelEnvironments = {
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
     grappleIsles?: boolean | { density?: number };
+    fossilizedSpaceWhales?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     bouncePads?: boolean | BouncePadsEnvironmentConfig;
     /** Glowing air-tokens that refill boost / grant a lift (ideas.md §18.1 1H). */
@@ -526,7 +527,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             flowerConstellations: true,
-            aurora: { enabled: true, density: 0.6, color1: 0x44aaff, color2: 0xffaa44, speed: 0.8 },
         },
         vignettes: {
             roseArches: 1.2
@@ -692,7 +692,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dancingJellyMoss: { density: 1.5 },
             cloudCastles: true,
             singingGeodes: { density: 15 },
-            comboCorridor: true
+            comboCorridor: true,
+            fossilizedSpaceWhales: true
         },
         vignettes: {
             treeGroves: 0.8,

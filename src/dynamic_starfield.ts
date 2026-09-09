@@ -130,7 +130,7 @@ export class DynamicStarfieldSystem {
         this.meshes.forEach(m => m.visible = false);
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3), warp: number = 0 {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3, warp: number = 0) {
         if (!this.active) return;
 
         const dummy = new THREE.Object3D();

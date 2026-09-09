@@ -48,6 +48,7 @@ export type DeferredLoaderContext = {
 };
 
 export type DeferredGamePorts = {
+    obstacleSystem?: any;
     weaponLightManager: WeaponLightManager;
     audioSystem: AudioSystem;
     particleSystem: ParticleSystem;
@@ -792,6 +793,22 @@ export const DEFERRED_ENV_REGISTRY: {
             activate: () => host.candyFieldSystem.activate(),
             deactivate: () => host.candyFieldSystem.deactivate()
         })
+    },
+    fossilizedSpaceWhales: {
+        flag: 'fossilizedSpaceWhales',
+        systemKey: 'fossilizedSpaceWhales',
+        load: () => import('./fossilized_space_whales'),
+        install: (ctx, mod) => {
+            const { FossilizedSpaceWhalesSystem } = mod as typeof import('./fossilized_space_whales');
+            const system = new FossilizedSpaceWhalesSystem(ctx.scene);
+            system.setObstacleTracking((obs) => ctx.game.obstacleSystem.addObstacle(obs));
+            ctx.installEnvPartial({ fossilizedSpaceWhalesSystem: system });
+        },
+        plugin: (host) => ({
+            flag: 'fossilizedSpaceWhales',
+            activate: (config) => host.fossilizedSpaceWhalesSystem.activate(objectConfig(config)),
+            deactivate: () => host.fossilizedSpaceWhalesSystem.deactivate()
+        })
     }
 };
 
@@ -861,6 +878,14 @@ export const DEFERRED_LEVEL_REGISTRY: Record<DeferredLevelSystemKey, DeferredLev
         install: (ctx, mod) => {
             const { RainbowBubbleCoralManager } = mod as typeof import('./bubble_coral');
             ctx.game.bubbleCoralManager = new RainbowBubbleCoralManager(ctx.scene, ctx.game.particleSystem);
+        }
+    },
+    clouds: {
+        systemKey: 'clouds',
+        needsLoad: () => true,
+        load: () => import('./clouds'),
+        install: (ctx, mod) => {
+            // eagerly loaded
         }
     },
     slingables: {
@@ -1000,7 +1025,6 @@ export function buildEagerEnvPlugins(
                     deactivate: () => host.butterflySwarmSystem.deactivate()
                 });
                 break;
-        }
             case 'clouds':
                 plugins.push({
                     flag,

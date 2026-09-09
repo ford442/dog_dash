@@ -62,7 +62,8 @@ const PLUGIN_ORDER = [
     'comboCorridor',
     'aerialGuardPatrol',
     'airTokens',
-    'shootingStars'
+    'shootingStars',
+    'fossilizedSpaceWhales'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

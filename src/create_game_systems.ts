@@ -1,3 +1,4 @@
+import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
 import type { SpaceGardenSystem } from './space_garden';
 import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
@@ -24,6 +25,7 @@ import {
     createBiologicalSystemStub,
     createCosmicDustSystemStub,
     createTimeShiftZonesSystemStub,
+    createFossilizedSpaceWhalesSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -183,6 +185,7 @@ export type GameSystems = {
     grappleIslesSystem: GrappleIslesSystem;
     windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
     timeShiftZonesSystem: import('./time_shift_zones').TimeShiftZonesSystem;
+    fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -431,6 +434,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const grappleIslesSystem = createGrappleIslesSystemStub();
     const windCurrentsSystem = createWindCurrentsSystemStub();
     const timeShiftZonesSystem = createTimeShiftZonesSystemStub();
+    const fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem = createFossilizedSpaceWhalesSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -501,6 +505,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         grappleIslesSystem,
         windCurrentsSystem,
         timeShiftZonesSystem,
+        fossilizedSpaceWhalesSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
