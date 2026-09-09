@@ -3,6 +3,7 @@
  */
 
 import { AudioSystem } from '../audio_system';
+import { createAudioSettingsPanel } from '../ui_audio_settings';
 import { COLORS, GameStats } from './styles';
 import { formatNumber } from './hud_elements';
 
@@ -147,9 +148,24 @@ export class HUDScreens {
         buttons.appendChild(restartBtn);
         buttons.appendChild(soundBtn);
 
+        // Collapsed by default so the pause menu stays a short list of buttons.
+        const audioDetails = document.createElement('details');
+        audioDetails.style.cssText = 'width: 100%; margin-top: 12px; text-align: left;';
+        const audioSummary = document.createElement('summary');
+        audioSummary.textContent = '🎚️ Audio Levels';
+        audioSummary.style.cssText = `
+            cursor: pointer;
+            color: ${COLORS.textDark};
+            font-weight: bold;
+            padding: 8px 0;
+        `;
+        audioDetails.appendChild(audioSummary);
+        audioDetails.appendChild(createAudioSettingsPanel());
+
         this.pauseMenu.appendChild(dogArt);
         this.pauseMenu.appendChild(title);
         this.pauseMenu.appendChild(buttons);
+        this.pauseMenu.appendChild(audioDetails);
 
         document.body.appendChild(overlay);
         document.body.appendChild(this.pauseMenu);

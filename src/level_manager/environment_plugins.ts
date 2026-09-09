@@ -4,6 +4,7 @@ import type {
 } from '../level_config';
 import type { EnvironmentPlugin } from './types';
 import { isEnvironmentEnabled } from './types';
+import type * as THREE from 'three';
 import type { LevelPluginHost } from './plugin_host';
 import {
     buildDeferredEnvPlugins,
@@ -24,6 +25,7 @@ const PLUGIN_ORDER = [
     'pastelNebula',
     'candyField',
     'wishLanterns',
+    'spacePetsSwarm',
     'butterflySwarm',
     'blackHole',
     'galacticCore',
@@ -35,6 +37,7 @@ const PLUGIN_ORDER = [
     'biological',
     'nebula',
     'nebulaRibbons',
+    'clouds',
     'cosmicDust',
     'godRays',
     'aurora',
@@ -47,7 +50,20 @@ const PLUGIN_ORDER = [
     'weather',
     'singingGeodes',
     'cloudCastles',
-    'bubbleCoral'
+    'grappleIsles',
+    'windCurrents',
+    'timeShiftZones',
+    'bubbleCoral',
+    'flowerConstellations',
+    'hideAndSeekStars',
+    'skyRailTerminal',
+    'bouncePads',
+    'spaceGarden',
+    'comboCorridor',
+    'aerialGuardPatrol',
+    'airTokens',
+    'shootingStars',
+    'fossilizedSpaceWhales'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(
@@ -55,7 +71,7 @@ export function buildEnvironmentPlugins(
     cfg: LevelConfig,
     levelLength: number
 ): AnyEnvironmentPlugin[] {
-    const eagerByFlag = new Map(
+        const eagerByFlag = new Map(
         buildEagerEnvPlugins(host, cfg, levelLength).map((p) => [p.flag, p])
     );
     const deferredByFlag = new Map(
@@ -79,9 +95,9 @@ export function applyEnvironmentPlugins(
 ): void {
     const plugins = buildEnvironmentPlugins(host, cfg, levelLength);
     for (const plugin of plugins) {
-        const value = environments[plugin.flag];
+        const value = environments[plugin.flag as keyof LevelEnvironments];
         if (isEnvironmentEnabled(value)) {
-            plugin.activate(value as never);
+            (plugin.activate as (config: unknown) => void)(value);
         } else {
             plugin.deactivate();
         }

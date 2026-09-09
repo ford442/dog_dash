@@ -21,7 +21,7 @@ import {
     dot,
     cos
 } from 'three/tsl';
-import type { AudioSystem } from './audio_system';
+import type { AudioPort } from './ports';
 import type { ParticleSystem } from './particles';
 
 /**
@@ -64,7 +64,7 @@ function createSingingGeodeMaterial() {
 
 export class SingingGeodeSystem {
     scene: THREE.Scene;
-    audioSystem: AudioSystem | null;
+    audioSystem: AudioPort | null;
     particleSystem: ParticleSystem | null;
 
     active: boolean = false;
@@ -79,7 +79,7 @@ export class SingingGeodeSystem {
     rotations: Float32Array;
     triggered: boolean[]; // Keep track of whether it has "sung" recently to the player
 
-    constructor(scene: THREE.Scene, audioSystem: AudioSystem | null = null, particleSystem: ParticleSystem | null = null) {
+    constructor(scene: THREE.Scene, audioSystem: AudioPort | null = null, particleSystem: ParticleSystem | null = null) {
         this.scene = scene;
         this.audioSystem = audioSystem;
         this.particleSystem = particleSystem;

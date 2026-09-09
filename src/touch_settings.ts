@@ -11,6 +11,7 @@ import {
     isTouchPrimary,
     detectTouchDevice
 } from './touch_controls';
+import { createAudioSettingsPanel } from './ui_audio_settings';
 
 export interface TouchSettings {
     mode: ControlMode;
@@ -241,6 +242,10 @@ export function createTouchSettingsUI(
     toggleContainer.appendChild(leftHandToggle);
     
     panel.appendChild(toggleContainer);
+    
+    // Audio levels + reduced-audio accessibility toggle
+    panel.appendChild(createSectionTitle('Audio'));
+    panel.appendChild(createAudioSettingsPanel());
     
     // Buttons
     const buttonContainer = document.createElement('div');

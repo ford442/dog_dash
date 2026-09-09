@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Renderer**: Three.js + WebGPU (`three/webgpu` renderer, `three/tsl` for node-based shader materials)
 - **Language**: TypeScript, ES2022, ES modules, strict mode
 - **Build Tool**: Vite v7
-- **Physics**: AssemblyScript WASM for collision detection (supported). Experimental C++/Emscripten tree under `cpp/` — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
+- **Physics**: AssemblyScript WASM for collision detection, Verlet soft-body physics, and fractal noise — the single supported, always-built backend. Experimental C++/Emscripten tree under `cpp/` is research-only (SIMD prototyping, native profiling), not a shipping target — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
 - **Audio**: 100% procedural synthesis via Web Audio API (`audio_system.ts`) — no external audio files
 - **Entry point**: `index.html` → `src/main.ts`
 
@@ -39,12 +39,15 @@ npm run check                     # local gate: brace balance + typecheck:ci
 npm run test:smoke                # Playwright smoke test (WebGL path, SwiftShader in CI)
 ```
 
-There is no ESLint or unit-test suite. The automated quality gates are:
+There is no ESLint config. The automated quality gates are:
 
 - `tools/check_braces.cjs` — runs on `prebuild`, verifies brace balance in `.ts`/`.js`/`.cjs` files
-- `npm run typecheck:ci` — compares `tsc --noEmit` against a tracked baseline (currently ~142 known strict-mode violations); CI fails only when **new** errors appear. After fixing errors locally, run `npm run typecheck:baseline:update` to ratchet the baseline down.
-- `npm run check` — local workflow helper: brace check + typecheck ratchet (use before PRs)
-- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, production build, and Playwright smoke test on PRs to `main`.
+- `npm run typecheck:ci` — compares `tsc --noEmit` against a tracked baseline. The baseline is currently **0 errors**: strict mode is clean, so any new violation fails CI. After fixing errors locally, run `npm run typecheck:baseline:update` to ratchet the baseline down.
+- `npm run check:env-registry` — validates the level environment registry closed loop (flags, registry keys, plugin order, `LEVEL_CONFIG` references)
+- `npm run test:unit` — `node --test` suite under `tests/unit/` (70 tests; no browser needed)
+- `npm run check` — local pre-PR gate: brace check + env-registry check + typecheck ratchet + unit tests
+- `npm run test:smoke` — Playwright WebGPU boot-probe test. Needs a Chrome binary; point `PLAYWRIGHT_CHROME_PATH` at one if it is not on a standard path.
+- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, unit tests, production build, then a smoke job (currently `continue-on-error`) and an experimental C++ WASM job on PRs to `main`.
 
 WebGPU is unavailable headlessly, so runtime verification requires a browser with WebGPU enabled (Chrome/Edge 113+).
 
@@ -74,9 +77,11 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 | Performance guardrails | `decoration_budget.ts`, `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
-| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (C++ Verlet opt-in), `assembly/index.ts` (supported); `cpp/` experimental — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
-| Audio | `audio_system/` |
+| GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
+| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `assembly/noise.ts` + `assembly/physics.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
+| Audio | `audio_system/` (incl. `chapter_music.ts` + `mixins/chapter_music.ts`), `audio_settings.ts`, `ui_audio_settings.ts`, `main/music_update.ts` — [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md). 100% procedural; never add audio files to `public/` |
 | Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |
+| Env system metadata (biome/role/palette/difficulty per system) | `env_system_descriptors.ts` — see `docs/ENV_SYSTEM_DESCRIPTORS.md` |
 
 ## Code Style
 

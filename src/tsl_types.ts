@@ -12,3 +12,13 @@ import type { Node } from 'three/src/nodes/Nodes.js';
  * Prefer this over annotating as `ConstNode`/`MathNode`/`OperatorNode`.
  */
 export type TSLNode = Node;
+
+/**
+ * A `uniform()` node whose `.value` is a concrete JS/Three type.
+ *
+ * `uniform()` infers `.value` as `unknown` for object payloads, so
+ * `uPlayerPos.value.copy(pos)` fails under `strict`. Annotating the field as
+ * `TSLUniform<THREE.Vector3>` keeps the node usable in TSL expressions while
+ * typing the CPU-side write. Prefer this over `uPlayerPos: any`.
+ */
+export type TSLUniform<T> = Node & { value: T };

@@ -12,6 +12,14 @@ import {
 } from './shared';
 import { CandyAsteroid } from './candy_asteroid';
 import { GummyRing } from './gummy_ring';
+import { biomeNoise } from '../biome_noise';
+import { getRunRngFork } from '../run_seed';
+import type { SeededRng } from '../run_seed/rng';
+
+// Below this chunk-noise sample, a candidate spawn is skipped — carves organic
+// gaps into the belt instead of a flat Poisson scatter (C++ fractalNoise2D
+// under VITE_CPP_WASM=true, JS value-noise fallback otherwise).
+const CANDY_GAP_THRESHOLD = 0.32;
 
 export class CandyBeltManager {
     private scene: THREE.Scene;
@@ -94,19 +102,24 @@ export class CandyBeltManager {
         this.beltStartX = startX;
 
         const count = Math.floor(length * density);
+        let spawned = 0;
 
         for (let i = 0; i < count; i++) {
-            const x = startX + Math.random() * length;
-            const y = (Math.random() - 0.5) * 28;
-            const z = zBand.min + Math.random() * (zBand.max - zBand.min);
+            const rng = getRunRngFork('candy');
+            const x = startX + rng.random() * length;
+            if (biomeNoise.sample(x, 'candy') < CANDY_GAP_THRESHOLD) continue; // organic belt gap
 
-            const type = this.getRandomCandyType();
-            const flavor = this.getRandomFlavor();
+            const y = (rng.random() - 0.5) * 28;
+            const z = zBand.min + rng.random() * (zBand.max - zBand.min);
+
+            const type = this.getRandomCandyType(rng);
+            const flavor = this.getRandomFlavor(rng);
 
             this.spawnCandyAsteroid(x, y, z, type, flavor);
+            spawned++;
         }
 
-        console.log(`🍭 Generated candy belt with ${count} sweet treats along x=${startX.toFixed(0)}..${(startX + length).toFixed(0)}`);
+        console.log(`🍭 Generated candy belt with ${spawned}/${count} sweet treats (biome-noise gaps, ${biomeNoise.backend}) along x=${startX.toFixed(0)}..${(startX + length).toFixed(0)}`);
     }
 
     /**
@@ -119,16 +132,17 @@ export class CandyBeltManager {
         zBand: { min: number; max: number } = { min: -5, max: 5 }
     ): void {
         const count = Math.max(1, Math.floor(length * density * 0.12));
+        const rng = getRunRngFork('candy');
         for (let i = 0; i < count; i++) {
-            const x = startX + 40 + Math.random() * (length - 60);
-            const y = (Math.random() - 0.5) * 22;
-            const z = zBand.min + Math.random() * (zBand.max - zBand.min);
+            const x = startX + 40 + rng.random() * (length - 60);
+            const y = (rng.random() - 0.5) * 22;
+            const z = zBand.min + rng.random() * (zBand.max - zBand.min);
             this.spawnGummyRing(x, y, z);
         }
     }
 
     spawnGummyRing(x: number, y: number, z: number = 0, flavor?: CandyFlavor): GummyRing {
-        const ring = new GummyRing(this.scene, x, y, z, flavor || this.getRandomFlavor());
+        const ring = new GummyRing(this.scene, x, y, z, flavor || this.getRandomFlavor(getRunRngFork('candy')));
         this.gummyRings.push(ring);
         return ring;
     }
@@ -140,8 +154,8 @@ export class CandyBeltManager {
         type?: CandyType,
         flavor?: CandyFlavor
     ): CandyAsteroid {
-        const candyType = type || this.getRandomCandyType();
-        const candyFlavor = flavor || this.getRandomFlavor();
+        const candyType = type || this.getRandomCandyType(getRunRngFork('candy'));
+        const candyFlavor = flavor || this.getRandomFlavor(getRunRngFork('candy'));
         
         const position = new THREE.Vector3(x, y, z);
         const candy = new CandyAsteroid(candyType, position, candyFlavor, this.scene);
@@ -152,11 +166,11 @@ export class CandyBeltManager {
         return candy;
     }
 
-    private getRandomCandyType(): CandyType {
+    private getRandomCandyType(rng: SeededRng): CandyType {
         const types = Object.values(CandyType);
         const weights = [0.3, 0.25, 0.3, 0.15]; // Gummy, Lollipop, Jellybean, CottonCandy
         
-        const rand = Math.random();
+        const rand = rng.random();
         let cumulative = 0;
         
         for (let i = 0; i < types.length; i++) {
@@ -169,9 +183,9 @@ export class CandyBeltManager {
         return CandyType.GUMMY;
     }
 
-    private getRandomFlavor(): CandyFlavor {
+    private getRandomFlavor(rng: SeededRng): CandyFlavor {
         const flavors = Object.values(CandyFlavor);
-        return flavors[Math.floor(Math.random() * flavors.length)];
+        return flavors[Math.floor(rng.random() * flavors.length)];
     }
 
     getCandyColorScheme(): Record<string, number> {

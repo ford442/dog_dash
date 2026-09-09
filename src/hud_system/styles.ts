@@ -97,6 +97,16 @@ export const HUD_STYLES = `
     75% { transform: rotate(5deg); }
 }
 
+@keyframes hud-glow-pulse {
+    0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5)); transform: scale(1); opacity: 0.9; }
+    50% { filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9)); transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes hud-danger-pulse {
+    0%, 100% { filter: drop-shadow(0 0 5px rgba(255, 0, 0, 0.5)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.9)); transform: scale(1.05); }
+}
+
 @keyframes hud-star-rotate {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -135,7 +145,15 @@ export const HUD_STYLES = `
     100% { opacity: 0; transform: translateX(-50%) scale(0.8) rotate(360deg); }
 }
 
+@keyframes hud-danger-pulse {
+    0%, 100% { filter: drop-shadow(0 2px 4px rgba(255, 0, 0, 0.3)); transform: scale(1); }
+    50% { filter: drop-shadow(0 0 12px rgba(255, 50, 50, 0.9)); transform: scale(1.15); }
+}
 
+@keyframes hud-pulse-fast {
+    0%, 100% { transform: scale(1); opacity: 1; filter: brightness(1); }
+    50% { transform: scale(1.1); opacity: 0.8; filter: brightness(1.3); }
+}
 
 .hud-element {
     font-family: 'Segoe UI', 'Comic Sans MS', cursive, sans-serif;
@@ -164,6 +182,10 @@ export const HUD_STYLES = `
     animation: hud-pulse 1.5s ease-in-out infinite;
 }
 
+.hud-pulse-fast {
+    animation: hud-pulse 0.6s ease-in-out infinite;
+}
+
 .hud-shake {
     animation: hud-shake 0.3s ease-in-out;
 }
@@ -182,6 +204,15 @@ export const HUD_STYLES = `
 
 .hud-wiggle {
     animation: hud-wiggle 0.5s ease-in-out;
+}
+
+.hud-danger-pulse {
+    animation: hud-danger-pulse 0.6s ease-in-out infinite !important;
+    color: #ff3333 !important;
+}
+
+.hud-pulse-fast {
+    animation: hud-pulse-fast 0.4s ease-in-out infinite !important;
 }
 </style>
 `;

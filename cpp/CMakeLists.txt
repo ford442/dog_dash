@@ -41,16 +41,16 @@ set(EXPORTED_FUNCTIONS
 string(JOIN "," EXPORTS_CSV ${EXPORTED_FUNCTIONS})
 set(EXPORTS_JSON "[${EXPORTS_CSV}]")
 
-add_executable(game_cpp ${SOURCES})
-
-set_target_properties(game_cpp PROPERTIES
-    SUFFIX ".wasm"
-    OUTPUT_NAME "game_cpp"
-)
-
-target_include_directories(game_cpp PRIVATE src)
-
 if (EMSCRIPTEN)
+    add_executable(game_cpp ${SOURCES})
+
+    set_target_properties(game_cpp PROPERTIES
+        SUFFIX ".wasm"
+        OUTPUT_NAME "game_cpp"
+    )
+
+    target_include_directories(game_cpp PRIVATE src)
+
     target_link_options(game_cpp PRIVATE
         "SHELL:--no-entry"
         "SHELL:-s STANDALONE_WASM=1"
@@ -66,6 +66,11 @@ if (EMSCRIPTEN)
     endif()
 endif()
 
-# Native host tests were referenced historically (BUILD_NATIVE_TESTS) but the
-# cpp/tests/*.cpp sources were never checked in. Re-add that option only when
-# real native tests land; until then keep the Emscripten target only.
+option(BUILD_NATIVE_TESTS "Build native host tests" OFF)
+
+if (BUILD_NATIVE_TESTS AND NOT EMSCRIPTEN)
+    add_executable(test_noise tests/test_noise.cpp)
+    target_include_directories(test_noise PRIVATE src)
+    enable_testing()
+    add_test(NAME NoiseTest COMMAND test_noise)
+endif()

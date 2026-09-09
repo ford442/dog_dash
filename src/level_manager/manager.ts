@@ -1,6 +1,6 @@
 import { ShakeType } from '../juice_effects';
 import * as THREE from 'three';
-import { CloudSystem } from '../clouds';
+import type { CloudSystem } from '../clouds';
 import { AtmosphereSystem } from '../sky';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from '../level_config';
 import type { IndustrialGeometryManager } from '../industrial_geometry';
@@ -8,19 +8,17 @@ import { getLevelSpan } from '../depth_layers';
 import { playerState } from '../game_config';
 import { moonPlants } from '../visuals';
 import { disposeObject } from '../utils';
-import { GodRaySystem } from '../godrays';
-import { AuroraSystem } from '../aurora';
 import type { GhostDebrisSystem } from '../ghost_debris';
 import type { VoidJellyfishSystem } from '../void_jellyfish';
 import { DebugSystem } from '../debug_system';
-import { FriendsManager } from '../space_friends';
-import { ButterflySwarmSystem } from '../butterfly_swarm';
-import type { ConstellationManager } from '../flower_constellations';
+import type { FriendsManager } from '../space_friends';
+import type { ButterflySwarmSystem } from '../butterfly_swarm';
 import type { PinwheelFloraManager } from '../pinwheel_flora';
 import type { WindChimeManager } from '../wind_chimes';
 import type { SolarSailFernManager } from '../solar_sail_ferns';
 import type { CandyBeltManager } from '../candy_obstacles';
 import { applyLevelDecorationBudgets, decorationBudget } from '../decoration_budget';
+import { getAudioSystem } from '../audio_system';
 import { DEPTH_LAYERS } from '../depth_layers';
 import {
     DEFAULT_FOG_FAR,
@@ -42,8 +40,8 @@ export class LevelManager {
     cloudSystem: CloudSystem;
     atmosphereSystem: AtmosphereSystem;
     lastPopulatedEndX: number;
-    godRaySystem: GodRaySystem;
-    auroraSystem: AuroraSystem;
+    godRaySystem: LevelEnvironmentPorts['godRaySystem'];
+    auroraSystem: LevelEnvironmentPorts['auroraSystem'];
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
     debugSystem?: DebugSystem;
@@ -52,13 +50,11 @@ export class LevelManager {
     objectDensityMultiplier: number;
     readonly scene: THREE.Scene;
     readonly camera: THREE.PerspectiveCamera;
-    readonly butterflySwarmSystem: ButterflySwarmSystem;
-    private readonly flowerManager: ConstellationManager;
-    readonly pinwheelManager: PinwheelFloraManager;
-    readonly windChimeManager: WindChimeManager;
-    readonly solarSailFernManager: SolarSailFernManager;
-    private readonly candyManager: CandyBeltManager;
-    readonly candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
+    butterflySwarmSystem: LevelEnvironmentPorts['butterflySwarmSystem'];
+    pinwheelManager: PinwheelFloraManager;
+    windChimeManager: WindChimeManager;
+    solarSailFernManager: SolarSailFernManager;
+    candyManager: CandyBeltManager;
     readonly getPlayer: () => THREE.Group | null;
     readonly spawners: GeologicalSpawners;
     readonly geologicalCounts: GeologicalCounts;
@@ -90,12 +86,27 @@ export class LevelManager {
     stormGeodeSystem: LevelEnvironmentPorts['stormGeodeSystem'];
     pastelNebulaSystem: LevelEnvironmentPorts['pastelNebulaSystem'];
     wishLanternSystem: LevelEnvironmentPorts['wishLanternSystem'];
+    spacePetsSwarmSystem: LevelEnvironmentPorts['spacePetsSwarmSystem'];
     weatherSystem: LevelEnvironmentPorts['weatherSystem'];
     dancingJellyMossSystem: LevelEnvironmentPorts['dancingJellyMossSystem'];
     dynamicStarfieldSystem: LevelEnvironmentPorts['dynamicStarfieldSystem'];
     dayNightCycleSystem: LevelEnvironmentPorts['dayNightCycleSystem'];
     cloudCastlesSystem: LevelEnvironmentPorts['cloudCastlesSystem'];
+    grappleIslesSystem: LevelEnvironmentPorts['grappleIslesSystem'];
+    readonly bouncePadsSystem: LevelEnvironmentPorts['bouncePadsSystem'];
+    readonly aerialGuardPatrolSystem: LevelEnvironmentPorts['aerialGuardPatrolSystem'];
+    readonly airTokensSystem: LevelEnvironmentPorts['airTokensSystem'];
+    readonly shootingStarsSystem?: LevelEnvironmentPorts['shootingStarsSystem'];
+    spaceGardenSystem: LevelEnvironmentPorts['spaceGardenSystem'];
+    candyFieldSystem: LevelEnvironmentPorts['candyFieldSystem'];
+    windCurrentsSystem: LevelEnvironmentPorts['windCurrentsSystem'];
+    timeShiftZonesSystem: LevelEnvironmentPorts['timeShiftZonesSystem'];
     singingGeodeSystem: LevelEnvironmentPorts['singingGeodeSystem'];
+    flowerConstellationsSystem: LevelEnvironmentPorts['flowerConstellationsSystem'];
+    hideAndSeekStarsSystem: LevelEnvironmentPorts['hideAndSeekStarsSystem'];
+    comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
+    skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
+    fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -111,8 +122,6 @@ export class LevelManager {
     constructor(options: LevelManagerOptions) {
         this.scene = options.scene;
         this.camera = options.camera;
-        this.butterflySwarmSystem = options.butterflySwarmSystem;
-        this.flowerManager = options.flowerManager;
         this.pinwheelManager = options.pinwheelManager;
         this.windChimeManager = options.windChimeManager;
         this.solarSailFernManager = options.solarSailFernManager;
@@ -143,27 +152,45 @@ export class LevelManager {
         this.stormGeodeSystem = options.env.stormGeodeSystem;
         this.pastelNebulaSystem = options.env.pastelNebulaSystem;
         this.wishLanternSystem = options.env.wishLanternSystem;
+        this.spacePetsSwarmSystem = options.env.spacePetsSwarmSystem;
         this.weatherSystem = options.env.weatherSystem;
         this.dancingJellyMossSystem = options.env.dancingJellyMossSystem;
         this.dynamicStarfieldSystem = options.dynamicStarfieldSystem;
         this.dayNightCycleSystem = options.dayNightCycleSystem;
         this.cloudCastlesSystem = options.cloudCastlesSystem;
+        this.grappleIslesSystem = options.grappleIslesSystem;
+        this.bouncePadsSystem = options.bouncePadsSystem;
+        this.aerialGuardPatrolSystem = options.aerialGuardPatrolSystem;
+        this.airTokensSystem = options.airTokensSystem;
+        this.shootingStarsSystem = options.shootingStarsSystem;
+        this.spaceGardenSystem = options.spaceGardenSystem;
+        this.windCurrentsSystem = options.windCurrentsSystem;
+        this.timeShiftZonesSystem = options.timeShiftZonesSystem;
         this.candyFieldSystem = options.candyFieldSystem;
         this.singingGeodeSystem = options.env.singingGeodeSystem;
+        this.flowerConstellationsSystem = options.env.flowerConstellationsSystem;
+        this.hideAndSeekStarsSystem = options.env.hideAndSeekStarsSystem;
+        this.comboCorridorSystem = options.env.comboCorridorSystem;
+        this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
+        this.fossilizedSpaceWhalesSystem = options.env.fossilizedSpaceWhalesSystem;
 
-        this.cloudSystem = new CloudSystem(this.scene, options.weaponLightManager);
+        // Stub until ensureGameplayReady loads the real CloudSystem chunk.
+        this.cloudSystem = {
+            __stub: true,
+            layers: [],
+            activate: () => undefined,
+            deactivate: () => undefined,
+            setSkyColors: () => undefined,
+            setCamera: () => undefined,
+            update: () => undefined,
+            triggerLightningAt: () => undefined
+        } as unknown as CloudSystem;
         this.atmosphereSystem = new AtmosphereSystem(this.scene);
 
-        this.lightningBoltSystem.onBoltStrike = (pos, color) => {
-            this.cloudSystem.triggerLightningAt(pos, color);
-            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
-
-            // Add impact effects: subtle screen shake and spark particles
-            this.juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
-            this.particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
-        };
-        this.godRaySystem = options.godRaySystem;
-        this.auroraSystem = options.auroraSystem;
+        this.godRaySystem = options.env.godRaySystem;
+        this.auroraSystem = options.env.auroraSystem;
+        this.butterflySwarmSystem = options.env.butterflySwarmSystem;
+        this.wireLightningBoltStrike();
         this.ghostDebrisSystem = options.ghostDebrisSystem;
         this.voidJellyfishSystem = options.voidJellyfishSystem;
         this.debugSystem = options.debugSystem;
@@ -177,9 +204,25 @@ export class LevelManager {
         this.objectDensityMultiplier = 1.0;
     }
 
+    /** Wires (or re-wires, after a deferred lightning-bolt chunk swap) the
+     * cloud-flash / god-ray-flash / juice reaction to a lightning strike. */
+    private wireLightningBoltStrike(): void {
+        this.lightningBoltSystem.onBoltStrike = (pos, color) => {
+            this.cloudSystem.triggerLightningAt(pos, color);
+            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
+
+            // Add impact effects: subtle screen shake and spark particles
+            this.juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
+            this.particleSystem.emit(pos, color.getHex(), 10, 5.0, 1.0, 0.5);
+        };
+    }
+
     /** Refresh deferred env system refs after async chunk install. */
     installEnvironmentSystems(systems: Partial<LevelEnvironmentPorts>): void {
         Object.assign(this, systems);
+        if (systems.lightningBoltSystem) {
+            this.wireLightningBoltStrike();
+        }
     }
 
     setObjectDensityMultiplier(multiplier: number) {
@@ -247,11 +290,13 @@ export class LevelManager {
         if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
         this.onUpdateLevelDisplay?.(levelIndex, cfg.name);
         this.onLevelStart?.(cfg);
+
+        // Chapter sonic identity — crossfades from whatever was playing.
+        getAudioSystem().setChapterMusic(levelIndex);
         applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
 
         populateZone(this, playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
 
-        this.cloudSystem.setLevel(cfg);
 
         this.chromaShiftSystem.clearRocks();
         if (cfg.chromaShiftDensity && cfg.chromaShiftDensity > 0) {
@@ -285,16 +330,6 @@ export class LevelManager {
         const dreamyStart = levelStartX + dreamyPadding;
         const dreamyEnd = levelEndX - dreamyPadding;
 
-        if (levelIndex <= 3 || levelIndex >= 6) {
-            this.flowerManager.cleanup();
-            this.flowerManager.generateConstellation(
-                15,
-                dreamyStart,
-                dreamyEnd,
-                DEPTH_LAYERS.BACKGROUND.min,
-                DEPTH_LAYERS.BACKGROUND.max
-            );
-        }
 
         if (levelIndex !== 4 && levelIndex !== 5) {
             this.candyManager.clear();
@@ -306,20 +341,7 @@ export class LevelManager {
             );
         }
 
-        this.pinwheelManager.clear();
-        this.windChimeManager.clear();
-        this.solarSailFernManager.clear();
-        this.crystalChimeManager.clear();
-
-        // Re-baseline decoration counters after clears; re-sync still-live streams/pools
-        decorationBudget.resetCounts();
-        decorationBudget.syncCount('foliage_scatter', this.levelObjects.length);
-        decorationBudget.syncCount(
-            'void_root_ball',
-            this.geologicalCounts.voidRootBalls()
-        );
-        this.butterflySwarmSystem.resyncBudgetCounts();
-        this.nebulaSystem.resyncBudgetCounts();
+        this.disposeLevelStreamingResources();
 
         if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
             this.pinwheelManager.spawnField(
@@ -379,6 +401,7 @@ export class LevelManager {
             this.nebulaSystem.update(delta, cameraX, playerPos, speed);
         }
         if (enabled('meteorShower')) this.meteorShowerSystem.update(delta, cameraX, playerPos);
+        if (enabled('hideAndSeekStars')) this.hideAndSeekStarsSystem.update(delta, playerPos);
         if (enabled('cosmicDust')) this.cosmicDustSystem.update(delta, cameraX, playerPos);
         if (enabled('asteroidField') && this.asteroidFieldSystem) this.asteroidFieldSystem.update(delta, cameraX, playerPos);
         if (enabled('planetaryHorizon') && this.planetaryHorizonSystem) this.planetaryHorizonSystem.update(cameraX, delta);
@@ -389,14 +412,23 @@ export class LevelManager {
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
+        this.spacePetsSwarmSystem.update(delta, cameraX, playerPos);
         this.weatherSystem.update(delta, cameraX, playerPos);
         this.dancingJellyMossSystem.update(delta, cameraX, playerPos);
         this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         if (enabled('cloudCastles') && this.cloudCastlesSystem) this.cloudCastlesSystem.update(delta, cameraX, playerPos);
+        if (enabled('grappleIsles') && this.grappleIslesSystem) this.grappleIslesSystem.update(delta, cameraX, playerPos);
+        if (enabled('spaceGarden') && this.spaceGardenSystem) this.spaceGardenSystem.update(delta, cameraX, playerPos);
+        if (enabled('aerialGuardPatrol') && this.aerialGuardPatrolSystem) this.aerialGuardPatrolSystem.update(delta, cameraX, playerPos);
+        if (enabled('airTokens') && this.airTokensSystem) this.airTokensSystem.update(delta, cameraX, playerPos);
+        if (enabled('shootingStars') && this.shootingStarsSystem) this.shootingStarsSystem.update(delta, cameraX, playerPos);
+        if (enabled('windCurrents') && this.windCurrentsSystem) this.windCurrentsSystem.update(delta, cameraX, playerPos);
+        if (enabled('timeShiftZones') && this.timeShiftZonesSystem) this.timeShiftZonesSystem.update(delta, cameraX, playerPos);
         if (enabled('candyPlanetRing')) this.candyFieldSystem.update(delta, cameraX, playerPos);
-        this.candyFieldSystem?.update(delta, cameraX);
         if (enabled('singingGeodes') && this.singingGeodeSystem) this.singingGeodeSystem.update(delta, cameraX, playerPos);
+        if (enabled('skyRailTerminal') && this.skyRailTerminalSystem) this.skyRailTerminalSystem.update(delta, cameraX, playerPos);
+        if (enabled('comboCorridor') && this.comboCorridorSystem) this.comboCorridorSystem.update(delta, cameraX, playerPos);
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
@@ -407,6 +439,11 @@ export class LevelManager {
         const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
         if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
             const nextLevel = this.currentLevel + 1;
+            // Stinger for the chapter just finished, then the next chapter's
+            // bed crossfades in from startLevel.
+            const audio = getAudioSystem();
+            audio.playChapterCompleteStinger();
+            audio.playDogBarkVariant('happy');
             void ensureLevelSystemsForLevel(nextLevel).then(() => {
                 this.startLevel(nextLevel);
             });
@@ -417,5 +454,32 @@ export class LevelManager {
         const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
         const percent = Math.min(100, Math.max(0, (playerX / total) * 100));
         return { percent, level: this.currentLevel };
+    }
+
+    disposeLevelStreamingResources(): void {
+        this.pinwheelManager.clear();
+        this.windChimeManager.clear();
+        this.solarSailFernManager.clear();
+        this.crystalChimeManager.clear();
+
+        // Newly added to clean up decorative leaks
+        if (this.cloudCastlesSystem) this.cloudCastlesSystem.cleanup?.();
+        if (this.grappleIslesSystem) this.grappleIslesSystem.cleanup?.();
+        if (this.skyRailTerminalSystem) this.skyRailTerminalSystem.cleanup?.();
+        if (this.flowerConstellationsSystem) this.flowerConstellationsSystem.cleanup?.();
+        if (this.comboCorridorSystem) this.comboCorridorSystem.cleanup?.();
+        if (this.spacePetsSwarmSystem) this.spacePetsSwarmSystem.cleanup?.();
+        if (this.windCurrentsSystem) this.windCurrentsSystem.cleanup?.();
+        if (this.shootingStarsSystem) this.shootingStarsSystem.cleanup?.();
+
+        // Re-baseline decoration counters after clears; re-sync still-live streams/pools
+        decorationBudget.resetCounts();
+        decorationBudget.syncCount('foliage_scatter', this.levelObjects.length);
+        decorationBudget.syncCount(
+            'void_root_ball',
+            this.geologicalCounts.voidRootBalls()
+        );
+        this.butterflySwarmSystem.resyncBudgetCounts();
+        this.nebulaSystem.resyncBudgetCounts();
     }
 }

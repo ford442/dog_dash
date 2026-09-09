@@ -60,26 +60,40 @@ npm run typecheck
 CI uses a **baseline ratchet** so existing known errors do not block PRs, but new strict-mode violations do. For a local pre-PR gate (brace balance + typecheck ratchet):
 
 ```bash
-npm run check                         # braces + typecheck:ci
+npm run check                         # braces + env-registry + typecheck:ci + test:unit
 npm run typecheck:ci                  # compare against .github/typecheck-baseline.txt
 npm run typecheck:baseline:update     # after fixing errors, ratchet the baseline down
 ```
 
 ### Testing
 
-Playwright smoke tests verify the **production build** on the WebGL2 fallback path (`/?renderer=webgl`). Headless/cloud VMs have no WebGPU adapter, so tests launch system Chrome with SwiftShader flags (see `playwright.config.ts`).
+Three layers — unit (fast, no GPU), smoke (browser bootstrap), and optional C++ WASM verify:
 
-**Run locally:**
+| Command | What it checks | GPU required |
+|---------|----------------|--------------|
+| `npm run test:unit` | Pure logic: spawn rules, crafting, env registry math, sling scoring, biome noise JS fallback, port contracts | No |
+| `npm run test:smoke` | Production build + Playwright: WebGPU boot-probe hard-fail contract (breadcrumb, blocking screen, no WebGL context, one adapter request) | No — asserts the failure path |
+| `npm run verify:cpp-wasm` | Experimental C++ WASM instantiates in Node | No |
+
+`npm run check` includes unit tests. `npm run test` runs unit + smoke.
+
+**Unit tests** use Node's built-in test runner with `tsx` for TypeScript imports (`tests/unit/*.test.ts` and `tests/*.test.mjs`). No build step required.
+
+```bash
+npm run test:unit
+```
+
+**Smoke tests** verify the production build on the WebGL2 fallback path. Headless/cloud VMs have no WebGPU adapter, so tests launch system Chrome with SwiftShader flags (see `playwright.config.ts`).
 
 ```bash
 npm run build
 npm run test:smoke          # alias for: npx playwright test
 ```
 
-**Requirements:**
+**Requirements (smoke):**
 
-- Google Chrome (or Chromium) on the machine. The config checks common install paths and falls back to Playwright's bundled Chromium.
-- Optional: set `PLAYWRIGHT_CHROME_PATH` to override the Chrome executable.
+- Google Chrome (or Chromium). The config checks common install paths and falls back to Playwright's bundled Chromium.
+- Optional: set `PLAYWRIGHT_CHROME_PATH` to override the Chrome executable (cloud default: `/usr/local/bin/google-chrome`).
 
 **What the smoke test checks (DOM/state, not screenshot diffs):**
 
@@ -88,7 +102,9 @@ npm run test:smoke          # alias for: npx playwright test
 - Title screen dismisses on click; gameplay HUD elements appear
 - After ~2s, the debug FPS overlay (`` ` `` toggle) shows live stats and `renderer: webgl`
 
-CI runs the smoke job on PRs (currently `continue-on-error: true` while the suite stabilizes).
+**Smoke promotion (CI):** The smoke job currently uses `continue-on-error: true` (Phase A). Once `main` has **3 consecutive green smoke runs**, remove `continue-on-error` in `.github/workflows/ci.yml` (Phase C). If flakes appear, prefer `waitForFunction` over fixed `waitForTimeout` before promoting.
+
+**C++ WASM verify** (`npm run verify:cpp-wasm`) runs in the experimental `cpp-wasm` CI job (soft-fail). Not required for the default AssemblyScript path.
 
 ### Requirements
 
@@ -106,22 +122,43 @@ CI runs the smoke job on PRs (currently `continue-on-error: true` while the suit
 - **H** - Toggle heat effects (debug)
 - **`** - Toggle debug panel
 
-## Renderer Debugging
+## Renderer
 
-Dog Dash defaults to WebGPU. To force the WebGL2 fallback, open:
+Dog Dash renders through **WebGPU only** — there is no WebGL fallback. If WebGPU cannot start, the game hard-fails with a diagnostic screen instead of quietly rendering through a different backend, so a Chrome failure and an Edge failure can be compared directly. Restoring a WebGL path is a later issue wave; see [docs/RENDERER_FALLBACK.md](docs/RENDERER_FALLBACK.md).
+
+A single boot probe runs `requestAdapter()` and `requestDevice()` exactly once, then hands the device to the renderer. The result is memoised, so a failed probe stays failed and nothing re-requests a device afterwards.
+
+Runtime breadcrumbs in the browser console:
+
+- `window.webgpuProbe` — `{ ok, browser, reason, adapter, stage, userAgent, durationMs }`
+- `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL` (always false)
+
+URL flags:
 
 ```text
-http://localhost:5173/?renderer=webgl
+http://localhost:5173/?skip_gpu_boot   # skip the probe entirely (headless CI)
+http://localhost:5173/?wireframe
+http://localhost:5173/?collisionDebug
 ```
 
-The fallback shares the same game state, camera, level data, entities, controls, and WASM collision path. Runtime breadcrumbs are available in the browser console:
+The debug panel includes `Wireframe` and `Collision Debug` toggles, opened with the backquote key.
 
-- `window.rendererType`
-- `window.usingWebGPU`
-- `window.usingWebGL`
-- `window.rendererFallbackReason`
+**Gameplay verification needs a WebGPU-capable browser** (Chrome/Edge 113+ with a working GPU). Headless CI cannot render the game, so the smoke suite asserts the hard-fail contract instead of driving gameplay.
 
-The debug panel includes `Wireframe` and `Collision Debug` toggles. These can also be enabled on startup with `?wireframe` and `?collisionDebug`.
+## GPU Chores
+
+`src/gpu_chores/` offloads **non-authoritative** helper compute — compacting instance draw lists and reducing values for HUD/juice meters. It picks a backend in the order WebGPU → AssemblyScript/WASM → JS, adopting the renderer's existing device rather than creating a second one.
+
+**Chores are not a particle-sim port.** Positions, velocities, collision, gravity and spore gameplay state stay on the AssemblyScript/CPU path. A GPU integrate step is separate work and is gated on golden-fixture parity tests against `assembly/index.ts` — see [docs/GPU_CHORES.md](docs/GPU_CHORES.md).
+
+Kill switch and breadcrumbs:
+
+```text
+http://localhost:5173/?no_gpu_compute     # pin the JS tier
+http://localhost:5173/?chores=wasm        # pin a specific tier
+```
+
+- `window.gpuChores` — `{ backend, syncBackend, gpuDisabled, reason, ops }`
 
 ## Gameplay
 

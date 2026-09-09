@@ -8,7 +8,7 @@ import { PowerUpType } from '../powerup_manager';
 import { MagicalEffectType } from '../magical_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { VictoryState } from '../victory_system';
+import { VictoryState } from '../victory_system/victory_state';
 import { getLevelSpan } from '../depth_layers';
 import {
     shouldSpawnStarlightKoi,
@@ -29,6 +29,8 @@ import { updateGravLensSystems } from './grav_lens_update';
 import { updateArtifacts } from './artifact_update';
 import { updateDreamPortals } from './dream_portal_update';
 import { updateGalacticCoreEffects } from './galactic_core_update';
+import { ghostRunReplayer } from '../ghost_run';
+
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
@@ -47,6 +49,13 @@ export function updateLoopWorld(delta: number, time: number): void {
         
         // Update HUD system
         game.hudManager.update(delta);
+
+        if (player && game.debugSystem.isEnabled('ghostReplay')) {
+            ghostRunReplayer.setVisible(true);
+            ghostRunReplayer.update(game.clock.getElapsedTime(), scene);
+        } else {
+            ghostRunReplayer.setVisible(false);
+        }
     
         // --- NEW: Update Particles (engine trails & explosions)
         if (game.debugSystem.isEnabled('particles')) {
@@ -170,12 +179,6 @@ export function updateLoopWorld(delta: number, time: number): void {
     
         // SWARM #3: Update Dreamy Environments
         if (player) {
-            // Update flower constellations (bloom, pollen, sparkles)
-            if (game.debugSystem.isEnabled('flowerConstellations')) {
-                game.flowerManager.update(delta, player.position);
-                game.flowerManager.checkPlayerProximity(player.position);
-            }
-    
             // Twirling pinwheel flowers — spin, wind gusts, blade clips
             if (game.debugSystem.isEnabled('pinwheelFlora')) {
                 const pinwheelHits = game.pinwheelManager.update(delta, time, player.position);
@@ -282,7 +285,9 @@ export function updateLoopWorld(delta: number, time: number): void {
     
             // --- NEW: Animate Alien Moon Plants ---
             // We pass 'false' for isDay because it's space (always night!) and null for audio
+            const camX = camera.position.x;
             moonPlants.forEach(plant => {
+                if (Math.abs(plant.position.x - camX) > 55) return;
                 animateFoliage(plant, time, null, false);
             });
         }

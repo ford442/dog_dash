@@ -128,13 +128,38 @@ export type DataMonolithConfig = {
     tier?: 1 | 2 | 3;
 };
 
+
+export type WindZoneConfig = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    forceX: number;
+    forceY: number;
+};
+
+export type WindCurrentsEnvironmentConfig = {
+    zones: WindZoneConfig[];
+};
+
+export type BouncePadsEnvironmentConfig = {
+    pads: { x: number; y: number; z?: number; bounceStrength?: number }[];
+};
+
+export type CloudsEnvironmentConfig = {
+    density: number;
+    lightningFromWithin?: boolean;
+};
+
 export type LevelEnvironments = {
     pastelNebula?: boolean;
     candyPlanetRing?: boolean;
     butterflySwarm?: boolean;
+    shootingStars?: boolean;
     blackHole?: BlackHoleEnvironmentConfig;
     industrial?: { intensity?: number, tunnelSpeed?: number } | boolean;
     waterfall?: boolean;
+    clouds?: boolean | CloudsEnvironmentConfig;
     biological?: boolean;
     nebula?: boolean;
     /** Parallax ribbon/veil sheets (cheap depth); uses level skyColors. */
@@ -153,8 +178,10 @@ export type LevelEnvironments = {
     meteorShower?: MeteorShowerEnvironmentConfig;
     bubbleCoral?: BubbleCoralEnvironmentConfig | boolean;
     wishLanterns?: boolean;
+    spacePetsSwarm?: boolean | { density?: number };
     dancingJellyMoss?: boolean | { density?: number };
     weather?: boolean;
+    spaceGarden?: boolean;
     dynamicStarfield?: boolean | { speedScaling?: number };
     dayNightCycle?: boolean | { cycleDuration: number };
     candyField?: boolean;
@@ -164,6 +191,18 @@ export type LevelEnvironments = {
     dreamPortals?: DreamPortalsEnvironmentConfig;
     singingGeodes?: boolean | { density?: number };
     cloudCastles?: boolean | { density?: number };
+    grappleIsles?: boolean | { density?: number };
+    fossilizedSpaceWhales?: boolean | { density?: number };
+    windCurrents?: boolean | WindCurrentsEnvironmentConfig;
+    bouncePads?: boolean | BouncePadsEnvironmentConfig;
+    /** Glowing air-tokens that refill boost / grant a lift (ideas.md §18.1 1H). */
+    airTokens?: boolean | import('./air_tokens').AirTokensEnvironmentConfig;
+    timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
+    flowerConstellations?: boolean | { density?: number };
+    hideAndSeekStars?: boolean;
+    skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
+    comboCorridor?: boolean | { density?: number };
+    aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -187,7 +226,6 @@ export type LevelConfig = {
         vine?: number;
         orb?: number;
         mushroom?: number;
-        cloud?: number;
         voidRootBall?: number;
         vacuumKelp?: number;
         iceNeedle?: number;
@@ -280,24 +318,23 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             description: "Catalog 8 alien plants"
         },
         foliageDensity: {
-            fern: 80,
-            rose: 50,
-            lotus: 20,
-            glowingFlower: 60,
-            tree: 70,
-            floweringTree: 50,
-            shrub: 60,
-            vine: 30,
-            orb: 40,
-            mushroom: 45,
-            cloud: 40,
-            voidRootBall: 8,
-            vacuumKelp: 10,
-            iceNeedle: 15,
-            liquidMetal: 8,
-            magmaHeart: 5,
-            gravityAnchor: 3,
-            solarSail: 3
+            fern: 12,
+            rose: 8,
+            lotus: 4,
+            glowingFlower: 10,
+            tree: 8,
+            floweringTree: 6,
+            shrub: 8,
+            vine: 5,
+            orb: 8,
+            mushroom: 6,
+            voidRootBall: 3,
+            vacuumKelp: 3,
+            iceNeedle: 4,
+            liquidMetal: 3,
+            magmaHeart: 2,
+            gravityAnchor: 2,
+            solarSail: 2
         },
         speed: 8,
         bgColor: 0x1a1a2e,
@@ -313,15 +350,32 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         environments: {
             dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
-            godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
+            godRays: { enabled: true, density: 0.45, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.0 },
             butterflySwarm: true,
+            shootingStars: true,
             pastelNebula: true,
             candyPlanetRing: true,
             wishLanterns: true,
+            spacePetsSwarm: true,
             dancingJellyMoss: true,
+            clouds: { density: 6 },
             dayNightCycle: { cycleDuration: 30 },
-            cloudCastles: { density: 0.6 }
+            cloudCastles: { density: 0.6 },
+            grappleIsles: true,
+            spaceGarden: true,
+            flowerConstellations: true,
+            hideAndSeekStars: true,
+            airTokens: {
+                tokens: [
+                    { x: 70, y: 6 },
+                    { x: 140, y: -3 },
+                    { x: 210, y: 10 },
+                    { x: 280, y: 3 },
+                    { x: 350, y: -5 },
+                    { x: 430, y: 8 }
+                ]
+            }
         },
         vignettes: {
             treeGroves: 1.5,
@@ -350,7 +404,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 5,
             orb: 10,
             mushroom: 10,
-            cloud: 10,
             voidRootBall: 8,
             vacuumKelp: 3,
             iceNeedle: 15,
@@ -377,14 +430,23 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             ghostDebris: { density: 100 },
             godRays: { enabled: true, density: 1.0, baseIntensity: 0.8, color: 0xffcc88, speedMultiplier: 1.2 },
             lightning: { enabled: true, density: 1.5 },
+            shootingStars: true,
             blackHole: { enabled: true, baseX: 3000, baseY: 100 },
+            windCurrents: {
+                zones: [
+                    { x: 400, y: 5, width: 200, height: 20, forceX: 0, forceY: 30 },
+                    { x: 700, y: 5, width: 200, height: 20, forceX: 0, forceY: -30 }
+                ]
+            },
             // Dream Portal door tucked between the two grav-lens corridors.
             dreamPortals: {
                 enabled: true,
                 portals: [
                     { x: 820, y: 7, z: -1, theme: 'candy', durationSeconds: 32 }
                 ]
-            }
+            },
+            flowerConstellations: true,
+            hideAndSeekStars: true
         },
         vignettes: {
             geodeClearings: 0.5
@@ -426,7 +488,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 15,
             orb: 30,
             mushroom: 5,
-            cloud: 20,
             voidRootBall: 12,
             vacuumKelp: 15,
             iceNeedle: 10,
@@ -463,7 +524,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 portals: [
                     { x: 1660, y: -3, z: -1, theme: 'aurora', durationSeconds: 38, toyCount: 16 }
                 ]
-            }
+            },
+            flowerConstellations: true,
         },
         vignettes: {
             roseArches: 1.2
@@ -484,9 +546,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         name: "The Rusty Gauntlet",
         distance: 3200,
         objective: {
-            type: 'survive',
+            type: 'boss',
             target: 1,
-            description: "Survive the rusty gauntlet"
+            description: "Defeat The Zephyr"
         },
         stormGeodeDensity: 40,
         chimeDensity: 8,
@@ -501,7 +563,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 5,
             orb: 15,
             mushroom: 4,
-            cloud: 4,
             voidRootBall: 3,
             vacuumKelp: 3,
             iceNeedle: 3,
@@ -531,7 +592,28 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dynamicStarfield: true,
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
-            bubbleCoral: { density: 0.85 }
+            bubbleCoral: { density: 0.85 },
+            skyRailTerminal: true,
+            comboCorridor: true,
+            bouncePads: {
+                pads: [
+                    { x: 300, y: 0, z: 0, bounceStrength: 45 },
+                    { x: 400, y: 5, z: 0, bounceStrength: 40 }
+                ]
+            },
+            aerialGuardPatrol: {
+                zones: [
+                    { x: 500, y: 8, z: 0, width: 100, searchRadius: 20 },
+                    { x: 900, y: -5, z: 0, width: 150, searchRadius: 25 },
+                    { x: 1400, y: 10, z: -5, width: 80, searchRadius: 15 }
+                ]
+            },
+            timeShiftZones: {
+                zones: [
+                    { x: 300, y: 0, width: 80, height: 25 },
+                    { x: 700, y: 0, width: 100, height: 25 }
+                ]
+            }
         },
         vignettes: {
             treeGroves: 0.6,
@@ -569,7 +651,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 10,
             orb: 30,
             mushroom: 8,
-            cloud: 5,
             voidRootBall: 5,
             vacuumKelp: 8,
             iceNeedle: 4,
@@ -606,8 +687,12 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebulaRibbons: true,
             cosmicDust: true,
             voidJellyfish: { density: 45 },
+            clouds: { density: 5 },
             dancingJellyMoss: { density: 1.5 },
-            singingGeodes: { density: 15 }
+            cloudCastles: true,
+            singingGeodes: { density: 15 },
+            comboCorridor: true,
+            fossilizedSpaceWhales: true
         },
         vignettes: {
             treeGroves: 0.8,
@@ -643,7 +728,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             vine: 30,
             orb: 20,
             mushroom: 10,
-            cloud: 20,
             voidRootBall: 0,
             vacuumKelp: 10,
             iceNeedle: 5,
@@ -675,6 +759,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             nebulaRibbons: true,
             voidJellyfish: { density: 40 },
             moonPalace: true,
+            clouds: { density: 20 },
             weather: true,
             singingGeodes: { density: 20 },
             // Finale beat: the Galactic Core swells across the last stretch of

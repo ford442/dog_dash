@@ -8,7 +8,6 @@ import { PowerUpType } from '../powerup_manager';
 import { MagicalEffectType } from '../magical_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { VictoryState } from '../victory_system';
 import { getLevelSpan } from '../depth_layers';
 import {
     shouldSpawnStarlightKoi,

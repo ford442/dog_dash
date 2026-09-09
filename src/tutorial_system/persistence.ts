@@ -1,8 +1,7 @@
 /**
- * Tutorial persistence and audio helpers
+ * Tutorial persistence helpers
  */
 
-import { AudioSystem } from '../audio_system';
 import { SaveManager } from '../save_manager';
 
 const TUTORIAL_COMPLETED_KEY = 'dog_dash_tutorial_completed';
@@ -42,6 +41,3 @@ export function resetTutorialCompletion(): void {
     }
 }
 
-export function getAudioSystem(): AudioSystem {
-    return new AudioSystem();
-}

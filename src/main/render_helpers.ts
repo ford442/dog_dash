@@ -23,6 +23,15 @@ export function initRenderHelpers(): void {
 }
 
 export function renderGameFrame(): void {
+    const isGlowActive = game.debugSystem.isEnabled('pixelGlow') || (game.pixelGlowSystem && game.pixelGlowSystem.active);
+
+    if (game.pixelGlowSystem && isGlowActive && rendererBackend === 'webgpu') {
+        if (!game.pixelGlowSystem.postProcessing) {
+            game.pixelGlowSystem.activate(renderer as any, scene, camera);
+        }
+        game.pixelGlowSystem.postProcessing!.render();
+        return;
+    }
     game.webglMaterialFallbackRenderer.render(renderer, scene, camera);
 }
 

@@ -7,10 +7,12 @@ import { player } from '../player_loader';
 import { updateHealthDisplay } from '../ui_controls';
 import { LEVEL_DISTANCE_BOUNDARIES } from '../level_config';
 import { gravityAnchors } from '../environment';
-import { showRollPopup } from './hud_displays';
+import { showRollPopup, updateBarkDisplay } from './hud_displays';
+import { BARK_RADIUS } from '../bark_blast_system';
 import { maybePrefetchNextLevel } from '../level_systems_loader';
 import { PowerUpType } from '../powerup_manager';
 import { DogAnimationState } from '../dog_cockpit';
+import { ShakeType } from '../juice_effects/shared';
 
 export function updatePlayer(delta: number) {
     // Don't update if player hasn't loaded yet
@@ -20,11 +22,21 @@ export function updatePlayer(delta: number) {
     const hasFairyWings = game.powerUpManager.hasPowerUp(PowerUpType.FAIRY_DOG_WINGS);
     
     // Auto-scroll (constant forward movement)
+    // Apply wind currents force
+    let windForceY = 0;
+    let windForceX = 0;
+    if (game.levelManager && game.levelManager.windCurrentsSystem) {
+        const windForce = game.levelManager.windCurrentsSystem.getWindForce(player.position);
+        windForceY = windForce.y;
+        windForceX = windForce.x;
+    }
     const speedMult = modifiers.speedMultiplier ?? 1.0;
-    player.position.x += playerState.autoScrollSpeed * speedMult * delta;
+    player.position.x += (playerState.autoScrollSpeed + windForceX) * speedMult * delta;
+
 
     // --- UPGRADED: Gravity and Momentum Flight ---
     let targetSpeed = 0;
+
     let isMovingUp = keys.jump || keys.right;  // Space or Up arrow or D
     let isMovingDown = keys.left;              // A or Left arrow
     
@@ -58,10 +70,13 @@ export function updatePlayer(delta: number) {
     
     if (isMovingUp) {
         targetSpeed = CONFIG.player.maxSpeedY;
+        targetSpeed += windForceY * 0.5; // Apply vertical wind (reduced in thrust)
     } else if (isMovingDown) {
         targetSpeed = -CONFIG.player.maxDescentSpeed;
+        targetSpeed += windForceY * 0.5; // Apply vertical wind (reduced in dive)
     } else {
         targetSpeed = -CONFIG.player.gravity;
+        targetSpeed += windForceY; // Apply vertical wind
         if (playerState.penguinSlideAssistTimer > 0) {
             targetSpeed *= 0.45;
         }
@@ -96,6 +111,37 @@ export function updatePlayer(delta: number) {
         );
     }
 
+    // --- BOUNCE PADS CHECK ---
+    const bounceVelocity = game.bouncePadsSystem?.checkCollision(player.position, playerState.currentSpeedY);
+    if (bounceVelocity !== null) {
+        playerState.currentSpeedY = bounceVelocity;
+        game.audioSystem.playBoing();
+        game.particleSystem.emit(player.position.clone().add(new THREE.Vector3(0, -1, 0)), 0x00ffcc, 15, 5.0, 0.5, 0.5);
+        game.dogController.triggerAnimation(DogAnimationState.VICTORY, 0.5);
+    }
+
+    // --- AIR TOKENS (ideas.md §18.1 1H) ---
+    const airToken = game.airTokensSystem?.collectNear(player.position);
+    if (airToken) {
+        game.boostSystem.addCharge(1);
+        playerState.currentSpeedY = Math.max(playerState.currentSpeedY, airToken.lift);
+        game.hudManager.addScore(10);
+        game.juiceManager.showScoreText(10, player.position.clone());
+        game.audioSystem.playCollect();
+        game.particleSystem.emit(player.position.clone(), 0x7fffd4, 18, 6.0, 0.6, 0.7);
+        game.dogController.triggerAnimation(DogAnimationState.COLLECT, 0.6);
+    }
+
+    // --- AERIAL GUARD PATROL CHECK ---
+    const detectionLevel = game.aerialGuardPatrolSystem?.checkDetection(player.position) ?? 0;
+    if (detectionLevel > 0) {
+        playerState.autoScrollSpeed = Math.max(5, playerState.autoScrollSpeed - detectionLevel * 20 * delta);
+        if (detectionLevel > 0.5) {
+            game.juiceManager.shakeScreen(ShakeType.LIGHT, 0.1);
+        }
+    }
+
+
     player.position.y += playerState.currentSpeedY * delta;
     
     // Soft boundaries - keep player on screen (Y: origin-10 to origin+15).
@@ -126,10 +172,38 @@ export function updatePlayer(delta: number) {
         const hoverY = Math.sin(Date.now() * 0.004) * 0.03;
         rocket.position.y = hoverY;
 
+        // Update dog's shadow
+        if (player.userData.shadow) {
+            const shadow = player.userData.shadow as THREE.Mesh;
+            const shadowsOn = game.debugSystem.isEnabled('shadows');
+
+            if (shadowsOn) {
+                shadow.visible = false;
+            } else {
+                shadow.visible = true;
+                const altitude = Math.max(0, player.position.y - originY);
+
+                // Set scale based on altitude (higher = smaller)
+                const scale = THREE.MathUtils.clamp(1 - altitude / 15, 0.3, 1);
+                shadow.scale.setScalar(scale);
+
+                // Set opacity based on altitude (higher = more faint)
+                const opacity = THREE.MathUtils.clamp(1 - altitude / 20, 0.1, 0.5);
+                (shadow.material as THREE.MeshBasicMaterial).opacity = opacity;
+
+                // Position shadow directly beneath the player on the ground plane
+                shadow.position.x = player.position.x;
+                shadow.position.z = player.position.z;
+                shadow.position.y = originY + 0.1; // +0.1 to avoid z-fighting
+            }
+        }
+
         // Engine VFX based on thrust vs glide vs dive
         if (rocket.userData.flame) {
+            const speedRatioAbs = Math.abs(speedRatio);
+
             if (isMovingUp) {
-                // Thrusting up → bright, large, flickering flame
+                // Thrusting up / boost → bright, large, flickering green/magenta flame
                 const flicker = 0.9 + Math.random() * 0.3;
                 rocket.userData.flame.scale.set(flicker * 1.5, flicker * 3.0, flicker * 1.5);
                 
@@ -137,9 +211,13 @@ export function updatePlayer(delta: number) {
                 const exhaustPos = player.position.clone();
                 exhaustPos.x -= 0.5;
                 exhaustPos.y -= 0.5;
-                game.particleSystem.emit(exhaustPos, 0x00ff00, 2, 5.0, 0.8, 0.2); // Green for boost/thrust
+
+                const isMagenta = Math.random() > 0.5;
+                const boostColor = isMagenta ? 0xff00ff : 0x00ffaa;
+
+                game.particleSystem.emit(exhaustPos, boostColor, 2, 6.0, 1.0, 0.3);
             } else if (isMovingDown) {
-                // Diving → very small, dim flame + extra downward particle streaks
+                // Diving → dim flame, warm orange to deep red trailing particles
                 const flicker = 0.4 + Math.random() * 0.2;
                 rocket.userData.flame.scale.set(flicker, flicker, flicker);
                 
@@ -147,18 +225,25 @@ export function updatePlayer(delta: number) {
                 const streakPos = player.position.clone();
                 streakPos.x -= 0.5;
                 streakPos.y -= 0.3;
-                game.particleSystem.emit(streakPos, 0xff0000, 1, 3.0, 0.5, 0.3); // Red for dive
+
+                // Color gets redder and darker as dive speed increases
+                const diveColor = speedRatioAbs > 0.6 ? 0xff1100 : 0xff6600;
+                const emitCount = speedRatioAbs > 0.8 ? 2 : 1;
+                const particleSpeed = 3.0 + speedRatioAbs * 3.0;
+
+                game.particleSystem.emit(streakPos, diveColor, emitCount, particleSpeed, 0.5, 0.3);
             } else {
                 // Gliding / idle → smaller, softer flame
                 const flicker = 0.5 + Math.random() * 0.2;
                 rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
 
-                // Blue trail for glide
+                // Cyan/Soft blue trail for glide
                 const glidePos = player.position.clone();
                 glidePos.x -= 0.5;
                 glidePos.y -= 0.1;
-                if (Math.random() < 0.3) {
-                    game.particleSystem.emit(glidePos, 0x00aaff, 1, 3.0, 0.6, 0.2);
+                if (Math.random() < 0.4) {
+                    const glideColor = Math.random() > 0.5 ? 0x00aaff : 0x44ffff;
+                    game.particleSystem.emit(glidePos, glideColor, 1, 3.0, 0.6, 0.2);
                 }
             }
         }
@@ -210,18 +295,18 @@ export function updatePlayer(delta: number) {
             (rocket.userData.flame.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.5 + Math.random() * 1.0;
         }
 
-        // Rainbow afterburner trail particles
+        // Bright green/magenta afterburner trail particles for boost cohesiveness
         const exhaustPos = player.position.clone();
         exhaustPos.x -= 0.8;
-        const colors = [0xff8800, 0xffaa00, 0xffdd44, 0xffffff];
+        const colors = [0x00ffaa, 0x00ff00, 0xff00ff, 0xffffff];
         const color = colors[Math.floor(Math.random() * colors.length)];
         game.particleSystem.emit(exhaustPos, color, 2, 6.0 + Math.random() * 2, 0.8, 0.25);
 
-        // Additional downward streak for contrast
+        // Additional downward streak for contrast (cyan to match the theme)
         const streakPos = player.position.clone();
         streakPos.x -= 0.6;
         streakPos.y -= 0.2;
-        game.particleSystem.emit(streakPos, 0xff4400, 1, 4.0, 0.5, 0.3);
+        game.particleSystem.emit(streakPos, 0x00ffff, 1, 4.0, 0.5, 0.3);
     } else {
         // Restore normal scroll speed when not boosting
         const baseSpeed = game.saveManager.applyToSpeed(8);
@@ -319,6 +404,54 @@ export function updatePlayer(delta: number) {
                     }
                 }
             });
+        }
+    }
+
+    // --- BARK BLAST SYSTEM ---
+    game.barkBlastSystem.syncCores(playerState.cores);
+    game.barkBlastSystem.update(delta);
+
+    const canBark = game.barkBlastSystem.canBark();
+    if (canBark) {
+        if (game.wantsBark) {
+            game.wantsBark = false;
+            if (game.barkBlastSystem.activate(player.position)) {
+                const result = game.obstacleSystem.applyBarkBlast(player.position, BARK_RADIUS);
+                game.particleSystem.emit(player.position.clone(), 0xffcc88, 18, 10.0, 1.0, 1.4);
+                game.particleSystem.emit(player.position.clone(), 0xffffff, 12, 8.0, 0.8, 1.2);
+                if (result.cleared > 0) {
+                    game.audioSystem.play('whoosh', 0.5, 4);
+                }
+                updateBarkDisplay();
+            }
+        }
+    } else {
+        game.wantsBark = false;
+    }
+
+    if (touchControls) {
+        const touchInput = touchControls.getInput();
+        if (touchInput.bark && !game.wasTouchBarking && canBark) {
+            if (game.barkBlastSystem.activate(player.position)) {
+                const result = game.obstacleSystem.applyBarkBlast(player.position, BARK_RADIUS);
+                game.particleSystem.emit(player.position.clone(), 0xffcc88, 18, 10.0, 1.0, 1.4);
+                if (result.cleared > 0) {
+                    game.audioSystem.play('whoosh', 0.5, 4);
+                }
+                updateBarkDisplay();
+            }
+        }
+        game.wasTouchBarking = touchInput.bark;
+    }
+
+    // Whine warning: off-screen threat approaching
+    if (game.barkBlastSystem.canWhine()) {
+        const threat = game.obstacleSystem.findOffscreenThreat(player.position.x, player.position.y);
+        if (threat) {
+            game.barkBlastSystem.markWhine();
+            game.dogController.triggerAnimation(DogAnimationState.CURIOUS, 0.8);
+            game.dogController.perkEars(0.9);
+            game.audioSystem.playDogWhine();
         }
     }
 

@@ -23,12 +23,16 @@ import { decorationBudget, registerDefaultDecorationBudgets } from '../decoratio
 import { attachGpuLeakDetector } from '../gpu_leak_detector';
 import { disposeObject } from '../utils';
 import { createGalaxy, createMoon } from '../visuals';
-import { shouldShowTutorial } from '../tutorial_system';
+import { shouldShowTutorial } from '../tutorial_system/persistence';
 import { applyCraftedLoadout } from './loadout';
 import { ShakeType } from '../juice_effects';
 import { hasDebugUrlFlag } from '../renderer_mode';
 import { loadWasm as loadWasmModule } from '../wasm_loader';
+import { getGpuChores } from '../gpu_chores';
+import { WebGpuBootError } from '../renderer_mode';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
+import { biomeNoise } from '../biome_noise';
+import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -51,6 +55,7 @@ import {
     WebGLMaterialFallbackRenderer,
     WireframeDebugHelper
 } from '../render_debug_helpers';
+import { PixelGlowSystem } from '../pixel_glow';
 
 async function loadWasm(): Promise<void> {
     const handle = await loadWasmModule();
@@ -62,6 +67,9 @@ async function loadWasm(): Promise<void> {
         game.wasmBackend = null;
     }
     jellyMossSoftBody.bindWasm(handle);
+    biomeNoise.bindWasm(handle);
+    // Visual-only helper compute; ignored by WASM builds without chore exports.
+    getGpuChores().attachWasm(handle?.exports);
 }
 
 import {
@@ -163,10 +171,6 @@ function createLevelManager(
         industrialGeometryManager,
         ghostDebrisSystem: deferred.ghostDebrisSystem,
         voidJellyfishSystem: deferred.voidJellyfishSystem,
-        godRaySystem: systems.godRaySystem,
-        auroraSystem: systems.auroraSystem,
-        butterflySwarmSystem: managers.butterflySwarmSystem,
-        flowerManager: managers.flowerManager,
         pinwheelManager: managers.pinwheelManager,
         windChimeManager: managers.windChimeManager,
         solarSailFernManager: managers.solarSailFernManager,
@@ -179,6 +183,9 @@ function createLevelManager(
             crystalChimeManager: systems.crystalChimeManager,
             nebulaSystem: systems.nebulaSystem,
             asteroidFieldSystem: systems.asteroidFieldSystem,
+            godRaySystem: systems.godRaySystem,
+            auroraSystem: systems.auroraSystem,
+            butterflySwarmSystem: managers.butterflySwarmSystem,
             waterfallSystem: systems.waterfallSystem,
             industrialSystem: systems.industrialSystem,
             biologicalSystem: systems.biologicalSystem,
@@ -193,13 +200,27 @@ function createLevelManager(
             stormGeodeSystem: systems.stormGeodeSystem,
             pastelNebulaSystem: systems.pastelNebulaSystem,
             wishLanternSystem: systems.wishLanternSystem,
+            spacePetsSwarmSystem: systems.spacePetsSwarmSystem,
             weatherSystem: systems.weatherSystem,
             dancingJellyMossSystem: systems.dancingJellyMossSystem,
             dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
             dayNightCycleSystem: systems.dayNightCycleSystem,
             cloudCastlesSystem: systems.cloudCastlesSystem,
+            grappleIslesSystem: systems.grappleIslesSystem,
             candyFieldSystem: systems.candyFieldSystem,
-            singingGeodeSystem: systems.singingGeodeSystem
+            singingGeodeSystem: systems.singingGeodeSystem,
+            skyRailTerminalSystem: systems.skyRailTerminalSystem,
+            comboCorridorSystem: systems.comboCorridorSystem,
+            windCurrentsSystem: systems.windCurrentsSystem,
+            timeShiftZonesSystem: systems.timeShiftZonesSystem,
+            fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
+            flowerConstellationsSystem: systems.flowerConstellationsSystem,
+            hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
+            bouncePadsSystem: systems.bouncePadsSystem,
+            spaceGardenSystem: systems.spaceGardenSystem,
+            aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
+            airTokensSystem: systems.airTokensSystem,
+            shootingStarsSystem: systems.shootingStarsSystem
         },
         spawners: {
             createSporeCloudAtPosition,
@@ -261,17 +282,31 @@ function createLevelManager(
         dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
         dayNightCycleSystem: systems.dayNightCycleSystem,
         cloudCastlesSystem: systems.cloudCastlesSystem,
+        grappleIslesSystem: systems.grappleIslesSystem,
         candyFieldSystem: systems.candyFieldSystem,
-        singingGeodeSystem: systems.singingGeodeSystem
+        singingGeodeSystem: systems.singingGeodeSystem,
+        windCurrentsSystem: systems.windCurrentsSystem,
+        bouncePadsSystem: systems.bouncePadsSystem,
+        aerialGuardPatrolSystem: systems.aerialGuardPatrolSystem,
+        airTokensSystem: systems.airTokensSystem,
+        shootingStarsSystem: systems.shootingStarsSystem,
+        timeShiftZonesSystem: systems.timeShiftZonesSystem,
+        fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
+        spaceGardenSystem: systems.spaceGardenSystem,
+        comboCorridorSystem: systems.comboCorridorSystem
     });
 }
 
 /** Scene init, WASM, manager wiring, level manager, moon/galaxy, prototype spawns. */
-export function initializeStartup(): void {
+export async function initializeStartup(): Promise<void> {
     try {
-        initializeSceneAndRenderer({ basePixelRatio: 0.60 });
+        await initializeSceneAndRenderer({ basePixelRatio: 0.60 });
         attachLightsAndEnv(generateEnvironment());
     } catch (err: unknown) {
+        // A failed WebGPU probe gets the dedicated boot-failure screen from
+        // bootstrap — don't also raise the generic init dialog over it.
+        if (err instanceof WebGpuBootError) throw err;
+
         const message = err instanceof Error ? err.message : 'Unknown error occurred during startup.';
         showError('Initialization Error', message);
         throw err;
@@ -289,11 +324,6 @@ export function initializeStartup(): void {
     playerState.autoScrollSpeed = systems.saveManager.applyToSpeed(8);
 
     const managers = createGameManagers(scene, systems.audioSystem, systems.particleSystem);
-    managers.butterflySwarmSystem.bindEffects(
-        systems.particleSystem,
-        systems.juiceManager,
-        systems.audioSystem
-    );
 
     const industrialGeometryManager = createIndustrialGeometryManagerStub() as IndustrialGeometryManager;
     const galaxy1 = createGalaxy(200, 30, -100, 0x8844ff);
@@ -366,13 +396,16 @@ export function initializeStartup(): void {
         ['moonEffects', 'Moon / Galaxy Effects', true],
         ['pilotAnim', 'Pilot Animation', true],
         ['flowerConstellations', 'Flower Constellations', true],
+        ['hideAndSeekStars', 'Hide-and-Seek Stars', true],
+        ['skyRailTerminal', 'Sky-Rail Terminal', true],
+        ['comboCorridor', 'Combo Corridor', true],
         ['pinwheelFlora', 'Pinwheel Flowers', true],
         ['solarSailFerns', 'Solar Sail Ferns', true],
         ['crystalChimes', 'Crystal Chimes', true],
         ['windChimes', 'Wind Chime Mobiles', true],
         ['candyBelt', 'Candy Belt', true],
         ['cloudCastles', 'Cloud Castles', true],
-        ['shadows', 'Shadows', true],
+        ['shadows', 'Shadows', false],
         ['nebula', 'Nebula', true],
         ['nebulaRibbons', 'Nebula Ribbons', true],
         ['cosmicDust', 'Cosmic Dust', true],
@@ -388,12 +421,16 @@ export function initializeStartup(): void {
         ['chromaShift', 'Chroma Rocks', true],
         ['godRays', 'God Rays', true],
         ['aurora', 'Aurora Borealis', true],
+        ['pixelGlow', 'Retro Pixel-Glow', hasDebugUrlFlag('pixelGlow')],
+        ['airTokens', 'Air Tokens', true],
         ['wireframe', 'Wireframe', hasDebugUrlFlag('wireframe')],
-        ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')]
+        ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')],
+        ['ghostReplay', 'Ghost Replay', true]
     ];
     for (const [id, label, enabled] of flags) {
         debugSystem.register(id, label, enabled);
     }
+    attachRunSeedDebugSection(debugSystem.getCustomSectionContainer());
 
     const ghostDebrisSystem = createGhostDebrisSystemStub();
     const voidJellyfishSystem = createVoidJellyfishSystemStub();
@@ -413,7 +450,10 @@ export function initializeStartup(): void {
     const obstacleSystem = createObstacleSystem({
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,
-        waterfallSystem: systems.waterfallSystem
+        waterfallSystem: systems.waterfallSystem,
+        audioSystem: systems.audioSystem,
+        hudManager: systems.hudManager,
+        juiceManager: systems.juiceManager,
     });
 
     const ctx: GameContext = {
@@ -444,6 +484,7 @@ export function initializeStartup(): void {
         wireframeDebugHelper: new WireframeDebugHelper(),
         collisionDebugOverlay: new CollisionDebugOverlay(scene),
         webglMaterialFallbackRenderer: new WebGLMaterialFallbackRenderer(rendererBackend),
+        pixelGlowSystem: new PixelGlowSystem(),
         levelManager,
         obstacleSystem,
         handleGameOver

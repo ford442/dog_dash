@@ -26,6 +26,9 @@ import type {
     WebGLMaterialFallbackRenderer,
     WireframeDebugHelper
 } from './render_debug_helpers';
+import type { PixelGlowSystem } from './pixel_glow';
+import type { RunSeed } from './run_seed';
+import type { SeededRng } from './run_seed/rng';
 
 // ---------------------------------------------------------------------------
 // GameContext field groups (Phase 2 slices — flat on `game`, typed for docs/tests)
@@ -57,6 +60,12 @@ export type FrameCounters = {
     geologicalUpdateFrame: number;
 };
 
+/** Active run seed and PRNG (Cosmic Architect foundation). */
+export type SeedRuntime = {
+    activeRunSeed: RunSeed | null;
+    runRng: SeededRng | null;
+};
+
 /** Single-run progression, crafted loadout, and input latch flags. */
 export type RunState = {
     lastPlayerDamageTime: number;
@@ -84,6 +93,8 @@ export type RunState = {
     wasTouchBoosting: boolean;
     wantsRoll: boolean;
     wasTouchRolling: boolean;
+    wantsBark: boolean;
+    wasTouchBarking: boolean;
     wantsTether: boolean;
     wantsReleaseTether: boolean;
 };
@@ -116,20 +127,36 @@ export type GameContextExtensions = {
     wireframeDebugHelper: WireframeDebugHelper;
     collisionDebugOverlay: CollisionDebugOverlay;
     webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
+    pixelGlowSystem: PixelGlowSystem;
     reportComboObjectiveProgress: () => void;
     handleGameOver: () => void;
     /** Re-attach slingable callbacks after deferred manager swap. */
     rewireSlingableCallbacks: () => void;
 };
 
-/** Fully typed mutable runtime bag owned by bootstrap. */
+/** Fully typed mutable runtime bag owned by bootstrap.
+ *  Top-level keys must come only from the slice types below — never add orphan fields here. */
 export interface GameContext
     extends GameSystems,
         GameManagers,
         CoreRuntime,
         FrameCounters,
+        SeedRuntime,
         RunState,
         GameContextExtensions {}
+
+/** Compile-time guard: every `game.*` key belongs to a named slice. */
+type _GameContextSliceKeys =
+    | keyof GameSystems
+    | keyof GameManagers
+    | keyof CoreRuntime
+    | keyof FrameCounters
+    | keyof SeedRuntime
+    | keyof RunState
+    | keyof GameContextExtensions;
+type _AssertNoUnscopedGameContextFields = Exclude<keyof GameContext, _GameContextSliceKeys> extends never ? true : never;
+const _gameContextSliceGuard: _AssertNoUnscopedGameContextFields = true;
+void _gameContextSliceGuard;
 
 /** @deprecated Use GameContext */
 export type GameRuntime = GameContext;
@@ -175,12 +202,16 @@ export function createGameContextFrameState(): Pick<
     | 'shadowCullingWarningIssued'
     | 'renderDebugWarningIssued'
     | 'geologicalUpdateFrame'
+    | 'activeRunSeed'
+    | 'runRng'
     | 'bestiaryUI'
     | 'completedChaptersThisRun'
     | 'wantsBoost'
     | 'wasTouchBoosting'
     | 'wantsRoll'
     | 'wasTouchRolling'
+    | 'wantsBark'
+    | 'wasTouchBarking'
     | 'wantsTether'
     | 'wantsReleaseTether'
     | 'reportComboObjectiveProgress'
@@ -220,12 +251,16 @@ export function createGameContextFrameState(): Pick<
         shadowCullingWarningIssued: false,
         renderDebugWarningIssued: false,
         geologicalUpdateFrame: 0,
+        activeRunSeed: null,
+        runRng: null,
         bestiaryUI: null,
         completedChaptersThisRun: [],
         wantsBoost: false,
         wasTouchBoosting: false,
         wantsRoll: false,
         wasTouchRolling: false,
+        wantsBark: false,
+        wasTouchBarking: false,
         wantsTether: false,
         wantsReleaseTether: false,
         reportComboObjectiveProgress: () => {},

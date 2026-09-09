@@ -65,8 +65,8 @@ Domain modules depend on **narrow port interfaces**, not `import { game } from '
 ### Example — collectibles (`AudioPort`)
 
 ```ts
-// src/collectibles.ts — no game import, no getAudioSystem()
-import type { AudioPort } from './ports';
+// src/collectibles/manager.ts — no game import, no getAudioSystem()
+import type { AudioPort } from '../ports';
 
 export class OrbManager {
     constructor(scene: THREE.Scene, particleSystem: ParticleSystem, audio: AudioPort, powerUpThreshold = 5) {
@@ -81,6 +81,77 @@ Wired in `create_game_systems.ts`:
 ```ts
 const audioSystem = getAudioSystem(); // composition root only
 const orbManager = new OrbManager(scene, particleSystem, audioSystem, 4);
+```
+
+### Example — space friends & ambient audio (`AudioPort`)
+
+[`src/space_friends/FriendsManager.ts`](../src/space_friends/FriendsManager.ts), [`src/singing_geodes.ts`](../src/singing_geodes.ts), [`src/crystal_chimes.ts`](../src/crystal_chimes.ts), and [`src/flower_constellations/manager.ts`](../src/flower_constellations/manager.ts) depend strictly on `AudioPort` instead of concrete `AudioSystem`:
+
+```ts
+// src/space_friends/FriendsManager.ts
+import type { AudioPort } from '../ports';
+
+export class FriendsManager implements FriendSpawnerHost, FriendInteractionHost {
+    constructor(scene: THREE.Scene, audio: AudioPort, particles: ParticleSystem) {
+        this.scene = scene;
+        this.audio = audio;
+        this.particles = particles;
+    }
+}
+```
+
+### Example — tutorial system (`AudioPort`)
+
+[`src/tutorial_system/tutorial_core.ts`](../src/tutorial_system/tutorial_core.ts) and `TutorialOrb` receive `AudioPort` via dependency injection without creating eager audio singletons:
+
+```ts
+// src/tutorial_system/tutorial_core.ts
+export abstract class TutorialSystemCore {
+    constructor(scene: THREE.Scene, hud: HUDManager, audio: AudioPort, dogController: DogCockpitController) {
+        this.scene = scene;
+        this.hud = hud;
+        this.audio = audio;
+        this.dogController = dogController;
+    }
+}
+```
+
+### Example — power-up hooks (`AudioPort` + `JuicePort`)
+
+[`src/powerup_manager/powerup_hooks.ts`](../src/powerup_manager/powerup_hooks.ts) takes narrow ports in `PowerUpHookContext` — health mutations use an `onHeal` callback wired in `create_game_systems.ts` against `playerState`, not a direct `game_config` import.
+
+```ts
+const powerUpHookCtx = {
+    audioSystem,      // AudioPort
+    juiceManager,     // JuicePort
+    onHeal: () => { /* playerState + HUD update */ },
+};
+```
+
+### Example — graze feedback (`AudioPort` + `HudPort` + `JuicePort`)
+
+[`src/obstacle_system/graze_feedback.ts`](../src/obstacle_system/graze_feedback.ts) exports `createGrazeHandler()` — the composition root in [`src/main/obstacle_setup.ts`](../src/main/obstacle_setup.ts) passes real managers once; graze math stays in `collision_hooks.ts`.
+
+```ts
+onGraze: createGrazeHandler({
+    ports: { audio: game.audioSystem, hud: game.hudManager, juice: game.juiceManager },
+    getPlayerPosition: () => player?.position,
+    onFirstGraze: (pos) => game.friendsManager.cheerFlotilla(pos),
+}),
+```
+
+### Example — dream portal (`PlayerMotionPort`)
+
+[`src/dream_portal.ts`](../src/dream_portal.ts) accepts `DreamPortalCallbacks.motion: PlayerMotionPort`. [`src/main/dream_portal_update.ts`](../src/main/dream_portal_update.ts) builds the adapter over `playerState` + `player` at the composition root.
+
+```ts
+const motion: PlayerMotionPort = {
+    getScrollSpeed: () => playerState.autoScrollSpeed,
+    setScrollSpeed: (speed) => { playerState.autoScrollSpeed = speed; },
+    setWorldOriginY: (y) => { playerState.worldOriginY = y; },
+    nudgePlayer: (dx, dy) => { /* ... */ },
+};
+new DreamPortalSystem(scene, { getPlayer: () => player, motion, snapCamera, spawnOrb, ... });
 ```
 
 ### Example — resource harvester (`InventoryPort`)

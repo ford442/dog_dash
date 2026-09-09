@@ -6,7 +6,7 @@ import { game } from '../../game_runtime';
 import { updateHealthDisplay } from '../../ui_controls';
 import { DogAnimationState } from '../../dog_cockpit';
 import { ShakeType } from '../../juice_effects';
-import { VictoryState } from '../../victory_system';
+import { VictoryState } from '../../victory_system/victory_state';
 import { updateBossHealthBar } from '../boss_health_ui';
 import { writeBossHitboxesToWasm, checkCircleCollisionJs } from '../../physics_utils';
 import { WasmBackend, type WasmHandle } from '../../wasm_loader';
@@ -126,6 +126,11 @@ export function updateCombatBoss(delta: number): boolean {
         if (boss && bossPos) {
             const pullDir = bossPos.y - playerPos.y;
             playerState.currentSpeedY += pullDir * bossResult.pullForce * delta * 0.1;
+
+            // Add vertical pull force from Zephyr boss
+            if (bossResult.pullForceY) {
+                 playerState.currentSpeedY += bossResult.pullForceY * delta;
+            }
 
             if (bossResult.isSnapping) {
                 const distToMouth = Math.abs(playerPos.x - (bossPos.x + 8));

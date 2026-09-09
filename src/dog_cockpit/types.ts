@@ -16,7 +16,8 @@ export enum DogAnimationState {
     HIT = 'hit',
     VICTORY = 'victory',
     CURIOUS = 'curious',
-    DELIGHTED = 'delighted'
+    DELIGHTED = 'delighted',
+    BARK = 'bark'
 }
 
 /** Accessory types that can be unlocked and equipped */

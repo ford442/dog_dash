@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time, color, uniform, sin, mix, positionWorld, float, uv, length, smoothstep } from 'three/tsl';
+import { time, color, uniform, sin, mix, positionWorld, uv, length, smoothstep } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 
 function shouldUseLiteMaterials(): boolean {
@@ -50,8 +50,7 @@ function createPastelNebulaMaterial(
     const distToPlayer = length(positionWorld.sub(uPlayerPos));
     const playerGlow = smoothstep(40.0, 10.0, distToPlayer);
 
-    const finalColor = baseColor.toVar();
-    finalColor.addAssign(color(0xffffff).mul(playerGlow).mul(0.5));
+    const finalColor = baseColor.add(color(0xffffff).mul(playerGlow).mul(0.5));
 
     mat.colorNode = finalColor;
     mat.opacityNode = circleAlpha.mul(opacity).mul(0.8);
@@ -83,8 +82,7 @@ function createGlitterMaterial(
     const distToPlayer = length(positionWorld.sub(uPlayerPos));
     const playerGlow = smoothstep(30.0, 5.0, distToPlayer);
 
-    const finalColor = color(0xffffff).mul(twinkle.add(0.2)).toVar();
-    finalColor.addAssign(color(0xffaaff).mul(playerGlow));
+    const finalColor = color(0xffffff).mul(twinkle.add(0.2)).add(color(0xffaaff).mul(playerGlow));
 
     mat.colorNode = finalColor;
     mat.opacityNode = starAlpha.mul(twinkle.add(0.2));

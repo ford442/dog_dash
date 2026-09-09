@@ -245,7 +245,9 @@ plasma bolts bend toward the core inside 240 units, and the ship trembles once
 the ramp passes 0.7. `getStarfieldWarp()` is exposed for parallax layers that
 want to smear on the approach.
 
-WebGL2 (`?renderer=webgl`) gets simpler `MeshBasicMaterial` stand-ins and lower
+WebGL2 support is currently deferred (see [RENDERER_FALLBACK.md](RENDERER_FALLBACK.md));
+the `window.usingWebGL` seam below is inert but retained. When active it gets
+simpler `MeshBasicMaterial` stand-ins and lower
 geometry segment counts instead of the node materials.
 
 ## Wiring checklist (important)
@@ -265,7 +267,7 @@ Never `new THREE.Scene()` outside `scene_context.ts`. Never add to a scene that 
 ## Debug
 - Backquote → debug panel (wireframe, collision radii)
 - `?collisionDebug` — collision sphere overlay
-- `?renderer=webgl` — WebGL2 fallback
+- `?skip_gpu_boot` — skip the WebGPU boot probe (WebGL2 fallback is deferred)
 
 ## Related files
 

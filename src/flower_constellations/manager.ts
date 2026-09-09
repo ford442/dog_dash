@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { AudioSystem } from '../audio_system';
+import type { AudioPort } from '../ports';
 import type { ParticleSystem } from '../particles';
 import { FlowerConstellation } from './constellation';
 import { HeartPollenSystem } from './pollen';
@@ -8,7 +8,7 @@ import { FlowerType } from './types';
 
 export class ConstellationManager {
     private scene: THREE.Scene;
-    private audio: AudioSystem | null;
+    private audio: AudioPort | null;
     private particles: ParticleSystem | null;
     private flowers: FlowerConstellation[] = [];
     private heartPollen: HeartPollenSystem;
@@ -21,7 +21,7 @@ export class ConstellationManager {
 
     constructor(
         scene: THREE.Scene,
-        audio: AudioSystem | null = null,
+        audio: AudioPort | null = null,
         particles: ParticleSystem | null = null
     ) {
         this.scene = scene;

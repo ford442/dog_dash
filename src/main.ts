@@ -5,4 +5,8 @@
  */
 import { bootstrap } from './main/bootstrap';
 
-bootstrap();
+void bootstrap().catch((error) => {
+    // bootstrap() already renders the WebGPU boot-failure screen; anything
+    // reaching here is an unexpected startup fault worth surfacing loudly.
+    console.error('[bootstrap] fatal:', error);
+});

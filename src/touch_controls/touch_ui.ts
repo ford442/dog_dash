@@ -73,6 +73,13 @@ export class TouchControlsManager extends TouchControlsInput {
         this.boostButton.style.right = '40px';
         this.boostButton.style.bottom = '180px';
 
+        this.barkButton = document.createElement('div');
+        this.barkButton.id = 'touch-bark-btn';
+        this.barkButton.innerHTML = '🐕';
+        this.barkButton.style.cssText = this.getButtonStyles('bark');
+        this.barkButton.style.right = '40px';
+        this.barkButton.style.bottom = '120px';
+
         this.fireButton = document.createElement('div');
         this.fireButton.id = 'touch-fire-btn';
         this.fireButton.innerHTML = '⭐';
@@ -85,20 +92,28 @@ export class TouchControlsManager extends TouchControlsInput {
         boostLabel.style.cssText = this.getLabelStyles();
         this.boostButton.appendChild(boostLabel);
 
+        const barkLabel = document.createElement('span');
+        barkLabel.textContent = 'BARK';
+        barkLabel.style.cssText = this.getLabelStyles();
+        this.barkButton.appendChild(barkLabel);
+
         const fireLabel = document.createElement('span');
         fireLabel.textContent = 'FIRE';
         fireLabel.style.cssText = this.getLabelStyles();
         this.fireButton.appendChild(fireLabel);
 
         document.body.appendChild(this.boostButton);
+        document.body.appendChild(this.barkButton);
         document.body.appendChild(this.fireButton);
     }
 
-    private getButtonStyles(type: 'boost' | 'fire'): string {
+    private getButtonStyles(type: 'boost' | 'bark' | 'fire'): string {
         const size = this.BUTTON_SIZE;
         const pastelColor = type === 'boost'
             ? 'rgba(255,182,193,0.8)'
-            : 'rgba(173,216,230,0.8)';
+            : type === 'bark'
+                ? 'rgba(255,204,136,0.85)'
+                : 'rgba(173,216,230,0.8)';
 
         return `
             position: fixed;
@@ -291,11 +306,13 @@ export class TouchControlsManager extends TouchControlsInput {
         switch (this.mode) {
             case ControlMode.VIRTUAL_JOYSTICK:
                 if (this.boostButton) this.boostButton.style.display = 'flex';
+                if (this.barkButton) this.barkButton.style.display = 'flex';
                 if (this.fireButton) this.fireButton.style.display = 'flex';
                 break;
             case ControlMode.FOLLOW_FINGER:
             case ControlMode.TAP_TO_MOVE:
                 if (this.boostButton) this.boostButton.style.display = 'none';
+                if (this.barkButton) this.barkButton.style.display = 'none';
                 if (this.fireButton) this.fireButton.style.display = 'none';
                 break;
         }
@@ -308,6 +325,7 @@ export class TouchControlsManager extends TouchControlsInput {
     protected removeUI(): void {
         this.joystickContainer?.remove();
         this.boostButton?.remove();
+        this.barkButton?.remove();
         this.fireButton?.remove();
         this.fingerFollower?.remove();
         this.touchIndicators.forEach(indicator => indicator.remove());

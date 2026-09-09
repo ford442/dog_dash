@@ -4,7 +4,7 @@
  * recipe charge is consumed and its effect applied for this run only.
  */
 
-import { GRENADES_PER_CRAFT } from '../crafting_system';
+import { GRENADES_PER_CRAFT } from '../crafting_constants';
 import type { GameContext } from '../game_runtime';
 import type { playerState } from '../game_config';
 

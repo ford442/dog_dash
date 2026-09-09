@@ -130,7 +130,7 @@ export class DynamicStarfieldSystem {
         this.meshes.forEach(m => m.visible = false);
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3, warp: number = 0) {
         if (!this.active) return;
 
         const dummy = new THREE.Object3D();
@@ -159,6 +159,14 @@ export class DynamicStarfieldSystem {
                 // Move star leftward relative to the camera
                 const moveSpeed = velocities[i] * effectiveSpeed;
                 position.x -= moveSpeed * delta;
+
+                // Smear toward the right and stretch if warp > 0
+                if (warp > 0) {
+                    position.x += velocities[i] * warp * delta * 5.0;
+                    scale.x = Math.max(scale.y, scale.y * (1.0 + warp * 4.0));
+                } else {
+                    scale.x = scale.y;
+                }
 
                 // Wrap around when off screen (relative to cameraX)
                 const relativeX = position.x - cameraX;

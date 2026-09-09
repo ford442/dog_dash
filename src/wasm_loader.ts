@@ -4,8 +4,11 @@
  *
  * Supported product backend:
  *   - AssemblyScript (default)  — public/build/optimized.wasm
+ *     Provides collision, Verlet soft-body physics, and fractal noise —
+ *     everything gameplay needs, always built (see docs/WASM_BACKENDS.md).
  *
- * Experimental (not required for onboarding; see docs/WASM_BACKENDS.md):
+ * Experimental research tree (not a shipping target; not required for
+ * onboarding; see docs/WASM_BACKENDS.md):
  *   - C++ / Emscripten          — public/build/game_cpp.wasm
  *     Opt-in via VITE_CPP_WASM=true; falls back to AssemblyScript if missing.
  *
@@ -41,11 +44,17 @@ export interface CoreWasmExports {
 }
 
 /**
- * Extra exports available only in the experimental C++ backend.
- * Gameplay consumer: `jelly_moss_softbody.ts` (Verlet soft-body Jelly-Moss cores)
- * when `VITE_CPP_WASM=true` and `game_cpp.wasm` is present.
+ * Verlet soft-body physics + fractal noise exports. Ported into
+ * `assembly/index.ts` (see docs/WASM_BACKENDS.md — decision: AssemblyScript
+ * is the single supported, always-built backend), so these are present in
+ * the default build. The experimental `cpp/` tree still mirrors this API for
+ * research use (SIMD prototyping, native profiling); `Partial` keeps callers
+ * null-safe against an older cached binary either way.
+ *
+ * Gameplay consumers: `jelly_moss_softbody.ts` (Verlet soft-body Jelly-Moss
+ * cores) and `biome_noise.ts` (streaming spawn density).
  */
-export interface CppExtrasExports {
+export interface PhysicsNoiseExports {
     // Verlet physics
     allocPhysicsBodies(count: number): number;
     stepPhysics(count: number, dt: number, gravity: number): void;
@@ -61,7 +70,7 @@ export interface CppExtrasExports {
     fractalNoise3D(x: number, y: number, z: number, octaves: number, lacunarity: number, gain: number): number;
 }
 
-export type WasmExports = CoreWasmExports & Partial<CppExtrasExports>;
+export type WasmExports = CoreWasmExports & Partial<PhysicsNoiseExports>;
 
 export interface WasmHandle {
     /** Raw WASM export object. */

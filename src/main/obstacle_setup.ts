@@ -4,14 +4,18 @@ import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game, type GameContext } from '../game_runtime';
 import { ObstacleSystem } from '../obstacle_system';
+import { createGrazeHandler } from '../obstacle_system/graze_feedback';
+import type { AudioPort, HudPort, JuicePort } from '../ports';
 import { updateHealthDisplay } from '../ui_controls';
 import { CANDY_FLAVOR_COLORS } from '../candy_materials';
 import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
 import { sporeClouds } from '../environment';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
+import { saveLastRunSummary } from '../run_seed/save_last_run';
 
 export function handleGameOver(): void {
+    saveLastRunSummary();
     if (player) {
         game.dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
         game.juiceManager.burstDamage(player.position.clone());
@@ -29,6 +33,9 @@ export function createObstacleSystem(systems: {
     particleSystem: GameContext['particleSystem'];
     debrisSystem: GameContext['debrisSystem'];
     waterfallSystem: GameContext['waterfallSystem'];
+    audioSystem: AudioPort;
+    hudManager: HudPort;
+    juiceManager: JuicePort;
 }): ObstacleSystem {
     return new ObstacleSystem({
         scene,
@@ -76,16 +83,17 @@ export function createObstacleSystem(systems: {
             game.juiceManager.showFloatingText('Boing!', asteroid.position, '#ff69b4', 28);
             game.juiceManager.shakeScreen(ShakeType.LIGHT, 0.15);
         },
-        onGraze: (asteroid, score, combo) => {
-            game.audioSystem.playGraze(combo);
-            game.hudManager.addScore(score);
-            game.juiceManager.showScoreText(score, asteroid.position.clone());
-            game.hudManager.showGrazeCombo(combo);
-            if (combo === 1 && player) {
-                game.juiceManager.showFloatingText('Near Miss!', player.position, '#00ffff', 20);
-                game.friendsManager.cheerFlotilla(player.position.clone());
-            }
-        },
+        onGraze: createGrazeHandler({
+            ports: {
+                audio: systems.audioSystem,
+                hud: systems.hudManager,
+                juice: systems.juiceManager,
+            },
+            getPlayerPosition: () => player?.position,
+            onFirstGraze: (position) => {
+                game.friendsManager.cheerFlotilla(position);
+            },
+        }),
         tryConsumeWrenchCharge: () => {
             if (game.wrenchChargeAvailable) {
                 game.wrenchChargeAvailable = false;

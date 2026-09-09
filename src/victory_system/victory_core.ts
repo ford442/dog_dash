@@ -400,6 +400,10 @@ export class VictorySystem {
     // =====================================================================
     
     private playVictoryMusic(): void {
+        // Chapter flourish first, then the cozy hub bed underneath it.
+        this.audio.playChapterCompleteStinger();
+        this.audio.setHubMusic(800);
+
         this.audio.playMagicSequence('spell_complete');
         
         setTimeout(() => {

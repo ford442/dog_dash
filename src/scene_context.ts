@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { CONFIG } from './game_config';
+import { getGpuChores } from './gpu_chores';
 import {
     createGameRenderer,
     type GameRenderer,
@@ -51,18 +52,25 @@ export let touchSettingsBtn: HTMLElement | null = null;
 
 // One-time init of renderer, camera, touch, and lights attachment.
 // Called exactly once from main.ts. This prevents any duplicate renderer/scene.
-export function initializeSceneAndRenderer(options?: { basePixelRatio?: number }) {
+export async function initializeSceneAndRenderer(options?: { basePixelRatio?: number }): Promise<void> {
     // Camera (Side-view, follows player on X axis)
     camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
     camera.lookAt(0, CONFIG.cameraHeight, 0);
 
     // Renderer (with perf default)
     const basePixelRatio = options?.basePixelRatio ?? 0.60;
-    const rendererInit = createGameRenderer(canvas, { antialias: true, basePixelRatio });
+    // Throws WebGpuBootError if the boot probe fails; bootstrap turns that into
+    // the blocking failure screen. No WebGL context is created either way.
+    const rendererInit = await createGameRenderer(canvas, { antialias: true, basePixelRatio });
     renderer = rendererInit.renderer;
     rendererBackend = rendererInit.backend;
     requestedRendererBackend = rendererInit.requestedBackend;
     rendererFallbackReason = rendererInit.fallbackReason || '';
+
+    // Adopt the renderer's device for GPU chores (visual helper compute only).
+    // Never requests a device of its own — if renderer boot produced no WebGPU
+    // device, chores stay on the AssemblyScript/JS tiers.
+    getGpuChores().attachRenderer(renderer);
 
     // Touch Controls
     touchControls = new TouchControlsManager();
@@ -85,7 +93,7 @@ export function attachLightsAndEnv(envMap: THREE.Texture) {
     scene.environment = envMap;
 
     mainLight.position.set(-5, 10, 10);
-    mainLight.castShadow = true;
+    mainLight.castShadow = false;
     mainLight.shadow.mapSize.width = 1024;
     mainLight.shadow.mapSize.height = 1024;
     mainLight.shadow.camera.near = 0.5;

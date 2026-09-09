@@ -17,12 +17,7 @@ import * as THREE from 'three';
 // VICTORY STATE ENUM
 // =============================================================================
 
-export enum VictoryState {
-    NONE,
-    APPROACHING,
-    LANDING,
-    CELEBRATING
-}
+export { VictoryState } from './victory_state';
 
 // =============================================================================
 // TYPES AND CONFIGURATION

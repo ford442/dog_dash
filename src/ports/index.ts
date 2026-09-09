@@ -4,3 +4,5 @@ export type { HudPort } from './hud_port';
 export type { InventoryPort } from './inventory_port';
 export type { PlayerMotionPort } from './player_motion_port';
 export type { CollisionPort, CollisionWasmHandle } from './collision_port';
+export type { BiomeNoisePort, BiomeNoiseChannel } from './biome_noise_port';
+export type { GpuChoresPort } from './gpu_chores_port';

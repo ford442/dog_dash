@@ -63,6 +63,13 @@ export function updateHealthDisplay(playerState: { health: number; maxHealth: nu
     if (healthDiv) {
         const hearts = '❤️'.repeat(Math.max(0, playerState.health)) + '🖤'.repeat(Math.max(0, playerState.maxHealth - playerState.health));
         healthDiv.innerHTML = `Health: ${hearts}`;
+
+        if (playerState.health <= 1) {
+            healthDiv.classList.add('hud-pulse-fast');
+        } else {
+            healthDiv.classList.remove('hud-pulse-fast');
+        }
+
         if (playerState.health < playerState.maxHealth) {
             healthDiv.style.animation = 'none';
             setTimeout(() => {

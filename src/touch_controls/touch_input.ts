@@ -86,6 +86,11 @@ export abstract class TouchControlsInput extends TouchControlsBase {
                         this.currentInput.boost = true;
                         this.animateButton(this.boostButton);
                         this.triggerHaptic(30);
+                    } else if (this.isPointInButton(x, y, 'bark')) {
+                        touchPoint.isButton = true;
+                        this.currentInput.bark = true;
+                        this.animateButton(this.barkButton);
+                        this.triggerHaptic(35);
                     } else if (this.isPointInButton(x, y, 'fire')) {
                         touchPoint.isButton = true;
                         this.currentInput.fire = true;
@@ -184,6 +189,7 @@ export abstract class TouchControlsInput extends TouchControlsBase {
                 }
                 if (touch.isButton) {
                     this.currentInput.boost = false;
+                    this.currentInput.bark = false;
                     this.currentInput.fire = false;
                 }
                 break;
@@ -236,8 +242,12 @@ export abstract class TouchControlsInput extends TouchControlsBase {
         }
     }
 
-    protected isPointInButton(x: number, y: number, buttonType: 'boost' | 'fire'): boolean {
-        const button = buttonType === 'boost' ? this.boostButton : this.fireButton;
+    protected isPointInButton(x: number, y: number, buttonType: 'boost' | 'bark' | 'fire'): boolean {
+        const button = buttonType === 'boost'
+            ? this.boostButton
+            : buttonType === 'bark'
+                ? this.barkButton
+                : this.fireButton;
         if (!button) return false;
 
         const rect = button.getBoundingClientRect();

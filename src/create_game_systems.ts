@@ -1,15 +1,22 @@
+import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
+import type { SpaceGardenSystem } from './space_garden';
+import type { ComboCorridorSystem } from './combo_corridor';
+import type { BouncePadsSystem } from './bounce_pads';
+import type { AerialGuardPatrolSystem } from './aerial_guard_patrol';
+import type { AirTokensSystem } from './air_tokens';
+import type { SkyRailTerminalSystem } from './sky_rail_terminal';
 import type { ChromaShiftSystem } from './chroma_shift';
 import type { StormGeodeSystem } from './storm_geodes';
-import { CrystalChimeManager } from './crystal_chimes';
-import { LightningBoltSystem } from './lightning_bolt';
+import type { CrystalChimeManager } from './crystal_chimes';
+import type { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
 import { ParticleSystem, DebrisSystem } from './particles';
 import { WeaponSystem } from './weapons';
 import { WeaponLightManager } from './lighting';
-import { AsteroidFieldSystem } from './asteroid_field';
-import { GodRaySystem } from './godrays';
-import { AuroraSystem } from './aurora';
-import { NebulaSystem } from './nebula';
+import type { AsteroidFieldSystem } from './asteroid_field';
+import type { GodRaySystem } from './godrays';
+import type { AuroraSystem } from './aurora';
+import type { NebulaSystem } from './nebula';
 import {
     createReEntrySystemStub,
     createWaterfallSystemStub,
@@ -17,6 +24,8 @@ import {
     createIndustrialSystemStub,
     createBiologicalSystemStub,
     createCosmicDustSystemStub,
+    createTimeShiftZonesSystemStub,
+    createFossilizedSpaceWhalesSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -26,13 +35,39 @@ import {
     createGalacticCoreSystemStub,
     createDreamPortalSystemStub,
     createWishLanternSystemStub,
+    createSpacePetsSwarmSystemStub,
     createWeatherSystemStub,
     createDancingJellyMossSystemStub,
     createDynamicStarfieldSystemStub,
     createDayNightCycleSystemStub,
     createCloudCastlesSystemStub,
+    createGrappleIslesSystemStub,
     createCandyFieldSystemStub,
-    createSingingGeodeSystemStub
+    createSingingGeodeSystemStub,
+    createWindCurrentsSystemStub,
+    createFlowerConstellationsSystemStub,
+    createHideAndSeekStarsSystemStub,
+    createBouncePadsSystemStub,
+    createSpaceGardenSystemStub,
+    createComboCorridorSystemStub,
+    createAerialGuardPatrolSystemStub,
+    createAirTokensSystemStub,
+    createShootingStarsSystemStub,
+    createSkyRailTerminalSystemStub,
+    createVictorySystemStub,
+    createTutorialSystemStub,
+    createPastelNebulaSystemStub,
+    createNebulaSystemStub,
+    createGodRaySystemStub,
+    createAuroraSystemStub,
+    createLightningBoltSystemStub,
+    createAsteroidFieldSystemStub,
+    createLiquidMetalSystemStub,
+    createCrystalChimeManagerStub,
+    createGravLensManagerStub,
+    createDerelictBuoyManagerStub,
+    createDataMonolithManagerStub,
+    createMagicPaintbrushSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -41,25 +76,30 @@ import type { MoonPalaceSystem } from './moon_palace';
 import type { MeteorShowerSystem } from './meteor_shower';
 import type { IndustrialBackgroundSystem } from './industrial_background';
 import type { CosmicDustSystem } from './cosmic_dust';
-import { PastelNebulaSystem } from './pastel_nebula';
+import type { PastelNebulaSystem } from './pastel_nebula';
 import type { BlackHoleSystem } from './black_hole';
 import type { GalacticCoreSystem } from './galactic_core';
 import type { DreamPortalSystem } from './dream_portal';
 import type { WishLanternSystem } from './wish_lanterns';
+import type { SpacePetsSwarmSystem } from './space_pets_swarm';
 import type { WeatherSystem } from './weather_system';
 import type { DancingJellyMossSystem } from './dancing_jelly_moss';
 import type { DynamicStarfieldSystem } from './dynamic_starfield';
 import type { DayNightCycleSystem } from './day_night_cycle';
 import type { CloudCastlesSystem } from './cloud_castles_system';
+import type { GrappleIslesSystem } from './grapple_isles';
 import type { CandyFieldSystem } from './candy_obstacles';
 import type { SingingGeodeSystem } from './singing_geodes';
-import { GravLensManager } from './grav_lens';
-import { DerelictBuoyManager } from './derelict_buoy';
-import { DataMonolithManager } from './data_monolith';
+import type { FlowerConstellationsSystem } from './flower_constellations_system';
+import type { HideAndSeekStarsSystem } from './hide_and_seek_stars';
+import type { GravLensManager } from './grav_lens';
+import type { DerelictBuoyManager } from './derelict_buoy';
+import type { DataMonolithManager } from './data_monolith';
 import type { BiologicalBackgroundSystem } from './biological_background';
-import { LiquidMetalSystem } from './geological/liquid_metal';
+import type { LiquidMetalSystem } from './geological/liquid_metal';
 import type { BossManager } from './boss_system';
 import { getAudioSystem, initAudioOnInteraction, type AudioSystem } from './audio_system';
+import { loadAndApplyAudioSettings } from './audio_settings';
 import { UpgradeSystem, PickupManager, HeatSystem, UPGRADE_CONFIGS } from './upgrade_system';
 import { getSaveManager, type SaveManager } from './save_manager';
 import { StarfieldSystem } from './stars';
@@ -69,14 +109,16 @@ import { DogCockpitController, DogAnimationState } from './dog_cockpit';
 import { HUDManager } from './hud_system';
 import { JuiceManager, ShakeType } from './juice_effects';
 import { EffectManager } from './magical_effects';
-import { MagicPaintbrushSystem } from './magic_paintbrush';
-import { VictorySystem } from './victory_system';
-import { TutorialSystem, shouldShowTutorial } from './tutorial_system';
+import type { MagicPaintbrushSystem } from './magic_paintbrush';
+import type { VictorySystem } from './victory_system';
+import type { TutorialSystem } from './tutorial_system';
 import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
+import { BarkBlastSystem } from './bark_blast_system';
 import { updateHealthDisplay } from './ui_controls';
 import { player } from './player_loader';
 import { playerState as playerStateSingleton } from './game_config';
+import { game } from './game_runtime';
 
 export type CreateGameSystemsDeps = {
     scene: THREE.Scene;
@@ -118,6 +160,7 @@ export type GameSystems = {
     juiceManager: JuiceManager;
     boostSystem: BoostSystem;
     rollSystem: RollSystem;
+    barkBlastSystem: BarkBlastSystem;
     effectManager: EffectManager;
     magicPaintbrushSystem: MagicPaintbrushSystem;
     victorySystem: VictorySystem;
@@ -133,13 +176,28 @@ export type GameSystems = {
     derelictBuoyManager: DerelictBuoyManager;
     dataMonolithManager: DataMonolithManager;
     wishLanternSystem: WishLanternSystem;
+    spacePetsSwarmSystem: SpacePetsSwarmSystem;
     weatherSystem: WeatherSystem;
     dancingJellyMossSystem: DancingJellyMossSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    grappleIslesSystem: GrappleIslesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+    timeShiftZonesSystem: import('./time_shift_zones').TimeShiftZonesSystem;
+    fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
+    flowerConstellationsSystem: FlowerConstellationsSystem;
+    hideAndSeekStarsSystem: HideAndSeekStarsSystem;
+    bouncePadsSystem: BouncePadsSystem;
+    aerialGuardPatrolSystem: AerialGuardPatrolSystem;
+    airTokensSystem: AirTokensSystem;
+    shootingStarsSystem: import('./shooting_stars').ShootingStarsSystem;
+    spaceGardenSystem: SpaceGardenSystem;
+    comboCorridorSystem: ComboCorridorSystem;
+    skyRailTerminalSystem: SkyRailTerminalSystem;
 };
 
 export type LevelEnvironmentSystemExports = {
@@ -157,11 +215,19 @@ export type LevelEnvironmentSystemExports = {
     blackHoleSystem: BlackHoleSystem;
     galacticCoreSystem: GalacticCoreSystem;
     wishLanternSystem: WishLanternSystem;
+    spacePetsSwarmSystem: SpacePetsSwarmSystem;
     dynamicStarfieldSystem: DynamicStarfieldSystem;
     dayNightCycleSystem: DayNightCycleSystem;
     cloudCastlesSystem: CloudCastlesSystem;
+    grappleIslesSystem: GrappleIslesSystem;
+    windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
+
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
+    flowerConstellationsSystem: FlowerConstellationsSystem;
+    hideAndSeekStarsSystem: HideAndSeekStarsSystem;
+    skyRailTerminalSystem: SkyRailTerminalSystem;
+    comboCorridorSystem: ComboCorridorSystem;
 };
 
 /**
@@ -182,20 +248,21 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const meteorShowerSystem: MeteorShowerSystem = createMeteorShowerSystemStub();
     const industrialSystem: IndustrialBackgroundSystem = createIndustrialSystemStub();
 
-    const asteroidFieldSystem = new AsteroidFieldSystem(scene, weaponLightManager);
-    const godRaySystem = new GodRaySystem(scene);
-    const auroraSystem = new AuroraSystem(scene, weaponLightManager);
-    const nebulaSystem = new NebulaSystem(scene, weaponLightManager);
+    const asteroidFieldSystem: AsteroidFieldSystem = createAsteroidFieldSystemStub();
+    const godRaySystem: GodRaySystem = createGodRaySystemStub();
+    const auroraSystem: AuroraSystem = createAuroraSystemStub();
+    const nebulaSystem: NebulaSystem = createNebulaSystemStub();
     const cosmicDustSystem: CosmicDustSystem = createCosmicDustSystemStub();
-    const pastelNebulaSystem = new PastelNebulaSystem(scene, weaponLightManager);
-    nebulaSystem.setCamera(camera);
+    const pastelNebulaSystem: PastelNebulaSystem = createPastelNebulaSystemStub();
 
     const biologicalSystem: BiologicalBackgroundSystem = createBiologicalSystemStub();
-    const liquidMetalSystem = new LiquidMetalSystem(scene);
+    const liquidMetalSystem: LiquidMetalSystem = createLiquidMetalSystemStub();
     const bossManager: BossManager = createBossManagerStub();
 
     const audioSystem = getAudioSystem();
     initAudioOnInteraction();
+    // Restore persisted master/music/SFX levels and the reduced-audio choice.
+    loadAndApplyAudioSettings();
 
     const upgradeSystem = new UpgradeSystem(scene, {
         onUpgradeStart: (type) => {
@@ -239,7 +306,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
     const tempTarget = new THREE.Group();
     const effectManager = new EffectManager(scene, audioSystem, tempTarget);
-    const magicPaintbrushSystem = new MagicPaintbrushSystem(scene);
+    const magicPaintbrushSystem: MagicPaintbrushSystem = createMagicPaintbrushSystemStub();
 
     const powerUpHookCtx = {
         effectManager,
@@ -250,6 +317,13 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         getPlayerPosition: () => player?.position,
         onHudHealthUpdate: () => {
             hudManager.updateHealth(playerState.health, playerState.maxHealth);
+        },
+        onHeal: () => {
+            if (playerState.health >= playerState.maxHealth) return false;
+            playerState.health++;
+            hudManager.updateHealth(playerState.health, playerState.maxHealth);
+            updateHealthDisplay(playerState);
+            return true;
         },
     };
 
@@ -266,7 +340,10 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
             console.log(`Power-up ended: ${config.name}`);
             handlePowerUpEnd(powerUpHookCtx, type, config);
             if (type === PowerUpType.MAGIC_PAINTBRUSH) {
-                magicPaintbrushSystem.clear();
+                // Read from the live GameContext, not the closed-over local: by
+                // the time this fires, deferred loading may have replaced
+                // `magicPaintbrushSystem` with the real (non-stub) instance.
+                game.magicPaintbrushSystem.clear();
             }
         }
     });
@@ -319,33 +396,59 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         }
     });
 
-    const victorySystem = new VictorySystem(scene, camera, audioSystem, hudManager, juiceManager);
-    const tutorialSystem = new TutorialSystem(scene, hudManager, audioSystem, dogController);
+    const barkBlastSystem = new BarkBlastSystem({
+        getCores: () => playerState.cores,
+        spendCores: (amount) => {
+            if (playerState.cores < amount) return false;
+            playerState.cores -= amount;
+            return true;
+        },
+        getOrbChargeProgress: () => orbManager.getPowerUpProgress(),
+        spendOrbCharge: () => orbManager.spendOrbCharge(),
+        onActivate: (position) => {
+            // A bark blast is the dog's big moment — the excited triple yip.
+            audioSystem.playDogBarkVariant('excited');
+            dogController.triggerAnimation(DogAnimationState.BARK, 0.65);
+            juiceManager.shakeScreen(ShakeType.MEDIUM, 0.35);
+            juiceManager.burstMagic(position);
+        }
+    });
 
-    if (shouldShowTutorial(saveManager)) {
-        tutorialSystem.onComplete(() => {
-            console.log('Tutorial complete! Starting game...');
-        });
-    }
+    const victorySystem = createVictorySystemStub();
+    const tutorialSystem = createTutorialSystemStub();
 
-    const lightningBoltSystem = new LightningBoltSystem(scene, weaponLightManager);
+    const lightningBoltSystem: LightningBoltSystem = createLightningBoltSystemStub();
     const chromaShiftSystem: ChromaShiftSystem = createChromaShiftSystemStub();
     const stormGeodeSystem: StormGeodeSystem = createStormGeodeSystemStub();
-    const crystalChimeManager = new CrystalChimeManager(scene, particleSystem, audioSystem);
+    const crystalChimeManager: CrystalChimeManager = createCrystalChimeManagerStub();
     const blackHoleSystem: BlackHoleSystem = createBlackHoleSystemStub();
     const galacticCoreSystem: GalacticCoreSystem = createGalacticCoreSystemStub();
     const dreamPortalSystem: DreamPortalSystem = createDreamPortalSystemStub();
     const wishLanternSystem: WishLanternSystem = createWishLanternSystemStub();
+    const spacePetsSwarmSystem: SpacePetsSwarmSystem = createSpacePetsSwarmSystemStub();
     const weatherSystem: WeatherSystem = createWeatherSystemStub();
     const dancingJellyMossSystem: DancingJellyMossSystem = createDancingJellyMossSystemStub();
     const dynamicStarfieldSystem: DynamicStarfieldSystem = createDynamicStarfieldSystemStub();
     const dayNightCycleSystem: DayNightCycleSystem = createDayNightCycleSystemStub();
     const cloudCastlesSystem = createCloudCastlesSystemStub();
+    const grappleIslesSystem = createGrappleIslesSystemStub();
+    const windCurrentsSystem = createWindCurrentsSystemStub();
+    const timeShiftZonesSystem = createTimeShiftZonesSystemStub();
+    const fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem = createFossilizedSpaceWhalesSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
-    const gravLensManager = new GravLensManager(scene);
-    const derelictBuoyManager = new DerelictBuoyManager(scene);
-    const dataMonolithManager = new DataMonolithManager(scene);
+    const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
+    const hideAndSeekStarsSystem: HideAndSeekStarsSystem = createHideAndSeekStarsSystemStub();
+    const bouncePadsSystem = createBouncePadsSystemStub();
+    const aerialGuardPatrolSystem = createAerialGuardPatrolSystemStub();
+    const airTokensSystem = createAirTokensSystemStub();
+    const spaceGardenSystem = createSpaceGardenSystemStub();
+    const comboCorridorSystem = createComboCorridorSystemStub();
+    const shootingStarsSystem = createShootingStarsSystemStub();
+    const skyRailTerminalSystem = createSkyRailTerminalSystemStub();
+    const gravLensManager: GravLensManager = createGravLensManagerStub();
+    const derelictBuoyManager: DerelictBuoyManager = createDerelictBuoyManagerStub();
+    const dataMonolithManager: DataMonolithManager = createDataMonolithManagerStub();
 
     return {
         particleSystem,
@@ -380,6 +483,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         juiceManager,
         boostSystem,
         rollSystem,
+        barkBlastSystem,
         effectManager,
         magicPaintbrushSystem,
         victorySystem,
@@ -392,15 +496,29 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         galacticCoreSystem,
         dreamPortalSystem,
         wishLanternSystem,
+        spacePetsSwarmSystem,
         weatherSystem,
         dancingJellyMossSystem,
         dynamicStarfieldSystem,
         dayNightCycleSystem,
         cloudCastlesSystem,
+        grappleIslesSystem,
+        windCurrentsSystem,
+        timeShiftZonesSystem,
+        fossilizedSpaceWhalesSystem,
         candyFieldSystem,
         singingGeodeSystem,
+        flowerConstellationsSystem,
+        hideAndSeekStarsSystem,
+        bouncePadsSystem,
+        aerialGuardPatrolSystem,
+        airTokensSystem,
+        spaceGardenSystem,
+        comboCorridorSystem,
+        shootingStarsSystem,
         gravLensManager,
         derelictBuoyManager,
-        dataMonolithManager
+        dataMonolithManager,
+        skyRailTerminalSystem
     };
 }

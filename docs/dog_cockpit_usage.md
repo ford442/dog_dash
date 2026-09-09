@@ -2,6 +2,17 @@
 
 This guide shows how to integrate the adorable dog cockpit animations into your game.
 
+## GLB armature (optional)
+
+`DogCockpitController` binds named bones / Object3Ds on `rocket.glb`. If the file has no armature (live `rocket.glb` currently has none), it attaches a **procedural cockpit dog** with the same node names so idle / thrust / collect still animate.
+
+A later Blender export can skip the fallback by including any of:
+
+- Bones or meshes named `body`, `head`, `tail`, `leftEar`, `rightEar`, `nose`
+- Groups named `pilotGroup` / `pilotHead`
+
+The fallback is skipped when `body`, `head`, or `pilotGroup` is already found on the GLB (including `SkinnedMesh` skeleton bones).
+
 ## Quick Start
 
 ### 1. Import the Dog Cockpit Controller

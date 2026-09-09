@@ -345,5 +345,55 @@ applyDuck(duration: number, amount: number) {
         }
         this.isDucked = false;
     }, duration * 1000);
+},
+
+/**
+ * Dog bark variants — the space dog's voice, so repeated barks in one run
+ * don't sound like a copy-paste. Procedural: pitch, count and spacing only.
+ *
+ * - `happy`   two rising yips (collect, greeting)
+ * - `alert`   one sharp bark (danger, warning)
+ * - `excited` three fast rising yips (combo, victory)
+ * - `grumble` a low short woof (damage, grump)
+ */
+playDogBarkVariant(kind: 'happy' | 'alert' | 'excited' | 'grumble' = 'happy'): void {
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+
+    const shapes: Record<string, { count: number; pitch: number; gap: number; volume: number }> = {
+        happy:   { count: 2, pitch: 1.12, gap: 0.13, volume: 0.9 },
+        alert:   { count: 1, pitch: 1.35, gap: 0.0,  volume: 1.1 },
+        excited: { count: 3, pitch: 1.25, gap: 0.09, volume: 0.85 },
+        grumble: { count: 1, pitch: 0.72, gap: 0.0,  volume: 0.8 }
+    };
+    const shape = shapes[kind] ?? shapes.happy;
+    const config = this.soundConfigs.dog_bark;
+
+    for (let i = 0; i < shape.count; i++) {
+        const start = this.ctx.currentTime + i * shape.gap;
+        // Each yip in a burst lifts slightly, the way a real yip-yip does.
+        const freq = config.frequency * shape.pitch * (1 + i * 0.06);
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = config.waveform;
+        osc.frequency.setValueAtTime(freq, start);
+        osc.frequency.exponentialRampToValueAtTime(
+            Math.max(40, freq + (config.slide ?? -160)),
+            start + config.duration
+        );
+
+        const peak = config.volume * shape.volume * this.sfxVolume;
+        gain.gain.setValueAtTime(0, start);
+        gain.gain.linearRampToValueAtTime(peak, start + 0.012);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + config.duration);
+
+        osc.connect(gain);
+        gain.connect(this.sfxGain);
+        osc.start(start);
+        osc.stop(start + config.duration + 0.05);
+        osc.onended = () => { osc.disconnect(); gain.disconnect(); };
+    }
 }
 });

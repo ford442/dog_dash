@@ -16,12 +16,15 @@ import {
     time,
     sin,
     float,
-    attribute
+    attribute,
+    vec4,
+    vec3,
+    mix
 } from 'three/tsl';
 import { ParticleSystem } from './particles';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import { createIridescentCrystal } from './candy_materials';
-import type { AudioSystem } from './audio_system';
+import type { AudioPort } from './ports';
 import { decorationBudget } from './decoration_budget';
 
 const MAX_CLUSTERS = 12;
@@ -113,7 +116,7 @@ function createNodeMaterial(): MeshBasicNodeMaterial {
 export class CrystalChimeManager {
     private scene: THREE.Scene;
     private particles: ParticleSystem | null;
-    private audio: AudioSystem | null;
+    private audio: AudioPort | null;
     private clusters: ChimeCluster[] = [];
 
     private rodMesh: THREE.InstancedMesh;
@@ -128,7 +131,7 @@ export class CrystalChimeManager {
     constructor(
         scene: THREE.Scene,
         particles: ParticleSystem | null = null,
-        audio: AudioSystem | null = null
+        audio: AudioPort | null = null
     ) {
         this.scene = scene;
         this.particles = particles;
@@ -295,7 +298,11 @@ export class CrystalChimeManager {
                 const picked = notes.slice(0, noteCount);
 
                 if (this.audio) {
-                    this.audio.playCrystalChime(picked, 0.34, pitchShift);
+                    if (typeof this.audio.playCrystalChime === 'function') {
+                        this.audio.playCrystalChime(picked as number[], 0.34, pitchShift);
+                    } else {
+                        this.audio.play('wind_chime', 0.34);
+                    }
                 }
 
                 if (this.particles) {

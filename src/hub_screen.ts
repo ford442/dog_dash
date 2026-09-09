@@ -13,6 +13,11 @@ import { ALL_MATERIAL_IDS, getMaterialColor, getMaterialDisplayName } from './re
 import { createBestiaryGrid, BESTIARY_ENTRIES } from './bestiary';
 import { SPECIES_NAMES } from './discovery_system';
 import { LEVEL_CONFIG } from './level_config';
+import { parseRunSeed } from './run_seed';
+import { setPendingRunSeed } from './hub_pending_seed';
+import { loadGhostRecording, ghostMatchesSeed } from './ghost_run';
+
+export { setPendingStartChapter, consumePendingStartChapter } from './hub_pending_chapter';
 
 export type HubMode = 'victory' | 'gameover' | 'pause';
 
@@ -22,6 +27,7 @@ export interface HubRunSummary {
     coresEarned: number;
     speciesDiscovered: number;
     creaturesCataloged: number;
+    runSeed?: string;
 }
 
 export interface HubScreenOptions {
@@ -35,31 +41,6 @@ export interface HubScreenOptions {
 }
 
 const CHAPTER_COUNT = 6;
-
-// Persisted "start at this chapter" request, consumed on the next boot
-// (restarts go through location.reload(), so this must survive it).
-const PENDING_CHAPTER_KEY = 'dog_dash_pending_chapter';
-
-export function setPendingStartChapter(chapter: number): void {
-    try {
-        localStorage.setItem(PENDING_CHAPTER_KEY, String(chapter));
-    } catch (e) {
-        console.warn('Failed to store pending chapter:', e);
-    }
-}
-
-/** Reads and clears the requested start chapter. Null when none was set. */
-export function consumePendingStartChapter(): number | null {
-    try {
-        const raw = localStorage.getItem(PENDING_CHAPTER_KEY);
-        if (raw === null) return null;
-        localStorage.removeItem(PENDING_CHAPTER_KEY);
-        const chapter = parseInt(raw, 10);
-        return Number.isFinite(chapter) ? chapter : null;
-    } catch (e) {
-        return null;
-    }
-}
 
 // Kid-friendly pastel palette (matches hud_system/styles.ts)
 const HUB_COLORS = {
@@ -325,8 +306,56 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
                 ${statRow('🔷 Cores earned', `${summary.coresEarned}`)}
                 ${statRow('🌿 Plants scanned', `${summary.speciesDiscovered}`)}
                 ${statRow('🐾 Creatures met', `${summary.creaturesCataloged}`)}
+                ${summary.runSeed ? statRow('🌱 Run seed', `<span style="font-size:11px; word-break:break-all;">${summary.runSeed}</span>`) : ''}
             `;
             panel.appendChild(runCard);
+
+            if (summary.runSeed) {
+                const seedCard = card();
+                const isMobile = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+                seedCard.innerHTML = `
+                    <div style="font-size:16px; font-weight:bold; margin-bottom:6px;">🌱 Run Seed</div>
+                    <div style="font-size:11px; word-break:break-all; color:${HUB_COLORS.textLight}; margin-bottom:8px;">${summary.runSeed}</div>
+                `;
+                if (!isMobile) {
+                    const copyBtn = bigButton('📋 Copy seed', HUB_COLORS.sky, () => {
+                        play('ui_click');
+                        const text = summary.runSeed!;
+                        if (navigator.clipboard?.writeText) {
+                            void navigator.clipboard.writeText(text);
+                        }
+                    });
+                    copyBtn.style.width = '100%';
+                    copyBtn.style.minHeight = '44px';
+                    copyBtn.style.marginBottom = '8px';
+                    seedCard.appendChild(copyBtn);
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.placeholder = 'Paste seed to replay…';
+                    input.style.cssText = `
+                        width:100%; box-sizing:border-box; padding:10px; border-radius:12px;
+                        border:2px solid rgba(255,255,255,0.35); margin-bottom:8px;
+                        font-size:12px; background:rgba(255,255,255,0.15); color:${HUB_COLORS.white};
+                    `;
+                    seedCard.appendChild(input);
+
+                    const launchSeedBtn = bigButton('🚀 Launch with seed', HUB_COLORS.lavender, () => {
+                        play('ui_click');
+                        const parsed = parseRunSeed(input.value.trim() || summary.runSeed!);
+                        if (!parsed) {
+                            input.style.borderColor = '#ff6b6b';
+                            return;
+                        }
+                        setPendingRunSeed(parsed);
+                        location.reload();
+                    });
+                    launchSeedBtn.style.width = '100%';
+                    launchSeedBtn.style.minHeight = '44px';
+                    seedCard.appendChild(launchSeedBtn);
+                }
+                panel.appendChild(seedCard);
+            }
         }
 
         const stats = saveManager.getStats();
@@ -353,6 +382,22 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
         launchBtn.style.width = '100%';
         launchBtn.style.minHeight = '62px';
         panel.appendChild(launchBtn);
+
+        const lastRun = saveManager.getLastRun();
+        if (lastRun) {
+            const parsedLast = parseRunSeed(lastRun.seed);
+            const ghost = loadGhostRecording();
+            if (parsedLast && ghost && ghostMatchesSeed(ghost, parsedLast)) {
+                const ghostCard = card();
+                ghostCard.innerHTML = `
+                    <div style="font-size:15px; font-weight:bold;">👻 Ghost run ready</div>
+                    <div style="font-size:13px; color:${HUB_COLORS.textLight}; margin-top:4px;">
+                        Launch with the same seed to race your last flight (${lastRun.distance}m).
+                    </div>
+                `;
+                panel.appendChild(ghostCard);
+            }
+        }
     }
 
     function renderShop(): void {

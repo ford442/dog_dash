@@ -3,7 +3,7 @@
  */
 
 import * as THREE from 'three';
-import { AudioSystem } from '../audio_system';
+import type { AudioPort } from '../ports';
 import { DogCockpitController, DogAnimationState } from '../dog_cockpit';
 import { HUDManager } from '../hud_system';
 import { SpaceKitty } from '../space_friends';
@@ -13,7 +13,7 @@ import { saveTutorialCompletion } from './persistence';
 export abstract class TutorialSystemCore {
     protected scene: THREE.Scene;
     protected hud: HUDManager;
-    protected audio: AudioSystem;
+    protected audio: AudioPort;
     protected dogController: DogCockpitController;
 
     // State
@@ -56,7 +56,7 @@ export abstract class TutorialSystemCore {
     constructor(
         scene: THREE.Scene,
         hud: HUDManager,
-        audio: AudioSystem,
+        audio: AudioPort,
         dogController: DogCockpitController
     ) {
         this.scene = scene;
@@ -184,9 +184,11 @@ export abstract class TutorialSystemCore {
     protected completeTutorial(): void {
         if (this.isComplete) return;
 
-        this.isComplete = true;
-
-        this.audio.playMagicSequence('spell_complete');
+        if (typeof this.audio.playMagicSequence === 'function') {
+            this.audio.playMagicSequence('spell_complete');
+        } else {
+            this.audio.play('magic_cast');
+        }
 
         this.showCompletionCelebration();
 

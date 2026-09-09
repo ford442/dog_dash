@@ -23,12 +23,17 @@ jobs:
       - name: Typecheck (baseline ratchet)
         run: npm run typecheck:ci
 
+      - name: Unit tests
+        run: npm run test:unit
+
       - name: Build (brace check, WASM, Vite)
         run: npm run build
 
   smoke:
     runs-on: ubuntu-latest
     needs: typecheck-and-build
+    # Phase A: soft-fail while monitoring stability. Remove continue-on-error after
+    # 3 consecutive green smoke runs on main (see README Testing — Smoke promotion).
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +54,7 @@ jobs:
       - name: Build production bundle
         run: npm run build
 
-      - name: Run WebGL smoke test
+      - name: Run WebGPU boot-probe smoke test
         run: npm run test:smoke
 
   cpp-wasm:

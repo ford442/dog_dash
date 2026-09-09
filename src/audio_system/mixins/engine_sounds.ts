@@ -140,6 +140,19 @@ updateEngineState(currentSpeedY: number, isMovingUp: boolean, isMovingDown: bool
         this.engineWhooshGain.gain.setTargetAtTime(Math.min(whooshVol, 0.2), now, 0.1);
     }
 
+    // Whoosh pitch tracks thrust strength, so hard thrust reads as *harder*
+    // rather than just louder. Dives pitch down into a rush instead.
+    if (this.engineWhooshNode) {
+        const thrustStrength = isBoosting ? 1 : (isMovingUp ? 0.55 : 0);
+        const divePitch = currentSpeedY < -10 ? -0.25 * speedRatio : 0;
+        const rate = 0.85 + thrustStrength * 0.5 + speedRatio * 0.2 + divePitch;
+        this.engineWhooshNode.playbackRate.setTargetAtTime(
+            Math.max(0.5, Math.min(2, rate)),
+            now,
+            0.12
+        );
+    }
+
     // Filter opens wide when boosting or thrusting, or creates a deep sweep when diving
     if (this.engineFilter) {
         const filterFreq = isBoosting

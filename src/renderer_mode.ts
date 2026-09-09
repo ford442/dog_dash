@@ -1,7 +1,20 @@
 import * as THREE from 'three';
-import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
 
+import {
+    probeWebGpu,
+    type WebGpuProbeResult
+} from './webgpu_probe';
+
+/**
+ * Dog Dash renders through WebGPU only.
+ *
+ * The WebGL2 path was removed deliberately: a silent fallback made WebGPU
+ * failures invisible, so a Chrome failure and an Edge failure looked identical
+ * from the outside. Boot now hard-fails with a diagnostic screen instead.
+ * Restoring a WebGL renderer is a later issue wave — see
+ * docs/RENDERER_FALLBACK.md.
+ */
 export type RendererBackend = 'webgpu' | 'webgl';
 export type GameRenderer = WebGPURenderer | THREE.WebGLRenderer;
 
@@ -15,23 +28,25 @@ export type RendererInitResult = {
 declare global {
     interface Window {
         usingWebGPU?: boolean;
+        /**
+         * Retained for the material-lite guards scattered through the visual
+         * systems. Always false now — no WebGL context is ever created.
+         */
         usingWebGL?: boolean;
         rendererType?: RendererBackend;
         rendererFallbackReason?: string;
     }
 }
 
-function getRendererParam(): string | null {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('renderer')?.toLowerCase() || null;
-}
+/** Raised when the boot probe fails. Carries the probe JSON for the UI. */
+export class WebGpuBootError extends Error {
+    readonly probe: WebGpuProbeResult;
 
-export function getRequestedRendererBackend(): RendererBackend {
-    const param = getRendererParam();
-    const params = new URLSearchParams(window.location.search);
-
-    if (param === 'webgl' || params.has('webgl')) return 'webgl';
-    return 'webgpu';
+    constructor(probe: WebGpuProbeResult) {
+        super(`WebGPU boot failed at "${probe.stage}": ${probe.reason}`);
+        this.name = 'WebGpuBootError';
+        this.probe = probe;
+    }
 }
 
 export function hasDebugUrlFlag(name: string): boolean {
@@ -39,84 +54,75 @@ export function hasDebugUrlFlag(name: string): boolean {
     return params.has(name) || params.get(name) === '1' || params.get(name) === 'true';
 }
 
+/**
+ * WebGPU is the only backend. Kept as a function so callers and docs keep a
+ * single place to read the intended backend from.
+ */
+export function getRequestedRendererBackend(): RendererBackend {
+    return 'webgpu';
+}
+
 function setRendererGlobals(backend: RendererBackend, fallbackReason?: string): void {
     window.usingWebGPU = backend === 'webgpu';
-    window.usingWebGL = backend === 'webgl';
+    window.usingWebGL = false;
     window.rendererType = backend;
     window.rendererFallbackReason = fallbackReason || '';
 }
 
-function createWebGL2Renderer(canvas: HTMLCanvasElement, antialias: boolean): THREE.WebGLRenderer {
-    const context = canvas.getContext('webgl2', {
-        antialias,
-        alpha: false,
-        powerPreference: 'high-performance'
-    }) as WebGL2RenderingContext | null;
-
-    if (!context) {
-        throw new Error('WebGL2 is not supported by this browser/device.');
-    }
-
-    return new THREE.WebGLRenderer({
-        canvas,
-        context: context as unknown as WebGLRenderingContext,
-        antialias,
-        powerPreference: 'high-performance'
-    });
-}
-
-export function createGameRenderer(
+/**
+ * Runs the boot probe and builds the WebGPU renderer on the device it
+ * produced.
+ *
+ * The probed device is handed to `WebGPURenderer` rather than letting it
+ * request its own — that is what keeps "one adapter, one device" true for the
+ * whole page. On failure this throws {@link WebGpuBootError}; it never creates
+ * a `webgl` or `webgl2` context to keep something on screen.
+ */
+export async function createGameRenderer(
     canvas: HTMLCanvasElement,
     options: { antialias?: boolean; basePixelRatio?: number } = {}
-): RendererInitResult {
+): Promise<RendererInitResult> {
     const antialias = options.antialias ?? true;
     const basePixelRatio = options.basePixelRatio ?? 1;
-    const requestedBackend = getRequestedRendererBackend();
-    let backend: RendererBackend = requestedBackend;
-    let renderer: GameRenderer;
-    let fallbackReason: string | undefined;
 
-    if (requestedBackend === 'webgl') {
-        renderer = createWebGL2Renderer(canvas, antialias);
-    } else if (!window.isSecureContext) {
-        backend = 'webgl';
-        fallbackReason = 'WebGPU requires a secure context; using WebGL2.';
-        renderer = createWebGL2Renderer(canvas, antialias);
-    } else if (!WebGPU.isAvailable()) {
-        const warning = WebGPU.getErrorMessage();
-        backend = 'webgl';
-        fallbackReason = warning.textContent || 'WebGPU is unavailable; using WebGL2.';
-        renderer = createWebGL2Renderer(canvas, antialias);
-    } else {
-        try {
-            renderer = new WebGPURenderer({ canvas, antialias });
-        } catch (error) {
-            backend = 'webgl';
-            fallbackReason = error instanceof Error
-                ? `WebGPU renderer initialization failed: ${error.message}`
-                : 'WebGPU renderer initialization failed; using WebGL2.';
-            renderer = createWebGL2Renderer(canvas, antialias);
-        }
+    const outcome = await probeWebGpu(canvas);
+    if (!outcome.ok) {
+        setRendererGlobals('webgpu', outcome.result.reason);
+        throw new WebGpuBootError(outcome.result);
+    }
+
+    let renderer: WebGPURenderer;
+    try {
+        // `device` + `context` come from the probe, so the renderer adopts them
+        // instead of running its own adapter/device request.
+        renderer = new WebGPURenderer({
+            canvas,
+            antialias,
+            device: outcome.device,
+            context: outcome.context
+        });
+        await renderer.init();
+    } catch (error) {
+        const reason = error instanceof Error
+            ? `WebGPU renderer initialization failed: ${error.message}`
+            : 'WebGPU renderer initialization failed.';
+        setRendererGlobals('webgpu', reason);
+        throw new WebGpuBootError({ ...outcome.result, ok: false, reason, stage: 'canvas-context' });
     }
 
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio * basePixelRatio));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.3;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = false;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    setRendererGlobals(backend, fallbackReason);
-
-    if (fallbackReason) {
-        console.warn(`[renderer] ${fallbackReason}`);
-    }
-    console.info(`[renderer] active=${backend} requested=${requestedBackend}`);
+    setRendererGlobals('webgpu');
+    console.info('[renderer] active=webgpu (WebGL path deferred)');
 
     return {
         renderer,
-        backend,
-        requestedBackend,
-        fallbackReason
+        backend: 'webgpu',
+        requestedBackend: 'webgpu'
     };
 }

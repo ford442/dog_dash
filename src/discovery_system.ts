@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { SaveManager } from './save_manager';
-import { BESTIARY_ENTRIES, type BestiaryEntryId } from './bestiary';
+import { BESTIARY_ENTRIES, type BestiaryEntryId } from './bestiary_data';
 
 // Display names for catalogable species, keyed by the `userData.speciesId`
 // tag applied by foliage, geological, friend, and rare creature spawners.

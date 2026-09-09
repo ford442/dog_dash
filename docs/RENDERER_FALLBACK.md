@@ -1,78 +1,115 @@
-# Renderer Fallback
+# Renderer: WebGPU only (WebGL deferred)
 
-Dog Dash uses WebGPU as the primary Three.js renderer and WebGL2 as a toggleable fallback for visual debugging and compatibility checks.
+Dog Dash renders through **WebGPU exclusively**. There is no WebGL2 fallback.
 
-## Runtime Selection
+> **Why the fallback was removed.** A silent WebGL fallback made WebGPU
+> failures invisible: Chrome failing and Edge failing looked identical from the
+> outside, because both quietly rendered through a different backend. Boot now
+> hard-fails with a diagnostic screen so the two can be compared directly.
+>
+> **Restoring a WebGL path is a later issue wave.** It is deferred, not
+> rejected. Until then, do not reintroduce a `webgl` / `webgl2` context on the
+> default boot path.
 
-Default:
+## Boot probe
 
-```text
-http://localhost:5173/
-```
+`src/webgpu_probe.ts` runs one probe at startup:
 
-Force WebGL2:
+1. `navigator.gpu` present?
+2. Secure context?
+3. `requestAdapter()` — **once**
+4. `requestDevice()` — **once**
+5. Configure the game canvas with a `webgpu` context
 
-```text
-http://localhost:5173/?renderer=webgl
-```
+The resulting `GPUDevice` and `GPUCanvasContext` are handed to
+`WebGPURenderer` rather than letting it request its own, so "one adapter, one
+device" holds for the whole page. The probe outcome is memoised: a failed probe
+stays failed for the life of the page, and nothing — the renderer, the GPU
+chores layer, debug tooling — may re-request a device afterwards.
 
-The app also accepts `?webgl` as a shorthand. If WebGPU is unavailable or blocked by an insecure context, the renderer factory falls back to WebGL2 automatically.
+## Breadcrumbs
 
-Runtime breadcrumbs:
+`window.webgpuProbe` is always populated:
 
 ```js
-window.rendererType
+{
+  ok: false,
+  browser: "Microsoft Edge 128",     // distinguishes Chrome from Edge
+  reason: "requestAdapter() resolved to null — no compatible adapter.",
+  adapter: null,                      // vendor/architecture/features when known
+  stage: "adapter",
+  userAgent: "...",
+  durationMs: 11
+}
+```
+
+`stage` is one of `ok`, `skipped`, `no-navigator-gpu`, `insecure-context`,
+`adapter`, `device`, `canvas-context`. Adapter details survive a *device*
+failure, which is what makes a cross-browser comparison possible.
+
+Renderer breadcrumbs remain for compatibility:
+
+```js
+window.rendererType          // always 'webgpu'
 window.usingWebGPU
-window.usingWebGL
+window.usingWebGL            // always false — no WebGL context is created
 window.rendererFallbackReason
 ```
 
-## Shared State
+## Failure behaviour
 
-Both renderer paths use the same:
+On a failed probe, `bootstrap()` renders the blocking screen from
+`src/boot_failure.ts` and stops. The screen shows the browser, the reason, an
+explanation of the stage, and the probe JSON with a copy button. There is no
+"continue anyway" — there is nothing to continue into.
 
-- Three.js scene and camera
-- level config and level manager data
-- player/enemy/flora/particle objects
-- controls and HUD
-- WASM collision checks
-- main animation loop
+## URL flags
 
-Renderer selection must not fork gameplay state.
+| Flag | Effect |
+|------|--------|
+| `?skip_gpu_boot` | Skips the probe entirely (stage `skipped`). For headless CI and bundle-health checks. Never a rendering path. |
+| `?wireframe`, `?collisionDebug`, `?debug` | Unchanged debug helpers. |
 
-## Debug Helpers
+`?renderer=webgl` no longer exists.
 
-The backquote debug panel includes:
+## CI
 
-- `Wireframe`: applies wireframe rendering to current and newly spawned materials.
-- `Collision Debug`: draws lightweight wire spheres for the player, asteroids, squids, slingable objects, spore clouds, jelly moss, and gravity-anchor fields.
+Headless Chrome exposes no usable WebGPU adapter, so CI **cannot** run
+gameplay, and must not add a GL context to stay green. `tests/smoke.spec.ts`
+instead asserts the hard-fail contract:
 
-Startup flags:
+- the probe breadcrumb is populated and names a browser, reason and stage
+- the blocking screen appears with the probe JSON on it
+- `window.usingWebGL` is false and the renderer never reports a `webgl` backend
+- the bundle throws nothing on the way down
+- nothing re-requests an adapter after boot
 
-```text
-?wireframe
-?collisionDebug
-```
-
-## Material Compatibility
-
-Most game materials are standard Three.js materials or Three node materials. The WebGL2 renderer first attempts to render the same materials for maximum parity. If a WebGL2 render throws because a node material is not accepted, the render wrapper converts node materials in the active scene to approximate `MeshStandardMaterial`, `MeshBasicMaterial`, or `PointsMaterial` fallbacks and retries once.
-
-That fallback preserves base color, opacity, transparency, blending, roughness, metalness, emissive values, maps, and wireframe flags where available. TSL-specific animated shader nodes are not preserved after conversion.
+`?skip_gpu_boot` covers "the bundle parses and boots" without touching the GPU.
 
 ## Verification
 
-Recommended local checks:
+Gameplay verification now requires a **WebGPU-capable browser** — Chrome or
+Edge 113+ on a machine with a working GPU:
 
 ```bash
 npm run build
-npm run dev
+npm run preview
 ```
 
-Manual browser checks:
+Then open `http://localhost:4173/` and confirm:
 
-- `http://localhost:5173/`
-- `http://localhost:5173/?renderer=webgl`
-- `http://localhost:5173/?renderer=webgl&wireframe&collisionDebug`
+- the game reaches the title screen and gameplay HUD
+- `window.webgpuProbe.ok === true`
+- the debug panel (backquote) reports `renderer: webgpu`
 
-Open the debug panel with backquote and confirm the renderer line reports the expected backend.
+To exercise the failure path deliberately, launch the browser with WebGPU
+disabled (`--disable-features=WebGPU` in Chrome/Edge) and confirm the boot
+failure screen appears with a populated probe JSON.
+
+## Material compatibility
+
+The `window.usingWebGL` guards scattered through the visual systems
+(`candy_materials`, `pastel_nebula`, `industrial_background`, `galactic_core`)
+and `WebGLMaterialFallbackRenderer` are **kept but permanently inert** — they
+are the seam a future WebGL wave would re-activate. Leave them alone rather
+than deleting them.
