@@ -56,7 +56,7 @@ function fail(msg) {
 
 function main() {
     const deferredSrc = read('src/level_deferred_registry.ts');
-    const registrySrc = read('src/level_env_registry.ts');
+    const registrySrc = read('src/level_env_registry_deferred_env.ts');
     const pluginsSrc = read('src/level_manager/environment_plugins.ts');
     const levelConfigSrc = read('src/level_config.ts');
 
