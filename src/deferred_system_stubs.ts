@@ -345,6 +345,17 @@ export function createTimeShiftZonesSystemStub(): TimeShiftZonesSystem {
     } as unknown as TimeShiftZonesSystem;
 }
 
+export function createFossilizedSpaceWhalesSystemStub(): import('./fossilized_space_whales').FossilizedSpaceWhalesSystem {
+    return {
+        active: false,
+        activate: noop,
+        deactivate: noop,
+        update: noop,
+        cleanup: noop,
+        setObstacleTracking: noop
+    } as unknown as import('./fossilized_space_whales').FossilizedSpaceWhalesSystem;
+}
+
 export function createCandyFieldSystemStub(): CandyFieldSystem {
     return {
         active: false,

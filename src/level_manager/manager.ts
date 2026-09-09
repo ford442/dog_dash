@@ -106,6 +106,7 @@ export class LevelManager {
     hideAndSeekStarsSystem: LevelEnvironmentPorts['hideAndSeekStarsSystem'];
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
+    fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -171,6 +172,7 @@ export class LevelManager {
         this.hideAndSeekStarsSystem = options.env.hideAndSeekStarsSystem;
         this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
+        this.fossilizedSpaceWhalesSystem = options.env.fossilizedSpaceWhalesSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {

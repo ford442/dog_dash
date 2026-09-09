@@ -213,6 +213,7 @@ function createLevelManager(
             comboCorridorSystem: systems.comboCorridorSystem,
             windCurrentsSystem: systems.windCurrentsSystem,
             timeShiftZonesSystem: systems.timeShiftZonesSystem,
+            fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
             bouncePadsSystem: systems.bouncePadsSystem,
@@ -290,6 +291,7 @@ function createLevelManager(
         airTokensSystem: systems.airTokensSystem,
         shootingStarsSystem: systems.shootingStarsSystem,
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
+        fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });

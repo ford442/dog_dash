@@ -53,6 +53,7 @@ export const DEFERRED_ENV_FLAGS = [
     'pastelNebula',
     'nebula',
     'nebulaRibbons',
+    'fossilizedSpaceWhales',
     'godRays',
     'aurora',
     'lightning',
@@ -147,7 +148,8 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     aurora: 'aurora',
     lightning: 'lightning',
     asteroidField: 'asteroidField',
-    candyField: 'candyPlanetRing'
+    candyField: 'candyPlanetRing',
+    fossilizedSpaceWhales: 'fossilizedSpaceWhales'
 };
 
 /** Pure load predicates for non-env deferred systems. */

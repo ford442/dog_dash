@@ -39,7 +39,7 @@ export type EnvRole = 'backdrop' | 'traversal' | 'hazard' | 'flavor' | 'boss';
 export type PaletteTag = 'warm' | 'cool' | 'pastel' | 'neon' | 'iridescent' | 'monochrome';
 
 /** `butterflySwarm` is eager (bootstrap-owned, no dynamic import) so it has no `SystemKey`. */
-export type EnvDescriptorKey = SystemKey | 'butterflySwarm' | 'clouds';
+export type EnvDescriptorKey = SystemKey | 'butterflySwarm' | 'clouds' | 'fossilizedSpaceWhales';
 
 export interface EnvSystemDescriptor {
     /** Matches the key this descriptor is registered under in `ENV_SYSTEM_DESCRIPTORS`. */
@@ -390,6 +390,14 @@ export const ENV_SYSTEM_DESCRIPTORS: Record<EnvDescriptorKey, EnvSystemDescripto
         role: 'backdrop',
         biomes: ['candy', 'nebula', 'biological'],
         paletteTags: ['warm'],
+        difficultyWeight: 1
+    }),
+    fossilizedSpaceWhales: defineEnvSystem({
+        key: 'fossilizedSpaceWhales',
+        label: 'Fossilized Space Whales',
+        role: 'backdrop',
+        biomes: ['biological', 'nebula'],
+        paletteTags: ['cool', 'monochrome'],
         difficultyWeight: 1
     }),
     aurora: defineEnvSystem({
