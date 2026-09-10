@@ -207,7 +207,7 @@ export class SlingComboManager {
         }
 
         // Audio: massive whump + whoosh
-        audioSystem.playSlingArcSurge();
+        audioSystem.playSlingArcSurge?.();
 
         // Dog: max excitement
         dogController.triggerAnimation(DogAnimationState.VICTORY, 2.0);
