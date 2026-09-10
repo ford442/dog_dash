@@ -20,6 +20,7 @@ import { spawnDreamPortalsForLevel } from './dream_portal_update';
 import { spawnArtifactsForLevel } from './artifact_update';
 import { DebugSystem } from '../debug_system';
 import { decorationBudget, registerDefaultDecorationBudgets } from '../decoration_budget';
+import { DecorationBudgetAuditor } from '../decoration_budget_auditor';
 import { attachGpuLeakDetector } from '../gpu_leak_detector';
 import { disposeObject } from '../utils';
 import { createGalaxy, createMoon } from '../visuals';
@@ -373,6 +374,7 @@ export async function initializeStartup(): Promise<void> {
     const debugSystem = new DebugSystem();
     registerDefaultDecorationBudgets();
     decorationBudget.attachToDebugSystem(debugSystem);
+    new DecorationBudgetAuditor(scene).attachToDebugSystem(debugSystem);
     debugSystem.setRendererInfo(rendererBackend, requestedRendererBackend, rendererFallbackReason);
     creatureManager.setDebugSystem(debugSystem);
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { time, vec3, color, positionLocal, positionWorld } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export class SpaceGardenSystem {
     scene: THREE.Scene;
@@ -12,6 +13,12 @@ export class SpaceGardenSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+
+        decorationBudget.register('space_garden', {
+            label: 'Space garden orbs',
+            category: 'foliage',
+            maxActive: 80 // fixed count, 1 InstancedMesh
+        });
 
         const geo = new THREE.SphereGeometry(1.5, 8, 8);
         const mat = new MeshBasicNodeMaterial({
@@ -49,12 +56,14 @@ export class SpaceGardenSystem {
         if (this.active) return;
         this.active = true;
         this.mesh.visible = true;
+        decorationBudget.syncCount('space_garden', this.count);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
+        decorationBudget.syncCount('space_garden', 0);
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
@@ -91,6 +100,7 @@ export class SpaceGardenSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('space_garden', 0);
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         (this.mesh.material as any).dispose?.();

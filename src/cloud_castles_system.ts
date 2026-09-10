@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { CastleBackgroundManager } from './cloud_castles';
+import { decorationBudget } from './decoration_budget';
 
 export class CloudCastlesSystem {
     scene: THREE.Scene;
@@ -10,6 +11,22 @@ export class CloudCastlesSystem {
     constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.manager = new CastleBackgroundManager(scene);
+        // Generous documented estimate, not a precisely derived ceiling:
+        // maintainCastles() only enforces a floor (>=3 ahead of any layer within
+        // spawnRange=300, >=2 background-layer castles behind within the same
+        // range) and spawns one castle at a time to top up under that floor.
+        // Population is bounded indirectly by cleanupFarCastles() removing
+        // anything whose rendered (parallax-adjusted) position drifts more than
+        // cleanupRange=400 from the player, which — given per-layer parallax
+        // speeds of 0.02-0.1 — keeps every layer's lifetime in a comparable
+        // window. Typical steady-state population sits in the high single
+        // digits to low teens; 20 leaves real headroom without silently
+        // under-reporting.
+        decorationBudget.register('cloud_castles', {
+            label: 'Cloud castles',
+            category: 'background3d',
+            maxActive: 20
+        });
         this.deactivate();
     }
 

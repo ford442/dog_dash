@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { time, vec2, vec3, color, uniform, mix, float, sin, cos, max, smoothstep, length, positionWorld } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export class GrappleIslesSystem {
     scene: THREE.Scene;
@@ -13,6 +14,12 @@ export class GrappleIslesSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+
+        decorationBudget.register('grapple_isles', {
+            label: 'Grapple isles (4 parallax layers)',
+            category: 'background3d',
+            maxActive: 50 // fixed 20+15+10+5 across the 4 layer InstancedMeshes
+        });
 
         // Base geometry: rough icosphere for floating rocks
         const geo = new THREE.IcosahedronGeometry(1, 1);
@@ -93,12 +100,15 @@ export class GrappleIslesSystem {
         if (this.active) return;
         this.active = true;
         this.layerMeshes.forEach(m => m.visible = true);
+        const total = this.layerMeshes.reduce((sum, m) => sum + m.count, 0);
+        decorationBudget.syncCount('grapple_isles', total);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.layerMeshes.forEach(m => m.visible = false);
+        decorationBudget.syncCount('grapple_isles', 0);
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
@@ -160,6 +170,7 @@ export class GrappleIslesSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('grapple_isles', 0);
         this.layerMeshes.forEach(mesh => {
             this.scene.remove(mesh);
             mesh.geometry.dispose();

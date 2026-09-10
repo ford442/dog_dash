@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { time, vec3, color, mix, sin, positionLocal, positionWorld, smoothstep, length, float, uniform } from 'three/tsl';
 import type { ParticleSystem } from './particles';
+import { decorationBudget } from './decoration_budget';
 
 export class ShootingStarsSystem {
     private scene: THREE.Scene;
@@ -22,6 +23,12 @@ export class ShootingStarsSystem {
     constructor(scene: THREE.Scene, particleSystem: ParticleSystem) {
         this.scene = scene;
         this.particleSystem = particleSystem;
+
+        decorationBudget.register('shooting_stars', {
+            label: 'Shooting stars',
+            category: 'effects',
+            maxActive: 25 // fixed count, 1 InstancedMesh
+        });
 
         this.initGeometry();
         this.deactivate();
@@ -124,12 +131,14 @@ export class ShootingStarsSystem {
         for (let i = 0; i < this.count / 2; i++) {
             this.resetStar(i, 0); // Need real cameraX though, will correct in update
         }
+        decorationBudget.syncCount('shooting_stars', this.count);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
+        decorationBudget.syncCount('shooting_stars', 0);
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
@@ -208,6 +217,7 @@ export class ShootingStarsSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('shooting_stars', 0);
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if ((this.mesh.material as THREE.Material).dispose) {

@@ -3,6 +3,7 @@ import { time, color, positionWorld, mix, smoothstep, uniform } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import type { TSLNode, TSLUniform } from './tsl_types';
 import { comboCorridorRandom } from './combo_corridor_rng';
+import { decorationBudget } from './decoration_budget';
 
 export interface ComboCorridorEnvironmentConfig {
     density?: number;
@@ -27,6 +28,11 @@ export class ComboCorridorSystem {
     constructor(scene: THREE.Scene) {
         this.scene = scene;
         this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0)) as TSLUniform<THREE.Vector3>;
+        decorationBudget.register('combo_corridor', {
+            label: 'Combo corridor rings',
+            category: 'background3d',
+            maxActive: 40 // fixed ringCount, 1 InstancedMesh
+        });
         this.initRings();
         this.deactivate();
     }
@@ -75,12 +81,14 @@ export class ComboCorridorSystem {
         if (config?.density !== undefined) {
             this.mesh.scale.setScalar(config.density);
         }
+        decorationBudget.syncCount('combo_corridor', this.ringCount);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
+        decorationBudget.syncCount('combo_corridor', 0);
     }
 
     update(_delta: number, cameraX: number, playerPos?: THREE.Vector3) {
@@ -121,6 +129,7 @@ export class ComboCorridorSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('combo_corridor', 0);
         if (!this.mesh) return;
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();

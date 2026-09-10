@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { time, vec3, color, positionLocal, length, uv, smoothstep, mix, sin } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export type BouncePadConfig = {
     x: number;
@@ -22,6 +23,12 @@ export class BouncePadsSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+
+        decorationBudget.register('bounce_pads', {
+            label: 'Bounce pads',
+            category: 'background3d',
+            maxActive: 50 // pool size, not active count — actual pad count is config-driven (e.g. 2 in level 4)
+        });
 
         const geo = new THREE.CylinderGeometry(2, 2, 0.5, 16);
         geo.translate(0, -0.25, 0); // Origin at top center
@@ -91,12 +98,15 @@ export class BouncePadsSystem {
         if (this.pads.length > 0) {
             this.mesh.instanceMatrix.needsUpdate = true;
         }
+
+        decorationBudget.syncCount('bounce_pads', this.pads.length);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
+        decorationBudget.syncCount('bounce_pads', 0);
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
@@ -130,6 +140,7 @@ export class BouncePadsSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('bounce_pads', 0);
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         (this.mesh.material as THREE.Material).dispose();

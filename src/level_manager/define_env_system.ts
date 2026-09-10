@@ -13,6 +13,7 @@
 import type { LevelConfig, LevelEnvironments } from '../level_config';
 import type { LevelPluginHost, EnvPluginBuilder } from './plugin_host';
 import type { DeferredLoaderContext, DeferredEnvSystemKey, SystemKey } from '../level_env_registry';
+import type { DecorationCategory } from '../decoration_budget';
 
 /** Value type for a given env flag, e.g. `AsteroidFieldEnvironmentConfig` for `'asteroidField'`. */
 type EnvFlagValue<F extends DeferredEnvSystemKey> = NonNullable<LevelEnvironments[F & keyof LevelEnvironments]>;
@@ -30,10 +31,16 @@ type EnvFlagValue<F extends DeferredEnvSystemKey> = NonNullable<LevelEnvironment
  * `host.baseAsteroidDensity`. A narrower `(system) => void` signature (as in
  * the RFC's illustrative example) would not be able to express that honestly.
  *
- * `update`/`cleanup`/`budget` are accepted purely for forward-compatibility
- * with a future per-system update-dispatch loop and decoration-budget wiring
- * (docs/PERFORMANCE_BUDGETS.md). Neither is read by anything this phase —
- * `LevelManager.update()`'s hand-written per-system update calls are untouched.
+ * `update`/`cleanup` are accepted purely for forward-compatibility with a
+ * future per-system update-dispatch loop (docs/PERFORMANCE_BUDGETS.md).
+ * Neither is read by anything this phase — `LevelManager.update()`'s
+ * hand-written per-system update calls are untouched.
+ *
+ * `budget` is required (not just forward-compatible plumbing) so every new
+ * manifest entry states its decoration-budget category/instance estimate up
+ * front — see docs/PERFORMANCE_BUDGETS.md's "Enforcement path" section. It is
+ * still not read by anything at runtime this phase; `env_manifest.ts` itself
+ * remains unconsumed until a later phase makes it the live activation path.
  */
 export type EnvSystemSpec<F extends DeferredEnvSystemKey> = {
     flag: F;
@@ -52,8 +59,13 @@ export type EnvSystemSpec<F extends DeferredEnvSystemKey> = {
     update?: (sys: unknown, delta: number, cameraX: number, playerPos?: unknown) => void;
     /** Forward-compatibility only — not wired to anything this phase. */
     cleanup?: (sys: unknown) => void;
-    /** Forward-compatibility only — not wired to anything this phase. */
-    budget?: { category: string; instances: number };
+    /**
+     * Decoration-budget estimate for this system — structural guard for
+     * *future* manifest entries once a later phase makes this manifest the
+     * live activation path (it is not live yet). Not read by anything this
+     * phase.
+     */
+    budget: { category: DecorationCategory; instances: number };
 };
 
 export type EnvSystemDefinition<F extends DeferredEnvSystemKey> = {
@@ -66,7 +78,7 @@ export type EnvSystemDefinition<F extends DeferredEnvSystemKey> = {
     deactivate: EnvSystemSpec<F>['deactivate'];
     update?: EnvSystemSpec<F>['update'];
     cleanup?: EnvSystemSpec<F>['cleanup'];
-    budget?: EnvSystemSpec<F>['budget'];
+    budget: EnvSystemSpec<F>['budget'];
 };
 
 export function defineEnvSystem<F extends DeferredEnvSystemKey>(spec: EnvSystemSpec<F>): EnvSystemDefinition<F> {

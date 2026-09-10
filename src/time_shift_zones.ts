@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { time, vec3, vec4, color, sin, float, positionLocal } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { decorationBudget } from './decoration_budget';
 
 export type TimeShiftZoneConfig = {
     x: number;
@@ -21,6 +22,11 @@ export class TimeShiftZonesSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
+        decorationBudget.register('time_shift_zones', {
+            label: 'Time-shift zones',
+            category: 'effects',
+            maxActive: 2 // covers max zones.length across level_config.ts (level 4 is the only user, 2 zones)
+        });
         this.deactivate();
     }
 
@@ -32,8 +38,10 @@ export class TimeShiftZonesSystem {
             this.zones = config.zones;
             this.buildMesh();
             this.mesh.visible = true;
+            decorationBudget.syncCount('time_shift_zones', this.zones.length);
         } else {
             this.zones = [];
+            decorationBudget.syncCount('time_shift_zones', 0);
         }
     }
 
@@ -44,6 +52,7 @@ export class TimeShiftZonesSystem {
         if (this.mesh) {
             this.mesh.visible = false;
         }
+        decorationBudget.syncCount('time_shift_zones', 0);
     }
 
     private buildMesh() {
@@ -105,6 +114,7 @@ export class TimeShiftZonesSystem {
     }
 
     cleanup() {
+        decorationBudget.syncCount('time_shift_zones', 0);
         if (this.mesh) {
             this.scene.remove(this.mesh);
             this.mesh.geometry.dispose();

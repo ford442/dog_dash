@@ -21,9 +21,18 @@ type BudgetEntry = DecorationBudgetOptions & {
     currentActive: number;
 };
 
-/** Overlay + verbose logging — off in production unless `?debug`. */
+/**
+ * Overlay + verbose logging — off in production unless `?debug`.
+ *
+ * `import.meta.env` is always defined under Vite (dev server and build), so
+ * `?.DEV` is a no-op there. The optional chaining only matters when this
+ * module is imported outside Vite — e.g. `node --test` for unit coverage
+ * (see tests/unit/decoration_budget_coverage.test.ts) — where
+ * `import.meta.env` itself is `undefined` and a bare `.DEV` access would
+ * throw at import time.
+ */
 export const DECORATION_BUDGET_UI =
-    import.meta.env.DEV || (typeof window !== 'undefined' && hasDebugUrlFlag('debug'));
+    import.meta.env?.DEV || (typeof window !== 'undefined' && hasDebugUrlFlag('debug'));
 
 const CATEGORY_ORDER: DecorationCategory[] = ['foliage', 'creatures', 'effects', 'background3d'];
 
