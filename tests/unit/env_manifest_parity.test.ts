@@ -37,6 +37,7 @@ import { DEFERRED_ENV_FLAGS, DEFERRED_ENV_FLAG_SYSTEM_KEY } from '../../src/leve
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const registrySource = readFileSync(path.join(ROOT, 'src/level_env_registry.ts'), 'utf8');
+const registryDeferredEnvSource = readFileSync(path.join(ROOT, 'src/level_env_registry_deferred_env.ts'), 'utf8');
 
 function parseDeferredEnvPluginOrder(source: string): string[] {
     const match = source.match(/export const DEFERRED_ENV_PLUGIN_ORDER[^=]*=\s*\[([\s\S]*?)\];/);
@@ -56,7 +57,7 @@ function parseRegistrySystemKeys(source: string): Map<string, string> {
 }
 
 const DEFERRED_ENV_PLUGIN_ORDER = parseDeferredEnvPluginOrder(registrySource);
-const REGISTRY_SYSTEM_KEYS = parseRegistrySystemKeys(registrySource);
+const REGISTRY_SYSTEM_KEYS = parseRegistrySystemKeys(registryDeferredEnvSource);
 
 test('env_manifest declares the same flag set as DEFERRED_ENV_FLAGS', () => {
     const manifestFlags = new Set(ENV_SYSTEM_MANIFEST.map((entry) => entry.flag));
