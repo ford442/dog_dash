@@ -463,6 +463,7 @@ export class LevelManager {
         this.crystalChimeManager.clear();
 
         // Newly added to clean up decorative leaks
+        if (this.auroraSystem) this.auroraSystem.cleanup?.();
         if (this.cloudCastlesSystem) this.cloudCastlesSystem.cleanup?.();
         if (this.grappleIslesSystem) this.grappleIslesSystem.cleanup?.();
         if (this.skyRailTerminalSystem) this.skyRailTerminalSystem.cleanup?.();
