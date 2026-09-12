@@ -21,6 +21,7 @@ import { MeshBasicNodeMaterial } from 'three/webgpu';
 import {
     time,
     vec2,
+    vec3,
     vec4,
     color,
     uniform,
@@ -113,7 +114,9 @@ function createDiskMaterial(
         .div(DISK_OUTER_RADIUS - DISK_INNER_RADIUS);
 
     // Counter-rotate the sampling frame so the billow reads as orbital motion.
-    const spin = time.mul(0.18);
+    // Cheap Kepler shear: inner parts spin much faster than outer parts.
+    const keplerShear = float(1.0).sub(normalizedDist).pow(1.5).mul(2.5).add(0.5);
+    const spin = time.mul(0.18).mul(keplerShear);
     const c = cos(spin);
     const s = sin(spin);
     const rotated = vec2(
@@ -139,19 +142,30 @@ function createDiskMaterial(
     const outerFade = smoothstep(0.72, 1.0, normalizedDist).oneMinus();
     const diskMask = innerFade.mul(outerFade);
 
+    // Hotter inner rim + approach-driven intensity
     const hot = color(0xffffff);
+    const superHot = color(0xffffee);
     const mid = color(innerColor);
     const rim = color(outerColor);
     const tint = mix(
-        mix(hot, mid, smoothstep(0.0, 0.35, normalizedDist)),
+        mix(
+            mix(superHot, hot, smoothstep(0.0, 0.1, normalizedDist)),
+            mid,
+            smoothstep(0.1, 0.35, normalizedDist)
+        ),
         rim,
         smoothstep(0.35, 0.85, normalizedDist)
     );
 
-    const intensity = float(0.55).add(intensityUniform.mul(0.9));
+    const approachBoost = intensityUniform.mul(2.0); // Flare up as you approach
+    const intensity = float(0.55).add(approachBoost);
+
+    // Core gets extremely bright (additive blowout)
+    const coreGlow = smoothstep(0.2, 0.0, normalizedDist).mul(approachBoost);
+
     mat.colorNode = vec4(
-        tint.mul(float(1.2).add(billow.mul(0.8))).mul(intensity),
-        billow.mul(diskMask).pow(1.4).mul(intensity)
+        tint.mul(float(1.2).add(billow.mul(0.8))).mul(intensity).add(vec3(coreGlow)),
+        billow.mul(diskMask).pow(1.4).mul(intensity).add(coreGlow)
     );
 
     return mat;
@@ -184,12 +198,19 @@ function createHaloMaterial(
         .sub(EVENT_HORIZON_RADIUS)
         .div(HALO_OUTER_RADIUS - EVENT_HORIZON_RADIUS);
 
-    const ring = smoothstep(0.0, 0.12, normalizedDist)
-        .mul(smoothstep(0.12, 1.0, normalizedDist).oneMinus());
+    // Tighter falloff for a harder photon ring look
+    const ring = smoothstep(0.0, 0.05, normalizedDist)
+        .mul(smoothstep(0.05, 0.4, normalizedDist).oneMinus());
     const shimmer = sin(time.mul(1.4)).mul(0.12).add(1.0);
-    const alpha = ring.mul(0.85).mul(shimmer).mul(float(0.5).add(intensityUniform.mul(0.8)));
 
-    mat.colorNode = vec4(color(tintColor), alpha);
+    // Scale brightness more aggressively on approach
+    const intensity = float(0.8).add(intensityUniform.mul(1.5));
+    const alpha = ring.mul(shimmer).mul(intensity);
+
+    // Slight chromatic fringe: shift the tint color slightly away from the center
+    const fringeColor = mix(color(0xffffff), color(tintColor), smoothstep(0.0, 0.2, normalizedDist));
+
+    mat.colorNode = vec4(fringeColor, alpha);
     return mat;
 }
 

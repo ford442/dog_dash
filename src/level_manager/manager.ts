@@ -415,7 +415,7 @@ export class LevelManager {
         this.spacePetsSwarmSystem.update(delta, cameraX, playerPos);
         this.weatherSystem.update(delta, cameraX, playerPos);
         this.dancingJellyMossSystem.update(delta, cameraX, playerPos);
-        this.dynamicStarfieldSystem.update(delta, cameraX, playerPos);
+        this.dynamicStarfieldSystem.update(delta, cameraX, playerPos, this.galacticCoreSystem ? this.galacticCoreSystem.getStarfieldWarp() : 0);
         this.dayNightCycleSystem.update(delta, cameraX, playerPos);
         if (enabled('cloudCastles') && this.cloudCastlesSystem) this.cloudCastlesSystem.update(delta, cameraX, playerPos);
         if (enabled('grappleIsles') && this.grappleIslesSystem) this.grappleIslesSystem.update(delta, cameraX, playerPos);
