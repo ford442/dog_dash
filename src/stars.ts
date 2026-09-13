@@ -357,7 +357,7 @@ export class StarfieldSystem {
         });
     }
 
-    private updateLayers(deltaTime: number, speedMultiplier: number) {
+    private updateLayers(deltaTime: number, speedMultiplier: number, warp: number = 0) {
         this.currentSpeedMultiplier = speedMultiplier;
         
         this.layers.forEach((layer, layerIdx) => {
@@ -376,6 +376,11 @@ export class StarfieldSystem {
                 const moveSpeed = velocities[i] * (1 + effectiveSpeed * 0.5);
                 positions[i * 3] -= moveSpeed * deltaTime;
                 
+                // Smear toward the core (right) if warp > 0
+                if (warp > 0) {
+                    positions[i * 3] += velocities[i] * warp * deltaTime * 5.0;
+                }
+
                 // Wrap around when off screen
                 if (positions[i * 3] < -this.bounds.x * 1.5) {
                     positions[i * 3] = this.bounds.x * 1.5;
@@ -401,12 +406,12 @@ export class StarfieldSystem {
         });
     }
 
-    public update(deltaTime: number, speedMultiplier: number = 1.0) {
+    public update(deltaTime: number, speedMultiplier: number = 1.0, warp: number = 0) {
         // Clamp deltaTime to avoid jumps
         const dt = Math.min(deltaTime, 0.1);
         
         // Update parallax layers
-        this.updateLayers(dt, speedMultiplier);
+        this.updateLayers(dt, speedMultiplier, warp);
         
         // Update shooting stars
         this.updateShootingStars(dt);
