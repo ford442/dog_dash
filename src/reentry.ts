@@ -148,8 +148,8 @@ export class ReEntrySystem {
             this.streakSpeeds[i] = 40 + Math.random() * 40;
         }
 
-        this.plasmaStreaks.visible = false;
         this.scene.add(this.plasmaStreaks);
+        this.deactivate();
     }
 
     activate() {
@@ -279,5 +279,25 @@ export class ReEntrySystem {
                 }
             }
         });
+    }
+
+    cleanup() {
+        if (this.plasmaStreaks) {
+            this.scene.remove(this.plasmaStreaks);
+            if (this.plasmaStreaks.geometry) this.plasmaStreaks.geometry.dispose();
+            if (this.plasmaStreaks.material) (this.plasmaStreaks.material as any).dispose?.();
+        }
+
+        if (this.heatDistortionMesh) {
+            this.camera.remove(this.heatDistortionMesh);
+            if (this.heatDistortionMesh.geometry) this.heatDistortionMesh.geometry.dispose();
+            if (this.heatDistortionMesh.material) (this.heatDistortionMesh.material as any).dispose?.();
+        }
+
+        if (this.heatGlowMesh) {
+            this.camera.remove(this.heatGlowMesh);
+            if (this.heatGlowMesh.geometry) this.heatGlowMesh.geometry.dispose();
+            if (this.heatGlowMesh.material) (this.heatGlowMesh.material as any).dispose?.();
+        }
     }
 }
