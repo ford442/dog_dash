@@ -268,4 +268,14 @@ export class AuroraSystem {
             this.mesh.instanceMatrix.needsUpdate = true;
         }
     }
+
+    cleanup() {
+        if (this.mesh) {
+            this.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            if ((this.mesh.material as any).dispose) {
+                (this.mesh.material as any).dispose();
+            }
+        }
+    }
 }
