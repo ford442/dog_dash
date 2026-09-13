@@ -361,6 +361,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             butterflySwarm: true,
             shootingStars: true,
             clouds: { density: 3 },
+            godRays: { enabled: true, density: 0.8, baseIntensity: 0.6, color: 0xffffff, speedMultiplier: 1.0 },
             airTokens: {
                 tokens: [
                     { x: 70, y: 6 },
