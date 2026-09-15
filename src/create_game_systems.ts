@@ -1,4 +1,5 @@
 import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
+import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { SpaceGardenSystem } from './space_garden';
 import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
@@ -26,6 +27,7 @@ import {
     createCosmicDustSystemStub,
     createTimeShiftZonesSystemStub,
     createFossilizedSpaceWhalesSystemStub,
+    createHyperspaceTunnelSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -186,6 +188,7 @@ export type GameSystems = {
     windCurrentsSystem: import('./wind_currents').WindCurrentsSystem;
     timeShiftZonesSystem: import('./time_shift_zones').TimeShiftZonesSystem;
     fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem;
+    hyperspaceTunnelSystem: HyperspaceTunnelSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -435,6 +438,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const windCurrentsSystem = createWindCurrentsSystemStub();
     const timeShiftZonesSystem = createTimeShiftZonesSystemStub();
     const fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem = createFossilizedSpaceWhalesSystemStub();
+    const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -506,6 +510,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         windCurrentsSystem,
         timeShiftZonesSystem,
         fossilizedSpaceWhalesSystem,
+        hyperspaceTunnelSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,

@@ -111,6 +111,7 @@ export type LevelEnvironmentPorts = {
     flowerConstellationsSystem: { activate: (config?: any, levelLength?: number) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     hideAndSeekStarsSystem: { activate: () => void; deactivate: () => void; update: (delta: number, playerPos?: THREE.Vector3) => void; };
     fossilizedSpaceWhalesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    hyperspaceTunnelSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number) => void; cleanup: () => void; };
     comboCorridorSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     shootingStarsSystem?: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     bouncePadsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
@@ -153,4 +154,5 @@ export type LevelManagerOptions = {
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     shootingStarsSystem?: LevelEnvironmentPorts['shootingStarsSystem'];
     fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
+    hyperspaceTunnelSystem: LevelEnvironmentPorts['hyperspaceTunnelSystem'];
 };

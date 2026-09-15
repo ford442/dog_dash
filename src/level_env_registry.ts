@@ -150,7 +150,8 @@ export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
     'aerialGuardPatrol',
     'airTokens',
     'shootingStars',
-    'fossilizedSpaceWhales'
+    'fossilizedSpaceWhales',
+    'hyperspaceTunnel'
 ];
 
 export function buildDeferredEnvPlugins(

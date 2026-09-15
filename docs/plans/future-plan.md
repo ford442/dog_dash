@@ -113,3 +113,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - A wide, flat RingGeometry representing the accretion disk, using TSL shaders with radial noise and fiery colors.
 - Additive blending for the disk, and a secondary "halo" sprite to simulate gravitational lensing glow around the edge.
 - The disk rotates and billows using procedural noise and time.
+
+11. Hyperspace / Star-Rush Tunnel
+
+**The Technique:** Concentric rings or a cylindrical tunnel rushing past, creating a star-rush corridor with chromatic streaks. Intensity and speed are tied to player's boost or forward momentum to give an intense feeling of depth and warp speed.
+
+**Specific Example:**
+- Rushing through a jump gate or warp corridor (e.g. Star Fox, After Burner).
+- Uses `InstancedMesh` with TSL `MeshBasicNodeMaterial` to render high-speed concentric rings.
+- Rings warp and stretch via shaders, reacting to the player's speed.
+- Additive blending for a neon, chromatic streak effect that enhances the rush feeling.

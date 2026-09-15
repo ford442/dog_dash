@@ -705,5 +705,19 @@ export const DEFERRED_ENV_REGISTRY: {
             activate: (config) => host.fossilizedSpaceWhalesSystem.activate(objectConfig(config)),
             deactivate: () => host.fossilizedSpaceWhalesSystem.deactivate()
         })
+    },
+    hyperspaceTunnel: {
+        flag: 'hyperspaceTunnel',
+        systemKey: 'hyperspaceTunnel',
+        load: () => import('./hyperspace_tunnel'),
+        install: (ctx, mod) => {
+            const { HyperspaceTunnelSystem } = mod as typeof import('./hyperspace_tunnel');
+            ctx.installEnvPartial({ hyperspaceTunnelSystem: new HyperspaceTunnelSystem(ctx.scene) });
+        },
+        plugin: (host) => ({
+            flag: 'hyperspaceTunnel',
+            activate: (config) => host.hyperspaceTunnelSystem.activate(objectConfig(config)),
+            deactivate: () => host.hyperspaceTunnelSystem.deactivate()
+        })
     }
 };

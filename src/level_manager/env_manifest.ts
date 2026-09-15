@@ -648,6 +648,19 @@ export const fossilizedSpaceWhales = defineEnvSystem<'fossilizedSpaceWhales'>({
     deactivate: (host) => host.fossilizedSpaceWhalesSystem.deactivate()
 });
 
+export const hyperspaceTunnel = defineEnvSystem<'hyperspaceTunnel'>({
+    flag: 'hyperspaceTunnel',
+    budget: { category: 'background3d', instances: 80 },
+    systemKey: 'hyperspaceTunnel',
+    load: () => import('../hyperspace_tunnel'),
+    install: (ctx, mod) => {
+        const { HyperspaceTunnelSystem } = mod as typeof import('../hyperspace_tunnel');
+        ctx.installEnvPartial({ hyperspaceTunnelSystem: new HyperspaceTunnelSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.hyperspaceTunnelSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.hyperspaceTunnelSystem.deactivate()
+});
+
 /**
  * Declaration order matches `DEFERRED_ENV_PLUGIN_ORDER` in `level_env_registry.ts`,
  * with `dreamPortals` and `aquaticLife` (load-only, no plugin order) inserted
@@ -697,7 +710,8 @@ export const ENV_SYSTEM_MANIFEST = [
     aerialGuardPatrol,
     airTokens,
     shootingStars,
-    fossilizedSpaceWhales
+    fossilizedSpaceWhales,
+    hyperspaceTunnel
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
