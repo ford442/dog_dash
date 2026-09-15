@@ -107,6 +107,7 @@ export class LevelManager {
     comboCorridorSystem: LevelEnvironmentPorts['comboCorridorSystem'];
     skyRailTerminalSystem: LevelEnvironmentPorts['skyRailTerminalSystem'];
     fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
+    hyperspaceTunnelSystem: LevelEnvironmentPorts['hyperspaceTunnelSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -173,6 +174,7 @@ export class LevelManager {
         this.comboCorridorSystem = options.env.comboCorridorSystem;
         this.skyRailTerminalSystem = options.env.skyRailTerminalSystem;
         this.fossilizedSpaceWhalesSystem = options.env.fossilizedSpaceWhalesSystem;
+        this.hyperspaceTunnelSystem = options.env.hyperspaceTunnelSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -409,6 +411,7 @@ export class LevelManager {
         if (enabled('voidJellyfish') && this.voidJellyfishSystem) this.voidJellyfishSystem.update(delta, cameraX, playerPos);
         if (this.blackHoleSystem) this.blackHoleSystem.update(delta, cameraX, playerPos);
         if (this.galacticCoreSystem) this.galacticCoreSystem.update(delta, cameraX, playerPos);
+        if (enabled('hyperspaceTunnel') && this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.update(delta, cameraX);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -472,6 +475,8 @@ export class LevelManager {
         if (this.spacePetsSwarmSystem) this.spacePetsSwarmSystem.cleanup?.();
         if (this.windCurrentsSystem) this.windCurrentsSystem.cleanup?.();
         if (this.shootingStarsSystem) this.shootingStarsSystem.cleanup?.();
+        if (this.fossilizedSpaceWhalesSystem) this.fossilizedSpaceWhalesSystem.cleanup?.();
+        if (this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

@@ -207,6 +207,7 @@ export type LevelEnvironments = {
     skyRailTerminal?: boolean | import('./sky_rail_terminal').SkyRailConfig;
     comboCorridor?: boolean | { density?: number };
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
+    hyperspaceTunnel?: boolean | import('./hyperspace_tunnel').HyperspaceTunnelConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -604,6 +605,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                     { x: 1400, y: 10, z: -5, width: 80, searchRadius: 15 }
                 ]
             },
+            hyperspaceTunnel: { speed: 1.5, density: 1.0 },
             timeShiftZones: {
                 zones: [
                     { x: 300, y: 0, width: 80, height: 25 },

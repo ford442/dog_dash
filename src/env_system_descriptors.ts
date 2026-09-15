@@ -400,6 +400,14 @@ export const ENV_SYSTEM_DESCRIPTORS: Record<EnvDescriptorKey, EnvSystemDescripto
         paletteTags: ['cool', 'monochrome'],
         difficultyWeight: 1
     }),
+    hyperspaceTunnel: defineEnvSystem({
+        key: 'hyperspaceTunnel',
+        label: 'Hyperspace Tunnel',
+        role: 'backdrop',
+        biomes: ['industrial'],
+        paletteTags: ['neon'],
+        difficultyWeight: 2
+    }),
     aurora: defineEnvSystem({
         key: 'aurora',
         label: 'Aurora',

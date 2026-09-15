@@ -602,3 +602,12 @@ export function createMagicPaintbrushSystemStub(): import('./magic_paintbrush').
         clear: noop
     } as unknown as import('./magic_paintbrush').MagicPaintbrushSystem;
 }
+
+export function createHyperspaceTunnelSystemStub(): import('./hyperspace_tunnel').HyperspaceTunnelSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: () => { }
+    } as unknown as import('./hyperspace_tunnel').HyperspaceTunnelSystem;
+}
