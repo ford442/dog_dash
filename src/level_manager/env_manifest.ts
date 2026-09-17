@@ -1,18 +1,10 @@
 /**
- * Phase 1 of the env-system-registration RFC: one manifest entry per deferred
- * env feature, built with `defineEnvSystem`. This is a PARALLEL structure —
- * it faithfully reproduces the `load`/`install`/`activate`/`deactivate`
- * behaviour already declared in `../level_env_registry.ts`
- * (`DEFERRED_ENV_REGISTRY`), but nothing imports it yet. `level_env_registry.ts`
- * remains the real source of truth this phase; see
- * `tests/unit/env_manifest_parity.test.ts` for the assertion that keeps the
- * two in sync.
+ * Live deferred-env manifest. `level_env_registry.ts` loads plugins and WASM
+ * chunks from `ENV_SYSTEM_MANIFEST` — do not re-declare the same flags in a
+ * second table.
  *
- * Declaration order below matches `DEFERRED_ENV_PLUGIN_ORDER` (with the two
- * load-only flags, `dreamPortals` and `aquaticLife`, inserted next to the
- * neighbours they sit beside in `DEFERRED_ENV_REGISTRY`'s declaration order —
- * they have no activate/deactivate wiring and are excluded from plugin-order
- * comparisons).
+ * Declaration order (minus load-only `dreamPortals` / `aquaticLife`) is the
+ * plugin activation order.
  */
 import { defineEnvSystem } from './define_env_system';
 import type { AsteroidFieldEnvironmentConfig } from '../level_config';
@@ -28,6 +20,11 @@ function densityFromConfig(value: unknown): number | undefined {
 
 export const dynamicStarfield = defineEnvSystem<'dynamicStarfield'>({
     flag: 'dynamicStarfield',
+    label: 'Dynamic Starfield',
+    role: 'backdrop',
+    biomes: ['nebula', 'industrial', 'biological', 'crystalline', 'candy'],
+    paletteTags: ['monochrome', 'cool'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 800 }, // 4 parallax layers, 100+200+300+200 (dynamic_starfield.ts)
     load: () => import('../dynamic_starfield'),
     install: (ctx, mod) => {
@@ -40,6 +37,11 @@ export const dynamicStarfield = defineEnvSystem<'dynamicStarfield'>({
 
 export const dayNightCycle = defineEnvSystem<'dayNightCycle'>({
     flag: 'dayNightCycle',
+    label: 'Day/Night Cycle',
+    role: 'backdrop',
+    biomes: ['candy'],
+    paletteTags: ['warm', 'cool'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 900 }, // 3 star layers x starCountPerLayer=300 (day_night_cycle.ts)
     load: () => import('../day_night_cycle'),
     install: (ctx, mod) => {
@@ -52,6 +54,11 @@ export const dayNightCycle = defineEnvSystem<'dayNightCycle'>({
 
 export const candyPlanetRing = defineEnvSystem<'candyPlanetRing'>({
     flag: 'candyPlanetRing',
+    label: 'Candy Planet Ring',
+    role: 'backdrop',
+    biomes: ['candy', 'nebula'],
+    paletteTags: ['pastel', 'neon'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 77 }, // 3 candy layers, 12+25+40 (candy_field_system.ts)
     load: () => import('../candy_obstacles/candy_field_system'),
     install: (ctx, mod) => {
@@ -64,6 +71,11 @@ export const candyPlanetRing = defineEnvSystem<'candyPlanetRing'>({
 
 export const pastelNebula = defineEnvSystem<'pastelNebula'>({
     flag: 'pastelNebula',
+    label: 'Pastel Nebula',
+    role: 'backdrop',
+    biomes: ['candy'],
+    paletteTags: ['pastel'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 125 }, // 3 layers, 25+20+80 (pastel_nebula.ts)
     load: () => import('../pastel_nebula'),
     install: (ctx, mod) => {
@@ -78,6 +90,11 @@ export const pastelNebula = defineEnvSystem<'pastelNebula'>({
 
 export const candyField = defineEnvSystem<'candyField'>({
     flag: 'candyField',
+    label: 'Candy Field',
+    role: 'backdrop',
+    biomes: ['candy', 'nebula'],
+    paletteTags: ['pastel', 'neon'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 77 }, // same underlying candyPlanetRing system (candy_field_system.ts)
     systemKey: 'candyPlanetRing',
     load: () => import('../candy_obstacles/candy_field_system'),
@@ -91,6 +108,11 @@ export const candyField = defineEnvSystem<'candyField'>({
 
 export const wishLanterns = defineEnvSystem<'wishLanterns'>({
     flag: 'wishLanterns',
+    label: 'Wish Lanterns',
+    role: 'flavor',
+    biomes: ['candy'],
+    paletteTags: ['warm', 'pastel'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 80 }, // fixed count (wish_lanterns.ts)
     load: () => import('../wish_lanterns'),
     install: (ctx, mod) => {
@@ -103,6 +125,11 @@ export const wishLanterns = defineEnvSystem<'wishLanterns'>({
 
 export const spacePetsSwarm = defineEnvSystem<'spacePetsSwarm'>({
     flag: 'spacePetsSwarm',
+    label: 'Space Pets Swarm',
+    role: 'flavor',
+    biomes: ['candy'],
+    paletteTags: ['pastel'],
+    difficultyWeight: 1,
     budget: { category: 'creatures', instances: 60 }, // fixed count (space_pets_swarm.ts)
     load: () => import('../space_pets_swarm'),
     install: (ctx, mod) => {
@@ -117,6 +144,11 @@ export const spacePetsSwarm = defineEnvSystem<'spacePetsSwarm'>({
 
 export const blackHole = defineEnvSystem<'blackHole'>({
     flag: 'blackHole',
+    label: 'Black Hole',
+    role: 'hazard',
+    biomes: ['nebula'],
+    paletteTags: ['monochrome', 'cool'],
+    difficultyWeight: 4,
     budget: { category: 'background3d', instances: 5 }, // hero set-piece: event horizon, disk, halo, lensing, shockwave (black_hole.ts)
     load: () => import('../black_hole'),
     install: (ctx, mod) => {
@@ -129,6 +161,11 @@ export const blackHole = defineEnvSystem<'blackHole'>({
 
 export const galacticCore = defineEnvSystem<'galacticCore'>({
     flag: 'galacticCore',
+    label: 'Galactic Core',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['warm', 'iridescent'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 4 }, // finale set-piece, 4 meshes (already on the registrar as `galactic_core`)
     load: () => import('../galactic_core'),
     install: (ctx, mod) => {
@@ -140,23 +177,19 @@ export const galacticCore = defineEnvSystem<'galacticCore'>({
 });
 
 /**
- * Load-only: no activate/deactivate wiring (matches DEFERRED_ENV_REGISTRY.dreamPortals).
+ * Load-only: no activate/deactivate wiring.
  *
- * Deviation from `DEFERRED_ENV_REGISTRY.dreamPortals`: the real registry
- * statically imports `createDreamPortalCallbacks` from `../main/dream_portal_update`
- * at module scope. That module has a real (non-type) transitive import of
- * `../scene_context`, which constructs a live THREE scene/camera and touches
- * `document`/`window` at import time — safe in a browser, but it means the
- * whole *registry module* can never be imported under `node --test`. Since
- * `env_manifest.ts` is meant to be test-importable (see
- * `tests/unit/env_manifest_parity.test.ts`), this entry dynamically imports
- * `dream_portal_update` inside `install` instead of at module scope. The
- * awaited call is otherwise identical — same constructor args, same
- * `assignGameSystem` call — so runtime behavior is unchanged, only the
- * chunk boundary moves.
+ * Dynamically imports `dream_portal_update` inside `install` so this module
+ * stays importable under `node --test` (`dream_portal_update` pulls in
+ * `scene_context`, which touches `document` at import time).
  */
 export const dreamPortals = defineEnvSystem<'dreamPortals'>({
     flag: 'dreamPortals',
+    label: 'Dream Portals',
+    role: 'flavor',
+    biomes: ['candy', 'nebula', 'crystalline'],
+    paletteTags: ['iridescent', 'pastel'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 27 }, // dream_portal (3) + dream_room_props (18 toys + 4 hazards + 2), both already on the registrar
     load: () => import('../dream_portal'),
     install: async (ctx, mod) => {
@@ -170,6 +203,11 @@ export const dreamPortals = defineEnvSystem<'dreamPortals'>({
 
 export const industrial = defineEnvSystem<'industrial'>({
     flag: 'industrial',
+    label: 'Industrial Background',
+    role: 'backdrop',
+    biomes: ['industrial'],
+    paletteTags: ['warm', 'monochrome'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 102 }, // 8 layers summed, 20+30+12+15+6+6+5+8 (industrial_background/system.ts)
     load: () => import('../industrial_background'),
     install: (ctx, mod) => {
@@ -184,6 +222,11 @@ export const industrial = defineEnvSystem<'industrial'>({
 
 export const waterfall = defineEnvSystem<'waterfall'>({
     flag: 'waterfall',
+    label: 'Waterfall',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['cool'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 300 }, // stream (100) + mist particles (200) (waterfall.ts)
     load: () => import('../waterfall'),
     install: (ctx, mod) => {
@@ -201,6 +244,11 @@ export const waterfall = defineEnvSystem<'waterfall'>({
 
 export const planetaryHorizon = defineEnvSystem<'planetaryHorizon'>({
     flag: 'planetaryHorizon',
+    label: 'Planetary Horizon',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['warm', 'cool'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 7 }, // hero set-piece: horizon, planet, clouds, atmosphere, rings, moon-gate ring/core (planetary_horizon.ts)
     load: () => import('../planetary_horizon'),
     install: (ctx, mod) => {
@@ -218,6 +266,11 @@ export const planetaryHorizon = defineEnvSystem<'planetaryHorizon'>({
 
 export const moonPalace = defineEnvSystem<'moonPalace'>({
     flag: 'moonPalace',
+    label: 'Moon Palace',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['cool', 'monochrome'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 117 }, // windows (100) + 2 more InstancedMesh pools (5 + 12) (moon_palace.ts)
     load: () => import('../moon_palace'),
     install: (ctx, mod) => {
@@ -235,6 +288,11 @@ export const moonPalace = defineEnvSystem<'moonPalace'>({
 
 export const reEntry = defineEnvSystem<'reEntry'>({
     flag: 'reEntry',
+    label: 'Re-Entry',
+    role: 'hazard',
+    biomes: ['nebula'],
+    paletteTags: ['warm'],
+    difficultyWeight: 3,
     budget: { category: 'effects', instances: 50 }, // fixed streakCount (reentry.ts)
     load: () => import('../reentry'),
     install: (ctx, mod) => {
@@ -250,6 +308,11 @@ export const reEntry = defineEnvSystem<'reEntry'>({
 
 export const biological = defineEnvSystem<'biological'>({
     flag: 'biological',
+    label: 'Biological Background',
+    role: 'backdrop',
+    biomes: ['biological'],
+    paletteTags: ['iridescent', 'cool'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 70 }, // 2 InstancedMesh groups, 40+30 (biological_background.ts)
     load: () => import('../biological_background'),
     install: (ctx, mod) => {
@@ -262,6 +325,11 @@ export const biological = defineEnvSystem<'biological'>({
 
 export const nebula = defineEnvSystem<'nebula'>({
     flag: 'nebula',
+    label: 'Nebula',
+    role: 'backdrop',
+    biomes: ['nebula', 'biological'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 119 }, // cloud_puffs (45) + energy_motes (50) + ribbons (24), all already on the registrar
     load: () => import('../nebula'),
     install: (ctx, mod) => {
@@ -282,6 +350,11 @@ export const nebula = defineEnvSystem<'nebula'>({
 
 export const nebulaRibbons = defineEnvSystem<'nebulaRibbons'>({
     flag: 'nebulaRibbons',
+    label: 'Nebula Ribbons',
+    role: 'backdrop',
+    biomes: ['nebula', 'biological', 'crystalline'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 24 }, // same nebula system, ribbons only (already on the registrar as `nebula_ribbons`)
     systemKey: 'nebula',
     load: () => import('../nebula'),
@@ -297,6 +370,11 @@ export const nebulaRibbons = defineEnvSystem<'nebulaRibbons'>({
 
 export const cosmicDust = defineEnvSystem<'cosmicDust'>({
     flag: 'cosmicDust',
+    label: 'Cosmic Dust',
+    role: 'backdrop',
+    biomes: ['nebula', 'biological'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 2000 }, // fixed particle count (cosmic_dust.ts)
     load: () => import('../cosmic_dust'),
     install: (ctx, mod) => {
@@ -317,6 +395,11 @@ export const cosmicDust = defineEnvSystem<'cosmicDust'>({
 
 export const godRays = defineEnvSystem<'godRays'>({
     flag: 'godRays',
+    label: 'God Rays',
+    role: 'backdrop',
+    biomes: ['candy', 'nebula', 'biological'],
+    paletteTags: ['warm'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 20 }, // fixed maxCount (godrays.ts)
     load: () => import('../godrays'),
     install: (ctx, mod) => {
@@ -329,6 +412,11 @@ export const godRays = defineEnvSystem<'godRays'>({
 
 export const aurora = defineEnvSystem<'aurora'>({
     flag: 'aurora',
+    label: 'Aurora',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 10 }, // fixed maxCount ribbons (aurora.ts)
     load: () => import('../aurora'),
     install: (ctx, mod) => {
@@ -343,6 +431,11 @@ export const aurora = defineEnvSystem<'aurora'>({
 
 export const lightning = defineEnvSystem<'lightning'>({
     flag: 'lightning',
+    label: 'Lightning',
+    role: 'hazard',
+    biomes: ['candy', 'nebula', 'biological'],
+    paletteTags: ['monochrome', 'neon'],
+    difficultyWeight: 2,
     budget: { category: 'effects', instances: 20 }, // 2 InstancedMesh classes, count=10 default each (lightning_bolt.ts)
     load: () => import('../lightning_bolt'),
     install: (ctx, mod) => {
@@ -358,6 +451,11 @@ export const lightning = defineEnvSystem<'lightning'>({
 
 export const asteroidField = defineEnvSystem<'asteroidField'>({
     flag: 'asteroidField',
+    label: 'Asteroid Field',
+    role: 'hazard',
+    biomes: ['nebula', 'industrial', 'biological', 'crystalline', 'candy'],
+    paletteTags: ['monochrome', 'warm'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 135 }, // 3 layers, 15+40+80 maxCount (asteroid_field.ts)
     load: () => import('../asteroid_field'),
     install: (ctx, mod) => {
@@ -381,6 +479,11 @@ export const asteroidField = defineEnvSystem<'asteroidField'>({
 
 export const ghostDebris = defineEnvSystem<'ghostDebris'>({
     flag: 'ghostDebris',
+    label: 'Ghost Debris',
+    role: 'hazard',
+    biomes: ['nebula'],
+    paletteTags: ['monochrome', 'cool'],
+    difficultyWeight: 3,
     budget: { category: 'background3d', instances: 100 }, // fixed count default, matches level_config.ts density:100 (ghost_debris.ts)
     load: () => import('../ghost_debris'),
     install: (ctx, mod) => {
@@ -397,6 +500,11 @@ export const ghostDebris = defineEnvSystem<'ghostDebris'>({
 
 export const voidJellyfish = defineEnvSystem<'voidJellyfish'>({
     flag: 'voidJellyfish',
+    label: 'Void Jellyfish',
+    role: 'flavor',
+    biomes: ['biological', 'crystalline'],
+    paletteTags: ['iridescent', 'cool'],
+    difficultyWeight: 1,
     budget: { category: 'creatures', instances: 60 }, // fixed MAX_INSTANCES pool (void_jellyfish.ts)
     load: () => import('../void_jellyfish'),
     install: (ctx, mod) => {
@@ -411,9 +519,14 @@ export const voidJellyfish = defineEnvSystem<'voidJellyfish'>({
     deactivate: (host) => host.voidJellyfishSystem.deactivate()
 });
 
-/** Load-only: no activate/deactivate wiring (matches DEFERRED_ENV_REGISTRY.aquaticLife). */
+/** Load-only: no activate/deactivate wiring. */
 export const aquaticLife = defineEnvSystem<'aquaticLife'>({
     flag: 'aquaticLife',
+    label: 'Aquatic Life',
+    role: 'flavor',
+    biomes: ['crystalline'],
+    paletteTags: ['cool'],
+    difficultyWeight: 1,
     budget: { category: 'creatures', instances: 40 }, // rough estimate (aquatic_life.ts); load-only flag, no activate/deactivate
     load: () => import('../aquatic_life'),
     install: (ctx, mod) => {
@@ -426,6 +539,11 @@ export const aquaticLife = defineEnvSystem<'aquaticLife'>({
 
 export const meteorShower = defineEnvSystem<'meteorShower'>({
     flag: 'meteorShower',
+    label: 'Meteor Shower',
+    role: 'hazard',
+    biomes: ['nebula'],
+    paletteTags: ['warm'],
+    difficultyWeight: 3,
     budget: { category: 'effects', instances: 95 }, // 3 depth layers, 15+30+50 (meteor_shower.ts)
     load: () => import('../meteor_shower'),
     install: (ctx, mod) => {
@@ -440,6 +558,11 @@ export const meteorShower = defineEnvSystem<'meteorShower'>({
 
 export const dancingJellyMoss = defineEnvSystem<'dancingJellyMoss'>({
     flag: 'dancingJellyMoss',
+    label: 'Dancing Jelly Moss',
+    role: 'flavor',
+    biomes: ['candy', 'biological'],
+    paletteTags: ['iridescent', 'pastel'],
+    difficultyWeight: 1,
     budget: { category: 'foliage', instances: 800 }, // moss (200) + fairy lights (mossCount*3=600) fixed pools (dancing_jelly_moss.ts)
     load: () => import('../dancing_jelly_moss'),
     install: (ctx, mod) => {
@@ -452,6 +575,11 @@ export const dancingJellyMoss = defineEnvSystem<'dancingJellyMoss'>({
 
 export const weather = defineEnvSystem<'weather'>({
     flag: 'weather',
+    label: 'Weather',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['cool', 'monochrome'],
+    difficultyWeight: 2,
     budget: { category: 'effects', instances: 2000 }, // fixed rain/snow particle count (weather_system.ts)
     load: () => import('../weather_system'),
     install: (ctx, mod) => {
@@ -464,6 +592,11 @@ export const weather = defineEnvSystem<'weather'>({
 
 export const singingGeodes = defineEnvSystem<'singingGeodes'>({
     flag: 'singingGeodes',
+    label: 'Singing Geodes',
+    role: 'flavor',
+    biomes: ['biological', 'crystalline'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 80 }, // matches `singing_geodes` decoration_budget registration
     load: () => import('../singing_geodes'),
     install: (ctx, mod) => {
@@ -478,6 +611,11 @@ export const singingGeodes = defineEnvSystem<'singingGeodes'>({
 
 export const cloudCastles = defineEnvSystem<'cloudCastles'>({
     flag: 'cloudCastles',
+    label: 'Cloud Castles',
+    role: 'flavor',
+    biomes: ['candy', 'biological'],
+    paletteTags: ['pastel'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 20 }, // matches `cloud_castles` decoration_budget registration
     load: () => import('../cloud_castles_system'),
     install: (ctx, mod) => {
@@ -490,6 +628,11 @@ export const cloudCastles = defineEnvSystem<'cloudCastles'>({
 
 export const grappleIsles = defineEnvSystem<'grappleIsles'>({
     flag: 'grappleIsles',
+    label: 'Grapple Isles',
+    role: 'traversal',
+    biomes: ['candy'],
+    paletteTags: ['pastel', 'neon'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 50 }, // matches `grapple_isles` decoration_budget registration
     load: () => import('../grapple_isles'),
     install: (ctx, mod) => {
@@ -502,6 +645,11 @@ export const grappleIsles = defineEnvSystem<'grappleIsles'>({
 
 export const skyRailTerminal = defineEnvSystem<'skyRailTerminal'>({
     flag: 'skyRailTerminal',
+    label: 'Sky Rail Terminal',
+    role: 'traversal',
+    biomes: ['industrial'],
+    paletteTags: ['cool'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 70 }, // rails (60) + terminals (10), matches the two `sky_rail_terminal_*` decoration_budget ids summed
     load: () => import('../sky_rail_terminal'),
     install: (ctx, mod) => {
@@ -514,6 +662,11 @@ export const skyRailTerminal = defineEnvSystem<'skyRailTerminal'>({
 
 export const windCurrents = defineEnvSystem<'windCurrents'>({
     flag: 'windCurrents',
+    label: 'Wind Currents',
+    role: 'traversal',
+    biomes: ['nebula'],
+    paletteTags: ['cool'],
+    difficultyWeight: 2,
     budget: { category: 'effects', instances: 800 }, // matches `wind_currents` decoration_budget registration (level 2's 2 zones, 400 each)
     load: () => import('../wind_currents'),
     install: (ctx, mod) => {
@@ -526,6 +679,11 @@ export const windCurrents = defineEnvSystem<'windCurrents'>({
 
 export const flowerConstellations = defineEnvSystem<'flowerConstellations'>({
     flag: 'flowerConstellations',
+    label: 'Flower Constellations',
+    role: 'flavor',
+    biomes: ['candy', 'nebula'],
+    paletteTags: ['pastel', 'neon'],
+    difficultyWeight: 1,
     budget: { category: 'foliage', instances: 15 }, // matches `flower_constellations` decoration_budget registration
     load: () => import('../flower_constellations_system'),
     install: (ctx, mod) => {
@@ -540,6 +698,11 @@ export const flowerConstellations = defineEnvSystem<'flowerConstellations'>({
 
 export const hideAndSeekStars = defineEnvSystem<'hideAndSeekStars'>({
     flag: 'hideAndSeekStars',
+    label: 'Hide-and-Seek Stars',
+    role: 'flavor',
+    biomes: ['candy', 'nebula'],
+    paletteTags: ['pastel', 'warm'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 80 }, // fixed count (hide_and_seek_stars.ts)
     load: () => import('../hide_and_seek_stars'),
     install: (ctx, mod) => {
@@ -552,6 +715,11 @@ export const hideAndSeekStars = defineEnvSystem<'hideAndSeekStars'>({
 
 export const bouncePads = defineEnvSystem<'bouncePads'>({
     flag: 'bouncePads',
+    label: 'Bounce Pads',
+    role: 'traversal',
+    biomes: ['industrial'],
+    paletteTags: ['neon', 'warm'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 50 }, // matches `bounce_pads` decoration_budget registration (pool size)
     load: () => import('../bounce_pads'),
     install: (ctx, mod) => {
@@ -564,6 +732,11 @@ export const bouncePads = defineEnvSystem<'bouncePads'>({
 
 export const spaceGarden = defineEnvSystem<'spaceGarden'>({
     flag: 'spaceGarden',
+    label: 'Space Garden',
+    role: 'flavor',
+    biomes: ['candy'],
+    paletteTags: ['pastel'],
+    difficultyWeight: 1,
     budget: { category: 'foliage', instances: 80 }, // matches `space_garden` decoration_budget registration
     load: () => import('../space_garden'),
     install: (ctx, mod) => {
@@ -576,6 +749,11 @@ export const spaceGarden = defineEnvSystem<'spaceGarden'>({
 
 export const comboCorridor = defineEnvSystem<'comboCorridor'>({
     flag: 'comboCorridor',
+    label: 'Combo Corridor',
+    role: 'traversal',
+    biomes: ['industrial', 'biological'],
+    paletteTags: ['neon'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 40 }, // matches `combo_corridor` decoration_budget registration
     load: () => import('../combo_corridor'),
     install: (ctx, mod) => {
@@ -588,6 +766,11 @@ export const comboCorridor = defineEnvSystem<'comboCorridor'>({
 
 export const timeShiftZones = defineEnvSystem<'timeShiftZones'>({
     flag: 'timeShiftZones',
+    label: 'Time Shift Zones',
+    role: 'traversal',
+    biomes: ['industrial'],
+    paletteTags: ['neon', 'cool'],
+    difficultyWeight: 3,
     budget: { category: 'effects', instances: 2 }, // matches `time_shift_zones` decoration_budget registration
     load: () => import('../time_shift_zones'),
     install: (ctx, mod) => {
@@ -600,6 +783,11 @@ export const timeShiftZones = defineEnvSystem<'timeShiftZones'>({
 
 export const aerialGuardPatrol = defineEnvSystem<'aerialGuardPatrol'>({
     flag: 'aerialGuardPatrol',
+    label: 'Aerial Guard Patrol',
+    role: 'hazard',
+    biomes: ['industrial'],
+    paletteTags: ['monochrome', 'warm'],
+    difficultyWeight: 3,
     budget: { category: 'creatures', instances: 20 }, // matches `aerial_guard_patrol` decoration_budget registration (pool size)
     load: () => import('../aerial_guard_patrol'),
     install: (ctx, mod) => {
@@ -612,6 +800,11 @@ export const aerialGuardPatrol = defineEnvSystem<'aerialGuardPatrol'>({
 
 export const airTokens = defineEnvSystem<'airTokens'>({
     flag: 'airTokens',
+    label: 'Air Tokens',
+    role: 'traversal',
+    biomes: ['candy'],
+    paletteTags: ['neon', 'pastel'],
+    difficultyWeight: 2,
     budget: { category: 'effects', instances: 32 }, // matches `air_tokens` decoration_budget registration (registerDefaultDecorationBudgets)
     load: () => import('../air_tokens'),
     install: (ctx, mod) => {
@@ -624,6 +817,11 @@ export const airTokens = defineEnvSystem<'airTokens'>({
 
 export const shootingStars = defineEnvSystem<'shootingStars'>({
     flag: 'shootingStars',
+    label: 'Shooting Stars',
+    role: 'flavor',
+    biomes: ['candy', 'nebula'],
+    paletteTags: ['warm', 'neon'],
+    difficultyWeight: 1,
     budget: { category: 'effects', instances: 25 }, // matches `shooting_stars` decoration_budget registration
     load: () => import('../shooting_stars'),
     install: (ctx, mod) => {
@@ -636,6 +834,11 @@ export const shootingStars = defineEnvSystem<'shootingStars'>({
 
 export const fossilizedSpaceWhales = defineEnvSystem<'fossilizedSpaceWhales'>({
     flag: 'fossilizedSpaceWhales',
+    label: 'Fossilized Space Whales',
+    role: 'backdrop',
+    biomes: ['biological', 'nebula'],
+    paletteTags: ['cool', 'monochrome'],
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 310 }, // ribs (150) + fog particles (100) + barnacles (60) (fossilized_space_whales.ts)
     load: () => import('../fossilized_space_whales'),
     install: (ctx, mod) => {
@@ -650,6 +853,11 @@ export const fossilizedSpaceWhales = defineEnvSystem<'fossilizedSpaceWhales'>({
 
 export const hyperspaceTunnel = defineEnvSystem<'hyperspaceTunnel'>({
     flag: 'hyperspaceTunnel',
+    label: 'Hyperspace Tunnel',
+    role: 'backdrop',
+    biomes: ['industrial'],
+    paletteTags: ['neon'],
+    difficultyWeight: 2,
     budget: { category: 'background3d', instances: 80 },
     systemKey: 'hyperspaceTunnel',
     load: () => import('../hyperspace_tunnel'),
@@ -662,9 +870,7 @@ export const hyperspaceTunnel = defineEnvSystem<'hyperspaceTunnel'>({
 });
 
 /**
- * Declaration order matches `DEFERRED_ENV_PLUGIN_ORDER` in `level_env_registry.ts`,
- * with `dreamPortals` and `aquaticLife` (load-only, no plugin order) inserted
- * next to the neighbours they sit beside in `DEFERRED_ENV_REGISTRY`.
+ * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,

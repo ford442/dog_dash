@@ -62,15 +62,16 @@ export function createIceNeedleCluster(config: { count: number }) {
 
     for (let i = 0; i < config.count; i++) {
         const mesh = new THREE.Mesh(geo, material);
-        // Radiate outwards
+        // Radiate outwards from the cluster origin (cone tip is +Y).
         const phi = Math.random() * Math.PI * 2;
         const theta = Math.random() * Math.PI;
-        
-        mesh.position.set(0, 0, 0); // Center
-        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
-        
-        // Offset slightly from center
-        mesh.translateY(1.5);
+        const dir = new THREE.Vector3(
+            Math.sin(theta) * Math.cos(phi),
+            Math.cos(theta),
+            Math.sin(theta) * Math.sin(phi)
+        );
+        mesh.position.copy(dir).multiplyScalar(1.5);
+        mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
         
         group.add(mesh);
     }

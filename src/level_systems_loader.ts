@@ -5,7 +5,7 @@
  *
  * Loader keys and install hooks are defined in `level_env_registry.ts`.
  */
-import { game } from './game_runtime';
+import { game, syncNestedGameSlices } from './game_runtime';
 import { getLevelSpan } from './depth_layers';
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
 import type { LevelEnvironmentPorts } from './level_manager/types';
@@ -29,6 +29,7 @@ const prefetchedLevels = new Set<number>();
 
 function installEnvPartial(partial: Partial<LevelEnvironmentPorts>): void {
     Object.assign(game, partial);
+    syncNestedGameSlices(game);
     if (game.levelManager) {
         game.levelManager.installEnvironmentSystems(partial);
     }
@@ -42,6 +43,7 @@ function createLoaderContext(): DeferredLoaderContext {
         installEnvPartial,
         assignGameSystem(key, value) {
             (game as unknown as DeferredGamePorts)[key] = value;
+            syncNestedGameSlices(game);
         }
     };
 }

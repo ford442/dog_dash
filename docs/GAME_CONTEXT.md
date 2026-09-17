@@ -6,7 +6,7 @@ Dog Dash constructs gameplay systems **once at bootstrap**, not at module import
 
 1. Prefer a class (or factory) in its own module under `src/` with an explicit constructor that takes `scene` / ports — **no** `import { scene } from './scene_context'` inside the system if you can avoid it.
 2. Instantiate it in [`src/create_game_systems.ts`](../src/create_game_systems.ts) when always-on, **or** register one entry in [`src/level_env_registry.ts`](../src/level_env_registry.ts) when level-gated and code-split (see “Adding a level environment flag” below).
-3. Add the field to `GameSystems` / `GameContext` in [`src/game_runtime.ts`](../src/game_runtime.ts) when the system lives on `game`.
+3. Put the field on nested `game.env` / `game.combat` (and the matching slice type in [`src/game_runtime.ts`](../src/game_runtime.ts)); keep a flat alias only when the loop already reads it.
 4. Wire cross-system callbacks in [`src/main/startup.ts`](../src/main/startup.ts) or [`src/main/startup_callbacks.ts`](../src/main/startup_callbacks.ts).
 
 Bootstrap flow:
@@ -36,7 +36,7 @@ Call `game.yourSystem.update(...)` (or a thin helper that takes ports from `game
 
 ## GameContext field groups
 
-`GameContext` is still a flat bag on the live `game` binding (the loop reads `game.playerState`, `game.hudManager`, etc.). Fields are grouped into named slices in [`src/game_runtime.ts`](../src/game_runtime.ts) for documentation and future nesting:
+`GameContext` remains the live `game` binding (the loop still reads `game.playerState`, `game.hudManager`, etc.). Fields are grouped into named slices in [`src/game_runtime.ts`](../src/game_runtime.ts). Nested `game.env` and `game.combat` hold the same instances as the flat fields so new work can stop adding top-level orphans:
 
 | Slice | Type | Examples |
 |-------|------|----------|
@@ -46,8 +46,10 @@ Call `game.yourSystem.update(...)` (or a thin helper that takes ports from `game
 | **extensions** | `GameContextExtensions` | `levelManager`, `obstacleSystem`, `slingComboManager`, scene anchors |
 | **systems** | `GameSystems` | eager gameplay systems from `createGameSystems()` |
 | **managers** | `GameManagers` | friends, hub, victory, tutorial, etc. |
+| **env** | `NestedEnvRuntime` | `game.env.*` — environment systems (still mirrored on the flat bag) |
+| **combat** | `NestedCombatRuntime` | `game.combat.*` — weapons, boss, pickups, obstacles |
 
-Do **not** add new unscoped fields — place them on the matching slice type in `game_runtime.ts`.
+Do **not** add new unscoped top-level fields. New systems go on `game.env` or `game.combat` (and a named slice type), not as orphans on `GameContext`. Domain modules still take **ports**, not `import { game }`.
 
 ## Domain ports (`src/ports/`)
 
@@ -201,13 +203,15 @@ Use the **closed-loop registry** in [`src/level_env_registry.ts`](../src/level_e
 ### Code-split (deferred) environment
 
 1. Extend `LevelEnvironments` in `level_config.ts`.
-2. Add **one** entry to `DEFERRED_ENV_REGISTRY` with:
-   - `load` — dynamic `import()` of the feature module
-   - `install` — construct the real system and call `installEnvPartial` (or assign onto `game` for non-port systems)
-   - `plugin` — `activate` / `deactivate` hooks for `buildEnvironmentPlugins`
-3. Add stub + `GameSystems` field in `create_game_systems.ts` if not already present.
+2. Add **one** `defineEnvSystem` entry to [`ENV_SYSTEM_MANIFEST`](../src/level_manager/env_manifest.ts) with:
+   - `load` / `install` / `activate` / `deactivate`
+   - `budget: { category, instances }` (registered at install; `tsc` and `check:env-registry` require it)
+   - biome / role / palette / difficulty metadata (Endless Dash queries)
+3. Add stub + field on `GameSystems` **or** nested `game.env` in `create_game_systems.ts` if not already present.
 4. Add the flag to `PLUGIN_ORDER` in `level_manager/environment_plugins.ts` (preserves activation order).
 5. Enable the flag on the target level(s) in `LEVEL_CONFIG`.
+
+Do not re-declare the flag in a second deferred-env table — `level_env_registry.ts` derives loaders from the manifest.
 
 `DEFERRED_ENV_FLAGS` / `EAGER_ENV_FLAGS` must classify **every** `LevelEnvironments` key (compile-time exhaustiveness). `npm run check:env-registry` walks `LEVEL_CONFIG` and fails if a deferred flag has no loader.
 

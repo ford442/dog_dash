@@ -494,7 +494,9 @@ export async function initializeStartup(): Promise<void> {
         pixelGlowSystem: new PixelGlowSystem(),
         levelManager,
         obstacleSystem,
-        handleGameOver
+        handleGameOver,
+        env: undefined as unknown as GameContext['env'],
+        combat: undefined as unknown as GameContext['combat']
     };
 
     installGameContext(ctx);

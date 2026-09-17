@@ -5,12 +5,11 @@ Machine-readable metadata for every level-environment system, in
 
 ## Why this exists
 
-`level_env_registry.ts` and `level_deferred_registry.ts` answer *how* to
-load and activate a system. Until this file, nothing answered *where a
-system belongs* — which biome(s) it reads coherently in, what role it
-plays (backdrop / traversal / hazard / flavor / boss), its rough palette,
-and how much it adds to difficulty. That metadata used to live only
-implicitly in `LEVEL_CONFIG`, spread across 6 levels — not queryable.
+`ENV_SYSTEM_MANIFEST` (`defineEnvSystem`) answers *how* to load a deferred
+env flag **and** *where it belongs* (biome / role / palette / difficulty /
+budget). `ENV_SYSTEM_DESCRIPTORS` is the query table Endless Dash reads:
+deferred env rows are copied from the manifest; deferred-level and eager
+systems still declare metadata here with `defineEnvDescriptor`.
 
 This is prerequisite groundwork for **Endless Dash** (procedural
 post-campaign chapters composed from the existing environment systems):
@@ -31,22 +30,20 @@ interface EnvSystemDescriptor {
 }
 ```
 
-`defineEnvSystem(descriptor)` is the registration call each system
-"declares" itself with. Descriptors live beside each other in one file
-rather than inside ~40 separate implementation modules — every system
-already has exactly one declaration site (its entry in
-`DEFERRED_ENV_REGISTRY` / `DEFERRED_LEVEL_REGISTRY`), and this metadata
-has nothing to do with how those modules render, so it's declared once
-here in the same order instead.
+Deferred env flags use the single `defineEnvSystem` factory (load, install,
+activate, deactivate, budget, **and** descriptor fields). Query helpers
+read `ENV_SYSTEM_DESCRIPTORS`, which is filled from the manifest plus
+level/eager leftovers.
 
 ## Adding a new environment system
 
-1. Add the system to `level_env_registry.ts` / `level_deferred_registry.ts`
-   as usual (see that file's own header comment).
-2. Add one `defineEnvSystem({...})` entry to `ENV_SYSTEM_DESCRIPTORS` in
-   `src/env_system_descriptors.ts`, keyed by the same flag / system key.
-3. `tests/unit/env_system_descriptors.test.ts` and a compile-time
-   exhaustiveness check both fail the build if the descriptor is missing.
+1. Add a `defineEnvSystem` entry to `ENV_SYSTEM_MANIFEST` (see `docs/GAME_CONTEXT.md`).
+2. Descriptor fields on that factory are required — do not add a second
+   `defineEnvSystem` in `env_system_descriptors.ts`.
+3. For deferred-level / eager systems only, add `defineEnvDescriptor` in
+   `src/env_system_descriptors.ts`.
+4. `tests/unit/env_system_descriptors.test.ts` and `check:env-registry`
+   fail if the flag or metadata is missing.
 
 ## Query API
 

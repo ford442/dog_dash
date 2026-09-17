@@ -4,7 +4,7 @@ Dog Dash - A 3D world exploration game.
 
 ## Features
 
-- **WebGPU rendering with WebGL2 fallback** - Modern GPU path by default, with a debug renderer for broader visual inspection
+- **WebGPU rendering (hard-fail, no WebGL fallback)** - One adapter/device per page load; a failed probe shows the diagnostic screen instead of quietly switching backends
 - **Smooth, glossy graphics** - Rounded organic shapes with specular highlights
 - **First-person controls** - Explore the world with keyboard and mouse
 - **Animated elements** - Dynamic environment with clouds and effects
@@ -83,7 +83,7 @@ Three layers — unit (fast, no GPU), smoke (browser bootstrap), and optional C+
 npm run test:unit
 ```
 
-**Smoke tests** verify the production build on the WebGL2 fallback path. Headless/cloud VMs have no WebGPU adapter, so tests launch system Chrome with SwiftShader flags (see `playwright.config.ts`).
+**Smoke tests** assert the **WebGPU hard-fail contract** on the production build. Headless/cloud VMs have no WebGPU adapter, so the game must boot to the diagnostic screen — never a WebGL context. Tests launch system Chrome (see `playwright.config.ts`).
 
 ```bash
 npm run build
@@ -97,10 +97,11 @@ npm run test:smoke          # alias for: npx playwright test
 
 **What the smoke test checks (DOM/state, not screenshot diffs):**
 
-- Page loads with `window.usingWebGL === true`
-- Canvas is initialized (sized by the renderer)
-- Title screen dismisses on click; gameplay HUD elements appear
-- After ~2s, the debug FPS overlay (`` ` `` toggle) shows live stats and `renderer: webgl`
+- `window.webgpuProbe` is populated (`ok`, `browser`, `reason`, `stage`)
+- The blocking boot-failure screen is shown
+- No `webgl` / `webgl2` canvas context is created
+- Nothing requests a second GPU adapter after the probe
+- Use `?skip_gpu_boot` only for bundle-health checks that must not touch the GPU
 
 **Smoke promotion (CI):** The smoke job currently uses `continue-on-error: true` (Phase A). Once `main` has **3 consecutive green smoke runs**, remove `continue-on-error` in `.github/workflows/ci.yml` (Phase C). If flakes appear, prefer `waitForFunction` over fixed `waitForTimeout` before promoting.
 
@@ -108,9 +109,9 @@ npm run test:smoke          # alias for: npx playwright test
 
 ### Requirements
 
-- Node.js 16+ and npm
-- A modern browser with WebGPU support for the primary renderer
-- WebGL2 support for the fallback/debug renderer
+- Node.js 20+ and npm (CI uses Node 24; see `"engines"` in `package.json`)
+- A modern browser with WebGPU (Chrome/Edge 113+) to actually play the game
+- Headless CI has no adapter: boot hard-fails by design ([docs/RENDERER_FALLBACK.md](docs/RENDERER_FALLBACK.md))
 
 ## Controls
 
@@ -185,8 +186,8 @@ Navigate your rocket through 6 massive levels, blasting asteroids and dodging cr
 
 ## Technical Details
 
-- Built with Three.js, WebGPU renderer, and a WebGL2 fallback renderer
+- Built with Three.js and a WebGPU-only renderer (no live WebGL path)
 - **WASM Physics** - AssemblyScript for collision detection ([docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md); C++ tree is experimental)
 - **Mathematical Patterns** - Procedural enemy formations using parametric equations
-- Modern WebGPU API for next-generation graphics, with WebGL2 available for debugging and compatibility checks
+- Modern WebGPU API for next-generation graphics; restoring WebGL is a later issue wave
 - Vite build system for fast development (`vite.config.ts` — ES2022 target, `public/` assets, vendor + per-level code splitting — see [docs/PERFORMANCE_BUDGETS.md](docs/PERFORMANCE_BUDGETS.md))

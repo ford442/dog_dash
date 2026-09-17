@@ -108,7 +108,7 @@ There is no monolithic `main.ts`. Environment features must use the **closed-loo
 ### 2A: Deferred (code-split) environment
 
 1. Add stub + `GameSystems` field in `create_game_systems.ts` if needed.
-2. Add **one** entry to `DEFERRED_ENV_REGISTRY` with `load`, `install`, and `plugin` hooks.
+2. Add **one** `defineEnvSystem` entry to `ENV_SYSTEM_MANIFEST` (`src/level_manager/env_manifest.ts`) with `load`, `install`, `activate`/`deactivate`, `budget`, and biome/role metadata.
 3. Append the flag to `PLUGIN_ORDER` in `level_manager/environment_plugins.ts`.
 4. Add `environments: { yourFeature: true }` in `LEVEL_CONFIG` for target level(s).
 

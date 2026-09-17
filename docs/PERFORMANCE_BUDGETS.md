@@ -79,24 +79,18 @@ in the workflow:
    that never gets added to this test file — that's a human review step, same
    as remembering to register at all.
 3. **`defineEnvSystem`'s `budget` field** (`src/level_manager/define_env_system.ts`,
-   `src/level_manager/env_manifest.ts`) — a required
-   `{ category: DecorationCategory; instances: number }` on every manifest
-   entry. This is the intended **structural** guard for new systems: once a
-   later phase makes `env_manifest.ts` the live activation path (replacing
-   `level_env_registry.ts`'s hand-written `DEFERRED_ENV_REGISTRY`), a new
-   entry literally cannot compile without stating its decoration-budget
-   category and instance estimate, the same way `activate`/`deactivate` are
-   already required today. **This is not live yet** — `env_manifest.ts` is
-   still a parallel, additive structure that nothing imports at runtime (see
-   its own header comment), so today `budget` is populated but unenforced;
-   only when a later phase migrates real consumers over does it become a
-   compile-time gate on new systems, and it still can't catch a system that
-   never gets a manifest entry in the first place.
+   `src/level_manager/env_manifest.ts`) — required
+   `{ category: DecorationCategory; instances: number }` on every live
+   manifest entry. `level_env_registry.ts` loads deferred env systems from
+   this table. Install registers `env:<flag>` with `decorationBudget.register`,
+   and activate/deactivate `syncCount` to the declared instances / 0.
+   A new `LevelEnvironments` flag without `budget` + descriptor metadata
+   fails `tsc` and `npm run check:env-registry`. This still cannot catch a
+   system that never gets a manifest entry; that is the closed-loop checker.
 
-None of these three fully closes the loop on their own — (1) is manual and
-coarse, (2) only guards systems someone remembered to add a test for, and (3)
-isn't live. Together they're a meaningfully better trail than "grep
-CLAUDE.md's rule and hope," which is what existed before this pass.
+The auditor (1) is still a visual net, (2) still only covers systems in that
+test file, and (3) is now the compile-time + install-time gate for deferred
+env flags.
 
 ## Authoring rules
 

@@ -73,6 +73,8 @@ Breadcrumb: `window.biomeNoiseBackend` — `'wasm' | 'js'` (was `'cpp' | 'js'` b
 
 Kept for portable-build experiments, SIMD prototyping, and native profiling — **not built, loaded, or required by any shipping feature.** Details: [`cpp/README.md`](../cpp/README.md).
 
+C++ researchers: pick **one** build entry. Use [`cpp/build.sh`](../cpp/build.sh) (or `npm run build:cpp-wasm`) for the Emscripten WASM binary. Use [`cpp/CMakeLists.txt`](../cpp/CMakeLists.txt) only for native host experiments — it does not compile WASM and must not duplicate `emcc` flags from `build.sh`. Do not maintain both as WASM flag lists.
+
 ```bash
 npm run build:cpp-wasm              # local emsdk
 npm run build:cpp-wasm:docker       # Docker, no local emsdk

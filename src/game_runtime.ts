@@ -102,6 +102,40 @@ export type RunState = {
     wantsReleaseTether: boolean;
 };
 
+/** Combat systems grouped on `game.combat` (still mirrored on the flat bag). */
+export type NestedCombatRuntime = {
+    weaponSystem: GameSystems['weaponSystem'];
+    weaponLightManager: GameSystems['weaponLightManager'];
+    bossManager: GameSystems['bossManager'];
+    lightningBoltSystem: GameSystems['lightningBoltSystem'];
+    pickupManager: GameSystems['pickupManager'];
+    heatSystem: GameSystems['heatSystem'];
+    barkBlastSystem: GameSystems['barkBlastSystem'];
+    obstacleSystem: ObstacleSystem;
+};
+
+/** Environment systems grouped on `game.env` (still mirrored on the flat bag). */
+export type NestedEnvRuntime = {
+    nebulaSystem: GameSystems['nebulaSystem'];
+    cosmicDustSystem: GameSystems['cosmicDustSystem'];
+    industrialSystem: GameSystems['industrialSystem'];
+    biologicalSystem: GameSystems['biologicalSystem'];
+    waterfallSystem: GameSystems['waterfallSystem'];
+    asteroidFieldSystem: GameSystems['asteroidFieldSystem'];
+    auroraSystem: GameSystems['auroraSystem'];
+    godRaySystem: GameSystems['godRaySystem'];
+    cloudCastlesSystem: GameSystems['cloudCastlesSystem'];
+    weatherSystem: GameSystems['weatherSystem'];
+    ghostDebrisSystem: GhostDebrisSystem;
+    voidJellyfishSystem: VoidJellyfishSystem;
+    aquaticLifeManager: AquaticLifeManager;
+};
+
+export type NestedRuntime = {
+    env: NestedEnvRuntime;
+    combat: NestedCombatRuntime;
+};
+
 /** Deferred managers and scene anchors not on GameSystems / GameManagers. */
 export type GameContextExtensions = {
     ghostDebrisSystem: GhostDebrisSystem;
@@ -146,7 +180,8 @@ export interface GameContext
         FrameCounters,
         SeedRuntime,
         RunState,
-        GameContextExtensions {}
+        GameContextExtensions,
+        NestedRuntime {}
 
 /** Compile-time guard: every `game.*` key belongs to a named slice. */
 type _GameContextSliceKeys =
@@ -156,7 +191,8 @@ type _GameContextSliceKeys =
     | keyof FrameCounters
     | keyof SeedRuntime
     | keyof RunState
-    | keyof GameContextExtensions;
+    | keyof GameContextExtensions
+    | keyof NestedRuntime;
 type _AssertNoUnscopedGameContextFields = Exclude<keyof GameContext, _GameContextSliceKeys> extends never ? true : never;
 const _gameContextSliceGuard: _AssertNoUnscopedGameContextFields = true;
 void _gameContextSliceGuard;
@@ -167,7 +203,68 @@ export type GameRuntime = GameContext;
 /** Live binding assigned once by bootstrap via {@link installGameContext}. */
 export let game!: GameContext;
 
+export function bindNestedGameSlices(ctx: GameContext): void {
+    ctx.combat = {
+        weaponSystem: ctx.weaponSystem,
+        weaponLightManager: ctx.weaponLightManager,
+        bossManager: ctx.bossManager,
+        lightningBoltSystem: ctx.lightningBoltSystem,
+        pickupManager: ctx.pickupManager,
+        heatSystem: ctx.heatSystem,
+        barkBlastSystem: ctx.barkBlastSystem,
+        obstacleSystem: ctx.obstacleSystem
+    };
+    ctx.env = {
+        nebulaSystem: ctx.nebulaSystem,
+        cosmicDustSystem: ctx.cosmicDustSystem,
+        industrialSystem: ctx.industrialSystem,
+        biologicalSystem: ctx.biologicalSystem,
+        waterfallSystem: ctx.waterfallSystem,
+        asteroidFieldSystem: ctx.asteroidFieldSystem,
+        auroraSystem: ctx.auroraSystem,
+        godRaySystem: ctx.godRaySystem,
+        cloudCastlesSystem: ctx.cloudCastlesSystem,
+        weatherSystem: ctx.weatherSystem,
+        ghostDebrisSystem: ctx.ghostDebrisSystem,
+        voidJellyfishSystem: ctx.voidJellyfishSystem,
+        aquaticLifeManager: ctx.aquaticLifeManager
+    };
+}
+
+export function syncNestedGameSlices(ctx: GameContext): void {
+    if (!ctx.env || !ctx.combat) {
+        bindNestedGameSlices(ctx);
+        return;
+    }
+    Object.assign(ctx.combat, {
+        weaponSystem: ctx.weaponSystem,
+        weaponLightManager: ctx.weaponLightManager,
+        bossManager: ctx.bossManager,
+        lightningBoltSystem: ctx.lightningBoltSystem,
+        pickupManager: ctx.pickupManager,
+        heatSystem: ctx.heatSystem,
+        barkBlastSystem: ctx.barkBlastSystem,
+        obstacleSystem: ctx.obstacleSystem
+    });
+    Object.assign(ctx.env, {
+        nebulaSystem: ctx.nebulaSystem,
+        cosmicDustSystem: ctx.cosmicDustSystem,
+        industrialSystem: ctx.industrialSystem,
+        biologicalSystem: ctx.biologicalSystem,
+        waterfallSystem: ctx.waterfallSystem,
+        asteroidFieldSystem: ctx.asteroidFieldSystem,
+        auroraSystem: ctx.auroraSystem,
+        godRaySystem: ctx.godRaySystem,
+        cloudCastlesSystem: ctx.cloudCastlesSystem,
+        weatherSystem: ctx.weatherSystem,
+        ghostDebrisSystem: ctx.ghostDebrisSystem,
+        voidJellyfishSystem: ctx.voidJellyfishSystem,
+        aquaticLifeManager: ctx.aquaticLifeManager
+    });
+}
+
 export function installGameContext(ctx: GameContext): void {
+    bindNestedGameSlices(ctx);
     game = ctx;
 }
 
