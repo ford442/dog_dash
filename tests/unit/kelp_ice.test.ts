@@ -12,12 +12,12 @@ test('ice needles are instanced on a hex lattice, not stacked at the origin', ()
     const offsets = hexNeedleOffsets(12);
     const dummy = new THREE.Matrix4();
     const pos = new THREE.Vector3();
-    let originCount = 0;
+    let xzOrigin = 0;
     for (let i = 0; i < mesh.count; i++) {
         mesh.getMatrixAt(i, dummy);
         pos.setFromMatrixPosition(dummy);
-        if (pos.lengthSq() < 0.01) originCount++;
+        if (Math.hypot(pos.x, pos.z) < 0.01) xzOrigin++;
         assert.ok(Math.hypot(pos.x - offsets[i]!.x, pos.z - offsets[i]!.z) < 0.01);
     }
-    assert.equal(originCount, 1, 'only the hex-center needle sits on the cluster origin');
+    assert.equal(xzOrigin, 1, 'exactly one needle sits on the hex-center XZ origin');
 });
