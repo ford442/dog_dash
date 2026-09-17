@@ -77,6 +77,8 @@ Breadcrumbs: `window.wasmBackend`, `window.jellyMossSoftBodyActive`, `window.jel
 | emsdk not found | `source emsdk_env.sh` or use `build:cpp-wasm:docker` |
 | Soft-body inactive with C++ loaded | Confirm hero mosses spawned (deferred prototype content) and `jellyMossSoftBodyHeroCount > 0` |
 
+WASM compile flags live in `cpp/build.sh` only (`CMakeLists.txt` no longer duplicates the Emscripten target).
+
 ## Native tests
 
 `BUILD_NATIVE_TESTS` stays disabled — `cpp/tests/*.cpp` was never checked in. Re-add only when real native tests land (see `CMakeLists.txt` comment).

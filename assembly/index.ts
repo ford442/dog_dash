@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------
 export * from './noise';
 export * from './physics';
+export * from './spatial_hash';
 
 // --- GENERIC OBJECT ALLOCATOR ---
 let objectsPtr: usize = 0;

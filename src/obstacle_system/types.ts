@@ -27,6 +27,7 @@ export type ObstacleSystemOptions = {
     playerState: { health: number; invincible: boolean; inSafeHarbor?: boolean; velocity: THREE.Vector3 };
     getWasm: CollisionPort['getWasm'];
     setWasmMemory: CollisionPort['setWasmMemory'];
+    getSpatialIndex: CollisionPort['getSpatialIndex'];
     sporeClouds: SporeCloud[];
     particleSystem: {
         emit: (position: THREE.Vector3, color: number, count: number, speed: number, lifetime: number, size?: number) => void;

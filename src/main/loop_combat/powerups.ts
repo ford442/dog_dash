@@ -4,13 +4,16 @@ import { playerState } from '../../game_config';
 import { game } from '../../game_runtime';
 import { PowerUpType } from '../../powerup_manager';
 import { MagicalEffectType } from '../../magical_effects';
+import { CollisionLayer } from '../../spatial_index';
 
 function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
-    const obstacles = game.obstacleSystem.getObstacles();
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        const obs = obstacles[i];
+    const hits = game.spatialIndex.query(playerPos.x, playerPos.y, playerPos.z, radius, CollisionLayer.Obstacle);
+    for (const hit of hits) {
+        if (hit.kind !== 'obstacle') continue;
+        const obs = game.obstacleSystem.getObstacles()[hit.index];
+        if (!obs) continue;
         const obsRadius = obs.userData.radius || 1.0;
-        if (obsRadius >= 1.2 || playerPos.distanceTo(obs.position) >= radius) continue;
+        if (obsRadius >= 1.2) continue;
 
         const pastelColors = [0xffb6c1, 0xffc0cb, 0xe6e6fa, 0xb0e0e6, 0x98fb98];
         const candyColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
@@ -31,9 +34,11 @@ function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
 }
 
 function applyAutoCollect(playerPos: THREE.Vector3, radius: number): void {
-    const orbCollectibles = game.orbManager.getActiveOrbs();
-    for (const orb of orbCollectibles) {
-        if (orb.collected) continue;
+    const hits = game.spatialIndex.query(playerPos.x, playerPos.y, playerPos.z, radius, CollisionLayer.Collectible);
+    for (const hit of hits) {
+        if (hit.kind !== 'collectible') continue;
+        const orb = game.orbManager.getOrbAt(hit.index);
+        if (!orb || orb.collected) continue;
         const dist = playerPos.distanceTo(orb.position);
         if (dist >= radius) continue;
 
@@ -55,9 +60,11 @@ function applyAutoCollect(playerPos: THREE.Vector3, radius: number): void {
 }
 
 function applyMagnetPull(playerPos: THREE.Vector3, radius: number): void {
-    const orbCollectibles = game.orbManager.getActiveOrbs();
-    for (const orb of orbCollectibles) {
-        if (orb.collected) continue;
+    const hits = game.spatialIndex.query(playerPos.x, playerPos.y, playerPos.z, radius, CollisionLayer.Collectible);
+    for (const hit of hits) {
+        if (hit.kind !== 'collectible') continue;
+        const orb = game.orbManager.getOrbAt(hit.index);
+        if (!orb || orb.collected) continue;
         const dist = playerPos.distanceTo(orb.position);
         if (dist >= radius) continue;
 
@@ -68,8 +75,11 @@ function applyMagnetPull(playerPos: THREE.Vector3, radius: number): void {
 }
 
 function applyCandyVortex(playerPos: THREE.Vector3, delta: number): void {
-    const obstacles = game.obstacleSystem.getObstacles();
-    for (const obs of obstacles) {
+    const hits = game.spatialIndex.query(playerPos.x, playerPos.y, playerPos.z, 18, CollisionLayer.Obstacle);
+    for (const hit of hits) {
+        if (hit.kind !== 'obstacle') continue;
+        const obs = game.obstacleSystem.getObstacles()[hit.index];
+        if (!obs) continue;
         const dist = playerPos.distanceTo(obs.position);
         if (dist > 18) continue;
 

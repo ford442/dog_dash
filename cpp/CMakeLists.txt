@@ -5,66 +5,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # ---------------------------------------------------------------------------
-# Source files
+# WASM compile flags live in cpp/build.sh ONLY.
+# emcc is invoked directly there (--no-entry, STANDALONE_WASM, EXPORTED_FUNCTIONS,
+# ALLOW_MEMORY_GROWTH, INITIAL_MEMORY, -msimd128 on --release). Do not re-list
+# those flags here — a second copy drifted from build.sh and was unused.
 # ---------------------------------------------------------------------------
-set(SOURCES
-    src/main.cpp
-)
-
-# ---------------------------------------------------------------------------
-# Emscripten WASM target
-# ---------------------------------------------------------------------------
-# Use with:  emcmake cmake .. && emmake make
-# Output: build/game_cpp.wasm (standalone, no JS glue)
-
-set(EXPORTED_FUNCTIONS
-    "_allocAsteroids"
-    "_checkCollision"
-    "_allocSporeClouds"
-    "_checkSporeCollision"
-    "_allocBossHitboxes"
-    "_checkBossCollision"
-    "_allocPhysicsBodies"
-    "_stepPhysics"
-    "_getBodyPositionX"
-    "_getBodyPositionY"
-    "_setBodyPosition"
-    "_addBodyAcceleration"
-    "_getBodyRadius"
-    "_simplexNoise2D"
-    "_simplexNoise3D"
-    "_fractalNoise2D"
-    "_fractalNoise3D"
-)
-
-# Join into a JSON array string for Emscripten
-string(JOIN "," EXPORTS_CSV ${EXPORTED_FUNCTIONS})
-set(EXPORTS_JSON "[${EXPORTS_CSV}]")
-
-if (EMSCRIPTEN)
-    add_executable(game_cpp ${SOURCES})
-
-    set_target_properties(game_cpp PROPERTIES
-        SUFFIX ".wasm"
-        OUTPUT_NAME "game_cpp"
-    )
-
-    target_include_directories(game_cpp PRIVATE src)
-
-    target_link_options(game_cpp PRIVATE
-        "SHELL:--no-entry"
-        "SHELL:-s STANDALONE_WASM=1"
-        "SHELL:-s ALLOW_MEMORY_GROWTH=1"
-        "SHELL:-s INITIAL_MEMORY=1048576"
-        "SHELL:-s EXPORTED_FUNCTIONS=${EXPORTS_JSON}"
-    )
-
-    # Optimised release build
-    if (CMAKE_BUILD_TYPE STREQUAL "Release")
-        target_compile_options(game_cpp PRIVATE -O3 -msimd128)
-        target_link_options(game_cpp PRIVATE "SHELL:-O3" "SHELL:-msimd128")
-    endif()
-endif()
 
 option(BUILD_NATIVE_TESTS "Build native host tests" OFF)
 

@@ -32,6 +32,7 @@ import type { BestiaryEntryId } from './bestiary';
 import type { DebugSystem } from './debug_system';
 import { PuffPuffer } from './puff_puffer';
 import { MoonSnail } from './moon_snail';
+import { CollisionLayer, type SpatialIndex } from './spatial_index';
 
 interface ProjectileLike {
     mesh: THREE.Object3D;
@@ -194,6 +195,50 @@ export class CreatureManager {
         this.debugSystem = ds;
     }
 
+    collectSpatial(index: SpatialIndex): void {
+        for (let i = 0; i < this.tarsierGuardians.length; i++) {
+            const g = this.tarsierGuardians[i];
+            if (g.isDestroyed) continue;
+            const p = g.getPosition();
+            index.add(p.x, p.y, p.z, g.getRadius(), CollisionLayer.Creature, i, 'creature', g);
+        }
+        for (let i = 0; i < this.geodeTitans.length; i++) {
+            const t = this.geodeTitans[i];
+            if (t.isDestroyed) continue;
+            const p = t.getPosition();
+            index.add(p.x, p.y, p.z, t.getRadius(), CollisionLayer.Creature, 1000 + i, 'creature', t);
+        }
+        let genericSlot = 2000;
+        for (const list of this.genericActive.values()) {
+            for (const c of list) {
+                if (c.isDestroyed) continue;
+                const pos = typeof c.getPosition === 'function' ? c.getPosition() : (c.position || { x: 0, y: 0, z: 0 });
+                const r = typeof c.getRadius === 'function' ? c.getRadius() : 1.2;
+                index.add(pos.x, pos.y, pos.z ?? 0, r, CollisionLayer.Creature, genericSlot++, 'creature', c);
+            }
+        }
+    }
+
+    /** Apply projectile hits using the shared spatial hash (call after rebuild). */
+    applyProjectileHits(projectiles: ProjectileLike[], index: SpatialIndex): void {
+        for (const proj of projectiles) {
+            if (!proj.active) continue;
+            const pos = proj.mesh.position;
+            const hits = index.query(pos.x, pos.y, pos.z, 0.5, CollisionLayer.Creature);
+            for (const hit of hits) {
+                const target = hit.ref as { takeDamage?: (n: number) => void } | undefined;
+                if (!target?.takeDamage) continue;
+                if (hit.index >= 1000 && hit.index < 2000) {
+                    target.takeDamage(20);
+                } else {
+                    target.takeDamage(15);
+                }
+                proj.deactivate();
+                break;
+            }
+        }
+    }
+
     registerAmbientCreature(def: AmbientCreatureDef) {
         this.registeredCreatures.push(def);
         if (!def.legacy && !this.genericActive.has(def.id)) {
@@ -224,19 +269,9 @@ export class CreatureManager {
         // Spawn from registry (unified; wraps legacy tarsier/geode exactly + new creatures)
         this.spawnFromRegistry(levelConfig, playerX, levelIndex);
 
-        // --- Update + projectile collision: Crystal Tarsier Guardians ---
+        // --- Update Crystal Tarsier Guardians ---
         for (let i = this.tarsierGuardians.length - 1; i >= 0; i--) {
             const guardian = this.tarsierGuardians[i];
-
-            for (const proj of projectiles) {
-                if (!proj.active) continue;
-                const dist = proj.mesh.position.distanceTo(guardian.getPosition());
-                if (dist < guardian.getRadius()) {
-                    guardian.takeDamage(15);
-                    proj.deactivate();
-                    break;
-                }
-            }
 
             const result = guardian.update(delta, playerPos, this.particleSystem, this.debrisSystem, this.audioSystem);
             if (result) results.push(result);
@@ -247,19 +282,9 @@ export class CreatureManager {
             }
         }
 
-        // --- Update + projectile collision: Living Geode Titans ---
+        // --- Update Living Geode Titans ---
         for (let i = this.geodeTitans.length - 1; i >= 0; i--) {
             const titan = this.geodeTitans[i];
-
-            for (const proj of projectiles) {
-                if (!proj.active) continue;
-                const dist = proj.mesh.position.distanceTo(titan.getPosition());
-                if (dist < titan.getRadius()) {
-                    titan.takeDamage(20);
-                    proj.deactivate();
-                    break;
-                }
-            }
 
             const result = titan.update(delta, playerPos, this.particleSystem, this.debrisSystem, this.audioSystem);
             if (result) results.push(result);

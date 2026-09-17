@@ -8,6 +8,8 @@ import {
     type ToyRocketVariant
 } from './toy_rockets';
 
+import { CollisionLayer, type SpatialIndex } from './spatial_index';
+
 const _collisionNormal = new THREE.Vector3();
 const _impactVelocity = new THREE.Vector3();
 const _trailColor = new THREE.Color();
@@ -554,57 +556,76 @@ export class SlingableObjectSystem {
     handleAsteroidCollisions(
         obstacles: THREE.Mesh[],
         splitAsteroid: (asteroid: THREE.Mesh) => void,
-        onImpact?: (position: THREE.Vector3, heavyHit?: boolean) => void
+        onImpact?: (position: THREE.Vector3, heavyHit?: boolean) => void,
+        spatial?: SpatialIndex | null
     ): void {
         for (let i = this.objects.length - 1; i >= 0; i--) {
             const obj = this.objects[i];
             if (!obj.active) continue;
 
-            for (let j = obstacles.length - 1; j >= 0; j--) {
-                const asteroid = obstacles[j];
-                const asteroidRadius = asteroid.userData.radius || 1.0;
-                const collisionRadius = obj.radius + asteroidRadius;
-
-                if (obj.group.position.distanceToSquared(asteroid.position) > collisionRadius * collisionRadius) {
-                    continue;
+            let asteroid: THREE.Mesh | null = null;
+            if (spatial) {
+                const hits = spatial.query(
+                    obj.group.position.x,
+                    obj.group.position.y,
+                    obj.group.position.z,
+                    obj.radius,
+                    CollisionLayer.Obstacle
+                );
+                for (const hit of hits) {
+                    if (hit.kind !== 'obstacle') continue;
+                    const mesh = hit.ref instanceof THREE.Mesh ? hit.ref : obstacles[hit.index];
+                    if (mesh) {
+                        asteroid = mesh;
+                        break;
+                    }
                 }
-
-                _collisionNormal.subVectors(asteroid.position, obj.group.position);
-                if (_collisionNormal.lengthSq() < 0.0001) {
-                    _collisionNormal.set(1, 0, 0);
-                } else {
-                    _collisionNormal.normalize();
+            } else {
+                for (let j = obstacles.length - 1; j >= 0; j--) {
+                    const candidate = obstacles[j];
+                    const asteroidRadius = candidate.userData.radius || 1.0;
+                    const collisionRadius = obj.radius + asteroidRadius;
+                    if (obj.group.position.distanceToSquared(candidate.position) > collisionRadius * collisionRadius) {
+                        continue;
+                    }
+                    asteroid = candidate;
+                    break;
                 }
+            }
+            if (!asteroid) continue;
 
-                _impactVelocity.copy(obj.velocity);
-                const impactSpeed = _impactVelocity.length();
-                // Wrecking balls plow through small debris with much less resistance —
-                // they're meant to be thrown down a cluttered corridor to clear a path.
-                const destroysAsteroid = obj.kind === 'wreckingBall'
-                    ? (impactSpeed > 3 || asteroidRadius <= obj.radius * 1.6)
-                    : obj.kind === 'toyRocket'
-                        ? (impactSpeed > 5 || asteroidRadius <= obj.radius * 1.35)
-                        : (impactSpeed > 7 || asteroidRadius <= obj.radius * 1.2);
+            const asteroidRadius = asteroid.userData.radius || 1.0;
+            _collisionNormal.subVectors(asteroid.position, obj.group.position);
+            if (_collisionNormal.lengthSq() < 0.0001) {
+                _collisionNormal.set(1, 0, 0);
+            } else {
+                _collisionNormal.normalize();
+            }
 
-                this.particleSystem.emit(asteroid.position.clone(), 0x9fe7ff, 10, 5.0, 0.9, obj.radius);
+            _impactVelocity.copy(obj.velocity);
+            const impactSpeed = _impactVelocity.length();
+            const destroysAsteroid = obj.kind === 'wreckingBall'
+                ? (impactSpeed > 3 || asteroidRadius <= obj.radius * 1.6)
+                : obj.kind === 'toyRocket'
+                    ? (impactSpeed > 5 || asteroidRadius <= obj.radius * 1.35)
+                    : (impactSpeed > 7 || asteroidRadius <= obj.radius * 1.2);
 
-                if (destroysAsteroid) {
-                    splitAsteroid(asteroid);
-                    const drag = obj.kind === 'wreckingBall' ? 0.05 : 0.18;
-                    obj.velocity.addScaledVector(_collisionNormal, -Math.max(impactSpeed * drag, 1.2));
-                    obj.health -= (asteroidRadius > obj.radius && obj.kind !== 'wreckingBall') ? 1 : 0;
-                    onImpact?.(asteroid.position.clone(), impactSpeed > 10);
-                } else {
-                    obj.velocity.reflect(_collisionNormal).multiplyScalar(0.6);
-                    obj.health -= 1;
-                    onImpact?.(obj.group.position.clone(), true);
-                }
+            this.particleSystem.emit(asteroid.position.clone(), 0x9fe7ff, 10, 5.0, 0.9, obj.radius);
 
-                if (obj.health <= 0) {
-                    this.destroyObjectAtIndex(i);
-                }
+            if (destroysAsteroid) {
+                splitAsteroid(asteroid);
+                const drag = obj.kind === 'wreckingBall' ? 0.05 : 0.18;
+                obj.velocity.addScaledVector(_collisionNormal, -Math.max(impactSpeed * drag, 1.2));
+                obj.health -= (asteroidRadius > obj.radius && obj.kind !== 'wreckingBall') ? 1 : 0;
+                onImpact?.(asteroid.position.clone(), impactSpeed > 10);
+            } else {
+                obj.velocity.reflect(_collisionNormal).multiplyScalar(0.6);
+                obj.health -= 1;
+                onImpact?.(obj.group.position.clone(), true);
+            }
 
-                break;
+            if (obj.health <= 0) {
+                this.destroyObjectAtIndex(i);
             }
         }
     }

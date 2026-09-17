@@ -8,8 +8,8 @@ import { DogAnimationState } from '../../dog_cockpit';
 import { ShakeType } from '../../juice_effects';
 import { VictoryState } from '../../victory_system/victory_state';
 import { updateBossHealthBar } from '../boss_health_ui';
-import { writeBossHitboxesToWasm, checkCircleCollisionJs } from '../../physics_utils';
-import { WasmBackend, type WasmHandle } from '../../wasm_loader';
+import { CollisionLayer } from '../../spatial_index';
+import { rebuildGameplaySpatialHash } from '../../spatial_fill';
 
 /** Boss spawn/update, WASM projectile hits, health bar. Returns true on mouth-snap death. */
 export function updateCombatBoss(delta: number): boolean {
@@ -149,6 +149,7 @@ export function updateCombatBoss(delta: number): boolean {
             const projectiles = game.weaponSystem.getActiveProjectiles();
             const hitboxes = boss.collectWasmHitboxes();
             if (hitboxes.length > 0) {
+                rebuildGameplaySpatialHash();
                 const applyBossHit = (hitIndex: number, proj: { active: boolean; mesh: THREE.Object3D; deactivate: () => void }) => {
                     const entry = boss.resolveHitboxEntry(hitIndex);
                     if (!entry?.dealsDamage) {
@@ -168,40 +169,14 @@ export function updateCombatBoss(delta: number): boolean {
                     }
                 };
 
-                if (game.wasmExports) {
-                    const exports = game.wasmExports;
-                    const wasmHandle: WasmHandle = {
-                        exports,
-                        memory: game.wasmMemory ?? new Float32Array(exports.memory.buffer),
-                        backend: WasmBackend.AssemblyScript
-                    };
-                    const count = writeBossHitboxesToWasm(wasmHandle, hitboxes);
-                    if (game.wasmMemory?.buffer !== exports.memory.buffer) {
-                        game.wasmMemory = new Float32Array(exports.memory.buffer);
-                    }
-
-                    for (const proj of projectiles) {
-                        if (!proj.active) continue;
-                        const hitIndex = exports.checkBossCollision(
-                            proj.mesh.position.x,
-                            proj.mesh.position.y,
-                            0.5,
-                            count
-                        );
-                        if (hitIndex === -1) continue;
-                        applyBossHit(hitIndex, proj);
-                    }
-                } else {
-                    for (const proj of projectiles) {
-                        if (!proj.active) continue;
-                        const hitIndex = checkCircleCollisionJs(
-                            proj.mesh.position.x,
-                            proj.mesh.position.y,
-                            0.5,
-                            hitboxes
-                        );
-                        if (hitIndex === -1) continue;
-                        applyBossHit(hitIndex, proj);
+                for (const proj of projectiles) {
+                    if (!proj.active) continue;
+                    const pos = proj.mesh.position;
+                    const hits = game.spatialIndex.query(pos.x, pos.y, pos.z, 0.5, CollisionLayer.Boss);
+                    for (const hit of hits) {
+                        if (hit.kind !== 'boss') continue;
+                        applyBossHit(hit.index, proj);
+                        break;
                     }
                 }
             }

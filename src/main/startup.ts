@@ -64,8 +64,10 @@ async function loadWasm(): Promise<void> {
         game.wasmExports = handle.exports;
         game.wasmMemory = handle.memory;
         game.wasmBackend = handle.backend;
+        game.spatialIndex.bindWasm(handle);
     } else {
         game.wasmBackend = null;
+        game.spatialIndex.bindWasm(null);
     }
     jellyMossSoftBody.bindWasm(handle);
     biomeNoise.bindWasm(handle);

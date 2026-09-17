@@ -41,6 +41,17 @@ export interface CoreWasmExports {
     allocObjects(count: number): number;
     freeObjects(): void;
     getObjectPtr(): number;
+    /** Uniform-grid spatial hash (AssemblyScript shipping path). Optional on C++ research binaries. */
+    allocEntities?(count: number): number;
+    getEntityPtr?(): number;
+    getEntityCount?(): number;
+    rebuildGrid?(cellSize: number): void;
+    queryRadius?(x: number, y: number, z: number, r: number, layerMask: number): number;
+    queryRadiusSimd?(x: number, y: number, z: number, r: number, layerMask: number): number;
+    queryRadiusFirst?(x: number, y: number, z: number, r: number, layerMask: number): number;
+    getQueryResultPtr?(): number;
+    getQueryCount?(): number;
+    simdSupported?(): number;
 }
 
 /**
@@ -77,8 +88,12 @@ export interface WasmHandle {
     exports: WasmExports;
     /** Float32Array view over the WASM linear memory (refreshed on growth). */
     memory: Float32Array;
+    /** Int32 view of the same buffer (query result ids). Refreshed with memory. */
+    i32Memory: Int32Array;
     /** Which backend is currently active. */
     backend: WasmBackend;
+    /** True when this process validated v128 and the module exported SIMD query. */
+    simd: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,28 +136,34 @@ declare global {
     }
 }
 
+function wrapInstance(exports: WasmExports, backend: WasmBackend): WasmHandle {
+    const buffer = (exports.memory as WebAssembly.Memory).buffer;
+    return {
+        exports,
+        memory: new Float32Array(buffer),
+        i32Memory: new Int32Array(buffer),
+        backend,
+        simd: detectWasmSimd() && typeof exports.queryRadiusSimd === 'function',
+    };
+}
+
 async function loadAssemblyScript(): Promise<WasmHandle> {
+    if (!detectWasmSimd()) {
+        throw new Error('WebAssembly SIMD (v128) is required for optimized.wasm; using JS collision fallback');
+    }
     const { instance } = await fetchAndInstantiate('./build/optimized.wasm', {
         env: { abort: () => console.warn('[WASM-AS] abort() called') },
     });
     const exports = instance.exports as unknown as WasmExports;
-    console.log('✅ AssemblyScript WASM loaded');
-    return {
-        exports,
-        memory: new Float32Array((exports.memory as WebAssembly.Memory).buffer),
-        backend: WasmBackend.AssemblyScript,
-    };
+    console.log('✅ AssemblyScript WASM loaded (spatial hash, SIMD=', detectWasmSimd(), ')');
+    return wrapInstance(exports, WasmBackend.AssemblyScript);
 }
 
 async function loadCpp(): Promise<WasmHandle> {
     const { instance } = await fetchAndInstantiate('./build/game_cpp.wasm', cppImports());
     const exports = instance.exports as unknown as WasmExports;
     console.log('✅ C++ WASM loaded (experimental)');
-    return {
-        exports,
-        memory: new Float32Array((exports.memory as WebAssembly.Memory).buffer),
-        backend: WasmBackend.Cpp,
-    };
+    return wrapInstance(exports, WasmBackend.Cpp);
 }
 
 // ---------------------------------------------------------------------------
@@ -193,6 +214,24 @@ export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null
  * Call this whenever WASM linear memory may have grown (e.g. after `alloc*`).
  */
 export function refreshMemoryView(handle: WasmHandle): Float32Array {
-    handle.memory = new Float32Array((handle.exports.memory as WebAssembly.Memory).buffer);
+    const buffer = (handle.exports.memory as WebAssembly.Memory).buffer;
+    handle.memory = new Float32Array(buffer);
+    handle.i32Memory = new Int32Array(buffer);
     return handle.memory;
+}
+
+/**
+ * Feature-detect v128. The shipping `asc --enable simd` module will not
+ * instantiate on engines without SIMD; callers then use the JS fallback.
+ */
+export function detectWasmSimd(): boolean {
+    const bytes = new Uint8Array([
+        0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0,
+        10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11
+    ]);
+    try {
+        return WebAssembly.validate(bytes);
+    } catch {
+        return false;
+    }
 }

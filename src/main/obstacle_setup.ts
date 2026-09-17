@@ -58,6 +58,7 @@ export function createObstacleSystem(systems: {
         playerState,
         getWasm: () => ({ exports: game.wasmExports, memory: game.wasmMemory }),
         setWasmMemory: (memory) => { game.wasmMemory = memory; },
+        getSpatialIndex: () => game.spatialIndex,
         sporeClouds,
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,

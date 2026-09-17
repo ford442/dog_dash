@@ -20,6 +20,7 @@ import type { VideoTumblingStar } from './video_tumbling_star';
 import type { GameManagers } from './game_managers';
 import type { GameSystems } from './create_game_systems';
 import type { WasmBackend, WasmExports } from './wasm_loader';
+import { SpatialIndex } from './spatial_index';
 import { playerState } from './game_config';
 import type {
     CollisionDebugOverlay,
@@ -42,6 +43,8 @@ export type CoreRuntime = {
     wasmMemory: Float32Array | null;
     /** Active WASM backend after load (null if both backends failed). */
     wasmBackend: WasmBackend | null;
+    /** Uniform-grid spatial hash rebuilt once per sim step. */
+    spatialIndex: SpatialIndex;
     clock: THREE.Clock;
 };
 
@@ -174,6 +177,7 @@ export function createGameContextFrameState(): Pick<
     | 'wasmExports'
     | 'wasmMemory'
     | 'wasmBackend'
+    | 'spatialIndex'
     | 'clock'
     | 'lastPlayerDamageTime'
     | 'aquaticLifeSpawnedLevel'
@@ -223,6 +227,7 @@ export function createGameContextFrameState(): Pick<
         wasmExports: null,
         wasmMemory: null,
         wasmBackend: null,
+        spatialIndex: new SpatialIndex(),
         clock: new THREE.Clock(),
         lastPlayerDamageTime: -999,
         aquaticLifeSpawnedLevel: null,

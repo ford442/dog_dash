@@ -30,6 +30,7 @@ import {
 
 import { updatePlayer } from './player_update';
 import { ghostRunRecorder, buildActionFlags } from '../ghost_run';
+import { rebuildGameplaySpatialHash } from '../spatial_fill';
 import { updateChapterMusicDynamics } from './music_update';
 
 /**
@@ -129,6 +130,30 @@ export function updateLoopCore(delta: number, _time: number): void {
         }
     
         game.slingableObjectSystem.update(delta, camera.position.x, player?.position);
+
+        // Update graze combo HUD visibility
+        if (game.obstacleSystem.getGrazeCombo() === 0) {
+            game.hudManager.hideGrazeCombo();
+        }
+
+        // Update Action UI (Boost & Dash)
+        if (game.boostSystem && game.boostSystem.getMaxCharges() > 0) {
+            const boostRatio = game.boostSystem.getCharges() / game.boostSystem.getMaxCharges();
+            game.hudManager.updateBoost(boostRatio);
+        }
+        if (game.rollSystem) {
+            game.hudManager.updateDash(game.rollSystem.canRoll(), game.rollSystem.getCooldownRatio());
+        }
+
+        // Feed speed / boost / danger / quiet into the chapter music mix.
+        updateChapterMusicDynamics();
+
+        rebuildGameplaySpatialHash();
+        game.obstacleSystem.resolveCollisions(delta);
+        game.creatureManager.applyProjectileHits(
+            game.weaponSystem.getActiveProjectiles(),
+            game.spatialIndex
+        );
         game.slingableObjectSystem.handleAsteroidCollisions(
             game.obstacleSystem.getObstacles(),
             (asteroid) => {
@@ -150,23 +175,7 @@ export function updateLoopCore(delta: number, _time: number): void {
                     game.juiceManager.shakeScreen(ShakeType.MEDIUM, 0.18);
                 }
                 game.particleSystem.emit(position.clone(), 0xffffff, 4, 3.5, 0.5, 0.6);
-            }
+            },
+            game.spatialIndex
         );
-    
-        // Update graze combo HUD visibility
-        if (game.obstacleSystem.getGrazeCombo() === 0) {
-            game.hudManager.hideGrazeCombo();
-        }
-
-        // Update Action UI (Boost & Dash)
-        if (game.boostSystem && game.boostSystem.getMaxCharges() > 0) {
-            const boostRatio = game.boostSystem.getCharges() / game.boostSystem.getMaxCharges();
-            game.hudManager.updateBoost(boostRatio);
-        }
-        if (game.rollSystem) {
-            game.hudManager.updateDash(game.rollSystem.canRoll(), game.rollSystem.getCooldownRatio());
-        }
-
-        // Feed speed / boost / danger / quiet into the chapter music mix.
-        updateChapterMusicDynamics();
 }
