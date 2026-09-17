@@ -608,6 +608,6 @@ export function createHyperspaceTunnelSystemStub(): import('./hyperspace_tunnel'
         active: false,
         activate: () => { },
         deactivate: () => { },
-        update: () => { }
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
     } as unknown as import('./hyperspace_tunnel').HyperspaceTunnelSystem;
 }
