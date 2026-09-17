@@ -4,6 +4,7 @@ import { player } from '../../player_loader';
 import { game } from '../../game_runtime';
 import { CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../../candy_materials';
 import type { CandyFlavor } from '../../candy_materials';
+import { CollisionLayer } from '../../spatial_index';
 import { updateCombatBossKraken } from './boss';
 import { onBarnacleOpened, updateProjectileAnchorPanic } from './friends';
 
@@ -64,30 +65,31 @@ export function updateCombatWeapons(delta: number): void {
     updateCandyMaterialGlobals({ weaponLights: game.weaponLightManager.storageNode });
 
     const projectiles = game.weaponSystem.getActiveProjectiles();
-    if (projectiles.length === 0) return;
+    if (projectiles.length === 0) {
+        updateCombatBossKraken(projectiles);
+        updateProjectileAnchorPanic(projectiles);
+        return;
+    }
 
-    const obstacles = game.obstacleSystem.getObstacles();
     const butterflyBlast = game.powerUpManager.getCombinedModifiers().asteroidsToButterflies;
+    const index = game.spatialIndex;
 
-    for (let i = obstacles.length - 1; i >= 0; i--) {
-        const obs = obstacles[i];
-        const obsRadius = obs.userData.radius || 1.0;
-
-        for (const proj of projectiles) {
-            if (!proj.active) continue;
-
-            const dist = proj.mesh.position.distanceTo(obs.position);
-            if (dist < obsRadius + 0.5) {
-                if (butterflyBlast && !obs.userData.isCandyAsteroid) {
-                    transformAsteroidToButterflies(obs);
-                    proj.deactivate();
-                    break;
-                }
-                blastObstacle(obs);
-
+    for (const proj of projectiles) {
+        if (!proj.active) continue;
+        const pos = proj.mesh.position;
+        const hits = index.query(pos.x, pos.y, pos.z, 0.5, CollisionLayer.Obstacle);
+        for (const hit of hits) {
+            if (hit.kind !== 'obstacle') continue;
+            const obs = game.obstacleSystem.getObstacles()[hit.index];
+            if (!obs) continue;
+            if (butterflyBlast && !obs.userData.isCandyAsteroid) {
+                transformAsteroidToButterflies(obs);
                 proj.deactivate();
                 break;
             }
+            blastObstacle(obs);
+            proj.deactivate();
+            break;
         }
     }
 

@@ -24,7 +24,8 @@ export function updateCombatPickups(delta: number, time: number): void {
     game.orbManager.update(delta, time);
     const collectionResult = game.orbManager.checkCollection(
         player.position,
-        game.friendsManager.hasFullFlotilla() ? 4.0 : 2.0
+        game.friendsManager.hasFullFlotilla() ? 4.0 : 2.0,
+        game.spatialIndex
     );
     if (collectionResult.collected && player) {
         game.dogController.triggerAnimation(DogAnimationState.COLLECT, 0.5);

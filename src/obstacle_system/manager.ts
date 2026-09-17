@@ -25,7 +25,7 @@ import {
     processGrazeDetection
 } from './collision_hooks';
 import { disposeObject } from '../utils';
-import { checkCircleCollisionJs, checkSphereCollisionJs } from '../physics_utils';
+import { CollisionLayer, type SpatialIndex } from '../spatial_index';
 import { getRunRngFork } from '../run_seed';
 
 function obstacleRng() {
@@ -79,6 +79,40 @@ export class ObstacleSystem implements ObstacleSystemHost {
     applyGrazeWindowBonus(duration: number, extraDist: number): void {
         this.grazeWindowBonusTimer = Math.max(this.grazeWindowBonusTimer, duration);
         this.grazeWindowBonusDist = Math.max(this.grazeWindowBonusDist, extraDist);
+    }
+
+    collectSpatial(index: SpatialIndex): void {
+        for (let i = 0; i < this.obstacles.length; i++) {
+            const obs = this.obstacles[i];
+            index.add(
+                obs.position.x,
+                obs.position.y,
+                obs.position.z,
+                obs.userData.radius || 1.0,
+                CollisionLayer.Obstacle,
+                i,
+                'obstacle',
+                obs
+            );
+        }
+        for (let i = 0; i < this.patternEnemies.length; i++) {
+            const enemy = this.patternEnemies[i];
+            index.add(
+                enemy.mesh.position.x,
+                enemy.mesh.position.y,
+                enemy.mesh.position.z,
+                1.0,
+                CollisionLayer.Obstacle,
+                i,
+                'patternEnemy',
+                enemy
+            );
+        }
+        for (let i = 0; i < this.squids.length; i++) {
+            const squid = this.squids[i];
+            const pos = squid.getPosition();
+            index.add(pos.x, pos.y, pos.z, squid.getRadius(), CollisionLayer.Obstacle, i, 'squid', squid);
+        }
     }
 
     update(delta: number) {
@@ -219,13 +253,6 @@ export class ObstacleSystem implements ObstacleSystemHost {
             const squid = this.squids[i];
             squid.update(delta, playerX, playerY);
 
-            if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
-                const dist = squid.getPosition().distanceTo(new THREE.Vector3(playerX, playerY, 0));
-                if (dist < squid.getRadius() + 1.0) {
-                    handleSquidCollision(this, squid);
-                }
-            }
-
             if (squid.isDestroyed || squid.getPosition().x < playerX - 50) {
                 if (!squid.isDestroyed) {
                     this.scene.remove(squid.group);
@@ -234,67 +261,22 @@ export class ObstacleSystem implements ObstacleSystemHost {
                 this.squids.splice(i, 1);
             }
         }
+    }
 
-        const wasm = this.options.getWasm();
-        const activeObstacles = this.obstacles.filter(o => Math.abs(o.position.z) < 2.0);
-        let hitIndex = -1;
+    resolveCollisions(delta: number): void {
+        const player = this.options.getPlayer();
+        if (!player) return;
 
-        if (activeObstacles.length > 0) {
-            if (wasm.exports) {
-                const ptr = wasm.exports.allocAsteroids(activeObstacles.length);
-                let memory = wasm.memory;
-                if (!memory || memory.buffer !== wasm.exports.memory.buffer) {
-                    memory = new Float32Array(wasm.exports.memory.buffer);
-                    this.options.setWasmMemory(memory);
-                }
-                const startIdx = ptr >>> 2;
-                for (let i = 0; i < activeObstacles.length; i++) {
-                    const obs = activeObstacles[i];
-                    const offset = startIdx + (i * 3);
-                    memory[offset] = obs.position.x;
-                    memory[offset + 1] = obs.position.y;
-                    memory[offset + 2] = obs.userData.radius || 1.0;
-                }
+        const playerX = player.position.x;
+        const playerY = player.position.y;
+        const index = this.options.getSpatialIndex();
 
-                hitIndex = wasm.exports.checkCollision(playerX, playerY, 0.5, activeObstacles.length);
-            } else {
-                hitIndex = checkCircleCollisionJs(
-                    playerX,
-                    playerY,
-                    0.5,
-                    activeObstacles.map((obs) => ({
-                        x: obs.position.x,
-                        y: obs.position.y,
-                        radius: obs.userData.radius || 1.0
-                    }))
-                );
-            }
-
-            if (hitIndex !== -1) {
-                const hitObs = activeObstacles[hitIndex];
-                const hitRadius = hitObs.userData.radius || 1.0;
-                const modifiers = this.options.getPowerUpModifiers
-                    ? this.options.getPowerUpModifiers()
-                    : { shieldActive: false, shieldBouncesAsteroids: false };
-                if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
-                    handleBounce(this, hitObs);
-                } else if (
-                    !this.options.playerState.invincible
-                    && !modifiers.invincible
-                    && !this.options.playerState.inSafeHarbor
-                ) {
-                    if (this.bounceCooldown <= 0 && this.options.tryConsumeButterflyCharge?.()) {
-                        this.options.onButterflySave?.(hitObs.position);
-                    } else if (this.options.tryConsumeSwarmEscort?.(hitObs.position.clone(), hitRadius)) {
-                        this.bounceCooldown = 0.35;
-                        this.options.particleSystem.emit(hitObs.position.clone(), 0xffb6c1, 8, 4.0, 0.4, 0.45);
-                    } else if (this.bounceCooldown <= 0 && this.options.tryConsumeWrenchCharge?.()) {
-                        handleBounce(this, hitObs);
-                        this.options.onWrenchSave?.(hitObs);
-                    } else {
-                        handleCollision(this, hitObs);
-                    }
-                }
+        if (!this.options.playerState.invincible && !this.options.playerState.inSafeHarbor) {
+            const squidHits = index.query(playerX, playerY, 0, 1.0, CollisionLayer.Obstacle);
+            for (const hit of squidHits) {
+                if (hit.kind !== 'squid') continue;
+                const squid = this.squids[hit.index];
+                if (squid) handleSquidCollision(this, squid);
             }
         }
 
@@ -306,52 +288,59 @@ export class ObstacleSystem implements ObstacleSystemHost {
             }
         }
 
-        processGrazeDetection(this, activeObstacles, player, playerX, playerY, delta);
-
-        const nearbyClouds = this.options.sporeClouds.filter(c => c.active && Math.abs(c.position.x - playerX) < 20);
-        if (nearbyClouds.length > 0) {
-            let cloudHitIndex = -1;
-            if (wasm.exports) {
-                const cloudPtr = wasm.exports.allocSporeClouds(nearbyClouds.length);
-                let memory = wasm.memory;
-                if (!memory || memory.buffer !== wasm.exports.memory.buffer) {
-                    memory = new Float32Array(wasm.exports.memory.buffer);
-                    this.options.setWasmMemory(memory);
-                }
-                const cloudStartIdx = cloudPtr >>> 2;
-                for (let i = 0; i < nearbyClouds.length; i++) {
-                    const c = nearbyClouds[i];
-                    const offset = cloudStartIdx + (i * 4);
-                    memory[offset] = c.position.x;
-                    memory[offset + 1] = c.position.y;
-                    memory[offset + 2] = c.position.z;
-                    memory[offset + 3] = 5.0;
-                }
-
-                cloudHitIndex = wasm.exports.checkSporeCollision(playerX, playerY, 0, 1.0, nearbyClouds.length);
-            } else {
-                cloudHitIndex = checkSphereCollisionJs(
-                    playerX,
-                    playerY,
-                    0,
-                    1.0,
-                    nearbyClouds.map((c) => ({
-                        x: c.position.x,
-                        y: c.position.y,
-                        z: c.position.z,
-                        radius: 5.0
-                    }))
-                );
+        const hits = index.query(playerX, playerY, player.position.z, 0.5, CollisionLayer.Obstacle);
+        let hitObs: THREE.Mesh | null = null;
+        for (const hit of hits) {
+            if (hit.kind !== 'obstacle') continue;
+            const obs = this.obstacles[hit.index];
+            if (obs && Math.abs(obs.position.z) < 2.0) {
+                hitObs = obs;
+                break;
             }
+        }
 
-            if (cloudHitIndex !== -1) {
-                const hitCloud = nearbyClouds[cloudHitIndex];
-                if (!hitCloud.spores.userData.playerInside) {
-                    hitCloud.spores.userData.playerInside = true;
+        if (hitObs) {
+            const hitRadius = hitObs.userData.radius || 1.0;
+            const modifiers = this.options.getPowerUpModifiers
+                ? this.options.getPowerUpModifiers()
+                : { shieldActive: false, shieldBouncesAsteroids: false };
+            if (modifiers.shieldBouncesAsteroids && this.bounceCooldown <= 0) {
+                handleBounce(this, hitObs);
+            } else if (
+                !this.options.playerState.invincible
+                && !modifiers.invincible
+                && !this.options.playerState.inSafeHarbor
+            ) {
+                if (this.bounceCooldown <= 0 && this.options.tryConsumeButterflyCharge?.()) {
+                    this.options.onButterflySave?.(hitObs.position);
+                } else if (this.options.tryConsumeSwarmEscort?.(hitObs.position.clone(), hitRadius)) {
+                    this.bounceCooldown = 0.35;
+                    this.options.particleSystem.emit(hitObs.position.clone(), 0xffb6c1, 8, 4.0, 0.4, 0.45);
+                } else if (this.bounceCooldown <= 0 && this.options.tryConsumeWrenchCharge?.()) {
+                    handleBounce(this, hitObs);
+                    this.options.onWrenchSave?.(hitObs);
+                } else {
+                    handleCollision(this, hitObs);
+                }
+            }
+        }
+
+        const nearbyForGraze = this.obstacles.filter(o => Math.abs(o.position.z) < 2.0);
+        processGrazeDetection(this, nearbyForGraze, player, playerX, playerY, delta);
+
+        const sporeHits = index.query(playerX, playerY, 0, 1.0, CollisionLayer.Spore);
+        const hitCloudIds = new Set(sporeHits.filter(h => h.kind === 'spore').map(h => h.index));
+        const clouds = this.options.sporeClouds;
+        for (let i = 0; i < clouds.length; i++) {
+            const c = clouds[i];
+            if (!c.active) continue;
+            if (hitCloudIds.has(i)) {
+                if (!c.spores.userData.playerInside) {
+                    c.spores.userData.playerInside = true;
                     this.options.particleSystem.emit(player.position.clone(), 0x88ff88, 5, 2.0, 0.5, 1.0);
                 }
-            } else {
-                nearbyClouds.forEach(c => { c.spores.userData.playerInside = false; });
+            } else if (Math.abs(c.position.x - playerX) < 20) {
+                c.spores.userData.playerInside = false;
             }
         }
     }
@@ -387,41 +376,50 @@ export class ObstacleSystem implements ObstacleSystemHost {
     applyBarkBlast(center: THREE.Vector3, radius = 14): { cleared: number; weakened: number } {
         let cleared = 0;
         let weakened = 0;
+        const index = this.options.getSpatialIndex();
+        const hits = index.query(center.x, center.y, center.z, radius, CollisionLayer.Obstacle);
 
-        for (let i = this.obstacles.length - 1; i >= 0; i--) {
-            const obs = this.obstacles[i];
-            const dist = obs.position.distanceTo(center);
-            if (dist > radius) continue;
+        const seenObs = new Set<THREE.Mesh>();
+        const seenEnemies = new Set<number>();
 
-            const obsRadius = obs.userData.radius || 1.0;
-            const velocity = obs.userData.velocity as THREE.Vector3 | undefined;
-            const isProjectile = velocity && velocity.lengthSq() > 4;
+        for (const hit of hits) {
+            if (hit.kind === 'obstacle') {
+                const obs = this.obstacles[hit.index];
+                if (!obs || seenObs.has(obs)) continue;
+                seenObs.add(obs);
+                const obsRadius = obs.userData.radius || 1.0;
+                const velocity = obs.userData.velocity as THREE.Vector3 | undefined;
+                const isProjectile = velocity && velocity.lengthSq() > 4;
 
-            if (isProjectile || obsRadius < 1.2) {
-                if (obs.userData.isCandyAsteroid) {
-                    triggerCandySquashFn(this, obs, 1.6);
-                } else {
-                    splitAsteroidFn(this, obs);
+                if (isProjectile || obsRadius < 1.2) {
+                    if (obs.userData.isCandyAsteroid) {
+                        triggerCandySquashFn(this, obs, 1.6);
+                    } else {
+                        splitAsteroidFn(this, obs);
+                    }
+                    cleared++;
+                } else if (obsRadius < 2.0) {
+                    obs.userData.radius = obsRadius * 0.55;
+                    obs.scale.multiplyScalar(0.65);
+                    if (obs.userData.isCandyAsteroid) {
+                        triggerCandySquashFn(this, obs, 0.8);
+                    }
+                    weakened++;
                 }
-                cleared++;
-            } else if (obsRadius < 2.0) {
-                obs.userData.radius = obsRadius * 0.55;
-                obs.scale.multiplyScalar(0.65);
-                if (obs.userData.isCandyAsteroid) {
-                    triggerCandySquashFn(this, obs, 0.8);
-                }
-                weakened++;
+            } else if (hit.kind === 'patternEnemy') {
+                if (seenEnemies.has(hit.index)) continue;
+                seenEnemies.add(hit.index);
             }
         }
 
-        for (let i = this.patternEnemies.length - 1; i >= 0; i--) {
-            const enemy = this.patternEnemies[i];
-            if (enemy.mesh.position.distanceTo(center) <= radius + 1) {
-                this.scene.remove(enemy.mesh);
-                disposeObject(enemy.mesh);
-                this.patternEnemies.splice(i, 1);
-                cleared++;
-            }
+        const enemyIdx = [...seenEnemies].sort((a, b) => b - a);
+        for (const ei of enemyIdx) {
+            const enemy = this.patternEnemies[ei];
+            if (!enemy) continue;
+            this.scene.remove(enemy.mesh);
+            disposeObject(enemy.mesh);
+            this.patternEnemies.splice(ei, 1);
+            cleared++;
         }
 
         return { cleared, weakened };

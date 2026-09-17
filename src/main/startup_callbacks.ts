@@ -194,7 +194,7 @@ function wireFriendsCallbacks(): void {
         const sealMemory = saveManager.hasMemory('stellar_seal_pup');
         const glowDuration = sealMemory ? 5.5 : 3.5;
         const glowMultiplier = sealMemory ? 2.2 : 1.7;
-        const boosted = orbManager.boostGlowNearby(position, 14, glowMultiplier, glowDuration, game.clock.getElapsedTime());
+        const boosted = orbManager.boostGlowNearby(position, 14, glowMultiplier, glowDuration, game.clock.getElapsedTime(), game.spatialIndex);
         creatureCatalogManager.catalog('stellar_seal_pup');
         if (healthRestore && healthRestore > 0) {
             playerState.health = Math.min(playerState.health + healthRestore, playerState.maxHealth);
@@ -229,7 +229,7 @@ function wireFriendsCallbacks(): void {
         const lemurMemory = saveManager.hasMemory('lunar_lemur');
         orbManager.spawnHeartOrb(position.x, position.y, position.z);
         creatureCatalogManager.catalog('lunar_lemur');
-        if (lemurMemory) orbManager.boostGlowNearby(position, 16, 2.0, 6.5, game.clock.getElapsedTime());
+        if (lemurMemory) orbManager.boostGlowNearby(position, 16, 2.0, 6.5, game.clock.getElapsedTime(), game.spatialIndex);
         if (player) {
             juiceManager.showFloatingText('Heart Fruit!', position.clone(), '#ff69b4', 22);
             juiceManager.burstMagic(position.clone());

@@ -1,24 +1,26 @@
 (module
  (type $0 (func (param i32) (result i32)))
- (type $1 (func))
- (type $2 (func (param i32 i32) (result i32)))
- (type $3 (func (param i32) (result f32)))
- (type $4 (func (param i32)))
- (type $5 (func (result i32)))
- (type $6 (func (param i32 f32 f32)))
- (type $7 (func (param i32 i32)))
- (type $8 (func (param i32 i32 i32)))
- (type $9 (func (param f32 f32 f32 i32) (result i32)))
- (type $10 (func (param i32 i32 i32 i32)))
- (type $11 (func (param i32 i32 i64)))
- (type $12 (func (param i32 i32 i32) (result i32)))
- (type $13 (func (param f32 f32 f32 f32 i32) (result i32)))
+ (type $1 (func (result i32)))
+ (type $2 (func (param f32 f32 f32 f32 i32) (result i32)))
+ (type $3 (func))
+ (type $4 (func (param i32 i32) (result i32)))
+ (type $5 (func (param i32) (result f32)))
+ (type $6 (func (param i32)))
+ (type $7 (func (param i32 f32 f32)))
+ (type $8 (func (param i32 i32)))
+ (type $9 (func (param i32 i32 i32)))
+ (type $10 (func (param f32 f32 f32 i32) (result i32)))
+ (type $11 (func (param i32 i32 i32 i32)))
+ (type $12 (func (param i32 i32 i64)))
+ (type $13 (func (param i32 i32 i32) (result i32)))
  (type $14 (func (param i32 f64) (result i32)))
  (type $15 (func (param i32 i32) (result f64)))
  (type $16 (func (param f32 f32 i32 f32 f32) (result f32)))
  (type $17 (func (param f32 f32 f32 i32 f32 f32) (result f32)))
- (type $18 (func (param f32 f32) (result f32)))
- (type $19 (func (param f32 f32 f32) (result f32)))
+ (type $18 (func (param f32)))
+ (type $19 (func (param i32 f32 f32 f32 f32) (result i32)))
+ (type $20 (func (param f32 f32) (result f32)))
+ (type $21 (func (param f32 f32 f32) (result f32)))
  (import "env" "abort" (func $~lib/builtins/abort (param i32 i32 i32 i32)))
  (global $~lib/rt/itcms/total (mut i32) (i32.const 0))
  (global $~lib/rt/itcms/threshold (mut i32) (i32.const 0))
@@ -34,6 +36,27 @@
  (global $assembly/noise/perm12 (mut i32) (i32.const 0))
  (global $assembly/physics/bodiesPtr (mut i32) (i32.const 0))
  (global $assembly/physics/bodiesCapacity (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/entitiesPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/entitiesCapacity (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/entityCount (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/bucketsPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/nodesPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/nodesCapacity (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/nodeCount (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/visitedPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/visitedCapacity (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/visitStamp (mut i32) (i32.const 1))
+ (global $assembly/spatial_hash/resultsPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/resultCount (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/soaXPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/soaYPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/soaZPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/soaRPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/soaIdPtr (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/soaCapacity (mut i32) (i32.const 0))
+ (global $assembly/spatial_hash/cellSize (mut f32) (f32.const 0))
+ (global $assembly/spatial_hash/invCell (mut f32) (f32.const 0))
+ (global $assembly/spatial_hash/gridReady (mut i32) (i32.const 0))
  (global $assembly/index/objectsPtr (mut i32) (i32.const 0))
  (global $assembly/index/objectsCapacity (mut i32) (i32.const 0))
  (global $assembly/index/asteroidsPtr (mut i32) (i32.const 0))
@@ -47,7 +70,7 @@
  (global $assembly/index/choreIndicesPtr (mut i32) (i32.const 0))
  (global $assembly/index/choreIndicesCapacity (mut i32) (i32.const 0))
  (global $~lib/memory/__stack_pointer (mut i32) (i32.const 35580))
- (memory $0 2)
+ (memory $0 8 256)
  (data $0 (i32.const 1036) "\1c\04")
  (data $0.1 (i32.const 1048) "\04\00\00\00\00\04\00\00\97\00\00\00\a0\00\00\00\89\00\00\00[\00\00\00Z\00\00\00\0f\00\00\00\83\00\00\00\r\00\00\00\c9\00\00\00_\00\00\00`\00\00\005\00\00\00\c2\00\00\00\e9\00\00\00\07\00\00\00\e1\00\00\00\8c\00\00\00$\00\00\00g\00\00\00\1e\00\00\00E\00\00\00\8e\00\00\00\08\00\00\00c\00\00\00%\00\00\00\f0\00\00\00\15\00\00\00\n\00\00\00\17\00\00\00\be\00\00\00\06\00\00\00\94\00\00\00\f7\00\00\00x\00\00\00\ea\00\00\00K\00\00\00\00\00\00\00\1a\00\00\00\c5\00\00\00>\00\00\00^\00\00\00\fc\00\00\00\db\00\00\00\cb\00\00\00u\00\00\00#\00\00\00\0b\00\00\00 \00\00\009\00\00\00\b1\00\00\00!\00\00\00X\00\00\00\ed\00\00\00\95\00\00\008\00\00\00W\00\00\00\ae\00\00\00\14\00\00\00}\00\00\00\88\00\00\00\ab\00\00\00\a8\00\00\00D\00\00\00\af\00\00\00J\00\00\00\a5\00\00\00G\00\00\00\86\00\00\00\8b\00\00\000\00\00\00\1b\00\00\00\a6\00\00\00M\00\00\00\92\00\00\00\9e\00\00\00\e7\00\00\00S\00\00\00o\00\00\00\e5\00\00\00z\00\00\00<\00\00\00\d3\00\00\00\85\00\00\00\e6\00\00\00\dc\00\00\00i\00\00\00\\\00\00\00)\00\00\007\00\00\00.\00\00\00\f5\00\00\00(\00\00\00\f4\00\00\00f\00\00\00\8f\00\00\006\00\00\00A\00\00\00\19\00\00\00?\00\00\00\a1\00\00\00\01\00\00\00\d8\00\00\00P\00\00\00I\00\00\00\d1\00\00\00L\00\00\00\84\00\00\00\bb\00\00\00\d0\00\00\00Y\00\00\00\12\00\00\00\a9\00\00\00\c8\00\00\00\c4\00\00\00\87\00\00\00\82\00\00\00t\00\00\00\bc\00\00\00\9f\00\00\00V\00\00\00\a4\00\00\00d\00\00\00m\00\00\00\c6\00\00\00\ad\00\00\00\ba\00\00\00\03\00\00\00@\00\00\004\00\00\00\d9\00\00\00\e2\00\00\00\fa\00\00\00|\00\00\00{\00\00\00\05\00\00\00\ca\00\00\00&\00\00\00\93\00\00\00v\00\00\00~\00\00\00\ff\00\00\00R\00\00\00U\00\00\00\d4\00\00\00\cf\00\00\00\ce\00\00\00;\00\00\00\e3\00\00\00/\00\00\00\10\00\00\00:\00\00\00\11\00\00\00\b6\00\00\00\bd\00\00\00\1c\00\00\00*\00\00\00\df\00\00\00\b7\00\00\00\aa\00\00\00\d5\00\00\00w\00\00\00\f8\00\00\00\98\00\00\00\02\00\00\00,\00\00\00\9a\00\00\00\a3\00\00\00F\00\00\00\dd\00\00\00\99\00\00\00e\00\00\00\9b\00\00\00\a7\00\00\00+\00\00\00\ac\00\00\00\t\00\00\00\81\00\00\00\16\00\00\00\'\00\00\00\fd\00\00\00\13\00\00\00b\00\00\00l\00\00\00n\00\00\00O\00\00\00q\00\00\00\e0\00\00\00\e8\00\00\00\b2\00\00\00\b9\00\00\00p\00\00\00h\00\00\00\da\00\00\00\f6\00\00\00a\00\00\00\e4\00\00\00\fb\00\00\00\"\00\00\00\f2\00\00\00\c1\00\00\00\ee\00\00\00\d2\00\00\00\90\00\00\00\0c\00\00\00\bf\00\00\00\b3\00\00\00\a2\00\00\00\f1\00\00\00Q\00\00\003\00\00\00\91\00\00\00\eb\00\00\00\f9\00\00\00\0e\00\00\00\ef\00\00\00k\00\00\001\00\00\00\c0\00\00\00\d6\00\00\00\1f\00\00\00\b5\00\00\00\c7\00\00\00j\00\00\00\9d\00\00\00\b8\00\00\00T\00\00\00\cc\00\00\00\b0\00\00\00s\00\00\00y\00\00\002\00\00\00-\00\00\00\7f\00\00\00\04\00\00\00\96\00\00\00\fe\00\00\00\8a\00\00\00\ec\00\00\00\cd\00\00\00]\00\00\00\de\00\00\00r\00\00\00C\00\00\00\1d\00\00\00\18\00\00\00H\00\00\00\f3\00\00\00\8d\00\00\00\80\00\00\00\c3\00\00\00N\00\00\00B\00\00\00\d7\00\00\00=\00\00\00\9c\00\00\00\b4")
  (data $1 (i32.const 2092) "\ac")
@@ -91,6 +114,16 @@
  (export "setBodyPosition" (func $assembly/physics/setBodyPosition))
  (export "addBodyAcceleration" (func $assembly/physics/addBodyAcceleration))
  (export "getBodyRadius" (func $assembly/physics/getBodyRadius))
+ (export "allocEntities" (func $assembly/spatial_hash/allocEntities))
+ (export "getEntityPtr" (func $assembly/spatial_hash/getEntityPtr))
+ (export "getEntityCount" (func $assembly/spatial_hash/getEntityCount))
+ (export "getQueryResultPtr" (func $assembly/spatial_hash/getQueryResultPtr))
+ (export "getQueryCount" (func $assembly/spatial_hash/getQueryCount))
+ (export "simdSupported" (func $assembly/spatial_hash/simdSupported))
+ (export "rebuildGrid" (func $assembly/spatial_hash/rebuildGrid))
+ (export "queryRadius" (func $assembly/spatial_hash/queryRadius))
+ (export "queryRadiusSimd" (func $assembly/spatial_hash/queryRadiusSimd))
+ (export "queryRadiusFirst" (func $assembly/spatial_hash/queryRadiusFirst))
  (export "memory" (memory $0))
  (start $~start)
  (func $~lib/rt/itcms/visitRoots
@@ -194,7 +227,7 @@
     local.get $0
     global.set $~lib/rt/itcms/iter
    end
-   block $__inlined_func$~lib/rt/itcms/Object#unlink$123
+   block $__inlined_func$~lib/rt/itcms/Object#unlink$158
     local.get $1
     i32.load offset=4
     i32.const -4
@@ -218,7 +251,7 @@
       call $~lib/builtins/abort
       unreachable
      end
-     br $__inlined_func$~lib/rt/itcms/Object#unlink$123
+     br $__inlined_func$~lib/rt/itcms/Object#unlink$158
     end
     local.get $1
     i32.load offset=8
@@ -1565,7 +1598,7 @@
    call $~lib/rt/tlsf/moveBlock
    local.set $0
   else
-   block $__inlined_func$~lib/rt/tlsf/reallocateBlock$118
+   block $__inlined_func$~lib/rt/tlsf/reallocateBlock$152
     global.get $~lib/rt/tlsf/ROOT
     local.set $2
     local.get $0
@@ -1586,7 +1619,7 @@
      local.get $0
      local.get $3
      call $~lib/rt/tlsf/prepareBlock
-     br $__inlined_func$~lib/rt/tlsf/reallocateBlock$118
+     br $__inlined_func$~lib/rt/tlsf/reallocateBlock$152
     end
     local.get $0
     i32.const 4
@@ -1627,7 +1660,7 @@
       local.get $0
       local.get $3
       call $~lib/rt/tlsf/prepareBlock
-      br $__inlined_func$~lib/rt/tlsf/reallocateBlock$118
+      br $__inlined_func$~lib/rt/tlsf/reallocateBlock$152
      end
     end
     local.get $2
@@ -2588,6 +2621,1292 @@
   i32.add
   f32.load offset=28
  )
+ (func $assembly/spatial_hash/allocEntities (param $0 i32) (result i32)
+  (local $1 i32)
+  local.get $0
+  i32.const 0
+  local.get $0
+  i32.const 0
+  i32.ge_s
+  select
+  local.tee $1
+  global.set $assembly/spatial_hash/entityCount
+  i32.const 0
+  global.set $assembly/spatial_hash/gridReady
+  local.get $1
+  i32.eqz
+  if
+   global.get $assembly/spatial_hash/entitiesPtr
+   return
+  end
+  local.get $1
+  global.get $assembly/spatial_hash/entitiesCapacity
+  i32.gt_s
+  if
+   local.get $1
+   i32.const 24
+   i32.mul
+   local.set $0
+   global.get $assembly/spatial_hash/entitiesCapacity
+   if (result i32)
+    global.get $assembly/spatial_hash/entitiesPtr
+    local.get $0
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $0
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/spatial_hash/entitiesPtr
+   local.get $1
+   global.set $assembly/spatial_hash/entitiesCapacity
+  end
+  global.get $assembly/spatial_hash/entitiesPtr
+ )
+ (func $assembly/spatial_hash/getEntityPtr (result i32)
+  global.get $assembly/spatial_hash/entitiesPtr
+ )
+ (func $assembly/spatial_hash/getEntityCount (result i32)
+  global.get $assembly/spatial_hash/entityCount
+ )
+ (func $assembly/spatial_hash/getQueryResultPtr (result i32)
+  global.get $assembly/spatial_hash/resultsPtr
+  i32.eqz
+  if
+   global.get $~lib/rt/tlsf/ROOT
+   i32.eqz
+   if
+    call $~lib/rt/tlsf/initialize
+   end
+   global.get $~lib/rt/tlsf/ROOT
+   i32.const 4096
+   call $~lib/rt/tlsf/allocateBlock
+   i32.const 4
+   i32.add
+   global.set $assembly/spatial_hash/resultsPtr
+  end
+  global.get $assembly/spatial_hash/resultsPtr
+ )
+ (func $assembly/spatial_hash/getQueryCount (result i32)
+  global.get $assembly/spatial_hash/resultCount
+ )
+ (func $assembly/spatial_hash/simdSupported (result i32)
+  i32.const 1
+ )
+ (func $assembly/spatial_hash/rebuildGrid (param $0 f32)
+  (local $1 i32)
+  (local $2 i32)
+  (local $3 i32)
+  (local $4 i32)
+  (local $5 i32)
+  (local $6 i32)
+  (local $7 i32)
+  (local $8 f32)
+  (local $9 i32)
+  (local $10 i32)
+  (local $11 i32)
+  (local $12 f32)
+  (local $13 f32)
+  (local $14 i32)
+  (local $15 f64)
+  (local $16 i32)
+  local.get $0
+  f32.const 8
+  local.get $0
+  f32.const 0.10000000149011612
+  f32.gt
+  select
+  global.set $assembly/spatial_hash/cellSize
+  f32.const 1
+  global.get $assembly/spatial_hash/cellSize
+  f32.div
+  global.set $assembly/spatial_hash/invCell
+  global.get $assembly/spatial_hash/bucketsPtr
+  i32.eqz
+  if
+   global.get $~lib/rt/tlsf/ROOT
+   i32.eqz
+   if
+    call $~lib/rt/tlsf/initialize
+   end
+   global.get $~lib/rt/tlsf/ROOT
+   i32.const 16384
+   call $~lib/rt/tlsf/allocateBlock
+   i32.const 4
+   i32.add
+   global.set $assembly/spatial_hash/bucketsPtr
+   loop $for-loop|0
+    local.get $16
+    i32.const 4096
+    i32.lt_s
+    if
+     global.get $assembly/spatial_hash/bucketsPtr
+     local.get $16
+     i32.const 2
+     i32.shl
+     i32.add
+     i32.const -1
+     i32.store
+     local.get $16
+     i32.const 1
+     i32.add
+     local.set $16
+     br $for-loop|0
+    end
+   end
+  end
+  global.get $assembly/spatial_hash/resultsPtr
+  i32.eqz
+  if
+   global.get $~lib/rt/tlsf/ROOT
+   i32.eqz
+   if
+    call $~lib/rt/tlsf/initialize
+   end
+   global.get $~lib/rt/tlsf/ROOT
+   i32.const 4096
+   call $~lib/rt/tlsf/allocateBlock
+   i32.const 4
+   i32.add
+   global.set $assembly/spatial_hash/resultsPtr
+  end
+  i32.const 0
+  local.set $16
+  loop $for-loop|00
+   local.get $16
+   i32.const 4096
+   i32.lt_s
+   if
+    global.get $assembly/spatial_hash/bucketsPtr
+    local.get $16
+    i32.const 2
+    i32.shl
+    i32.add
+    i32.const -1
+    i32.store
+    local.get $16
+    i32.const 1
+    i32.add
+    local.set $16
+    br $for-loop|00
+   end
+  end
+  i32.const 0
+  global.set $assembly/spatial_hash/nodeCount
+  global.get $assembly/spatial_hash/entitiesPtr
+  i32.eqz
+  global.get $assembly/spatial_hash/entityCount
+  i32.eqz
+  i32.or
+  if
+   i32.const 1
+   global.set $assembly/spatial_hash/gridReady
+   return
+  end
+  global.get $assembly/spatial_hash/nodesPtr
+  i32.const 0
+  i32.ne
+  global.get $assembly/spatial_hash/entityCount
+  i32.const 9
+  i32.shl
+  local.tee $2
+  global.get $assembly/spatial_hash/nodesCapacity
+  i32.le_s
+  i32.and
+  i32.eqz
+  if
+   local.get $2
+   i32.const 3
+   i32.shl
+   local.set $1
+   global.get $assembly/spatial_hash/nodesPtr
+   if (result i32)
+    global.get $assembly/spatial_hash/nodesPtr
+    local.get $1
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $1
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/spatial_hash/nodesPtr
+   local.get $2
+   global.set $assembly/spatial_hash/nodesCapacity
+  end
+  loop $for-loop|1
+   local.get $14
+   global.get $assembly/spatial_hash/entityCount
+   i32.lt_s
+   if
+    global.get $assembly/spatial_hash/entitiesPtr
+    local.get $14
+    i32.const 24
+    i32.mul
+    i32.add
+    local.tee $1
+    f32.load
+    local.tee $0
+    local.get $1
+    f32.load offset=12
+    local.tee $8
+    f32.sub
+    f64.promote_f32
+    global.get $assembly/spatial_hash/invCell
+    f64.promote_f32
+    local.tee $15
+    f64.mul
+    f64.floor
+    i32.trunc_sat_f64_s
+    local.set $5
+    local.get $1
+    f32.load offset=4
+    local.tee $13
+    local.get $8
+    f32.sub
+    f64.promote_f32
+    local.get $15
+    f64.mul
+    f64.floor
+    i32.trunc_sat_f64_s
+    local.set $4
+    local.get $13
+    local.get $8
+    f32.add
+    f64.promote_f32
+    local.get $15
+    f64.mul
+    f64.floor
+    i32.trunc_sat_f64_s
+    local.set $2
+    local.get $1
+    f32.load offset=8
+    local.tee $12
+    local.get $8
+    f32.sub
+    f64.promote_f32
+    local.get $15
+    f64.mul
+    f64.floor
+    i32.trunc_sat_f64_s
+    local.set $16
+    local.get $12
+    local.get $8
+    f32.add
+    f64.promote_f32
+    local.get $15
+    f64.mul
+    f64.floor
+    i32.trunc_sat_f64_s
+    local.set $1
+    local.get $0
+    local.get $8
+    f32.add
+    f64.promote_f32
+    local.get $15
+    f64.mul
+    f64.floor
+    i32.trunc_sat_f64_s
+    local.tee $3
+    local.get $5
+    i32.sub
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.gt_s
+    if
+     local.get $0
+     f64.promote_f32
+     local.get $15
+     f64.mul
+     f64.floor
+     i32.trunc_sat_f64_s
+     i32.const 4
+     i32.sub
+     local.tee $5
+     i32.const 7
+     i32.add
+     local.set $3
+    end
+    local.get $2
+    local.get $4
+    i32.sub
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.gt_s
+    if
+     local.get $13
+     f64.promote_f32
+     global.get $assembly/spatial_hash/invCell
+     f64.promote_f32
+     f64.mul
+     f64.floor
+     i32.trunc_sat_f64_s
+     i32.const 4
+     i32.sub
+     local.tee $4
+     i32.const 7
+     i32.add
+     local.set $2
+    end
+    local.get $1
+    local.get $16
+    i32.sub
+    i32.const 1
+    i32.add
+    i32.const 8
+    i32.gt_s
+    if
+     local.get $12
+     f64.promote_f32
+     global.get $assembly/spatial_hash/invCell
+     f64.promote_f32
+     f64.mul
+     f64.floor
+     i32.trunc_sat_f64_s
+     i32.const 4
+     i32.sub
+     local.tee $16
+     i32.const 7
+     i32.add
+     local.set $1
+    end
+    loop $for-loop|2
+     local.get $1
+     local.get $16
+     i32.ge_s
+     if
+      local.get $4
+      local.set $7
+      loop $for-loop|3
+       local.get $2
+       local.get $7
+       i32.ge_s
+       if
+        local.get $5
+        local.set $6
+        loop $for-loop|4
+         global.get $assembly/spatial_hash/nodeCount
+         global.get $assembly/spatial_hash/nodesCapacity
+         i32.lt_s
+         local.get $3
+         local.get $6
+         i32.ge_s
+         i32.and
+         if
+          global.get $assembly/spatial_hash/bucketsPtr
+          local.get $16
+          i32.const 83492791
+          i32.mul
+          local.get $6
+          i32.const 73856093
+          i32.mul
+          local.get $7
+          i32.const 19349663
+          i32.mul
+          i32.xor
+          i32.xor
+          i32.const 4095
+          i32.and
+          i32.const 2
+          i32.shl
+          i32.add
+          local.tee $11
+          i32.load
+          local.set $10
+          global.get $assembly/spatial_hash/nodeCount
+          i32.const 3
+          i32.shl
+          local.tee $9
+          global.get $assembly/spatial_hash/nodesPtr
+          i32.add
+          local.get $14
+          i32.store
+          global.get $assembly/spatial_hash/nodesPtr
+          local.get $9
+          i32.add
+          local.get $10
+          i32.store offset=4
+          local.get $11
+          global.get $assembly/spatial_hash/nodeCount
+          i32.store
+          global.get $assembly/spatial_hash/nodeCount
+          i32.const 1
+          i32.add
+          global.set $assembly/spatial_hash/nodeCount
+          local.get $6
+          i32.const 1
+          i32.add
+          local.set $6
+          br $for-loop|4
+         end
+        end
+        local.get $7
+        i32.const 1
+        i32.add
+        local.set $7
+        br $for-loop|3
+       end
+      end
+      local.get $16
+      i32.const 1
+      i32.add
+      local.set $16
+      br $for-loop|2
+     end
+    end
+    local.get $14
+    i32.const 1
+    i32.add
+    local.set $14
+    br $for-loop|1
+   end
+  end
+  i32.const 1
+  global.set $assembly/spatial_hash/gridReady
+ )
+ (func $assembly/spatial_hash/gatherCandidates (param $0 f32) (param $1 f32) (param $2 f32) (param $3 f32) (param $4 i32) (result i32)
+  (local $5 i32)
+  (local $6 i32)
+  (local $7 i32)
+  (local $8 i32)
+  (local $9 i32)
+  (local $10 i32)
+  (local $11 i32)
+  (local $12 i32)
+  (local $13 i32)
+  (local $14 i32)
+  (local $15 f64)
+  (local $16 i32)
+  (local $17 i32)
+  global.get $assembly/spatial_hash/visitedPtr
+  i32.const 0
+  i32.ne
+  global.get $assembly/spatial_hash/entityCount
+  local.tee $5
+  global.get $assembly/spatial_hash/visitedCapacity
+  i32.le_s
+  i32.and
+  i32.eqz
+  if
+   local.get $5
+   i32.const 2
+   i32.shl
+   local.set $7
+   global.get $assembly/spatial_hash/visitedPtr
+   if (result i32)
+    global.get $assembly/spatial_hash/visitedPtr
+    local.get $7
+    call $~lib/memory/heap.realloc
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $7
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+   end
+   global.set $assembly/spatial_hash/visitedPtr
+   local.get $5
+   global.set $assembly/spatial_hash/visitedCapacity
+  end
+  global.get $assembly/spatial_hash/soaXPtr
+  i32.const 0
+  i32.ne
+  global.get $assembly/spatial_hash/entityCount
+  i32.const 3
+  i32.add
+  i32.const -4
+  i32.and
+  local.tee $5
+  global.get $assembly/spatial_hash/soaCapacity
+  i32.le_s
+  i32.and
+  i32.eqz
+  if
+   local.get $5
+   i32.const 2
+   i32.shl
+   local.set $7
+   global.get $assembly/spatial_hash/soaXPtr
+   if
+    global.get $assembly/spatial_hash/soaXPtr
+    local.get $7
+    call $~lib/memory/heap.realloc
+    global.set $assembly/spatial_hash/soaXPtr
+    global.get $assembly/spatial_hash/soaYPtr
+    local.get $7
+    call $~lib/memory/heap.realloc
+    global.set $assembly/spatial_hash/soaYPtr
+    global.get $assembly/spatial_hash/soaZPtr
+    local.get $7
+    call $~lib/memory/heap.realloc
+    global.set $assembly/spatial_hash/soaZPtr
+    global.get $assembly/spatial_hash/soaRPtr
+    local.get $7
+    call $~lib/memory/heap.realloc
+    global.set $assembly/spatial_hash/soaRPtr
+    global.get $assembly/spatial_hash/soaIdPtr
+    local.get $7
+    call $~lib/memory/heap.realloc
+    global.set $assembly/spatial_hash/soaIdPtr
+   else
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $7
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+    global.set $assembly/spatial_hash/soaXPtr
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $7
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+    global.set $assembly/spatial_hash/soaYPtr
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $7
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+    global.set $assembly/spatial_hash/soaZPtr
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $7
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+    global.set $assembly/spatial_hash/soaRPtr
+    global.get $~lib/rt/tlsf/ROOT
+    i32.eqz
+    if
+     call $~lib/rt/tlsf/initialize
+    end
+    global.get $~lib/rt/tlsf/ROOT
+    local.get $7
+    call $~lib/rt/tlsf/allocateBlock
+    i32.const 4
+    i32.add
+    global.set $assembly/spatial_hash/soaIdPtr
+   end
+   local.get $5
+   global.set $assembly/spatial_hash/soaCapacity
+  end
+  global.get $assembly/spatial_hash/visitStamp
+  i32.const 1
+  i32.add
+  global.set $assembly/spatial_hash/visitStamp
+  global.get $assembly/spatial_hash/visitStamp
+  i32.eqz
+  if
+   i32.const 1
+   global.set $assembly/spatial_hash/visitStamp
+   global.get $assembly/spatial_hash/visitedPtr
+   if
+    loop $for-loop|0
+     local.get $6
+     global.get $assembly/spatial_hash/visitedCapacity
+     i32.lt_s
+     if
+      global.get $assembly/spatial_hash/visitedPtr
+      local.get $6
+      i32.const 2
+      i32.shl
+      i32.add
+      i32.const 0
+      i32.store
+      local.get $6
+      i32.const 1
+      i32.add
+      local.set $6
+      br $for-loop|0
+     end
+    end
+   end
+  end
+  global.get $assembly/spatial_hash/entitiesPtr
+  i32.eqz
+  global.get $assembly/spatial_hash/entityCount
+  i32.eqz
+  global.get $assembly/spatial_hash/gridReady
+  i32.eqz
+  i32.or
+  i32.or
+  if
+   i32.const 0
+   return
+  end
+  local.get $0
+  local.get $3
+  f32.sub
+  f64.promote_f32
+  global.get $assembly/spatial_hash/invCell
+  f64.promote_f32
+  local.tee $15
+  f64.mul
+  f64.floor
+  i32.trunc_sat_f64_s
+  local.set $7
+  local.get $0
+  local.get $3
+  f32.add
+  f64.promote_f32
+  local.get $15
+  f64.mul
+  f64.floor
+  i32.trunc_sat_f64_s
+  local.set $11
+  local.get $1
+  local.get $3
+  f32.sub
+  f64.promote_f32
+  local.get $15
+  f64.mul
+  f64.floor
+  i32.trunc_sat_f64_s
+  local.set $8
+  local.get $1
+  local.get $3
+  f32.add
+  f64.promote_f32
+  local.get $15
+  f64.mul
+  f64.floor
+  i32.trunc_sat_f64_s
+  local.set $10
+  local.get $2
+  local.get $3
+  f32.add
+  f64.promote_f32
+  local.get $15
+  f64.mul
+  f64.floor
+  i32.trunc_sat_f64_s
+  local.set $9
+  local.get $2
+  local.get $3
+  f32.sub
+  f64.promote_f32
+  local.get $15
+  f64.mul
+  f64.floor
+  i32.trunc_sat_f64_s
+  local.set $14
+  loop $for-loop|00
+   local.get $9
+   local.get $14
+   i32.ge_s
+   if
+    local.get $8
+    local.set $6
+    loop $for-loop|1
+     local.get $6
+     local.get $10
+     i32.le_s
+     if
+      local.get $7
+      local.set $5
+      loop $for-loop|2
+       local.get $5
+       local.get $11
+       i32.le_s
+       if
+        global.get $assembly/spatial_hash/bucketsPtr
+        local.get $14
+        i32.const 83492791
+        i32.mul
+        local.get $5
+        i32.const 73856093
+        i32.mul
+        local.get $6
+        i32.const 19349663
+        i32.mul
+        i32.xor
+        i32.xor
+        i32.const 4095
+        i32.and
+        i32.const 2
+        i32.shl
+        i32.add
+        i32.load
+        local.set $13
+        loop $while-continue|3
+         local.get $13
+         i32.const -1
+         i32.ne
+         if
+          local.get $13
+          i32.const 3
+          i32.shl
+          local.tee $13
+          global.get $assembly/spatial_hash/nodesPtr
+          i32.add
+          i32.load
+          local.set $16
+          global.get $assembly/spatial_hash/nodesPtr
+          local.get $13
+          i32.add
+          i32.load offset=4
+          local.set $13
+          local.get $16
+          i32.const 0
+          i32.lt_s
+          local.get $16
+          global.get $assembly/spatial_hash/entityCount
+          i32.ge_s
+          i32.or
+          br_if $while-continue|3
+          global.get $assembly/spatial_hash/visitStamp
+          global.get $assembly/spatial_hash/visitedPtr
+          local.get $16
+          i32.const 2
+          i32.shl
+          i32.add
+          local.tee $17
+          i32.load
+          i32.eq
+          br_if $while-continue|3
+          local.get $17
+          global.get $assembly/spatial_hash/visitStamp
+          i32.store
+          global.get $assembly/spatial_hash/entitiesPtr
+          local.get $16
+          i32.const 24
+          i32.mul
+          i32.add
+          local.tee $16
+          f32.load offset=16
+          i32.trunc_sat_f32_s
+          local.get $4
+          i32.and
+          i32.eqz
+          br_if $while-continue|3
+          local.get $12
+          i32.const 2
+          i32.shl
+          local.tee $17
+          global.get $assembly/spatial_hash/soaXPtr
+          i32.add
+          local.get $16
+          f32.load
+          f32.store
+          global.get $assembly/spatial_hash/soaYPtr
+          local.get $17
+          i32.add
+          local.get $16
+          f32.load offset=4
+          f32.store
+          global.get $assembly/spatial_hash/soaZPtr
+          local.get $17
+          i32.add
+          local.get $16
+          f32.load offset=8
+          f32.store
+          global.get $assembly/spatial_hash/soaRPtr
+          local.get $17
+          i32.add
+          local.get $16
+          f32.load offset=12
+          f32.store
+          global.get $assembly/spatial_hash/soaIdPtr
+          local.get $17
+          i32.add
+          local.get $16
+          f32.load offset=20
+          i32.trunc_sat_f32_s
+          i32.store
+          local.get $12
+          i32.const 1
+          i32.add
+          local.set $12
+          br $while-continue|3
+         end
+        end
+        local.get $5
+        i32.const 1
+        i32.add
+        local.set $5
+        br $for-loop|2
+       end
+      end
+      local.get $6
+      i32.const 1
+      i32.add
+      local.set $6
+      br $for-loop|1
+     end
+    end
+    local.get $14
+    i32.const 1
+    i32.add
+    local.set $14
+    br $for-loop|00
+   end
+  end
+  local.get $12
+ )
+ (func $assembly/spatial_hash/queryRadius (param $0 f32) (param $1 f32) (param $2 f32) (param $3 f32) (param $4 i32) (result i32)
+  (local $5 i32)
+  (local $6 i32)
+  (local $7 f32)
+  local.get $0
+  local.get $1
+  local.get $2
+  local.get $3
+  local.get $4
+  call $assembly/spatial_hash/gatherCandidates
+  local.set $5
+  global.get $assembly/spatial_hash/resultsPtr
+  i32.eqz
+  if
+   global.get $~lib/rt/tlsf/ROOT
+   i32.eqz
+   if
+    call $~lib/rt/tlsf/initialize
+   end
+   global.get $~lib/rt/tlsf/ROOT
+   i32.const 4096
+   call $~lib/rt/tlsf/allocateBlock
+   i32.const 4
+   i32.add
+   global.set $assembly/spatial_hash/resultsPtr
+  end
+  i32.const 0
+  global.set $assembly/spatial_hash/resultCount
+  i32.const 0
+  local.set $4
+  loop $for-loop|0
+   local.get $4
+   local.get $5
+   i32.lt_s
+   if
+    local.get $0
+    local.get $4
+    i32.const 2
+    i32.shl
+    local.tee $6
+    global.get $assembly/spatial_hash/soaXPtr
+    i32.add
+    f32.load
+    f32.sub
+    local.tee $7
+    local.get $7
+    f32.mul
+    local.get $1
+    global.get $assembly/spatial_hash/soaYPtr
+    local.get $6
+    i32.add
+    f32.load
+    f32.sub
+    local.tee $7
+    local.get $7
+    f32.mul
+    f32.add
+    local.get $2
+    global.get $assembly/spatial_hash/soaZPtr
+    local.get $6
+    i32.add
+    f32.load
+    f32.sub
+    local.tee $7
+    local.get $7
+    f32.mul
+    f32.add
+    local.get $3
+    global.get $assembly/spatial_hash/soaRPtr
+    local.get $6
+    i32.add
+    f32.load
+    f32.add
+    local.tee $7
+    local.get $7
+    f32.mul
+    f32.lt
+    if
+     block $__inlined_func$assembly/spatial_hash/writeHit$110
+      global.get $assembly/spatial_hash/soaIdPtr
+      local.get $6
+      i32.add
+      i32.load
+      local.set $6
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1024
+      i32.ge_s
+      br_if $__inlined_func$assembly/spatial_hash/writeHit$110
+      global.get $assembly/spatial_hash/resultsPtr
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 2
+      i32.shl
+      i32.add
+      local.get $6
+      i32.store
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1
+      i32.add
+      global.set $assembly/spatial_hash/resultCount
+     end
+    end
+    local.get $4
+    i32.const 1
+    i32.add
+    local.set $4
+    br $for-loop|0
+   end
+  end
+  global.get $assembly/spatial_hash/resultCount
+ )
+ (func $assembly/spatial_hash/narrowPhaseSimd (param $0 i32) (param $1 f32) (param $2 f32) (param $3 f32) (param $4 f32) (result i32)
+  (local $5 i32)
+  (local $6 v128)
+  (local $7 i32)
+  (local $8 v128)
+  (local $9 v128)
+  (local $10 v128)
+  (local $11 i32)
+  (local $12 v128)
+  (local $13 i32)
+  (local $14 i32)
+  global.get $assembly/spatial_hash/resultsPtr
+  i32.eqz
+  if
+   global.get $~lib/rt/tlsf/ROOT
+   i32.eqz
+   if
+    call $~lib/rt/tlsf/initialize
+   end
+   global.get $~lib/rt/tlsf/ROOT
+   i32.const 4096
+   call $~lib/rt/tlsf/allocateBlock
+   i32.const 4
+   i32.add
+   global.set $assembly/spatial_hash/resultsPtr
+  end
+  i32.const 0
+  global.set $assembly/spatial_hash/resultCount
+  local.get $0
+  i32.const 0
+  i32.le_s
+  if
+   i32.const 0
+   return
+  end
+  local.get $0
+  i32.const 3
+  i32.add
+  i32.const -4
+  i32.and
+  local.set $7
+  local.get $0
+  local.set $5
+  loop $for-loop|0
+   local.get $5
+   local.get $7
+   i32.lt_s
+   if
+    local.get $5
+    i32.const 2
+    i32.shl
+    local.tee $11
+    global.get $assembly/spatial_hash/soaXPtr
+    i32.add
+    f32.const 1e9
+    f32.store
+    global.get $assembly/spatial_hash/soaYPtr
+    local.get $11
+    i32.add
+    f32.const 1e9
+    f32.store
+    global.get $assembly/spatial_hash/soaZPtr
+    local.get $11
+    i32.add
+    f32.const 1e9
+    f32.store
+    global.get $assembly/spatial_hash/soaRPtr
+    local.get $11
+    i32.add
+    f32.const 0
+    f32.store
+    global.get $assembly/spatial_hash/soaIdPtr
+    local.get $11
+    i32.add
+    i32.const -1
+    i32.store
+    local.get $5
+    i32.const 1
+    i32.add
+    local.set $5
+    br $for-loop|0
+   end
+  end
+  local.get $1
+  f32x4.splat
+  local.set $6
+  local.get $2
+  f32x4.splat
+  local.set $8
+  local.get $3
+  f32x4.splat
+  local.set $9
+  local.get $4
+  f32x4.splat
+  local.set $10
+  i32.const 0
+  local.set $5
+  loop $for-loop|1
+   local.get $5
+   local.get $7
+   i32.lt_s
+   if
+    local.get $6
+    local.get $5
+    i32.const 2
+    i32.shl
+    local.tee $11
+    global.get $assembly/spatial_hash/soaXPtr
+    i32.add
+    v128.load
+    f32x4.sub
+    local.tee $12
+    local.get $12
+    f32x4.mul
+    local.get $8
+    global.get $assembly/spatial_hash/soaYPtr
+    local.get $11
+    i32.add
+    v128.load
+    f32x4.sub
+    local.tee $12
+    local.get $12
+    f32x4.mul
+    f32x4.add
+    local.get $9
+    global.get $assembly/spatial_hash/soaZPtr
+    local.get $11
+    i32.add
+    v128.load
+    f32x4.sub
+    local.tee $12
+    local.get $12
+    f32x4.mul
+    f32x4.add
+    local.get $10
+    global.get $assembly/spatial_hash/soaRPtr
+    local.get $11
+    i32.add
+    v128.load
+    f32x4.add
+    local.tee $12
+    local.get $12
+    f32x4.mul
+    f32x4.lt
+    i32x4.bitmask
+    local.tee $13
+    i32.const 1
+    i32.and
+    local.get $0
+    local.get $5
+    i32.gt_s
+    i32.and
+    if
+     block $__inlined_func$assembly/spatial_hash/writeHit$112
+      global.get $assembly/spatial_hash/soaIdPtr
+      local.get $11
+      i32.add
+      i32.load
+      local.set $14
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1024
+      i32.ge_s
+      br_if $__inlined_func$assembly/spatial_hash/writeHit$112
+      global.get $assembly/spatial_hash/resultsPtr
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 2
+      i32.shl
+      i32.add
+      local.get $14
+      i32.store
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1
+      i32.add
+      global.set $assembly/spatial_hash/resultCount
+     end
+    end
+    local.get $5
+    i32.const 1
+    i32.add
+    local.get $0
+    i32.lt_s
+    i32.const 0
+    local.get $13
+    i32.const 2
+    i32.and
+    select
+    if
+     block $__inlined_func$assembly/spatial_hash/writeHit$113
+      global.get $assembly/spatial_hash/soaIdPtr
+      local.get $11
+      i32.add
+      i32.load offset=4
+      local.set $14
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1024
+      i32.ge_s
+      br_if $__inlined_func$assembly/spatial_hash/writeHit$113
+      global.get $assembly/spatial_hash/resultsPtr
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 2
+      i32.shl
+      i32.add
+      local.get $14
+      i32.store
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1
+      i32.add
+      global.set $assembly/spatial_hash/resultCount
+     end
+    end
+    local.get $5
+    i32.const 2
+    i32.add
+    local.get $0
+    i32.lt_s
+    i32.const 0
+    local.get $13
+    i32.const 4
+    i32.and
+    select
+    if
+     block $__inlined_func$assembly/spatial_hash/writeHit$114
+      global.get $assembly/spatial_hash/soaIdPtr
+      local.get $11
+      i32.add
+      i32.load offset=8
+      local.set $14
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1024
+      i32.ge_s
+      br_if $__inlined_func$assembly/spatial_hash/writeHit$114
+      global.get $assembly/spatial_hash/resultsPtr
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 2
+      i32.shl
+      i32.add
+      local.get $14
+      i32.store
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1
+      i32.add
+      global.set $assembly/spatial_hash/resultCount
+     end
+    end
+    local.get $5
+    i32.const 3
+    i32.add
+    local.get $0
+    i32.lt_s
+    i32.const 0
+    local.get $13
+    i32.const 8
+    i32.and
+    select
+    if
+     block $__inlined_func$assembly/spatial_hash/writeHit$115
+      global.get $assembly/spatial_hash/soaIdPtr
+      local.get $11
+      i32.add
+      i32.load offset=12
+      local.set $11
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1024
+      i32.ge_s
+      br_if $__inlined_func$assembly/spatial_hash/writeHit$115
+      global.get $assembly/spatial_hash/resultsPtr
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 2
+      i32.shl
+      i32.add
+      local.get $11
+      i32.store
+      global.get $assembly/spatial_hash/resultCount
+      i32.const 1
+      i32.add
+      global.set $assembly/spatial_hash/resultCount
+     end
+    end
+    local.get $5
+    i32.const 4
+    i32.add
+    local.set $5
+    br $for-loop|1
+   end
+  end
+  global.get $assembly/spatial_hash/resultCount
+ )
+ (func $assembly/spatial_hash/queryRadiusSimd (param $0 f32) (param $1 f32) (param $2 f32) (param $3 f32) (param $4 i32) (result i32)
+  local.get $0
+  local.get $1
+  local.get $2
+  local.get $3
+  local.get $4
+  call $assembly/spatial_hash/gatherCandidates
+  local.get $0
+  local.get $1
+  local.get $2
+  local.get $3
+  call $assembly/spatial_hash/narrowPhaseSimd
+ )
+ (func $assembly/spatial_hash/queryRadiusFirst (param $0 f32) (param $1 f32) (param $2 f32) (param $3 f32) (param $4 i32) (result i32)
+  local.get $0
+  local.get $1
+  local.get $2
+  local.get $3
+  local.get $4
+  call $assembly/spatial_hash/queryRadius
+  i32.const 0
+  i32.le_s
+  if
+   i32.const -1
+   return
+  end
+  global.get $assembly/spatial_hash/resultsPtr
+  i32.load
+ )
  (func $~lib/rt/__visit_members (param $0 i32)
   block $invalid
    block $~lib/staticarray/StaticArray<f32>
@@ -2728,6 +4047,10 @@
   i32.const 8
   i32.add
   global.set $~lib/memory/__stack_pointer
+  f32.const 8
+  global.set $assembly/spatial_hash/cellSize
+  f32.const 0.125
+  global.set $assembly/spatial_hash/invCell
  )
  (func $~lib/staticarray/StaticArray<i32>#__get (param $0 i32) (param $1 i32) (result i32)
   global.get $~lib/memory/__stack_pointer

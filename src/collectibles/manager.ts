@@ -3,6 +3,7 @@ import { ParticleSystem } from '../particles';
 import type { AudioPort } from '../ports';
 import { CollectibleOrb } from './orb';
 import { OrbType } from './types';
+import { CollisionLayer, type SpatialIndex } from '../spatial_index';
 
 /** Manages all collectible orbs in the game */
 export class OrbManager {
@@ -75,8 +76,22 @@ export class OrbManager {
         }
     }
 
+    /** Register uncollected orbs in the shared spatial hash. */
+    collectSpatial(index: SpatialIndex): void {
+        for (let i = 0; i < this.orbs.length; i++) {
+            const orb = this.orbs[i];
+            if (orb.collected) continue;
+            const p = orb.mesh.position;
+            index.add(p.x, p.y, p.z, 0.35, CollisionLayer.Collectible, i, 'collectible', orb);
+        }
+    }
+
     /** Check for collection by player */
-    checkCollection(playerPosition: THREE.Vector3, collectionRadius: number = 2.0): {
+    checkCollection(
+        playerPosition: THREE.Vector3,
+        collectionRadius: number = 2.0,
+        spatial?: SpatialIndex | null
+    ): {
         collected: boolean;
         points: number;
         type?: OrbType;
@@ -87,34 +102,56 @@ export class OrbManager {
         let collectedType: OrbType | undefined;
         let healthRestored = 0;
         let anyCollected = false;
-
-        for (const orb of this.orbs) {
-            if (!orb.collected && orb.checkCollision(playerPosition, collectionRadius)) {
+        const index = spatial;
+        if (index) {
+            const hits = index.query(
+                playerPosition.x,
+                playerPosition.y,
+                playerPosition.z,
+                collectionRadius,
+                CollisionLayer.Collectible
+            );
+            for (const hit of hits) {
+                if (hit.kind !== 'collectible') continue;
+                const orb = this.orbs[hit.index];
+                if (!orb || orb.collected) continue;
                 const result = orb.collect(this.particleSystem, this.audio);
-
                 totalPoints += result.points;
                 collectedType = result.type;
                 anyCollected = true;
-
-                if (result.healthRestore) {
-                    healthRestored += result.healthRestore;
-                }
-
-                // Increment orb count for power-up tracking
+                if (result.healthRestore) healthRestored += result.healthRestore;
                 this.orbCount++;
-
-                // Notify score callback
-                if (this.onScore) {
-                    this.onScore(result.points);
-                }
-
-                // Notify health callback
+                if (this.onScore) this.onScore(result.points);
                 if (result.healthRestore && this.onHealthRestore) {
                     this.onHealthRestore(result.healthRestore);
                 }
-
-                // Only collect one per frame to avoid issues
                 break;
+            }
+        } else {
+            for (const orb of this.orbs) {
+                if (!orb.collected && orb.checkCollision(playerPosition, collectionRadius)) {
+                    const result = orb.collect(this.particleSystem, this.audio);
+
+                    totalPoints += result.points;
+                    collectedType = result.type;
+                    anyCollected = true;
+
+                    if (result.healthRestore) {
+                        healthRestored += result.healthRestore;
+                    }
+
+                    this.orbCount++;
+
+                    if (this.onScore) {
+                        this.onScore(result.points);
+                    }
+
+                    if (result.healthRestore && this.onHealthRestore) {
+                        this.onHealthRestore(result.healthRestore);
+                    }
+
+                    break;
+                }
             }
         }
 
@@ -161,8 +198,19 @@ export class OrbManager {
      * Brighten nearby uncollected orbs (Stellar Seal Pup clap cheer).
      * Returns how many orbs were boosted.
      */
-    boostGlowNearby(center: THREE.Vector3, radius: number, multiplier: number, durationSeconds: number, time: number): number {
+    boostGlowNearby(center: THREE.Vector3, radius: number, multiplier: number, durationSeconds: number, time: number, spatial?: SpatialIndex | null): number {
         let count = 0;
+        if (spatial) {
+            const hits = spatial.query(center.x, center.y, center.z, radius, CollisionLayer.Collectible);
+            for (const hit of hits) {
+                if (hit.kind !== 'collectible') continue;
+                const orb = this.orbs[hit.index];
+                if (!orb || orb.collected) continue;
+                orb.applyGlowBoost(multiplier, durationSeconds, time);
+                count++;
+            }
+            return count;
+        }
         for (const orb of this.orbs) {
             if (orb.collected) continue;
             if (orb.mesh.position.distanceTo(center) < radius) {
@@ -225,6 +273,11 @@ export class OrbManager {
     /** Get count of active orbs */
     getActiveOrbCount(): number {
         return this.orbs.filter(orb => !orb.collected).length;
+    }
+
+    /** Get orb by internal index (spatial-hash slot). */
+    getOrbAt(index: number): CollectibleOrb | undefined {
+        return this.orbs[index];
     }
 
     /** Get all active (uncollected) orbs */

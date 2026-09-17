@@ -499,7 +499,8 @@ export function updatePlayer(delta: number) {
         if (game.tetherSystem.canTether() && !game.rollSystem.isRolling()) {
             game.tetherSystem.activate(
                 [...gravityAnchors, ...game.slingableObjectSystem.getTetherTargets()],
-                player.position
+                player.position,
+                game.spatialIndex
             );
         }
     }

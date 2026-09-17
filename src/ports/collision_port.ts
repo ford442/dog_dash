@@ -1,4 +1,5 @@
 import type { WasmExports } from '../wasm_loader';
+import type { SpatialIndex } from '../spatial_index';
 
 /** WASM memory handle shared by obstacle collision checks. */
 export type CollisionWasmHandle = {
@@ -10,4 +11,5 @@ export type CollisionWasmHandle = {
 export interface CollisionPort {
     getWasm(): CollisionWasmHandle;
     setWasmMemory(memory: Float32Array | null): void;
+    getSpatialIndex(): SpatialIndex;
 }

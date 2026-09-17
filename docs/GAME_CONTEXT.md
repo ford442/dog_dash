@@ -40,7 +40,7 @@ Call `game.yourSystem.update(...)` (or a thin helper that takes ports from `game
 
 | Slice | Type | Examples |
 |-------|------|----------|
-| **core** | `CoreRuntime` | `playerState`, `wasmExports`, `wasmMemory`, `wasmBackend`, `clock` |
+| **core** | `CoreRuntime` | `playerState`, `wasmExports`, `wasmMemory`, `wasmBackend`, `spatialIndex`, `clock` |
 | **frame** | `FrameCounters` | `fpsFrameCount`, `objectDensityMultiplier`, `geologicalUpdateFrame` |
 | **run** | `RunState` | `grenadeAmmo`, `completedChaptersThisRun`, `wantsBoost`, `moonGateSequenceActive` |
 | **extensions** | `GameContextExtensions` | `levelManager`, `obstacleSystem`, `slingComboManager`, scene anchors |
@@ -59,7 +59,7 @@ Domain modules depend on **narrow port interfaces**, not `import { game } from '
 | `JuicePort` | `ports/juice_port.ts` | sling combo, combat feedback |
 | `HudPort` | `ports/hud_port.ts` | sling combo, graze scoring |
 | `InventoryPort` | `ports/inventory_port.ts` | resource harvester, craft bay |
-| `CollisionPort` | `ports/collision_port.ts` | obstacle_system WASM checks |
+| `CollisionPort` | `ports/collision_port.ts` | obstacle_system WASM + `SpatialIndex` queries |
 | `PlayerMotionPort` | `ports/player_motion_port.ts` | dream portal, power-ups |
 
 ### Example — collectibles (`AudioPort`)

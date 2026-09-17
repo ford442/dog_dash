@@ -10,8 +10,8 @@ The C++/Emscripten tree under [`cpp/`](../cpp/) is kept only as an **experimenta
 |---|------------------------------|------------------------|
 | **Binary** | `public/build/optimized.wasm` (~4 KB) | `public/build/game_cpp.wasm` (optional, not shipped) |
 | **Default build** | Yes — `predev` / `prebuild` | No |
-| **Toolchain** | `asc` via npm (`--initialMemory 2 --optimize`) — AS-only; not coupled to C++ | Emscripten emsdk or Docker |
-| **Collision API** | Asteroids, spores, boss hitboxes | Same symbols (parity, unused in shipping code) |
+| **Toolchain** | `asc` via npm (`--initialMemory 8 --maximumMemory 256 --optimize --enable simd`) — AS-only; not coupled to C++ | Emscripten emsdk or Docker (`cpp/build.sh` is the only C++ flag list) |
+| **Collision API** | Uniform-grid spatial hash (`allocEntities` / `rebuildGrid` / `queryRadius` + SIMD narrow phase). Legacy asteroid/spore/boss linear scans remain as thin buffers. | Same legacy symbols (parity, unused in shipping code) |
 | **Verlet soft-body** | ✅ [`assembly/physics.ts`](../assembly/physics.ts) — drives Jelly-Moss by default | Original source (`cpp/src/physics.cpp`), kept for native profiling |
 | **Fractal noise** | ✅ [`assembly/noise.ts`](../assembly/noise.ts) — drives biome density by default | Original source (`cpp/src/noise.cpp`), kept for SIMD prototyping |
 | **Onboarding** | Required | Not required |
@@ -26,7 +26,9 @@ npm run build    # prebuild → brace check + AS WASM + Vite
 
 No Emscripten. Everything — collision, soft-body physics, and biome noise — runs through [`assembly/index.ts`](../assembly/index.ts) (which re-exports [`assembly/noise.ts`](../assembly/noise.ts) and [`assembly/physics.ts`](../assembly/physics.ts)) → [`src/wasm_loader.ts`](../src/wasm_loader.ts) → gameplay consumers.
 
-If WASM fails to load, obstacle checks use a **JavaScript circle/sphere fallback** so gameplay does not crash (see `checkCircleCollisionJs` / `checkSphereCollisionJs` in [`src/physics_utils.ts`](../src/physics_utils.ts)). Soft-body and noise consumers fall back the same way — see below.
+Gameplay collision goes through [`src/spatial_index.ts`](../src/spatial_index.ts): one `rebuildGrid` per fixed sim step (`SIM_STEP`), then `queryRadius` for obstacles, collectibles, creatures, tether targets, boss hitboxes, and projectiles. [`src/spatial_fill.ts`](../src/spatial_fill.ts) is the live writer (`allocEntities`), superseding unused `allocObjects` packing.
+
+If WASM fails to load, `SpatialIndex.queryJs` brute-forces the same sphere tests so gameplay does not crash (legacy `checkCircleCollisionJs` / `checkSphereCollisionJs` in [`src/physics_utils.ts`](../src/physics_utils.ts) remain for fixtures). Soft-body and noise consumers fall back the same way — see below.
 
 ## Soft-body Jelly-Moss (Verlet physics)
 
@@ -87,9 +89,13 @@ Runtime opt-in for research purposes only (falls back to AssemblyScript if the C
 VITE_CPP_WASM=true npm run dev
 ```
 
-`asc` flags (`--initialMemory 2 --optimize`) stay on the AssemblyScript `build:wasm` script only. C++ memory growth is handled by `refreshMemoryView()` after `allocPhysicsBodies` (and other `alloc*` calls).
+`asc` flags (`--initialMemory 8 --maximumMemory 256 --optimize --enable simd`) stay on the AssemblyScript `build:wasm` script only.
 
-Native host tests: `BUILD_NATIVE_TESTS` stays off — see comment in [`cpp/CMakeLists.txt`](../cpp/CMakeLists.txt).
+**Memory:** 8 WASM pages (512 KiB) is the floor once the spatial hash, entity AOS, bucket table, and SIMD SoA scratch exist. `--maximumMemory 256` (16 MiB) lets `heap.alloc` / `heap.realloc` grow. After every `alloc*` (including `allocEntities` and `allocPhysicsBodies`) JS must call `refreshMemoryView()` — a grown `WebAssembly.Memory` detaches the previous `Float32Array` / `Int32Array`. C++ research builds use `INITIAL_MEMORY=1048576` + `ALLOW_MEMORY_GROWTH` in [`cpp/build.sh`](../cpp/build.sh) (the single C++ flag list; `CMakeLists.txt` is native-tests only).
+
+**SIMD:** `queryRadius` is the scalar narrow phase; `queryRadiusSimd` vectorises candidate sphere tests *after* the hash. Feature-detect `v128` at instantiate (`detectWasmSimd()` in [`src/wasm_loader.ts`](../src/wasm_loader.ts)). Engines without SIMD skip the module and use the JS brute-force path in `SpatialIndex` — do not add a second shipping backend.
+
+Native host tests: `BUILD_NATIVE_TESTS` stays off — see comment in [`cpp/CMakeLists.txt`](../cpp/CMakeLists.txt). The WASM Emscripten target was removed from CMake so flags cannot drift from `build.sh`.
 
 ## CI
 

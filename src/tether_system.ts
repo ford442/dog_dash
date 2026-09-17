@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CollisionLayer, type SpatialIndex } from './spatial_index';
 
 export interface TetherSystemOptions {
     /** Maximum distance at which the tether can latch onto an anchor. Default: 60 */
@@ -106,18 +107,34 @@ export class TetherSystem {
      * Attempts to latch the tether to the nearest `tetherable` anchor.
      * @returns true if a latch was established, false otherwise.
      */
-    activate(anchors: THREE.Object3D[], playerPos: THREE.Vector3): boolean {
+    activate(anchors: THREE.Object3D[], playerPos: THREE.Vector3, spatial?: SpatialIndex | null): boolean {
         if (!this.canTether()) return false;
 
         let nearest: THREE.Object3D | null = null;
         let nearestDist = this.maxRange;
 
-        for (const anchor of anchors) {
-            if (!anchor.userData.tetherable) continue;
-            const dist = anchor.position.distanceTo(playerPos);
-            if (dist < nearestDist) {
-                nearestDist = dist;
-                nearest = anchor;
+        if (spatial) {
+            const hit = spatial.queryNearest(
+                playerPos.x, playerPos.y, playerPos.z,
+                this.maxRange,
+                CollisionLayer.Tether
+            );
+            if (hit?.ref && hit.ref instanceof THREE.Object3D) {
+                const obj = hit.ref as THREE.Object3D;
+                const dist = obj.position.distanceTo(playerPos);
+                if (obj.userData.tetherable !== false && dist < this.maxRange) {
+                    nearest = obj;
+                    nearestDist = dist;
+                }
+            }
+        } else {
+            for (const anchor of anchors) {
+                if (!anchor.userData.tetherable) continue;
+                const dist = anchor.position.distanceTo(playerPos);
+                if (dist < nearestDist) {
+                    nearestDist = dist;
+                    nearest = anchor;
+                }
             }
         }
 
