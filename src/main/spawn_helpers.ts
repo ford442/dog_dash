@@ -10,7 +10,8 @@ export function spawnTarsiersForGravityAnchor(anchor: THREE.Group) {
     }
 }
 
-function maybeSpawnLemurOnProp(anchor: THREE.Object3D, perchType: 'geode' | 'gravityAnchor' | 'iceNeedle' | 'industrial') {
+function maybeSpawnLemurOnProp(anchor: THREE.Object3D | null | undefined, perchType: 'geode' | 'gravityAnchor' | 'iceNeedle' | 'industrial') {
+    if (!anchor) return;
     if (!game.debugSystem.isEnabled('spaceFriends')) return;
     const cfg = game.levelManager.config[game.levelManager.currentLevel];
     game.friendsManager.maybeSpawnLemurOnPerch(anchor, perchType, cfg);

@@ -39,6 +39,7 @@ For fixed **InstancedMesh** pools (allocated once at boot), call `syncCount(id, 
 - **`foliage_scatter`** — `sum(foliageDensity) × viewportWidth/100 × multiplier`
 - **`crystal_chimes`** — from `chimeDensity`
 - **`wind_chimes`** — from `windChimeDensity`
+- **`vacuum_kelp` / `ice_needle_cluster` / `magma_heart`** — from matching `foliageDensity` keys (capped at 6)
 
 Add new density fields in `level_config.ts`, then wire them in `applyLevelDecorationBudgets`.
 

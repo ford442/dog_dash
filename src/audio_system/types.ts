@@ -141,6 +141,9 @@ export interface AudioSystemHost {
     gravHumNoiseFilter: BiquadFilterNode | null;
     gravHumGain: GainNode | null;
     gravHumActive: boolean;
+    magmaRumbleOsc: OscillatorNode | null;
+    magmaRumbleGain: GainNode | null;
+    magmaRumbleActive: boolean;
     droneNode: OscillatorNode | null;
     droneGain: GainNode | null;
     soundConfigs: Record<SoundType, SoundConfig>;
@@ -186,6 +189,8 @@ export interface AudioSystemHost {
     stopDrone(): void;
     stopHover(): void;
     stopGravityHum(): void;
+    updateMagmaRumble(intensity: number): void;
+    stopMagmaRumble(): void;
     updateEngineState(currentSpeedY: number, isMovingUp: boolean, isMovingDown: boolean, isBoosting?: boolean): void;
 
     // ===== Per-chapter adaptive music (mixins/chapter_music.ts) =====

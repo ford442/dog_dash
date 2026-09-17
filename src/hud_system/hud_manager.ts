@@ -11,6 +11,7 @@ import {
     formatNumber,
     createSparkle,
     updateHealthDisplay,
+    updateFloraStatusDisplay,
     updateHighScoreDisplay,
     updateBoostDisplay,
     updateDashDisplay
@@ -343,6 +344,10 @@ export class HUDManager {
                 this.audioSystem.playMagicSound('power');
             }
         }
+    }
+
+    updateFloraStatus(energy: number, maxEnergy: number, cryoStacks: number): void {
+        updateFloraStatusDisplay(energy, maxEnergy, cryoStacks);
     }
 
     showPowerUpIcon(type: PowerUpType, duration: number): void {

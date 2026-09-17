@@ -137,7 +137,12 @@ test('a null adapter and a throwing requestDevice are separate stages', async ()
                 info: { vendor: 'test-vendor', architecture: 'test-arch', device: 'dev', description: 'd' },
                 features: new Set(['depth-clip-control']),
                 limits: { maxTextureDimension2D: 8192, maxBufferSize: 1024 },
-                requestDevice: async () => { throw new Error('device lost'); }
+                requestDevice: async (descriptor?: GPUDeviceDescriptor) => {
+                    assert.ok(descriptor, 'requestDevice must receive a descriptor');
+                    assert.equal(descriptor?.label, 'dog-dash');
+                    assert.equal(descriptor?.defaultQueue?.label, 'dog-dash-queue');
+                    throw new Error('device lost');
+                }
             }),
             getPreferredCanvasFormat: () => 'bgra8unorm'
         }

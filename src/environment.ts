@@ -14,8 +14,11 @@ import {
     disposeVoidRootBall,
     createVacuumKelp,
     updateVacuumKelp,
+    vacuumKelpSoftBody,
+    kelpConfigFromRng,
     createIceNeedleCluster,
     updateIceNeedleCluster,
+    iceNeedleCountFromRng,
     createMagmaHeart,
     updateMagmaHeart,
     createGravityAnchor,
@@ -134,12 +137,20 @@ export function createVoidRootBallAtPosition(x: number, y: number, z: number) {
 // Vacuum Kelp - energy-draining tunnel obstacles
 export const vacuumKelps: THREE.Group[] = [];
 
+function floraRandom(): number {
+    return Math.random();
+}
+
 export function createVacuumKelpAtPosition(x: number, y: number, z: number) {
-    const kelp = createVacuumKelp({ length: 20 + Math.random() * 20, nodes: 5 + Math.floor(Math.random() * 4) });
+    if (!decorationBudget.canSpawn('vacuum_kelp')) return null;
+    if (!decorationBudget.reportSpawn('vacuum_kelp')) return null;
+    const cfg = kelpConfigFromRng(floraRandom);
+    const kelp = createVacuumKelp(cfg);
     kelp.position.set(x, y, z);
     kelp.userData.speciesId = 'vacuumKelp';
     scene.add(kelp);
     vacuumKelps.push(kelp);
+    vacuumKelpSoftBody.tryAttach(kelp);
     return kelp;
 }
 
@@ -147,7 +158,9 @@ export function createVacuumKelpAtPosition(x: number, y: number, z: number) {
 export const iceNeedleClusters: THREE.Group[] = [];
 
 export function createIceNeedleClusterAtPosition(x: number, y: number, z: number) {
-    const cluster = createIceNeedleCluster({ count: 15 + Math.floor(Math.random() * 15) });
+    if (!decorationBudget.canSpawn('ice_needle_cluster')) return null;
+    if (!decorationBudget.reportSpawn('ice_needle_cluster')) return null;
+    const cluster = createIceNeedleCluster({ count: iceNeedleCountFromRng(floraRandom), random: floraRandom });
     cluster.position.set(x, y, z);
     cluster.userData.speciesId = 'iceNeedleCluster';
     scene.add(cluster);
@@ -181,7 +194,9 @@ export function createGravityAnchorAtPosition(x: number, y: number, z: number, b
 export const magmaHearts: THREE.Mesh[] = [];
 
 export function createMagmaHeartAtPosition(x: number, y: number, z: number) {
-    const heart = createMagmaHeart({ size: 3 + Math.random() * 2 });
+    if (!decorationBudget.canSpawn('magma_heart')) return null;
+    if (!decorationBudget.reportSpawn('magma_heart')) return null;
+    const heart = createMagmaHeart({ size: 3 + floraRandom() * 2 });
     heart.position.set(x, y, z);
     heart.userData.speciesId = 'magmaHeart';
     scene.add(heart);
@@ -237,8 +252,10 @@ export function cleanupGeologicalObjects(cameraX: number) {
     for (let i = vacuumKelps.length - 1; i >= 0; i--) {
         const kelp = vacuumKelps[i];
         if (kelp.position.x < cutoff) {
+            vacuumKelpSoftBody.detach(kelp);
             scene.remove(kelp);
             disposeObject(kelp);
+            decorationBudget.reportDestroy('vacuum_kelp');
             vacuumKelps.splice(i, 1);
         }
     }
@@ -249,6 +266,7 @@ export function cleanupGeologicalObjects(cameraX: number) {
         if (cluster.position.x < cutoff) {
             scene.remove(cluster);
             disposeObject(cluster);
+            decorationBudget.reportDestroy('ice_needle_cluster');
             iceNeedleClusters.splice(i, 1);
         }
     }
@@ -259,6 +277,7 @@ export function cleanupGeologicalObjects(cameraX: number) {
         if (heart.position.x < cutoff) {
             scene.remove(heart);
             disposeObject(heart);
+            decorationBudget.reportDestroy('magma_heart');
             magmaHearts.splice(i, 1);
         }
     }

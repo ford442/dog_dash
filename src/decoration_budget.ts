@@ -267,6 +267,18 @@ export function applyLevelDecorationBudgets(
             Math.min(6, Math.max(1, Math.ceil(voidRootDensity * 0.75)))
         );
     }
+    const kelpDensity = cfg.foliageDensity.vacuumKelp ?? 0;
+    if (kelpDensity > 0) {
+        decorationBudget.setMaxActive('vacuum_kelp', Math.min(6, Math.max(1, Math.ceil(kelpDensity))));
+    }
+    const iceDensity = cfg.foliageDensity.iceNeedle ?? 0;
+    if (iceDensity > 0) {
+        decorationBudget.setMaxActive('ice_needle_cluster', Math.min(6, Math.max(1, Math.ceil(iceDensity * 0.8))));
+    }
+    const magmaDensity = cfg.foliageDensity.magmaHeart ?? 0;
+    if (magmaDensity > 0) {
+        decorationBudget.setMaxActive('magma_heart', Math.min(6, Math.max(1, Math.ceil(magmaDensity))));
+    }
 }
 
 /** Register default budgets — call once at boot. */
@@ -339,6 +351,21 @@ export function registerDefaultDecorationBudgets(): void {
     decorationBudget.register('void_root_ball', {
         label: 'Void Root Balls',
         category: 'creatures',
+        maxActive: 6
+    });
+    decorationBudget.register('vacuum_kelp', {
+        label: 'Vacuum Kelp strands',
+        category: 'foliage',
+        maxActive: 6
+    });
+    decorationBudget.register('ice_needle_cluster', {
+        label: 'Ice Needle clusters',
+        category: 'foliage',
+        maxActive: 6
+    });
+    decorationBudget.register('magma_heart', {
+        label: 'Magma Hearts',
+        category: 'foliage',
         maxActive: 6
     });
     // Artifacts (plan §III) — hero props, 1–2 per run in industrial zones.

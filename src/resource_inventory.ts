@@ -126,8 +126,7 @@ const DROP_TABLES: Record<string, Partial<Record<HarvestEvent, EventDropTable>>>
         scan: [{ id: 'voidGem', min: 1, max: 1, chance: 0.2 }]
     },
     magmaHeart: {
-        // NOTE: magma hearts have no destruction mechanic yet — destroy table
-        // is dormant until one exists; scan still works via DiscoveryManager.
+        // NOTE: magma hearts harvest on cooldown-core destroy and build-phase mining.
         destroy: [
             { id: 'pyroclastOre', min: 1, max: 3 },
             { id: 'magmaCore', min: 1, max: 1, chance: 0.08 }

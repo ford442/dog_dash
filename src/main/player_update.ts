@@ -30,7 +30,9 @@ export function updatePlayer(delta: number) {
         windForceY = windForce.y;
         windForceX = windForce.x;
     }
-    const speedMult = modifiers.speedMultiplier ?? 1.0;
+    const speedMult = (modifiers.speedMultiplier ?? 1.0)
+        * (playerState.kelpSpeedMul ?? 1)
+        * (1 - 0.1 * (playerState.cryoStacks ?? 0));
     player.position.x += (playerState.autoScrollSpeed + windForceX) * speedMult * delta;
 
 

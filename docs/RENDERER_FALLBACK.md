@@ -27,6 +27,41 @@ device" holds for the whole page. The probe outcome is memoised: a failed probe
 stays failed for the life of the page, and nothing — the renderer, the GPU
 chores layer, debug tooling — may re-request a device afterwards.
 
+### Device descriptor
+
+The single `requestDevice` call always uses an explicit descriptor:
+
+- `label: "dog-dash"`
+- `defaultQueue.label: "dog-dash-queue"`
+- **no `requiredLimits`** — Three.js r182 does not document a minimum we must demand, so we omit them and boot on Intel iGPU / software adapters
+- **no required features** that would fail the probe. Optional features are collected only when the adapter already exposes them:
+  - `timestamp-query` — requested only with `?debug`, and only if `adapter.features` has it. Used for debug GPU timing; never required to play
+  - `bgra8unorm-storage` is **not** requested. Three.js r182's `WebGPURenderer` adopts the probed device and the preferred canvas format; it does not need that storage flag to boot
+
+An `uncapturederror` listener is attached to the device. Messages are appended to `window.webgpuProbe.uncapturedErrors` (capped). GPU chores must not call `requestDevice` — they adopt this device or stay on JS/WASM.
+
+Success breadcrumbs also include `requestedFeatures` and `enabledFeatures`.
+
+## Pixel-ratio policy
+
+Named presets live in `src/pixel_ratio.ts` and `CONFIG.pixelRatio`:
+
+| Preset | Scale | How to select |
+|--------|-------|----------------|
+| `quality` | 1.0 | `?quality=quality`, debug panel |
+| `default` | 0.75 | shipping default (no hidden `0.60`) |
+| `battery` | 0.5 | `?quality=battery` |
+
+The FPS scaler steps `0.50 → 0.75 → 1.0 → 1.5 → 2.0`. It no longer has a silent `0.60` rung.
+
+## Shadows
+
+`renderer.shadowMap.enabled` stays **false**. Directional lights do **not** allocate a 1024² shadow map or configure `shadow.camera` unless shadows are on (`?shadows` or the debug **Shadows** toggle). Mesh `castShadow` flags elsewhere are inert while the map is off.
+
+## Optional post FX
+
+`?fx=1` (debug toggle **Bloom / CA post FX**) enables a mild TSL bloom from `three/addons/tsl/display/BloomNode`. This is Three's own addons tree — not a third-party composer. The WebGL `EffectComposer` in `three/addons/postprocessing` is **not** used (it would need a WebGL context). `prefers-reduced-motion: reduce` disables the stack. Pixel-glow (`?pixelGlow`) still wins if both are on.
+
 ## Breadcrumbs
 
 `window.webgpuProbe` is always populated:
@@ -68,7 +103,11 @@ explanation of the stage, and the probe JSON with a copy button. There is no
 | Flag | Effect |
 |------|--------|
 | `?skip_gpu_boot` | Skips the probe entirely (stage `skipped`). For headless CI and bundle-health checks. Never a rendering path. |
-| `?wireframe`, `?collisionDebug`, `?debug` | Unchanged debug helpers. |
+| `?debug` | Debug helpers **and** optional `timestamp-query` on the device descriptor when the adapter supports it. |
+| `?quality=battery\|default\|quality` | Pixel-ratio preset (see above). |
+| `?fx=1` | Optional bloom post stack (reduced-motion aware). |
+| `?shadows` | Enable shadow maps and configure the main light's shadow camera. |
+| `?wireframe`, `?collisionDebug` | Unchanged debug helpers. |
 
 `?renderer=webgl` no longer exists.
 
