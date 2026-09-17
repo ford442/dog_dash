@@ -1,16 +1,15 @@
 /**
- * Single source of truth for deferred level-environment systems.
+ * Public entry for deferred / eager level-environment wiring.
  *
  * Adding a new code-split env feature:
  * 1. Extend `LevelEnvironments` in `level_config.ts`
- * 2. Add one entry to `DEFERRED_ENV_REGISTRY` (in `level_env_registry_deferred_env.ts`)
- * 3. Add stub + `GameSystems` field in `create_game_systems.ts` if not already present
+ * 2. Add one `defineEnvSystem` entry to `ENV_SYSTEM_MANIFEST`
+ *    (`src/level_manager/env_manifest.ts`) — requires load/install/activate/
+ *    deactivate, `budget`, and biome/role/palette metadata
+ * 3. Add stub + `GameSystems` / nested `game.env` field in `create_game_systems.ts`
+ *    if not already present
  *
- * Eager env flags (bootstrap stubs / full systems) only need an entry in `EAGER_ENV_PLUGINS`.
- *
- * This file is the public entry point: it re-exports the deferred-env and
- * deferred-level registries (defined in the sibling `level_env_registry_deferred_*.ts`
- * files) and owns the eager-plugin / plugin-order glue and the loader/installer maps.
+ * Do **not** re-declare deferred env flags in a second registry table.
  */
 import type { LevelConfig } from './level_config';
 import type { LevelPluginHost, EnvPluginBuilder } from './level_manager/plugin_host';
@@ -22,9 +21,13 @@ import {
     type DeferredLevelSystemKey,
     type SystemKey
 } from './level_deferred_registry';
-import { DEFERRED_ENV_REGISTRY } from './level_env_registry_deferred_env';
 import { DEFERRED_LEVEL_REGISTRY } from './level_env_registry_deferred_level';
 import type { DeferredLoaderContext } from './level_env_registry_types';
+import {
+    ENV_SYSTEM_MANIFEST,
+    LOAD_ONLY_ENV_FLAGS
+} from './level_manager/env_manifest';
+import type { EnvSystemDefinition } from './level_manager/define_env_system';
 
 export type {
     DeferredLoaderContext,
@@ -33,21 +36,27 @@ export type {
     DeferredLevelRegistryEntry
 } from './level_env_registry_types';
 
-export { DEFERRED_ENV_REGISTRY } from './level_env_registry_deferred_env';
 export { DEFERRED_LEVEL_REGISTRY } from './level_env_registry_deferred_level';
 export { systemsNeededForLevel } from './level_deferred_registry';
 export { DEFERRED_ENV_FLAGS, EAGER_ENV_FLAGS, DEFERRED_LEVEL_SYSTEM_KEYS };
 export type { DeferredEnvSystemKey, DeferredLevelSystemKey, SystemKey };
+export { ENV_SYSTEM_MANIFEST, LOAD_ONLY_ENV_FLAGS } from './level_manager/env_manifest';
 
-// Compile-time: registry keys must match DEFERRED_ENV_FLAGS
-type RegistryDeferredKeys = keyof typeof DEFERRED_ENV_REGISTRY;
-type AssertRegistryMatchesFlags = Exclude<DeferredEnvSystemKey, RegistryDeferredKeys> extends never
-    ? Exclude<RegistryDeferredKeys, DeferredEnvSystemKey> extends never
+const LOAD_ONLY = new Set<string>(LOAD_ONLY_ENV_FLAGS);
+
+/** Derived from the live manifest — not a second handwritten table. */
+export const DEFERRED_ENV_REGISTRY = Object.fromEntries(
+    ENV_SYSTEM_MANIFEST.map((entry) => [entry.flag, entry])
+) as { [F in DeferredEnvSystemKey]: EnvSystemDefinition<F> };
+
+type ManifestFlags = (typeof ENV_SYSTEM_MANIFEST)[number]['flag'];
+type AssertManifestMatchesFlags = Exclude<DeferredEnvSystemKey, ManifestFlags> extends never
+    ? Exclude<ManifestFlags, DeferredEnvSystemKey> extends never
         ? true
         : never
     : never;
-const _registryFlagCoverage: AssertRegistryMatchesFlags = true;
-void _registryFlagCoverage;
+const _manifestFlagCoverage: AssertManifestMatchesFlags = true;
+void _manifestFlagCoverage;
 
 type RegistryLevelKeys = keyof typeof DEFERRED_LEVEL_REGISTRY;
 type AssertLevelRegistryMatchesKeys = Exclude<DeferredLevelSystemKey, RegistryLevelKeys> extends never
@@ -57,10 +66,6 @@ type AssertLevelRegistryMatchesKeys = Exclude<DeferredLevelSystemKey, RegistryLe
     : never;
 const _levelRegistryCoverage: AssertLevelRegistryMatchesKeys = true;
 void _levelRegistryCoverage;
-
-// ---------------------------------------------------------------------------
-// Eager environment plugins (no dynamic import — system exists at bootstrap)
-// ---------------------------------------------------------------------------
 
 export const EAGER_ENV_PLUGIN_ORDER = [
     'bubbleCoral',
@@ -107,67 +112,24 @@ export function buildEagerEnvPlugins(
     return plugins;
 }
 
-/** Plugin order for deferred env flags (must match prior behaviour). */
-export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = [
-    'dynamicStarfield',
-    'dayNightCycle',
-    'candyPlanetRing',
-    'pastelNebula',
-    'candyField',
-    'wishLanterns',
-    'spacePetsSwarm',
-    'blackHole',
-    'galacticCore',
-    'industrial',
-    'waterfall',
-    'planetaryHorizon',
-    'moonPalace',
-    'reEntry',
-    'biological',
-    'nebula',
-    'nebulaRibbons',
-    'cosmicDust',
-    'godRays',
-    'aurora',
-    'lightning',
-    'asteroidField',
-    'ghostDebris',
-    'voidJellyfish',
-    'meteorShower',
-    'dancingJellyMoss',
-    'weather',
-    'singingGeodes',
-    'cloudCastles',
-    'grappleIsles',
-    'skyRailTerminal',
-    'windCurrents',
-    'flowerConstellations',
-    'hideAndSeekStars',
-    'bouncePads',
-    'spaceGarden',
-    'comboCorridor',
-    'timeShiftZones',
-    'aerialGuardPatrol',
-    'airTokens',
-    'shootingStars',
-    'fossilizedSpaceWhales',
-    'hyperspaceTunnel'
-];
+/** Plugin order for deferred env flags — derived from the live manifest. */
+export const DEFERRED_ENV_PLUGIN_ORDER: DeferredEnvSystemKey[] = ENV_SYSTEM_MANIFEST.filter(
+    (entry) => !LOAD_ONLY.has(entry.flag)
+).map((entry) => entry.flag);
 
 export function buildDeferredEnvPlugins(
     host: LevelPluginHost,
     cfg: LevelConfig,
     levelLength: number
 ): ReturnType<EnvPluginBuilder>[] {
-    return DEFERRED_ENV_PLUGIN_ORDER.map((flag) =>
-        DEFERRED_ENV_REGISTRY[flag].plugin(host, cfg, levelLength)
-    );
+    return DEFERRED_ENV_PLUGIN_ORDER.map((flag) => DEFERRED_ENV_REGISTRY[flag].plugin(host, cfg, levelLength));
 }
 
 const SYSTEM_LOADERS: Record<SystemKey, () => Promise<Record<string, unknown>>> = {
-    ...Object.fromEntries(
-        Object.values(DEFERRED_ENV_REGISTRY).map((entry) => [entry.systemKey, entry.load])
-    ) as Record<DeferredEnvSystemKey, () => Promise<Record<string, unknown>>>,
+    ...Object.fromEntries(ENV_SYSTEM_MANIFEST.map((entry) => [entry.systemKey, entry.load])) as Record<
+        DeferredEnvSystemKey,
+        () => Promise<Record<string, unknown>>
+    >,
     ...Object.fromEntries(
         Object.values(DEFERRED_LEVEL_REGISTRY).map((entry) => [entry.systemKey, entry.load])
     ) as Record<DeferredLevelSystemKey, () => Promise<Record<string, unknown>>>
@@ -177,9 +139,10 @@ const SYSTEM_INSTALLERS: Record<
     SystemKey,
     (ctx: DeferredLoaderContext, mod: Record<string, unknown>) => void | Promise<void>
 > = {
-    ...Object.fromEntries(
-        Object.values(DEFERRED_ENV_REGISTRY).map((entry) => [entry.systemKey, entry.install])
-    ) as Record<DeferredEnvSystemKey, (ctx: DeferredLoaderContext, mod: Record<string, unknown>) => void>,
+    ...Object.fromEntries(ENV_SYSTEM_MANIFEST.map((entry) => [entry.systemKey, entry.install])) as Record<
+        DeferredEnvSystemKey,
+        (ctx: DeferredLoaderContext, mod: Record<string, unknown>) => void
+    >,
     ...Object.fromEntries(
         Object.values(DEFERRED_LEVEL_REGISTRY).map((entry) => [entry.systemKey, entry.install])
     ) as Record<DeferredLevelSystemKey, (ctx: DeferredLoaderContext, mod: Record<string, unknown>) => void>

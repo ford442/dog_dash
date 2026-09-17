@@ -1,48 +1,40 @@
 /**
- * Phase 1 of the env-system-registration RFC (see PR description / docs for the
- * full design). This factory captures a single deferred env feature's wiring
- * — load, install, activate, deactivate — as one typed value instead of
- * scattering it across ~10 hand-edited files.
+ * Single factory for deferred env features: load/install/activate/deactivate,
+ * decoration budget, and biome/role/palette metadata.
  *
- * IMPORTANT: this module and `env_manifest.ts` are a parallel, additive
- * structure. Nothing here is consumed by the runtime yet — `level_env_registry.ts`
- * (`DEFERRED_ENV_REGISTRY`, `buildDeferredEnvPlugins`, `installDeferredSystem`)
- * remains the actual source of truth until a later phase migrates consumers
- * over and deletes the hand-written entries one batch at a time.
+ * `ENV_SYSTEM_MANIFEST` is the live loader consumed by `level_env_registry.ts`.
  */
 import type { LevelConfig, LevelEnvironments } from '../level_config';
 import type { LevelPluginHost, EnvPluginBuilder } from './plugin_host';
-import type { DeferredLoaderContext, DeferredEnvSystemKey, SystemKey } from '../level_env_registry';
-import type { DecorationCategory } from '../decoration_budget';
+import type { DeferredLoaderContext } from '../level_env_registry_types';
+import type { DeferredEnvSystemKey, SystemKey } from '../level_deferred_registry';
+import { decorationBudget, type DecorationCategory } from '../decoration_budget';
+
+/** Recipe biomes a generated Endless Dash chapter can draw from. */
+export type Biome = 'nebula' | 'industrial' | 'biological' | 'crystalline' | 'candy';
+
+/** The slot a system fills inside a `ChapterRecipe`. */
+export type EnvRole = 'backdrop' | 'traversal' | 'hazard' | 'flavor' | 'boss';
+
+/**
+ * Coarse visual-coherence tags. A generator should avoid stacking backdrops
+ * whose tag sets don't overlap (e.g. `pastel` + `neon` reads as "fighting").
+ */
+export type PaletteTag = 'warm' | 'cool' | 'pastel' | 'neon' | 'iridescent' | 'monochrome';
+
+export type EnvSystemDescriptorFields = {
+    label: string;
+    role: EnvRole;
+    biomes: readonly Biome[];
+    paletteTags: readonly PaletteTag[];
+    difficultyWeight: 1 | 2 | 3 | 4 | 5;
+    tutorialId?: string;
+};
 
 /** Value type for a given env flag, e.g. `AsteroidFieldEnvironmentConfig` for `'asteroidField'`. */
 type EnvFlagValue<F extends DeferredEnvSystemKey> = NonNullable<LevelEnvironments[F & keyof LevelEnvironments]>;
 
-/**
- * Spec passed to `defineEnvSystem`. Mirrors what a `DEFERRED_ENV_REGISTRY` entry
- * already does (`load` + `install` + `plugin`), with the `plugin` builder's
- * returned `{ activate, deactivate }` pulled out into their own fields so a
- * future manifest-driven dispatch loop can call them directly.
- *
- * `activate`/`deactivate` take the full `LevelPluginHost` (not just this
- * feature's own system instance) because several real entries reach into
- * *other* host systems during activate/deactivate — e.g. `cosmicDust` also
- * toggles `nebulaSystem`'s ribbons, and `asteroidField` writes
- * `host.baseAsteroidDensity`. A narrower `(system) => void` signature (as in
- * the RFC's illustrative example) would not be able to express that honestly.
- *
- * `update`/`cleanup` are accepted purely for forward-compatibility with a
- * future per-system update-dispatch loop (docs/PERFORMANCE_BUDGETS.md).
- * Neither is read by anything this phase — `LevelManager.update()`'s
- * hand-written per-system update calls are untouched.
- *
- * `budget` is required (not just forward-compatible plumbing) so every new
- * manifest entry states its decoration-budget category/instance estimate up
- * front — see docs/PERFORMANCE_BUDGETS.md's "Enforcement path" section. It is
- * still not read by anything at runtime this phase; `env_manifest.ts` itself
- * remains unconsumed until a later phase makes it the live activation path.
- */
-export type EnvSystemSpec<F extends DeferredEnvSystemKey> = {
+export type EnvSystemSpec<F extends DeferredEnvSystemKey> = EnvSystemDescriptorFields & {
     flag: F;
     /**
      * Runtime system key, when it differs from `flag`. Some flags share a
@@ -55,20 +47,12 @@ export type EnvSystemSpec<F extends DeferredEnvSystemKey> = {
     install: (ctx: DeferredLoaderContext, mod: Record<string, unknown>) => void | Promise<void>;
     activate: (host: LevelPluginHost, value: EnvFlagValue<F>, cfg: LevelConfig, levelLength: number) => void;
     deactivate: (host: LevelPluginHost) => void;
-    /** Forward-compatibility only — not wired to anything this phase. */
     update?: (sys: unknown, delta: number, cameraX: number, playerPos?: unknown) => void;
-    /** Forward-compatibility only — not wired to anything this phase. */
     cleanup?: (sys: unknown) => void;
-    /**
-     * Decoration-budget estimate for this system — structural guard for
-     * *future* manifest entries once a later phase makes this manifest the
-     * live activation path (it is not live yet). Not read by anything this
-     * phase.
-     */
     budget: { category: DecorationCategory; instances: number };
 };
 
-export type EnvSystemDefinition<F extends DeferredEnvSystemKey> = {
+export type EnvSystemDefinition<F extends DeferredEnvSystemKey> = EnvSystemDescriptorFields & {
     flag: F;
     systemKey: SystemKey;
     load: () => Promise<Record<string, unknown>>;
@@ -81,13 +65,35 @@ export type EnvSystemDefinition<F extends DeferredEnvSystemKey> = {
     budget: EnvSystemSpec<F>['budget'];
 };
 
+/** Auditor id for the manifest-declared budget of a deferred env flag. */
+export function envManifestBudgetId(flag: string): string {
+    return `env:${flag}`;
+}
+
+function registerManifestBudget<F extends DeferredEnvSystemKey>(spec: EnvSystemSpec<F>): void {
+    decorationBudget.register(envManifestBudgetId(spec.flag), {
+        label: spec.label,
+        category: spec.budget.category,
+        maxActive: spec.budget.instances
+    });
+}
+
 export function defineEnvSystem<F extends DeferredEnvSystemKey>(spec: EnvSystemSpec<F>): EnvSystemDefinition<F> {
     const { flag, activate, deactivate } = spec;
     return {
         flag,
         systemKey: spec.systemKey ?? flag,
+        label: spec.label,
+        role: spec.role,
+        biomes: spec.biomes,
+        paletteTags: spec.paletteTags,
+        difficultyWeight: spec.difficultyWeight,
+        tutorialId: spec.tutorialId,
         load: spec.load,
-        install: spec.install,
+        install: (ctx, mod) => {
+            registerManifestBudget(spec);
+            return spec.install(ctx, mod);
+        },
         activate,
         deactivate,
         update: spec.update,
@@ -95,8 +101,15 @@ export function defineEnvSystem<F extends DeferredEnvSystemKey>(spec: EnvSystemS
         budget: spec.budget,
         plugin: (host, cfg, levelLength) => ({
             flag,
-            activate: (value) => activate(host, value as EnvFlagValue<F>, cfg, levelLength),
-            deactivate: () => deactivate(host)
+            activate: (value) => {
+                registerManifestBudget(spec);
+                activate(host, value as EnvFlagValue<F>, cfg, levelLength);
+                decorationBudget.syncCount(envManifestBudgetId(flag), spec.budget.instances);
+            },
+            deactivate: () => {
+                deactivate(host);
+                decorationBudget.syncCount(envManifestBudgetId(flag), 0);
+            }
         })
     };
 }

@@ -37,7 +37,7 @@ import { SingingGeodeSystem } from '../../src/singing_geodes.ts';
  * system — ever runs under headless Chrome, and `?skip_gpu_boot` only
  * short-circuits the probe itself, it still never reaches scene construction.
  * A `node --test` unit test that imports these modules directly, bypassing
- * the whole game bootstrap and `DEFERRED_ENV_REGISTRY`, is the only way to
+ * the whole game bootstrap and `ENV_SYSTEM_MANIFEST`, is the only way to
  * exercise them in CI at all.
  *
  * Coverage: all 12 target systems import and activate successfully under

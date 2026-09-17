@@ -104,7 +104,7 @@ export type SystemKey = DeferredEnvSystemKey | DeferredLevelSystemKey;
 
 /**
  * Maps each deferred env flag to its runtime system key.
- * Must stay in sync with `DEFERRED_ENV_REGISTRY` in level_env_registry_deferred_env.ts.
+ * Must stay in sync with `ENV_SYSTEM_MANIFEST` in level_manager/env_manifest.ts.
  */
 export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKey> = {
     skyRailTerminal: 'skyRailTerminal',

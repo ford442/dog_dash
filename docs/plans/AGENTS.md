@@ -9,7 +9,7 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 **Dog Dash** (also branded as *Space Dash — Journey to the Moon*) is a 3D browser-based space exploration and action game. The player pilots a rocket through six massive levels, dodging obstacles, blasting enemies, and discovering alien flora and geological objects. The game is built around a kid-friendly aesthetic with touch controls, a tutorial system led by an adorable space dog, and whimsical audio.
 
 - **Primary language**: English (all code comments and documentation are in English)
-- **Target runtime**: Modern browsers with WebGPU support (Chrome 113+, Edge 113+) and a WebGL2 fallback for debugging/compatibility checks
+- **Target runtime**: Modern browsers with WebGPU support (Chrome 113+, Edge 113+). There is no live WebGL2 renderer; a failed probe hard-fails with a diagnostic screen.
 - **Entry point**: `index.html` loads `src/main.ts`
 
 ---
@@ -18,7 +18,7 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 
 | Layer | Technology | Notes |
 |-------|------------|-------|
-| **Renderer** | Three.js + WebGPU / WebGL2 | WebGPU is primary. `?renderer=webgl` forces the WebGL2 fallback for visual debugging. Runtime breadcrumbs are exposed on `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL`, and `window.rendererFallbackReason` |
+| **Renderer** | Three.js + WebGPU only | No WebGL fallback. `?skip_gpu_boot` skips the probe for bundle-health checks. Breadcrumbs: `window.webgpuProbe`, `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL` (always false) |
 | **Language** | TypeScript | ES2022, ES modules, strict mode enabled |
 | **Build Tool** | Vite v7 | Zero-config; handles bundling, dev server, and production builds |
 | **WASM** | AssemblyScript (`asc`) | Collision-detection physics compiled to `.wasm` |
@@ -55,7 +55,7 @@ The project uses a mostly flat `src/` module structure. Most TypeScript source f
 │   ├── optimized.wasm            # Compiled WASM output
 │   ├── optimized.wat             # WAT text output
 │   └── optimized.wasm.map        # Source map
-├── playwright.config.ts          # Playwright smoke-test config (WebGL/SwiftShader flags)
+├── playwright.config.ts          # Playwright smoke-test config (hard-fail contract, system Chrome)
 ├── tests/
 │   └── smoke.spec.ts             # Production-build smoke tests (`npm run test:smoke`)
 ├── dist/                         # Vite production build output
@@ -171,14 +171,13 @@ When you need to find or add functionality, start in the module that matches the
 ### Level configuration
 Level data is centralized in `level_config.ts`. There are 6 levels defined in `LEVEL_CONFIG` (keys `1`–`6`), each specifying distance, speed, background color, sky colors, foliage density, asteroid rate, tunnel parameters, and squid spawn rate.
 
-### Renderer fallback
-Renderer selection is centralized in `renderer_mode.ts`.
+### Renderer
+Boot is centralized in `renderer_mode.ts` / `webgpu_probe.ts`.
 
-- Default: WebGPU when available.
-- Force WebGL2: `?renderer=webgl` or `?webgl`.
-- Debug startup flags: `?wireframe`, `?collisionDebug`.
+- WebGPU only. `?renderer=webgl` does **not** exist.
+- Debug startup flags: `?skip_gpu_boot`, `?wireframe`, `?collisionDebug`.
 - Debug overlay: backquote opens the panel and reports the active renderer backend.
-- Keep game state, scene objects, camera, level data, controls, and WASM collision shared across renderer paths.
+- See `docs/RENDERER_FALLBACK.md` and the root `AGENTS.md`.
 
 ### WASM physics
 `assembly/index.ts` exports the following functions used by the TypeScript side:
@@ -195,13 +194,13 @@ The JavaScript side writes object positions into `Float32Array` views backed by 
 
 ## Testing Instructions
 
-- **Playwright smoke suite is active**: `npm run test:smoke` runs `tests/smoke.spec.ts` against the production build on `/?renderer=webgl` with software-GL (SwiftShader) flags — see `playwright.config.ts` and the root `AGENTS.md` (source of truth) for the headless/cloud caveats.
-- **Quality gates**: `npm run check` (brace balance + typecheck baseline ratchet), `npm run build`, and the smoke suite. CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci` then `npm run build` on PRs/pushes to `main`.
-- **WebGPU is often unavailable in headless/automated environments.** Use `?renderer=webgl` for browser smoke tests that do not require WebGPU, and use a real WebGPU-enabled browser to verify the primary renderer.
+- **Playwright smoke suite is active**: `npm run test:smoke` runs `tests/smoke.spec.ts` against the production build and asserts the WebGPU hard-fail contract (probe breadcrumb, blocking screen, no WebGL context, one adapter request) — see `playwright.config.ts` and the root `AGENTS.md`.
+- **Quality gates**: `npm run check` (brace balance + env-registry + typecheck ratchet + unit tests), `npm run build`, and the smoke suite. CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci`, `npm run test:unit`, then `npm run build` on PRs/pushes to `main`.
+- **WebGPU is unavailable in headless/automated environments.** That is expected: the smoke suite asserts the diagnostic screen, not a GL fallback. Verify visuals in a real WebGPU-enabled browser.
 - **Manual testing workflow**:
   1. `npm run dev`
-  2. Open `http://localhost:5173` in a supported browser for WebGPU
-  3. Open `http://localhost:5173/?renderer=webgl` to verify the WebGL2 fallback
+  2. Open `http://localhost:5173` in Chrome/Edge 113+ with a working GPU
+  3. Open `http://localhost:5173/?skip_gpu_boot` only to confirm the bundle parses without touching the GPU
   4. Verify the title screen appears and the game loop starts on click/tap
   5. Smoke-test level transitions, touch controls (if on a touch device), audio, wireframe, and collision debug
 
