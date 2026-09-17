@@ -34,9 +34,11 @@ If WASM fails to load, `SpatialIndex.queryJs` brute-forces the same sphere tests
 
 Ported from `cpp/src/physics.cpp` to [`assembly/physics.ts`](../assembly/physics.ts) — **ships in the default build, no flag needed.**
 
-1. [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts) calls `allocPhysicsBodies` / `stepPhysics` / body accessors, exported by the default AssemblyScript WASM.
-2. Up to three deferred hero mosses attach a small core net; projectile / player hits add impulses.
-3. Core mesh positions are written back each frame (bone-like offsets).
+1. [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts) and [`src/geological/vacuum_kelp.ts`](../src/geological/vacuum_kelp.ts) share [`src/verlet_body_pool.ts`](../src/verlet_body_pool.ts), which owns the single `allocPhysicsBodies` / `stepPhysics` buffer.
+2. Up to three deferred hero mosses attach a small core net; Vacuum Kelp strands attach 5–8 rope nodes. Projectile / player hits add impulses.
+3. Core / node positions are written back each frame.
+
+If WASM fails to load entirely (`handle` is `null`), both consumers stay idle and the TSL membrane sine wobble covers the visual — this is the only fallback path left; there is no C++ gameplay branch. C++ `cpp/src/physics.cpp` remains the native profiler for larger nets.
 
 If WASM fails to load entirely (`handle` is `null`), soft-body stays idle and the membrane sine/fbm shader wobble covers the visual — this is the only fallback path left; there is no more "C++ only" branch.
 

@@ -4,6 +4,9 @@ import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
 import { sporeClouds, geodes, voidRootBalls, vacuumKelps, iceNeedleClusters, magmaHearts, gravityAnchors, jellyMosses } from '../environment';
+import { RESOLUTION_RATIOS, parsePixelRatioPreset, pixelRatioForPreset, indexForPixelRatio } from '../pixel_ratio';
+import { prefersReducedMotion } from '../audio_settings';
+import { optionalPostFx } from '../optional_post_fx';
 import {
     CollisionDebugOverlay,
     WebGLMaterialFallbackRenderer,
@@ -11,10 +14,12 @@ import {
     type CollisionDebugTarget
 } from '../render_debug_helpers';
 
-export const RESOLUTION_RATIOS = [0.50, 0.60, 0.75, 1.0, 1.5, 2.0];
+export { RESOLUTION_RATIOS };
 
 export function initRenderHelpers(): void {
-    game.currentRatioIndex = 1;
+    const preset = parsePixelRatioPreset(window.location.search, 'default');
+    const ratio = pixelRatioForPreset(preset);
+    game.currentRatioIndex = indexForPixelRatio(ratio);
     game.currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[game.currentRatioIndex]);
     renderer.setPixelRatio(game.currentPixelRatio);
     game.wireframeDebugHelper = new WireframeDebugHelper();
@@ -31,6 +36,17 @@ export function renderGameFrame(): void {
         }
         game.pixelGlowSystem.postProcessing!.render();
         return;
+    }
+
+    const fxOn = game.debugSystem.isEnabled('postFx') && rendererBackend === 'webgpu' && !prefersReducedMotion();
+    if (fxOn) {
+        if (!optionalPostFx.postProcessing) {
+            optionalPostFx.activate(renderer, scene, camera);
+        }
+        if (optionalPostFx.postProcessing) {
+            optionalPostFx.render();
+            return;
+        }
     }
     game.webglMaterialFallbackRenderer.render(renderer, scene, camera);
 }
@@ -94,6 +110,7 @@ export function getCollisionDebugTargets(): CollisionDebugTarget[] {
 }
 
 export function updateShadowQuality(): void {
+    if (!game.debugSystem.isEnabled('shadows')) return;
     const targetSize = playerState.bossActive ? 2048 : 1024;
     if (mainLight.shadow.mapSize.width !== targetSize) {
         mainLight.shadow.mapSize.width = targetSize;
@@ -106,6 +123,7 @@ export function updateShadowQuality(): void {
 }
 
 export function updateShadowCulling(): void {
+    if (!game.debugSystem.isEnabled('shadows')) return;
     if (!player) return;
     game.shadowCullingFrame++;
     if (game.shadowCullingFrame % 15 !== 0) return;

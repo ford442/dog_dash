@@ -5,8 +5,13 @@ import { getGpuChores } from './gpu_chores';
 import {
     createGameRenderer,
     type GameRenderer,
-    type RendererBackend
+    type RendererBackend,
+    hasDebugUrlFlag
 } from './renderer_mode';
+import {
+    parsePixelRatioPreset,
+    pixelRatioForPreset
+} from './pixel_ratio';
 import {
     TouchControlsManager,
     detectTouchDevice
@@ -57,15 +62,21 @@ export async function initializeSceneAndRenderer(options?: { basePixelRatio?: nu
     camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
     camera.lookAt(0, CONFIG.cameraHeight, 0);
 
-    // Renderer (with perf default)
-    const basePixelRatio = options?.basePixelRatio ?? 0.60;
-    // Throws WebGpuBootError if the boot probe fails; bootstrap turns that into
-    // the blocking failure screen. No WebGL context is created either way.
+    const preset = parsePixelRatioPreset(
+        typeof window !== 'undefined' ? window.location.search : '',
+        'default'
+    );
+    const basePixelRatio = options?.basePixelRatio ?? pixelRatioForPreset(preset);
     const rendererInit = await createGameRenderer(canvas, { antialias: true, basePixelRatio });
     renderer = rendererInit.renderer;
     rendererBackend = rendererInit.backend;
     requestedRendererBackend = rendererInit.requestedBackend;
     rendererFallbackReason = rendererInit.fallbackReason || '';
+
+    if (hasDebugUrlFlag('shadows')) {
+        configureMainLightShadows(true);
+        renderer.shadowMap.enabled = true;
+    }
 
     // Adopt the renderer's device for GPU chores (visual helper compute only).
     // Never requests a device of its own — if renderer boot produced no WebGPU
@@ -93,16 +104,7 @@ export function attachLightsAndEnv(envMap: THREE.Texture) {
     scene.environment = envMap;
 
     mainLight.position.set(-5, 10, 10);
-    mainLight.castShadow = false;
-    mainLight.shadow.mapSize.width = 1024;
-    mainLight.shadow.mapSize.height = 1024;
-    mainLight.shadow.camera.near = 0.5;
-    mainLight.shadow.camera.far = 50;
-    mainLight.shadow.camera.left = -30;
-    mainLight.shadow.camera.right = 30;
-    mainLight.shadow.camera.top = 20;
-    mainLight.shadow.camera.bottom = -10;
-    mainLight.shadow.bias = -0.0001;
+    // Shadow camera is configured only by configureMainLightShadows / ?shadows.
     scene.add(mainLight);
     scene.add(mainLight.target);
 
@@ -114,6 +116,20 @@ export function attachLightsAndEnv(envMap: THREE.Texture) {
 
     accentLight2.position.set(0, 3, -5);
     scene.add(accentLight2);
+}
+
+export function configureMainLightShadows(enabled: boolean): void {
+    mainLight.castShadow = enabled;
+    if (!enabled) return;
+    mainLight.shadow.mapSize.width = 1024;
+    mainLight.shadow.mapSize.height = 1024;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 50;
+    mainLight.shadow.camera.left = -30;
+    mainLight.shadow.camera.right = 30;
+    mainLight.shadow.camera.top = 20;
+    mainLight.shadow.camera.bottom = -10;
+    mainLight.shadow.bias = -0.0001;
 }
 
 // Resize is handled in main.ts (single handler). This module does not attach listeners.

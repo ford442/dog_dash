@@ -1,4 +1,4 @@
-import { scene, camera, mainLight, renderer, touchControls } from '../scene_context';
+import { scene, camera, mainLight, renderer, touchControls, configureMainLightShadows } from '../scene_context';
 import { player } from '../player_loader';
 import { isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
@@ -79,7 +79,7 @@ export function updateFrameHousekeeping(rawDelta: number): boolean {
     // --- Debug Shadow Toggle ---
     const shadowsOn = game.debugSystem.isEnabled('shadows');
     if (mainLight.castShadow !== shadowsOn) {
-        mainLight.castShadow = shadowsOn;
+        configureMainLightShadows(shadowsOn);
         renderer.shadowMap.enabled = shadowsOn;
     }
 

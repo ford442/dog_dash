@@ -62,8 +62,9 @@ export interface CoreWasmExports {
  * research use (SIMD prototyping, native profiling); `Partial` keeps callers
  * null-safe against an older cached binary either way.
  *
- * Gameplay consumers: `jelly_moss_softbody.ts` (Verlet soft-body Jelly-Moss
- * cores) and `biome_noise.ts` (streaming spawn density).
+ * Gameplay consumers: `jelly_moss_softbody.ts` and Vacuum Kelp
+ * (`geological/vacuum_kelp.ts`) share `verlet_body_pool.ts`; `biome_noise.ts`
+ * uses fractal noise.
  */
 export interface PhysicsNoiseExports {
     // Verlet physics

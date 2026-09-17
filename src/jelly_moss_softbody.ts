@@ -18,11 +18,10 @@
 
 import * as THREE from 'three';
 import {
-    refreshMemoryView,
     type WasmBackend,
-    type WasmExports,
     type WasmHandle,
 } from './wasm_loader';
+import { verletBodyPool } from './verlet_body_pool';
 
 const MAX_HERO_MOSSES = 3;
 const MAX_CORES_PER_MOSS = 8;
@@ -44,16 +43,8 @@ export type SoftBodySlot = {
     baseScale: number;
 };
 
-function hasSoftBodyPhysics(exports: WasmExports | null | undefined): boolean {
-    return !!(
-        exports &&
-        typeof exports.allocPhysicsBodies === 'function' &&
-        typeof exports.stepPhysics === 'function' &&
-        typeof exports.getBodyPositionX === 'function' &&
-        typeof exports.getBodyPositionY === 'function' &&
-        typeof exports.setBodyPosition === 'function' &&
-        typeof exports.addBodyAcceleration === 'function'
-    );
+function hasSoftBodyPhysics(): boolean {
+    return verletBodyPool.isReady;
 }
 
 /**
@@ -63,11 +54,11 @@ export class JellyMossSoftBodySystem {
     private handle: WasmHandle | null = null;
     private slots: SoftBodySlot[] = [];
     private bodyCount = 0;
-    private allocated = false;
     private active = false;
     private bound = false;
     private levelEnabled = false;
     private pendingMeshes: THREE.Mesh[] = [];
+    private registered = false;
 
     /** True when C++ Verlet is bound and at least one hero moss is attached. */
     get isActive(): boolean {
@@ -83,16 +74,17 @@ export class JellyMossSoftBodySystem {
         this.clear();
         this.handle = null;
         this.active = false;
-        this.allocated = false;
         this.bodyCount = 0;
         this.bound = true;
+        verletBodyPool.bindWasm(handle);
+        this.ensureRegistered();
 
         if (!handle) {
             this.pendingMeshes = [];
             this.publishBreadcrumb();
             return;
         }
-        if (!hasSoftBodyPhysics(handle.exports)) {
+        if (!hasSoftBodyPhysics()) {
             console.warn('[jelly-moss softbody] WASM missing Verlet exports; staying on shader wobble');
             this.pendingMeshes = [];
             this.publishBreadcrumb();
@@ -146,11 +138,10 @@ export class JellyMossSoftBodySystem {
         const bodyCount = cores.length;
         if (bodyStart + bodyCount > MAX_BODIES) return false;
 
-        if (!this.ensureAllocation(bodyStart + bodyCount)) return false;
-
         const restX = new Float32Array(bodyCount);
         const restY = new Float32Array(bodyCount);
-        const exports = this.handle.exports;
+        const exports = verletBodyPool.exports;
+        if (!exports) return false;
 
         for (let i = 0; i < bodyCount; i++) {
             const core = cores[i];
@@ -171,6 +162,7 @@ export class JellyMossSoftBodySystem {
             baseScale: mesh.scale.x || 1,
         });
         mesh.userData.softBodyHero = true;
+        verletBodyPool.relayout();
         this.publishBreadcrumb();
         return true;
     }
@@ -182,7 +174,7 @@ export class JellyMossSoftBodySystem {
         if (idx < 0) return;
         mesh.userData.softBodyHero = false;
         this.slots.splice(idx, 1);
-        this.rebuildBodyLayout();
+        verletBodyPool.relayout();
         this.publishBreadcrumb();
     }
 
@@ -192,15 +184,17 @@ export class JellyMossSoftBodySystem {
         }
         this.slots = [];
         this.bodyCount = 0;
+        if (this.registered) verletBodyPool.relayout();
         this.publishBreadcrumb();
     }
 
     /** Impulse from projectile / player in moss-local XY. */
     applyImpulse(mesh: THREE.Mesh, localAx: number, localAy: number, strength = HIT_IMPULSE): void {
-        if (!this.active || !this.handle) return;
+        if (!this.active || !verletBodyPool.isReady) return;
         const slot = this.slots.find((s) => s.mesh === mesh);
         if (!slot) return;
-        const exports = this.handle.exports;
+        const exports = verletBodyPool.exports;
+        if (!exports) return;
         for (let i = 0; i < slot.bodyCount; i++) {
             exports.addBodyAcceleration!(slot.bodyStart + i, localAx * strength, localAy * strength);
         }
@@ -212,15 +206,11 @@ export class JellyMossSoftBodySystem {
         this.applyImpulse(mesh, playerLocalX / len, playerLocalY / len, PLAYER_IMPULSE);
     }
 
-    /**
-     * Per-frame: spring forces → stepPhysics → write core positions.
-     * No-op on AssemblyScript / missing C++.
-     */
-    update(delta: number): void {
-        if (!this.active || !this.handle || this.slots.length === 0 || this.bodyCount <= 0) return;
-
-        const dt = Math.min(0.05, Math.max(0.001, delta));
-        const exports = this.handle.exports;
+    /** Spring forces only — `verletBodyPool.step` integrates every consumer. */
+    applyForces(): void {
+        if (!this.active || !verletBodyPool.isReady || this.slots.length === 0 || this.bodyCount <= 0) return;
+        const exports = verletBodyPool.exports;
+        if (!exports) return;
 
         for (const slot of this.slots) {
             for (let i = 0; i < slot.bodyCount; i++) {
@@ -251,9 +241,12 @@ export class JellyMossSoftBodySystem {
                 exports.addBodyAcceleration!(idx, ax, ay);
             }
         }
+    }
 
-        // Space flora — no gravity
-        exports.stepPhysics!(this.bodyCount, dt, 0);
+    syncVisuals(): void {
+        if (!this.active || !verletBodyPool.isReady || this.slots.length === 0) return;
+        const exports = verletBodyPool.exports;
+        if (!exports) return;
 
         for (const slot of this.slots) {
             let energy = 0;
@@ -277,46 +270,49 @@ export class JellyMossSoftBodySystem {
         }
     }
 
-    private ensureAllocation(needed: number): boolean {
-        if (!this.handle || !hasSoftBodyPhysics(this.handle.exports)) return false;
-        try {
-            this.handle.exports.allocPhysicsBodies!(Math.max(needed, MAX_BODIES));
-            refreshMemoryView(this.handle);
-            this.allocated = true;
-            return true;
-        } catch (err) {
-            console.warn('[jelly-moss softbody] allocPhysicsBodies failed:', err);
-            this.active = false;
-            this.publishBreadcrumb();
-            return false;
-        }
+    /**
+     * Per-frame convenience when kelp is not sharing the pool this frame.
+     * Prefer applyForces → pool.step → syncVisuals from the geological loop.
+     */
+    update(delta: number): void {
+        this.applyForces();
+        verletBodyPool.step(delta, 0);
+        this.syncVisuals();
     }
 
-    /** Re-pack body indices after detach (simple rebuild from current slots). */
-    private rebuildBodyLayout(): void {
-        if (!this.handle || !this.active) {
+    /** Re-pack body indices after attach/detach (shared pool cursor). */
+    repack(cursor: number): number {
+        if (!this.active || !verletBodyPool.isReady) {
             this.bodyCount = 0;
-            return;
+            return cursor;
         }
-        const exports = this.handle.exports;
-        let cursor = 0;
+        const exports = verletBodyPool.exports;
+        if (!exports) {
+            this.bodyCount = 0;
+            return cursor;
+        }
+        let next = cursor;
         for (const slot of this.slots) {
-            const newRestX = new Float32Array(slot.bodyCount);
-            const newRestY = new Float32Array(slot.bodyCount);
             for (let i = 0; i < slot.bodyCount; i++) {
                 const core = slot.cores[i];
                 const x = core?.position.x ?? slot.restX[i];
                 const y = core?.position.y ?? slot.restY[i];
-                newRestX[i] = slot.restX[i];
-                newRestY[i] = slot.restY[i];
-                exports.setBodyPosition!(cursor + i, x, y);
+                exports.setBodyPosition!(next + i, x, y);
             }
-            slot.bodyStart = cursor;
-            slot.restX = newRestX;
-            slot.restY = newRestY;
-            cursor += slot.bodyCount;
+            slot.bodyStart = next;
+            next += slot.bodyCount;
         }
-        this.bodyCount = cursor;
+        this.bodyCount = next - cursor;
+        return next;
+    }
+
+    private ensureRegistered(): void {
+        if (this.registered) return;
+        verletBodyPool.register({
+            id: 'jelly-moss',
+            repack: (cursor) => this.repack(cursor)
+        });
+        this.registered = true;
     }
 
     private publishBreadcrumb(): void {

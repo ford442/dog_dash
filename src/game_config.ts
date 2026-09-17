@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { PIXEL_RATIO_PRESETS } from './pixel_ratio';
 
 // --- Configuration ---
 export const CONFIG = {
@@ -23,7 +24,9 @@ export const CONFIG = {
         responsiveness: 12,   // Smoothing factor for movement
     },
     // World
-    groundLevel: -50 // effectively no ground collision near 0
+    groundLevel: -50, // effectively no ground collision near 0
+    /** Named render-scale presets (`quality` 1.0, `default` 0.75, `battery` 0.5). */
+    pixelRatio: PIXEL_RATIO_PRESETS
 };
 
 // Player state - Smooth direct control system
@@ -60,7 +63,14 @@ export const playerState = {
      * 0 during the main run; raised to DREAM_ROOM_Y while a Dream Portal bonus
      * room is open (see `dream_portal.ts`).
      */
-    worldOriginY: 0
+    worldOriginY: 0,
+    /** 0–100 ship energy; Vacuum Kelp drains this instead of hearts. */
+    energy: 100,
+    maxEnergy: 100,
+    kelpContactSeconds: 0,
+    kelpSpeedMul: 1,
+    cryoStacks: 0,
+    cryoTimer: 0
 };
 
 /**

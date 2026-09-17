@@ -3,7 +3,7 @@ import { createGameSystems } from '../create_game_systems';
 import { createGameManagers } from '../game_managers';
 import { generateEnvironment, bindEnvironmentSystems, cleanupGeologicalObjects } from '../environment';
 import {
-    scene, camera, rendererBackend, requestedRendererBackend, rendererFallbackReason,
+    scene, camera, renderer, rendererBackend, requestedRendererBackend, rendererFallbackReason,
     initializeSceneAndRenderer, attachLightsAndEnv
 } from '../scene_context';
 import { player, onPlayerLoaded } from '../player_loader';
@@ -33,7 +33,10 @@ import { getGpuChores } from '../gpu_chores';
 import { WebGpuBootError } from '../renderer_mode';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import { biomeNoise } from '../biome_noise';
+import { vacuumKelpSoftBody } from '../geological/vacuum_kelp';
 import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
+import { attachPixelRatioDebugSection } from '../pixel_ratio_debug';
+import { indexForPixelRatio, pixelRatioForPreset } from '../pixel_ratio';
 import {
     createGameContextFrameState,
     installGameContext,
@@ -71,6 +74,7 @@ async function loadWasm(): Promise<void> {
     }
     jellyMossSoftBody.bindWasm(handle);
     biomeNoise.bindWasm(handle);
+    vacuumKelpSoftBody.flushPending();
     // Visual-only helper compute; ignored by WASM builds without chore exports.
     getGpuChores().attachWasm(handle?.exports);
 }
@@ -306,7 +310,7 @@ function createLevelManager(
 /** Scene init, WASM, manager wiring, level manager, moon/galaxy, prototype spawns. */
 export async function initializeStartup(): Promise<void> {
     try {
-        await initializeSceneAndRenderer({ basePixelRatio: 0.60 });
+        await initializeSceneAndRenderer();
         attachLightsAndEnv(generateEnvironment());
     } catch (err: unknown) {
         // A failed WebGPU probe gets the dedicated boot-failure screen from
@@ -412,7 +416,7 @@ export async function initializeStartup(): Promise<void> {
         ['windChimes', 'Wind Chime Mobiles', true],
         ['candyBelt', 'Candy Belt', true],
         ['cloudCastles', 'Cloud Castles', true],
-        ['shadows', 'Shadows', false],
+        ['shadows', 'Shadows', hasDebugUrlFlag('shadows')],
         ['nebula', 'Nebula', true],
         ['nebulaRibbons', 'Nebula Ribbons', true],
         ['cosmicDust', 'Cosmic Dust', true],
@@ -429,6 +433,7 @@ export async function initializeStartup(): Promise<void> {
         ['godRays', 'God Rays', true],
         ['aurora', 'Aurora Borealis', true],
         ['pixelGlow', 'Retro Pixel-Glow', hasDebugUrlFlag('pixelGlow')],
+        ['postFx', 'Bloom / CA post FX', hasDebugUrlFlag('fx')],
         ['airTokens', 'Air Tokens', true],
         ['wireframe', 'Wireframe', hasDebugUrlFlag('wireframe')],
         ['collisionDebug', 'Collision Debug', hasDebugUrlFlag('collisionDebug') || hasDebugUrlFlag('collision-debug')],
@@ -438,6 +443,12 @@ export async function initializeStartup(): Promise<void> {
         debugSystem.register(id, label, enabled);
     }
     attachRunSeedDebugSection(debugSystem.getCustomSectionContainer());
+    attachPixelRatioDebugSection(debugSystem.getCustomSectionContainer(), (name) => {
+        const ratio = pixelRatioForPreset(name);
+        game.currentRatioIndex = indexForPixelRatio(ratio);
+        game.currentPixelRatio = Math.min(2, window.devicePixelRatio * ratio);
+        renderer.setPixelRatio(game.currentPixelRatio);
+    });
 
     const ghostDebrisSystem = createGhostDebrisSystemStub();
     const voidJellyfishSystem = createVoidJellyfishSystemStub();

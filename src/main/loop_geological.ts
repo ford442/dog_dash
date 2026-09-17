@@ -24,12 +24,19 @@ import {
 import {
     damageGeode, updateGeode, updateNebulaJellyMoss, destroyNebulaJellyMoss,
     updateVoidRootBall, updateVacuumKelp, updateIceNeedleCluster, updateMagmaHeart,
-    updateGravityAnchor, GA_SLING_BONUS
+    updateGravityAnchor, GA_SLING_BONUS,
+    tickVacuumKelpGameplay, vacuumKelpSoftBody,
+    tickIceNeedleCluster, applyCryoHit,
+    tickMagmaHeartGameplay
 } from '../geological';
 import type { VoidRootBallUpdateContext } from '../void_root_ball';
 import { isVoidRootTethered } from '../void_root_ball';
 import { CONFIG } from '../game_config';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
+import { verletBodyPool } from '../verlet_body_pool';
+import {
+    applyEnergyDrain, regenEnergy, CRYO_DURATION
+} from '../geological/flora_gameplay';
 
 export function updateLoopGeological(delta: number, time: number): void {
         // --- NEW: Update Geological Objects ---
@@ -280,8 +287,11 @@ export function updateLoopGeological(delta: number, time: number): void {
                 }
             }
 
-            // C++ Verlet soft-body step for hero Jelly-Moss cores (no-op on AS)
-            jellyMossSoftBody.update(delta);
+            jellyMossSoftBody.applyForces();
+            vacuumKelpSoftBody.applyForces();
+            verletBodyPool.step(delta, 0);
+            jellyMossSoftBody.syncVisuals();
+            vacuumKelpSoftBody.syncVisuals();
     
             // Update solar sails (iridescent rippling, unfold near player)
             if (player) {
@@ -345,8 +355,69 @@ export function updateLoopGeological(delta: number, time: number): void {
                     }
                 }
             }
-            vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
-            iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
+            let kelpContact = false;
+            let kelpDrain = 0;
+            let kelpSpeed = 1;
+            const harvest = (tag: string, event: 'destroy', position: THREE.Vector3) => {
+                game.resourceHarvester.harvest(tag, event, position);
+            };
+            const emit = (position: THREE.Vector3, color: number, count: number) => {
+                game.particleSystem.emit(position, color, count, 3.0, 0.5);
+            };
+            const projectiles = game.weaponSystem.getActiveProjectiles();
+            vacuumKelps.forEach((kelp) => {
+                updateVacuumKelp(kelp, delta, time);
+                if (!player) return;
+                const tick = tickVacuumKelpGameplay(kelp, {
+                    playerPosition: player.position,
+                    delta,
+                    projectiles,
+                    harvest,
+                    emit
+                }, playerState.kelpContactSeconds);
+                if (tick.inContact) {
+                    kelpContact = true;
+                    kelpDrain = Math.max(kelpDrain, tick.drainPerSec);
+                    kelpSpeed = Math.min(kelpSpeed, tick.speedMul);
+                }
+            });
+            if (kelpContact) {
+                playerState.kelpContactSeconds += delta;
+                playerState.energy = applyEnergyDrain(playerState.energy, kelpDrain, delta);
+                playerState.kelpSpeedMul = kelpSpeed;
+            } else {
+                playerState.kelpContactSeconds = 0;
+                playerState.kelpSpeedMul = 1;
+                playerState.energy = regenEnergy(playerState.energy, playerState.maxEnergy, delta);
+            }
+
+            iceNeedleClusters.forEach((cluster) => updateIceNeedleCluster(cluster, delta, time));
+            const icePlayer = player;
+            if (icePlayer) {
+                const magmaPositions = magmaHearts
+                    .filter((h) => h.visible && h.userData.coreAlive !== false)
+                    .map((h) => h.position);
+                let cryoHit = false;
+                iceNeedleClusters.forEach((cluster) => {
+                    const tick = tickIceNeedleCluster(cluster, {
+                        playerPosition: icePlayer.position,
+                        boosting: game.boostSystem.isBoosting(),
+                        magmaPositions,
+                        delta
+                    });
+                    if (tick.cryoHit) cryoHit = true;
+                    if (tick.melted > 0) {
+                        game.resourceHarvester.harvest('iceNeedleCluster', 'destroy', cluster.position.clone());
+                    }
+                });
+                if (cryoHit) {
+                    playerState.cryoStacks = applyCryoHit(playerState.cryoStacks);
+                    playerState.cryoTimer = CRYO_DURATION;
+                } else if (playerState.cryoTimer > 0) {
+                    playerState.cryoTimer = Math.max(0, playerState.cryoTimer - delta);
+                    if (playerState.cryoTimer <= 0) playerState.cryoStacks = 0;
+                }
+            }
     
             // Update Liquid Metal System (Physics & Collisions)
             game.liquidMetalSystem.update(delta);
@@ -354,7 +425,39 @@ export function updateLoopGeological(delta: number, time: number): void {
                 game.liquidMetalSystem.checkCollisions(game.weaponSystem.getActiveProjectiles());
             }
     
-            magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
+            let magmaRumble = 0;
+            magmaHearts.forEach((heart) => {
+                updateMagmaHeart(heart, delta, time);
+                const tick = tickMagmaHeartGameplay(heart, {
+                    playerPosition: player ? player.position : heart.position,
+                    projectiles,
+                    harvest,
+                    emit
+                });
+                magmaRumble = Math.max(magmaRumble, tick.rumble);
+                if (tick.telegraph) {
+                    game.juiceManager.shakeScreen(ShakeType.LIGHT, 0.15);
+                }
+                if (tick.phase === 'eruption') {
+                    game.juiceManager.shakeScreen(ShakeType.MEDIUM, 0.25);
+                }
+                if (tick.globHit && player && !playerState.invincible) {
+                    playerState.health = Math.max(0, playerState.health - 1);
+                    playerState.invincible = true;
+                    setTimeout(() => { playerState.invincible = false; }, 900);
+                    game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
+                    updateHealthDisplay(playerState);
+                }
+                if (tick.coreDestroyed) {
+                    game.juiceManager.shakeScreen(ShakeType.HEAVY, 0.4);
+                }
+            });
+            game.audioSystem.updateMagmaRumble(magmaRumble);
+            game.hudManager.updateFloraStatus(
+                playerState.energy,
+                playerState.maxEnergy,
+                playerState.cryoStacks
+            );
     
             // Update Gravity Anchors — apply inverse-square field forces to player Y velocity
             let nearestGravDist = Infinity;

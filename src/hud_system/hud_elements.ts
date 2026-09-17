@@ -56,6 +56,18 @@ export function createSparkle(x: number, y: number, color: string = COLORS.gold)
     setTimeout(() => sparkle.remove(), 1000);
 }
 
+export function updateFloraStatusDisplay(energy: number, maxEnergy: number, cryoStacks: number): void {
+    const row = document.getElementById('hud-flora-status');
+    const energyLabel = document.getElementById('hud-energy-label');
+    const cryoLabel = document.getElementById('hud-cryo-label');
+    if (!row || !energyLabel || !cryoLabel) return;
+    const show = energy < maxEnergy - 0.5 || cryoStacks > 0;
+    row.style.display = show ? 'flex' : 'none';
+    energyLabel.textContent = `⚡ ${Math.round(energy)}`;
+    cryoLabel.textContent = cryoStacks > 0 ? `❄️ Cryo ×${cryoStacks}` : '';
+    cryoLabel.style.color = '#9fe8ff';
+}
+
 export function updateHealthDisplay(currentHealth: number, maxHealth: number): void {
     const heartsRow = document.getElementById('hud-hearts-row');
     if (!heartsRow) return;
@@ -341,6 +353,24 @@ export class HUDElementsBuilder {
 
         this.healthContainer.appendChild(label);
         this.healthContainer.appendChild(heartsRow);
+
+        const floraRow = document.createElement('div');
+        floraRow.id = 'hud-flora-status';
+        floraRow.style.cssText = `
+            display: none;
+            gap: 10px;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(20,40,80,0.85), rgba(40,20,60,0.85));
+            padding: 8px 14px;
+            border-radius: 18px;
+            border: 2px solid rgba(255,255,255,0.35);
+            color: #e8f6ff;
+            font-size: 13px;
+            font-weight: 600;
+        `;
+        floraRow.innerHTML = '<span id="hud-energy-label">⚡ 100</span><span id="hud-cryo-label"></span>';
+        this.healthContainer.appendChild(floraRow);
+
         document.body.appendChild(this.healthContainer);
 
         updateHealthDisplay();

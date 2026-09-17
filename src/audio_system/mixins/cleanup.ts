@@ -4,6 +4,7 @@ import { bindMixin } from '../types';
 export const cleanupMixin = bindMixin({
 destroy() {
     this.stopGravityHum();
+    this.stopMagmaRumble();
     this.stopEngine();
     this.stopHover();
     this.stopDrone();

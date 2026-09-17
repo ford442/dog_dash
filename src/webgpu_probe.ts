@@ -54,6 +54,12 @@ export interface WebGpuProbeResult {
     userAgent: string;
     /** Milliseconds the probe took — slow adapter requests are a real symptom. */
     durationMs: number;
+    /** Features passed to the single `requestDevice` (never hard-required). */
+    requestedFeatures?: string[];
+    /** Features actually present on the created device. */
+    enabledFeatures?: string[];
+    /** `uncapturederror` messages recorded after device creation. */
+    uncapturedErrors?: string[];
 }
 
 declare global {
@@ -151,6 +157,56 @@ export function shouldSkipGpuBoot(): boolean {
     return new URLSearchParams(window.location.search).has('skip_gpu_boot');
 }
 
+/** Optional WebGPU features we enable when the adapter has them. Never required. */
+export const OPTIONAL_WEBGPU_FEATURES = ['timestamp-query'] as const;
+
+export function shouldRequestDebugGpuFeatures(search = typeof window !== 'undefined' ? window.location.search : ''): boolean {
+    const params = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search);
+    return params.has('debug') || params.get('debug') === '1';
+}
+
+/**
+ * Features to pass as `requiredFeatures` — only those the adapter already
+ * exposes, so Intel iGPUs and CI still boot. `timestamp-query` is debug-only.
+ */
+export function collectOptionalDeviceFeatures(
+    adapter: { features?: { has: (name: string) => boolean } | Iterable<string> | Set<string> },
+    debugTiming: boolean
+): string[] {
+    const has = (name: string) => {
+        const f = adapter.features;
+        if (!f) return false;
+        if (typeof (f as { has?: unknown }).has === 'function') {
+            return (f as { has: (n: string) => boolean }).has(name);
+        }
+        return [...(f as Iterable<string>)].includes(name);
+    };
+    const features: string[] = [];
+    if (debugTiming && has('timestamp-query')) features.push('timestamp-query');
+    return features;
+}
+
+export function buildDeviceDescriptor(optionalFeatures: string[]): GPUDeviceDescriptor {
+    return {
+        label: 'dog-dash',
+        requiredFeatures: optionalFeatures as GPUFeatureName[],
+        defaultQueue: { label: 'dog-dash-queue' }
+    };
+}
+
+function attachUncapturedErrorListener(device: GPUDevice, result: WebGpuProbeResult): void {
+    result.uncapturedErrors = result.uncapturedErrors ?? [];
+    device.addEventListener('uncapturederror', (event) => {
+        const gpuEvent = event as GPUUncapturedErrorEvent;
+        const message = gpuEvent.error?.message ?? String(gpuEvent.error ?? 'uncaptured GPU error');
+        result.uncapturedErrors = [...(result.uncapturedErrors ?? []), message].slice(-8);
+        if (typeof window !== 'undefined' && window.webgpuProbe) {
+            window.webgpuProbe.uncapturedErrors = result.uncapturedErrors;
+        }
+        console.error('[webgpu-probe] uncapturederror', message);
+    });
+}
+
 let pending: Promise<WebGpuProbeOutcome> | null = null;
 
 /**
@@ -219,13 +275,19 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
 
     const adapterInfo = readAdapterInfo(adapter);
 
+    const debugTiming = shouldRequestDebugGpuFeatures();
+    const requestedFeatures = collectOptionalDeviceFeatures(adapter, debugTiming);
+    const descriptor = buildDeviceDescriptor(requestedFeatures);
+
     // ---- One and only device request --------------------------------------
     let device: GPUDevice;
     try {
-        device = await adapter.requestDevice();
+        device = await adapter.requestDevice(descriptor);
     } catch (error) {
         return fail('device', `requestDevice() threw: ${(error as Error)?.message ?? error}`, adapterInfo);
     }
+
+    const enabledFeatures = device.features ? [...device.features].sort() : requestedFeatures.slice();
 
     // ---- Canvas context ----------------------------------------------------
     const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
@@ -251,8 +313,12 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
         adapter: adapterInfo,
         stage: 'ok',
         userAgent,
-        durationMs: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - startedAt)
+        durationMs: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - startedAt),
+        requestedFeatures,
+        enabledFeatures,
+        uncapturedErrors: []
     });
+    attachUncapturedErrorListener(device, result);
 
     return { ok: true, result, adapter, device, context, format };
 }
