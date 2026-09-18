@@ -611,3 +611,12 @@ export function createHyperspaceTunnelSystemStub(): import('./hyperspace_tunnel'
         update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
     } as unknown as import('./hyperspace_tunnel').HyperspaceTunnelSystem;
 }
+
+export function createCosmicCyberGridSystemStub(): import('./cosmic_cyber_grid').CosmicCyberGridSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
+    } as unknown as import('./cosmic_cyber_grid').CosmicCyberGridSystem;
+}

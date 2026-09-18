@@ -146,6 +146,12 @@ export type BouncePadsEnvironmentConfig = {
     pads: { x: number; y: number; z?: number; bounceStrength?: number }[];
 };
 
+export type CosmicCyberGridConfig = {
+    enabled: boolean;
+    speedMultiplier?: number;
+    color?: number;
+};
+
 export type CloudsEnvironmentConfig = {
     density: number;
     lightningFromWithin?: boolean;
@@ -208,6 +214,7 @@ export type LevelEnvironments = {
     comboCorridor?: boolean | { density?: number };
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
     hyperspaceTunnel?: boolean | import('./hyperspace_tunnel').HyperspaceTunnelConfig;
+    cosmicCyberGrid?: boolean | CosmicCyberGridConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -589,6 +596,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             dynamicStarfield: true,
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
+            cosmicCyberGrid: { enabled: true, speedMultiplier: 1.5 },
             bubbleCoral: { density: 0.85 },
             skyRailTerminal: true,
             comboCorridor: true,
