@@ -384,4 +384,9 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'creatures',
         maxActive: 1
     });
+    decorationBudget.register('cosmic_cyber_grid', {
+        label: 'Cosmic Cyber Grid',
+        category: 'background3d',
+        maxActive: 1
+    });
 }

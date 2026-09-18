@@ -869,6 +869,24 @@ export const hyperspaceTunnel = defineEnvSystem<'hyperspaceTunnel'>({
     deactivate: (host) => host.hyperspaceTunnelSystem.deactivate()
 });
 
+export const cosmicCyberGrid = defineEnvSystem<'cosmicCyberGrid'>({
+    flag: 'cosmicCyberGrid',
+    label: 'Cosmic Cyber Grid',
+    role: 'backdrop',
+    biomes: ['industrial'],
+    paletteTags: ['neon'],
+    difficultyWeight: 2,
+    budget: { category: 'background3d', instances: 1 },
+    systemKey: 'cosmicCyberGrid',
+    load: () => import('../cosmic_cyber_grid'),
+    install: (ctx, mod) => {
+        const { CosmicCyberGridSystem } = mod as typeof import('../cosmic_cyber_grid');
+        ctx.installEnvPartial({ cosmicCyberGridSystem: new CosmicCyberGridSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.cosmicCyberGridSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.cosmicCyberGridSystem.deactivate()
+});
+
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
@@ -917,7 +935,8 @@ export const ENV_SYSTEM_MANIFEST = [
     airTokens,
     shootingStars,
     fossilizedSpaceWhales,
-    hyperspaceTunnel
+    hyperspaceTunnel,
+    cosmicCyberGrid
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

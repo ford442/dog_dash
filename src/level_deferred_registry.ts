@@ -59,7 +59,8 @@ export const DEFERRED_ENV_FLAGS = [
     'lightning',
     'asteroidField',
     'candyField',
-    'hyperspaceTunnel'
+    'hyperspaceTunnel',
+    'cosmicCyberGrid'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -151,7 +152,8 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     asteroidField: 'asteroidField',
     candyField: 'candyPlanetRing',
     fossilizedSpaceWhales: 'fossilizedSpaceWhales',
-    hyperspaceTunnel: 'hyperspaceTunnel'
+    hyperspaceTunnel: 'hyperspaceTunnel',
+    cosmicCyberGrid: 'cosmicCyberGrid'
 };
 
 /** Pure load predicates for non-env deferred systems. */

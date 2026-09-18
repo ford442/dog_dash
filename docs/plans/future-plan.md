@@ -123,3 +123,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Uses `InstancedMesh` with TSL `MeshBasicNodeMaterial` to render high-speed concentric rings.
 - Rings warp and stretch via shaders, reacting to the player's speed.
 - Additive blending for a neon, chromatic streak effect that enhances the rush feeling.
+
+12. Cosmic Cyber-Grid / Neon Wireframe Horizon
+
+**The Technique:** A retro-futuristic wireframe grid stretching into the background that undulates like a wave. Uses `InstancedMesh` or a single `PlaneGeometry` with TSL `MeshBasicNodeMaterial` to render scrolling neon grid lines. The grid lines glow intensely and speed up when the player dashes.
+
+**Specific Example:**
+- Classic synthwave/cyberpunk grid (e.g., TRON, Blood Dragon).
+- Uses procedural lines mapped to UVs in a TSL shader.
+- Grid scrolls towards the camera and undulates based on sine waves.
+- Speed and neon glow intensity are tied to player's velocity.

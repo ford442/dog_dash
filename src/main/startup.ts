@@ -222,6 +222,7 @@ function createLevelManager(
             timeShiftZonesSystem: systems.timeShiftZonesSystem,
             fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
             hyperspaceTunnelSystem: systems.hyperspaceTunnelSystem,
+            cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -302,6 +303,7 @@ function createLevelManager(
         timeShiftZonesSystem: systems.timeShiftZonesSystem,
         fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
         hyperspaceTunnelSystem: systems.hyperspaceTunnelSystem,
+        cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });

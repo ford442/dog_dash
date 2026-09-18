@@ -1,5 +1,6 @@
 import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
 import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
+import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { SpaceGardenSystem } from './space_garden';
 import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
@@ -28,6 +29,7 @@ import {
     createTimeShiftZonesSystemStub,
     createFossilizedSpaceWhalesSystemStub,
     createHyperspaceTunnelSystemStub,
+    createCosmicCyberGridSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -189,6 +191,7 @@ export type GameSystems = {
     timeShiftZonesSystem: import('./time_shift_zones').TimeShiftZonesSystem;
     fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem;
     hyperspaceTunnelSystem: HyperspaceTunnelSystem;
+    cosmicCyberGridSystem: CosmicCyberGridSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -439,6 +442,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const timeShiftZonesSystem = createTimeShiftZonesSystemStub();
     const fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem = createFossilizedSpaceWhalesSystemStub();
     const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
+    const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -511,6 +515,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         timeShiftZonesSystem,
         fossilizedSpaceWhalesSystem,
         hyperspaceTunnelSystem,
+        cosmicCyberGridSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
