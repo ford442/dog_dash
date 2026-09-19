@@ -438,6 +438,8 @@ export class LevelManager {
         if (enabled('godRays') && this.godRaySystem) this.godRaySystem.update(delta, cameraX, speed, playerPos, isFiring, fireDir);
         if (enabled('reEntry') && this.reEntrySystem) this.reEntrySystem.update(delta, cameraX, this.camera.position.y, this.getPlayer() ?? undefined);
 
+        if (enabled('fossilizedSpaceWhales') && this.fossilizedSpaceWhalesSystem) this.fossilizedSpaceWhalesSystem.update(delta, cameraX, playerPos);
+
         if (enabled('aurora') && this.auroraSystem) this.auroraSystem.update(delta, cameraX, speed, playerPos);
     }
 
