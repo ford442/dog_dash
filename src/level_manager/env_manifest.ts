@@ -887,6 +887,24 @@ export const cosmicCyberGrid = defineEnvSystem<'cosmicCyberGrid'>({
     deactivate: (host) => host.cosmicCyberGridSystem.deactivate()
 });
 
+export const energyRifts = defineEnvSystem<'energyRifts'>({
+    flag: 'energyRifts',
+    label: 'Energy Rifts',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 30 },
+    systemKey: 'energyRifts',
+    load: () => import('../energy_rifts'),
+    install: (ctx, mod) => {
+        const { EnergyRiftsSystem } = mod as typeof import('../energy_rifts');
+        ctx.installEnvPartial({ energyRiftsSystem: new EnergyRiftsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.energyRiftsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.energyRiftsSystem.deactivate()
+});
+
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
@@ -936,7 +954,8 @@ export const ENV_SYSTEM_MANIFEST = [
     shootingStars,
     fossilizedSpaceWhales,
     hyperspaceTunnel,
-    cosmicCyberGrid
+    cosmicCyberGrid,
+    energyRifts
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
