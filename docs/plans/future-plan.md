@@ -133,3 +133,11 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Uses procedural lines mapped to UVs in a TSL shader.
 - Grid scrolls towards the camera and undulates based on sine waves.
 - Speed and neon glow intensity are tied to player's velocity.
+
+13. Ethereal Energy Rifts
+
+**The Technique:** Vertical tears in space that pulse with vibrant colors and emit subtle glowing particles. Built with `PlaneGeometry` and TSL noise, drifting slowly in the parallax background.
+
+**Specific Example:**
+- Floating, jagged shards of spacetime that use TSL materials to render noise/glitches.
+- The rift scrolls slowly in the background and pulses based on time.

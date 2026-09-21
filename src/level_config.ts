@@ -215,6 +215,7 @@ export type LevelEnvironments = {
     aerialGuardPatrol?: boolean | import('./aerial_guard_patrol').AerialGuardPatrolConfig;
     hyperspaceTunnel?: boolean | import('./hyperspace_tunnel').HyperspaceTunnelConfig;
     cosmicCyberGrid?: boolean | CosmicCyberGridConfig;
+    energyRifts?: boolean | import('./energy_rifts').EnergyRiftsConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -697,7 +698,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             cloudCastles: true,
             singingGeodes: { density: 15 },
             comboCorridor: true,
-            fossilizedSpaceWhales: true
+            fossilizedSpaceWhales: true,
+            energyRifts: true
         },
         vignettes: {
             treeGroves: 0.8,

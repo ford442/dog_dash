@@ -620,3 +620,12 @@ export function createCosmicCyberGridSystemStub(): import('./cosmic_cyber_grid')
         update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
     } as unknown as import('./cosmic_cyber_grid').CosmicCyberGridSystem;
 }
+
+export function createEnergyRiftsSystemStub(): import('./energy_rifts').EnergyRiftsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
+    } as unknown as import('./energy_rifts').EnergyRiftsSystem;
+}

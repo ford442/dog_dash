@@ -109,6 +109,7 @@ export class LevelManager {
     fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
     hyperspaceTunnelSystem: LevelEnvironmentPorts['hyperspaceTunnelSystem'];
     cosmicCyberGridSystem: LevelEnvironmentPorts['cosmicCyberGridSystem'];
+    energyRiftsSystem: LevelEnvironmentPorts['energyRiftsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -177,6 +178,7 @@ export class LevelManager {
         this.fossilizedSpaceWhalesSystem = options.env.fossilizedSpaceWhalesSystem;
         this.hyperspaceTunnelSystem = options.env.hyperspaceTunnelSystem;
         this.cosmicCyberGridSystem = options.env.cosmicCyberGridSystem;
+        this.energyRiftsSystem = options.env.energyRiftsSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -415,6 +417,7 @@ export class LevelManager {
         if (this.galacticCoreSystem) this.galacticCoreSystem.update(delta, cameraX, playerPos);
         if (enabled('hyperspaceTunnel') && this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.update(delta, cameraX, speed);
         if (enabled('cosmicCyberGrid') && this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.update(delta, cameraX, speed);
+        if (enabled('energyRifts') && this.energyRiftsSystem) this.energyRiftsSystem.update(delta, cameraX, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -483,6 +486,7 @@ export class LevelManager {
         if (this.fossilizedSpaceWhalesSystem) this.fossilizedSpaceWhalesSystem.cleanup?.();
         if (this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.cleanup?.();
         if (this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.cleanup?.();
+        if (this.energyRiftsSystem) this.energyRiftsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

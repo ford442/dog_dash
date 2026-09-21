@@ -66,7 +66,8 @@ const PLUGIN_ORDER = [
     'shootingStars',
     'fossilizedSpaceWhales',
     'hyperspaceTunnel',
-    'cosmicCyberGrid'
+    'cosmicCyberGrid',
+    'energyRifts'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(
