@@ -908,6 +908,25 @@ export const energyRifts = defineEnvSystem<'energyRifts'>({
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
+
+export const prismaticCrystals = defineEnvSystem<'prismaticCrystals'>({
+    flag: 'prismaticCrystals',
+    label: 'Prismatic Crystals',
+    budget: { category: 'background3d', instances: 25 },
+    biomes: ['crystalline'],
+    role: 'backdrop',
+    paletteTags: ['iridescent'],
+    difficultyWeight: 1,
+    systemKey: 'prismaticCrystals',
+    load: () => import('../prismatic_crystals'),
+    install: (ctx, mod) => {
+        const { PrismaticCrystalsSystem } = mod as typeof import('../prismatic_crystals');
+        ctx.installEnvPartial({ prismaticCrystalsSystem: new PrismaticCrystalsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.prismaticCrystalsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.prismaticCrystalsSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -955,7 +974,8 @@ export const ENV_SYSTEM_MANIFEST = [
     fossilizedSpaceWhales,
     hyperspaceTunnel,
     cosmicCyberGrid,
-    energyRifts
+    energyRifts,
+    prismaticCrystals
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

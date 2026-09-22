@@ -629,3 +629,13 @@ export function createEnergyRiftsSystemStub(): import('./energy_rifts').EnergyRi
         update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
     } as unknown as import('./energy_rifts').EnergyRiftsSystem;
 }
+
+export function createPrismaticCrystalsSystemStub(): import('./prismatic_crystals').PrismaticCrystalsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./prismatic_crystals').PrismaticCrystalsSystem;
+}

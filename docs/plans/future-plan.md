@@ -141,3 +141,12 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 **Specific Example:**
 - Floating, jagged shards of spacetime that use TSL materials to render noise/glitches.
 - The rift scrolls slowly in the background and pulses based on time.
+
+14. Prismatic Crystal Drifts
+
+**The Technique:** Massive, translucent, slow-rotating crystals drifting in the background. Built with `InstancedMesh` and `THREE.DodecahedronGeometry`. Uses TSL `MeshStandardNodeMaterial` with time-based procedural noise to render huge, majestic crystals with shimmering, iridescent effects on the crystal faces.
+
+**Specific Example:**
+- Large crystal shapes drifting and rotating slowly across the screen in parallax space.
+- The TSL shader creates a shimmering, colorful effect (iridescence) that pulses and reacts to time.
+- They scale and fade at extreme edges.

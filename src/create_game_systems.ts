@@ -2,6 +2,7 @@ import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
 import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { EnergyRiftsSystem } from './energy_rifts';
+import type { PrismaticCrystalsSystem } from './prismatic_crystals';
 import type { SpaceGardenSystem } from './space_garden';
 import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
@@ -32,6 +33,7 @@ import {
     createHyperspaceTunnelSystemStub,
     createCosmicCyberGridSystemStub,
     createEnergyRiftsSystemStub,
+    createPrismaticCrystalsSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -195,6 +197,7 @@ export type GameSystems = {
     hyperspaceTunnelSystem: HyperspaceTunnelSystem;
     cosmicCyberGridSystem: CosmicCyberGridSystem;
     energyRiftsSystem: EnergyRiftsSystem;
+    prismaticCrystalsSystem: PrismaticCrystalsSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -447,6 +450,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
     const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
+    const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -521,6 +525,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         hyperspaceTunnelSystem,
         cosmicCyberGridSystem,
         energyRiftsSystem,
+        prismaticCrystalsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
