@@ -144,9 +144,9 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 
 14. Prismatic Crystal Drifts
 
-**The Technique:** Massive, translucent, slow-rotating crystals drifting in the background. Built with `InstancedMesh` and `THREE.DodecahedronGeometry`. Uses TSL `MeshStandardNodeMaterial` with time-based procedural noise to render huge, majestic crystals with shimmering, iridescent effects on the crystal faces.
+**The Technique:** Massive, translucent crystalline clusters drift slowly through the background, rotating in parallax space and refracting light with shimmering iridescence. They should feel majestic first, but can also read as environmental hazards when the player gets close.
 
-**Specific Example:**
-- Large crystal shapes drifting and rotating slowly across the screen in parallax space.
-- The TSL shader creates a shimmering, colorful effect (iridescence) that pulses and reacts to time.
-- They scale and fade at extreme edges.
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or similar large crystal forms.
+- Custom TSL `MeshStandardNodeMaterial` with time-based procedural noise and color shifting to create a prismatic, iridescent surface treatment.
+- Adds soft pulsing glow based on time and player proximity, with edge fading to keep the silhouettes ethereal at extreme angles.

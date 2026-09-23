@@ -635,7 +635,7 @@ export function createPrismaticCrystalsSystemStub(): import('./prismatic_crystal
         active: false,
         activate: () => { },
         deactivate: () => { },
-        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        update: (delta: number, cameraX: number, playerPos?: import('three').Vector3, playerSpeed: number = 8) => { },
         cleanup: () => { }
     } as unknown as import('./prismatic_crystals').PrismaticCrystalsSystem;
 }

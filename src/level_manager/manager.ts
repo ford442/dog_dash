@@ -420,7 +420,7 @@ export class LevelManager {
         if (enabled('hyperspaceTunnel') && this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.update(delta, cameraX, speed);
         if (enabled('cosmicCyberGrid') && this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.update(delta, cameraX, speed);
         if (enabled('energyRifts') && this.energyRiftsSystem) this.energyRiftsSystem.update(delta, cameraX, speed);
-        if (enabled('prismaticCrystals') && this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.update(delta, cameraX, speed);
+        if (enabled('prismaticCrystals') && this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.update(delta, cameraX, playerPos, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);

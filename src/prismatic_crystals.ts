@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time, vec3, vec4, color, uniform, sin, cos, mix, positionLocal, float, smoothstep, fract, abs, normalWorld } from 'three/tsl';
+import { time, vec3, vec4, color, uniform, sin, mix, positionLocal, positionWorld, length, smoothstep, abs, normalWorld } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
 import { fbm } from './clouds/noise';
@@ -13,7 +13,7 @@ export interface PrismaticCrystalsConfig {
 
 const MAX_CRYSTALS = 25;
 
-function createPrismaticMaterial(color1: number, color2: number, uSpeed: any) {
+function createPrismaticMaterial(color1: number, color2: number, uSpeed: any, uPlayerPos: any) {
     const mat = new MeshStandardNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -28,16 +28,15 @@ function createPrismaticMaterial(color1: number, color2: number, uSpeed: any) {
 
     const t = time.mul(uSpeed).add(positionLocal.x.mul(0.01));
     const noiseVal = fbm(normalWorld.xyz.add(t));
-
-    // Iridescence effect based on normals and time noise
     const mixFactor = sin(t.mul(2.0).add(noiseVal.mul(4.0))).mul(0.5).add(0.5);
     const baseColor = mix(c1, c2, mixFactor);
-
-    // Edges fade based on position to create a soft, ethereal appearance
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const glowIntensity = smoothstep(150.0, 0.0, distToPlayer);
+    const finalColor = baseColor.add(color(0xffffff).mul(glowIntensity.mul(0.35)));
     const fade = smoothstep(1.0, 0.2, abs(positionLocal.z).div(20.0));
 
-    mat.colorNode = vec4(baseColor, fade.mul(0.8));
-    mat.emissiveNode = baseColor.mul(0.5);
+    mat.colorNode = vec4(finalColor, fade.mul(0.8));
+    mat.emissiveNode = finalColor.mul(0.4);
 
     return mat;
 }
@@ -49,17 +48,18 @@ export class PrismaticCrystalsSystem {
 
     crystalCount: number = MAX_CRYSTALS;
     uSpeed = uniform(1.0);
+    uPlayerPos = uniform(vec3(0, 0, 0));
     width: number = 1800;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
         const geo = new THREE.DodecahedronGeometry(15, 0);
-        const mat = createPrismaticMaterial(0x00ffff, 0xff00ff, this.uSpeed);
+        const mat = createPrismaticMaterial(0x00ffff, 0xff00ff, this.uSpeed, this.uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.crystalCount);
         this.mesh.frustumCulled = false;
-        this.mesh.renderOrder = -10; // Deep background
+        this.mesh.renderOrder = -10;
 
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.crystalCount; i++) {
@@ -78,8 +78,6 @@ export class PrismaticCrystalsSystem {
             this.mesh.setMatrixAt(i, dummy.matrix);
         }
         this.mesh.instanceMatrix.needsUpdate = true;
-
-        // Add minimal rotation speeds encoded in userData (we'll just use math in update)
         this.scene.add(this.mesh);
 
         decorationBudget.register('prismatic_crystals', {
@@ -99,7 +97,12 @@ export class PrismaticCrystalsSystem {
         this.mesh.visible = true;
 
         if (config?.color1 !== undefined || config?.color2 !== undefined) {
-            const mat = createPrismaticMaterial(config.color1 ?? 0x00ffff, config.color2 ?? 0xff00ff, this.uSpeed);
+            const mat = createPrismaticMaterial(
+                config.color1 ?? 0x00ffff,
+                config.color2 ?? 0xff00ff,
+                this.uSpeed,
+                this.uPlayerPos
+            );
             if (this.mesh.material) {
                 (this.mesh.material as any).dispose?.();
             }
@@ -116,9 +119,12 @@ export class PrismaticCrystalsSystem {
         decorationBudget.syncCount('prismatic_crystals', 0);
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number = 8) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3, playerSpeed: number = 8) {
         if (!this.active) return;
 
+        if (playerPos) {
+            this.uPlayerPos.value.copy(playerPos);
+        }
         this.uSpeed.value = playerSpeed * 0.1;
 
         const dummy = new THREE.Object3D();
@@ -131,8 +137,7 @@ export class PrismaticCrystalsSystem {
             this.mesh.getMatrixAt(i, mat4);
             mat4.decompose(dummy.position, dummy.quaternion, dummy.scale);
 
-            // Drift slowly left and rotate
-            dummy.position.x -= delta * (5.0 + (i % 3)); // slight variation
+            dummy.position.x -= delta * (5.0 + (i % 3) + playerSpeed * 0.05);
             dummy.rotation.x += delta * 0.1;
             dummy.rotation.y += delta * 0.15;
 
@@ -154,7 +159,7 @@ export class PrismaticCrystalsSystem {
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if (Array.isArray(this.mesh.material)) {
-            this.mesh.material.forEach(m => m.dispose());
+            this.mesh.material.forEach((m: THREE.Material) => m.dispose());
         } else {
             this.mesh.material.dispose();
         }

@@ -905,18 +905,14 @@ export const energyRifts = defineEnvSystem<'energyRifts'>({
     deactivate: (host) => host.energyRiftsSystem.deactivate()
 });
 
-/**
- * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
- */
-
 export const prismaticCrystals = defineEnvSystem<'prismaticCrystals'>({
     flag: 'prismaticCrystals',
     label: 'Prismatic Crystals',
-    budget: { category: 'background3d', instances: 25 },
-    biomes: ['crystalline'],
     role: 'backdrop',
-    paletteTags: ['iridescent'],
+    biomes: ['nebula', 'crystalline'],
+    paletteTags: ['neon', 'iridescent'],
     difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 25 },
     systemKey: 'prismaticCrystals',
     load: () => import('../prismatic_crystals'),
     install: (ctx, mod) => {
@@ -926,6 +922,10 @@ export const prismaticCrystals = defineEnvSystem<'prismaticCrystals'>({
     activate: (host, value) => host.prismaticCrystalsSystem.activate(objectConfig(value)),
     deactivate: (host) => host.prismaticCrystalsSystem.deactivate()
 });
+
+/**
+ * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
+ */
 
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
