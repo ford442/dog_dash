@@ -137,7 +137,7 @@ export class PrismaticCrystalsSystem {
             this.mesh.getMatrixAt(i, mat4);
             mat4.decompose(dummy.position, dummy.quaternion, dummy.scale);
 
-            dummy.position.x -= delta * (5.0 + (i % 3) + playerSpeed * 0.05);
+            dummy.position.x -= delta * (5.0 + (i % 3));
             dummy.rotation.x += delta * 0.1;
             dummy.rotation.y += delta * 0.15;
 
