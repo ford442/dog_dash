@@ -141,3 +141,12 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 **Specific Example:**
 - Floating, jagged shards of spacetime that use TSL materials to render noise/glitches.
 - The rift scrolls slowly in the background and pulses based on time.
+
+14. Prismatic Crystal Drifts
+
+**The Technique:** Floating clusters of crystalline structures that drift through space and refract light. They spin slowly and glow dynamically when the player approaches, acting as beautiful environmental hazards or background atmosphere.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or similar for the crystals.
+- Custom TSL `MeshStandardNodeMaterial` with iridescence, transmission, or a custom color shifting shader mapped to normals and view direction to create a prismatic effect.
+- Modifies colors based on the level palette and adds a soft pulsing glow based on time and proximity to the player.
