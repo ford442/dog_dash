@@ -32,6 +32,8 @@ import {
     createFossilizedSpaceWhalesSystemStub,
     createHyperspaceTunnelSystemStub,
     createCosmicCyberGridSystemStub,
+    createEnergyRiftsSystemStub,
+    createPrismaticCrystalsSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -73,9 +75,7 @@ import {
     createGravLensManagerStub,
     createDerelictBuoyManagerStub,
     createDataMonolithManagerStub,
-    createMagicPaintbrushSystemStub,
-    createEnergyRiftsSystemStub,
-    createPrismaticCrystalsSystemStub
+    createMagicPaintbrushSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';

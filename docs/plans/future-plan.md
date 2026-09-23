@@ -144,9 +144,9 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 
 14. Prismatic Crystal Drifts
 
-**The Technique:** Floating clusters of crystalline structures that drift through space and refract light. They spin slowly and glow dynamically when the player approaches, acting as beautiful environmental hazards or background atmosphere.
+**The Technique:** Massive, translucent crystalline clusters drift slowly through the background, rotating in parallax space and refracting light with shimmering iridescence. They should feel majestic first, but can also read as environmental hazards when the player gets close.
 
 **Specific Implementation:**
-- Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or similar for the crystals.
-- Custom TSL `MeshStandardNodeMaterial` with iridescence, transmission, or a custom color shifting shader mapped to normals and view direction to create a prismatic effect.
-- Modifies colors based on the level palette and adds a soft pulsing glow based on time and proximity to the player.
+- Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or similar large crystal forms.
+- Custom TSL `MeshStandardNodeMaterial` with time-based procedural noise and color shifting to create a prismatic, iridescent surface treatment.
+- Adds soft pulsing glow based on time and player proximity, with edge fading to keep the silhouettes ethereal at extreme angles.
