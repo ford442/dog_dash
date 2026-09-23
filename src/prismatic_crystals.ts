@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time, vec3, vec4, color, uniform, sin, mix, positionLocal, length, smoothstep, abs, normalWorld, modelWorldMatrix } from 'three/tsl';
+import { time, vec3, vec4, color, uniform, sin, mix, positionLocal, length, smoothstep, abs, normalWorld, instancedDynamicBufferAttribute } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
 import { fbm } from './clouds/noise';
@@ -13,7 +13,13 @@ export interface PrismaticCrystalsConfig {
 
 const MAX_CRYSTALS = 25;
 
-function createPrismaticMaterial(color1: number, color2: number, uSpeed: any, uPlayerPos: any) {
+function createPrismaticMaterial(
+    color1: number,
+    color2: number,
+    uSpeed: any,
+    uPlayerPos: any,
+    instanceMatrix: THREE.InstancedBufferAttribute
+) {
     const mat = new MeshStandardNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -30,7 +36,7 @@ function createPrismaticMaterial(color1: number, color2: number, uSpeed: any, uP
     const noiseVal = fbm(normalWorld.xyz.add(t));
     const mixFactor = sin(t.mul(2.0).add(noiseVal.mul(4.0))).mul(0.5).add(0.5);
     const baseColor = mix(c1, c2, mixFactor);
-    const crystalOrigin = modelWorldMatrix.mul(vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    const crystalOrigin = instancedDynamicBufferAttribute(instanceMatrix, 'vec4', 16, 12).xyz;
     const distToPlayer = length(crystalOrigin.sub(uPlayerPos));
     const glowIntensity = smoothstep(150.0, 0.0, distToPlayer);
     const finalColor = baseColor.add(color(0xffffff).mul(glowIntensity.mul(0.35)));
@@ -56,9 +62,9 @@ export class PrismaticCrystalsSystem {
         this.scene = scene;
 
         const geo = new THREE.DodecahedronGeometry(15, 0);
-        const mat = createPrismaticMaterial(0x00ffff, 0xff00ff, this.uSpeed, this.uPlayerPos);
-
-        this.mesh = new THREE.InstancedMesh(geo, mat, this.crystalCount);
+        this.mesh = new THREE.InstancedMesh(geo, new MeshStandardNodeMaterial(), this.crystalCount);
+        this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.mesh.material = createPrismaticMaterial(0x00ffff, 0xff00ff, this.uSpeed, this.uPlayerPos, this.mesh.instanceMatrix);
         this.mesh.frustumCulled = false;
         this.mesh.renderOrder = -10;
 
@@ -102,7 +108,8 @@ export class PrismaticCrystalsSystem {
                 config.color1 ?? 0x00ffff,
                 config.color2 ?? 0xff00ff,
                 this.uSpeed,
-                this.uPlayerPos
+                this.uPlayerPos,
+                this.mesh.instanceMatrix
             );
             if (this.mesh.material) {
                 (this.mesh.material as any).dispose?.();
