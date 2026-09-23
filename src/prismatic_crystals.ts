@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time, vec3, vec4, color, uniform, sin, mix, positionLocal, positionWorld, length, smoothstep, abs, normalWorld } from 'three/tsl';
+import { time, vec3, vec4, color, uniform, sin, mix, positionLocal, length, smoothstep, abs, normalWorld, modelWorldMatrix } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
 import { fbm } from './clouds/noise';
@@ -30,7 +30,8 @@ function createPrismaticMaterial(color1: number, color2: number, uSpeed: any, uP
     const noiseVal = fbm(normalWorld.xyz.add(t));
     const mixFactor = sin(t.mul(2.0).add(noiseVal.mul(4.0))).mul(0.5).add(0.5);
     const baseColor = mix(c1, c2, mixFactor);
-    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const crystalOrigin = modelWorldMatrix.mul(vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    const distToPlayer = length(crystalOrigin.sub(uPlayerPos));
     const glowIntensity = smoothstep(150.0, 0.0, distToPlayer);
     const finalColor = baseColor.add(color(0xffffff).mul(glowIntensity.mul(0.35)));
     const fade = smoothstep(1.0, 0.2, abs(positionLocal.z).div(20.0));
