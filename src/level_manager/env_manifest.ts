@@ -923,6 +923,24 @@ export const prismaticCrystals = defineEnvSystem<'prismaticCrystals'>({
     deactivate: (host) => host.prismaticCrystalsSystem.deactivate()
 });
 
+export const stardustVortex = defineEnvSystem<'stardustVortex'>({
+    flag: 'stardustVortex',
+    label: 'Stardust Vortex',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'stardustVortex',
+    load: () => import('../stardust_vortex'),
+    install: (ctx, mod) => {
+        const { StardustVortexSystem } = mod as typeof import('../stardust_vortex');
+        ctx.installEnvPartial({ stardustVortexSystem: new StardustVortexSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.stardustVortexSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.stardustVortexSystem.deactivate()
+});
+
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
@@ -974,7 +992,8 @@ export const ENV_SYSTEM_MANIFEST = [
     hyperspaceTunnel,
     cosmicCyberGrid,
     energyRifts,
-    prismaticCrystals
+    prismaticCrystals,
+    stardustVortex
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

@@ -217,6 +217,7 @@ export type LevelEnvironments = {
     cosmicCyberGrid?: boolean | CosmicCyberGridConfig;
     energyRifts?: boolean | import('./energy_rifts').EnergyRiftsConfig;
     prismaticCrystals?: boolean | import('./prismatic_crystals').PrismaticCrystalsConfig;
+    stardustVortex?: boolean | import('./stardust_vortex').StardustVortexConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -616,6 +617,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             hyperspaceTunnel: { speed: 1.5, density: 1.0 },
+            stardustVortex: { enabled: true, density: 1.5 },
             timeShiftZones: {
                 zones: [
                     { x: 300, y: 0, width: 80, height: 25 },
