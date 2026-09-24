@@ -639,3 +639,13 @@ export function createPrismaticCrystalsSystemStub(): import('./prismatic_crystal
         cleanup: () => { }
     } as unknown as import('./prismatic_crystals').PrismaticCrystalsSystem;
 }
+
+export function createStardustVortexSystemStub(): import('./stardust_vortex').StardustVortexSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./stardust_vortex').StardustVortexSystem;
+}

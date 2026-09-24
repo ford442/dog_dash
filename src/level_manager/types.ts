@@ -115,6 +115,7 @@ export type LevelEnvironmentPorts = {
     cosmicCyberGridSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     energyRiftsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     prismaticCrystalsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    stardustVortexSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     comboCorridorSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     shootingStarsSystem?: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     bouncePadsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
@@ -161,4 +162,5 @@ export type LevelManagerOptions = {
     cosmicCyberGridSystem: LevelEnvironmentPorts['cosmicCyberGridSystem'];
     energyRiftsSystem: LevelEnvironmentPorts['energyRiftsSystem'];
     prismaticCrystalsSystem: LevelEnvironmentPorts['prismaticCrystalsSystem'];
+    stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
 };

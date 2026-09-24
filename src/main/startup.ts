@@ -225,6 +225,7 @@ function createLevelManager(
             cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
             energyRiftsSystem: systems.energyRiftsSystem,
             prismaticCrystalsSystem: systems.prismaticCrystalsSystem,
+            stardustVortexSystem: systems.stardustVortexSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -308,6 +309,7 @@ function createLevelManager(
         cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
         energyRiftsSystem: systems.energyRiftsSystem,
         prismaticCrystalsSystem: systems.prismaticCrystalsSystem,
+        stardustVortexSystem: systems.stardustVortexSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });

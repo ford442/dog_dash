@@ -150,3 +150,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or similar for the crystals.
 - Custom TSL `MeshStandardNodeMaterial` with iridescence, transmission, or a custom color shifting shader mapped to normals and view direction to create a prismatic effect.
 - Modifies colors based on the level palette and adds a soft pulsing glow based on time and proximity to the player.
+
+15. Stardust Vortexes
+
+**The Technique:** Massive, swirling galaxies or vortexes rendered in the deep parallax background. Built using large planes and TSL noise to create a spiraling accretion effect that slowly rotates over time.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.PlaneGeometry` for rendering vortex disks.
+- Custom `MeshBasicNodeMaterial` driving spiraling texture lookups and fading edges `positionLocal` to warp the geometry.
+- Animates slowly based on `time` and scrolls gently across the sky as the player progresses.
+- Configured via LevelManager to add depth to cosmic levels.
