@@ -4,6 +4,7 @@ import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
 import type { StardustVortexSystem } from './stardust_vortex';
+import type { BioluminescentSporesSystem } from './bioluminescent_spores';
 import type { SpaceGardenSystem } from './space_garden';
 import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
@@ -77,7 +78,8 @@ import {
     createMagicPaintbrushSystemStub,
     createEnergyRiftsSystemStub,
     createPrismaticCrystalsSystemStub,
-    createStardustVortexSystemStub
+    createStardustVortexSystemStub,
+    createBioluminescentSporesSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -201,6 +203,7 @@ export type GameSystems = {
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
+    bioluminescentSporesSystem: BioluminescentSporesSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -455,6 +458,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
+    const bioluminescentSporesSystem: BioluminescentSporesSystem = createBioluminescentSporesSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -531,6 +535,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,
+        bioluminescentSporesSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,

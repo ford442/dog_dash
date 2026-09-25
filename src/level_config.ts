@@ -218,6 +218,7 @@ export type LevelEnvironments = {
     energyRifts?: boolean | import('./energy_rifts').EnergyRiftsConfig;
     prismaticCrystals?: boolean | import('./prismatic_crystals').PrismaticCrystalsConfig;
     stardustVortex?: boolean | import('./stardust_vortex').StardustVortexConfig;
+    bioluminescentSpores?: boolean | import('./bioluminescent_spores').BioluminescentSporesConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -703,7 +704,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             comboCorridor: true,
             fossilizedSpaceWhales: true,
             energyRifts: true,
-            prismaticCrystals: true
+            prismaticCrystals: true,
+            bioluminescentSpores: true
         },
         vignettes: {
             treeGroves: 0.8,

@@ -112,6 +112,7 @@ export class LevelManager {
     energyRiftsSystem: LevelEnvironmentPorts['energyRiftsSystem'];
     prismaticCrystalsSystem: LevelEnvironmentPorts['prismaticCrystalsSystem'];
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
+    bioluminescentSporesSystem: LevelEnvironmentPorts['bioluminescentSporesSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -183,6 +184,7 @@ export class LevelManager {
         this.energyRiftsSystem = options.env.energyRiftsSystem;
         this.prismaticCrystalsSystem = options.env.prismaticCrystalsSystem;
         this.stardustVortexSystem = options.env.stardustVortexSystem;
+        this.bioluminescentSporesSystem = options.env.bioluminescentSporesSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -424,6 +426,7 @@ export class LevelManager {
         if (enabled('energyRifts') && this.energyRiftsSystem) this.energyRiftsSystem.update(delta, cameraX, speed);
         if (enabled('prismaticCrystals') && this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.update(delta, cameraX, playerPos);
         if (enabled('stardustVortex') && this.stardustVortexSystem) this.stardustVortexSystem.update(delta, cameraX, speed);
+        if (enabled('bioluminescentSpores') && this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.update(delta, cameraX, playerPos);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -495,6 +498,7 @@ export class LevelManager {
         if (this.energyRiftsSystem) this.energyRiftsSystem.cleanup?.();
         if (this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.cleanup?.();
         if (this.stardustVortexSystem) this.stardustVortexSystem.cleanup?.();
+        if (this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

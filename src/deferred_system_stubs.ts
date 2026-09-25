@@ -649,3 +649,13 @@ export function createStardustVortexSystemStub(): import('./stardust_vortex').St
         cleanup: () => { }
     } as unknown as import('./stardust_vortex').StardustVortexSystem;
 }
+
+export function createBioluminescentSporesSystemStub(): import('./bioluminescent_spores').BioluminescentSporesSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerPos?: import('three').Vector3) => { },
+        cleanup: () => { }
+    } as unknown as import('./bioluminescent_spores').BioluminescentSporesSystem;
+}
