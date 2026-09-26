@@ -160,3 +160,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` driving spiraling texture lookups and fading edges `positionLocal` to warp the geometry.
 - Animates slowly based on `time` and scrolls gently across the sky as the player progresses.
 - Configured via LevelManager to add depth to cosmic levels.
+
+16. Bioluminescent Spore Clouds
+
+**The Technique:** Floating, gently pulsating spores that drift organically across the screen and occasionally burst into bright, shimmering stardust when the player flies through them. Built using `InstancedMesh` with TSL `MeshStandardNodeMaterial` for organic pulsating colors that shift between vibrant bio-luminescent hues.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or a cluster of spheres for rendering the spores.
+- Custom `MeshStandardNodeMaterial` driving a pulsating bio-glow using sine waves based on time.
+- Animates slowly using a fluid, drifting motion.
+- Integrated via LevelManager to add a serene, alien atmosphere to specific levels.

@@ -69,7 +69,8 @@ const PLUGIN_ORDER = [
     'cosmicCyberGrid',
     'energyRifts',
     'prismaticCrystals',
-    'stardustVortex'
+    'stardustVortex',
+    'bioluminescentSpores'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

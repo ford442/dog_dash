@@ -941,6 +941,24 @@ export const stardustVortex = defineEnvSystem<'stardustVortex'>({
     deactivate: (host) => host.stardustVortexSystem.deactivate()
 });
 
+export const bioluminescentSpores = defineEnvSystem<'bioluminescentSpores'>({
+    flag: 'bioluminescentSpores',
+    label: 'Bioluminescent Spore Clouds',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'bioluminescentSpores',
+    load: () => import('../bioluminescent_spores'),
+    install: (ctx, mod) => {
+        const { BioluminescentSporesSystem } = mod as typeof import('../bioluminescent_spores');
+        ctx.installEnvPartial({ bioluminescentSporesSystem: new BioluminescentSporesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.bioluminescentSporesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.bioluminescentSporesSystem.deactivate()
+});
+
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
@@ -993,7 +1011,8 @@ export const ENV_SYSTEM_MANIFEST = [
     cosmicCyberGrid,
     energyRifts,
     prismaticCrystals,
-    stardustVortex
+    stardustVortex,
+    bioluminescentSpores
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
