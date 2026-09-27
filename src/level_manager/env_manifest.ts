@@ -962,6 +962,25 @@ export const bioluminescentSpores = defineEnvSystem<'bioluminescentSpores'>({
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
+
+export const quantumMirrors = defineEnvSystem<'quantumMirrors'>({
+    flag: 'quantumMirrors',
+    label: 'Quantum Mirror Anomalies',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 30 },
+    systemKey: 'quantumMirrors',
+    load: () => import('../quantum_mirrors'),
+    install: (ctx, mod) => {
+        const { QuantumMirrorsSystem } = mod as typeof import('../quantum_mirrors');
+        ctx.installEnvPartial({ quantumMirrorsSystem: new QuantumMirrorsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.quantumMirrorsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.quantumMirrorsSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1012,7 +1031,8 @@ export const ENV_SYSTEM_MANIFEST = [
     energyRifts,
     prismaticCrystals,
     stardustVortex,
-    bioluminescentSpores
+    bioluminescentSpores,
+    quantumMirrors
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

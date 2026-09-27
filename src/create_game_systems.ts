@@ -79,7 +79,8 @@ import {
     createEnergyRiftsSystemStub,
     createPrismaticCrystalsSystemStub,
     createStardustVortexSystemStub,
-    createBioluminescentSporesSystemStub
+    createBioluminescentSporesSystemStub,
+    createQuantumMirrorsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -204,6 +205,7 @@ export type GameSystems = {
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
     bioluminescentSporesSystem: BioluminescentSporesSystem;
+    quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -459,6 +461,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
     const bioluminescentSporesSystem: BioluminescentSporesSystem = createBioluminescentSporesSystemStub();
+    const quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem = createQuantumMirrorsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -536,6 +539,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         prismaticCrystalsSystem,
         stardustVortexSystem,
         bioluminescentSporesSystem,
+        quantumMirrorsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,
