@@ -659,3 +659,13 @@ export function createBioluminescentSporesSystemStub(): import('./bioluminescent
         cleanup: () => { }
     } as unknown as import('./bioluminescent_spores').BioluminescentSporesSystem;
 }
+
+export function createQuantumMirrorsSystemStub(): import('./quantum_mirrors').QuantumMirrorsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 10) => { },
+        cleanup: () => { }
+    } as unknown as import('./quantum_mirrors').QuantumMirrorsSystem;
+}

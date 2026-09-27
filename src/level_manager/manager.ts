@@ -113,6 +113,7 @@ export class LevelManager {
     prismaticCrystalsSystem: LevelEnvironmentPorts['prismaticCrystalsSystem'];
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
     bioluminescentSporesSystem: LevelEnvironmentPorts['bioluminescentSporesSystem'];
+    quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -185,6 +186,7 @@ export class LevelManager {
         this.prismaticCrystalsSystem = options.env.prismaticCrystalsSystem;
         this.stardustVortexSystem = options.env.stardustVortexSystem;
         this.bioluminescentSporesSystem = options.env.bioluminescentSporesSystem;
+        this.quantumMirrorsSystem = options.env.quantumMirrorsSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -427,6 +429,7 @@ export class LevelManager {
         if (enabled('prismaticCrystals') && this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.update(delta, cameraX, playerPos);
         if (enabled('stardustVortex') && this.stardustVortexSystem) this.stardustVortexSystem.update(delta, cameraX, speed);
         if (enabled('bioluminescentSpores') && this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.update(delta, cameraX, playerPos);
+        if (enabled('quantumMirrors') && this.quantumMirrorsSystem) this.quantumMirrorsSystem.update(delta, cameraX, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -499,6 +502,7 @@ export class LevelManager {
         if (this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.cleanup?.();
         if (this.stardustVortexSystem) this.stardustVortexSystem.cleanup?.();
         if (this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.cleanup?.();
+        if (this.quantumMirrorsSystem) this.quantumMirrorsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

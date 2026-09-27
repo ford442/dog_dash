@@ -70,7 +70,8 @@ const PLUGIN_ORDER = [
     'energyRifts',
     'prismaticCrystals',
     'stardustVortex',
-    'bioluminescentSpores'
+'bioluminescentSpores',
+    'quantumMirrors'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

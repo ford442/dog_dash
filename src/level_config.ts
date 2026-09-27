@@ -219,6 +219,7 @@ export type LevelEnvironments = {
     prismaticCrystals?: boolean | import('./prismatic_crystals').PrismaticCrystalsConfig;
     stardustVortex?: boolean | import('./stardust_vortex').StardustVortexConfig;
     bioluminescentSpores?: boolean | import('./bioluminescent_spores').BioluminescentSporesConfig;
+    quantumMirrors?: boolean | import('./quantum_mirrors').QuantumMirrorsConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -774,6 +775,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             clouds: { density: 20 },
             weather: true,
             singingGeodes: { density: 20 },
+            quantumMirrors: true,
             // Finale beat: the Galactic Core swells across the last stretch of
             // the run (level 6 spans x 4200 → 5200, the Moon threshold).
             galacticCore: {

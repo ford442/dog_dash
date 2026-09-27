@@ -170,3 +170,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshStandardNodeMaterial` driving a pulsating bio-glow using sine waves based on time.
 - Animates slowly using a fluid, drifting motion.
 - Integrated via LevelManager to add a serene, alien atmosphere to specific levels.
+
+14. Quantum Mirror Anomalies
+
+**The Technique:** Floating, shattered crystalline shards and reflective mirror fragments drifting through the background. They slowly rotate and spin, catching the light. Built using `InstancedMesh` with TSL `MeshStandardNodeMaterial` for refractive or shimmering colors that pulse and warp when the player flies near them.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.IcosahedronGeometry` (modified for jaggedness via vertex displacement) to render floating mirror shards.
+- Custom `MeshStandardNodeMaterial` using TSL to create a chromatic, prism-like reflective surface that glitters using sine waves and time.
+- Animates based on time, with shards slowly drifting and twisting in space.
+- Integrated via LevelManager to add a surreal, dimensional-rift atmosphere to specific levels.
