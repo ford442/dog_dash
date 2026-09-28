@@ -981,6 +981,24 @@ export const quantumMirrors = defineEnvSystem<'quantumMirrors'>({
     deactivate: (host) => host.quantumMirrorsSystem.deactivate()
 });
 
+export const holographicDataStreams = defineEnvSystem<'holographicDataStreams'>({
+    flag: 'holographicDataStreams',
+    label: 'Holographic Data Streams',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 40 },
+    systemKey: 'holographicDataStreams',
+    load: () => import('../holographic_data_streams'),
+    install: (ctx, mod) => {
+        const { HolographicDataStreamsSystem } = mod as typeof import('../holographic_data_streams');
+        ctx.installEnvPartial({ holographicDataStreamsSystem: new HolographicDataStreamsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.holographicDataStreamsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.holographicDataStreamsSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1032,7 +1050,8 @@ export const ENV_SYSTEM_MANIFEST = [
     prismaticCrystals,
     stardustVortex,
     bioluminescentSpores,
-    quantumMirrors
+    quantumMirrors,
+    holographicDataStreams
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

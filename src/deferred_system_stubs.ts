@@ -669,3 +669,13 @@ export function createQuantumMirrorsSystemStub(): import('./quantum_mirrors').Qu
         cleanup: () => { }
     } as unknown as import('./quantum_mirrors').QuantumMirrorsSystem;
 }
+
+export function createHolographicDataStreamsSystemStub(): import('./holographic_data_streams').HolographicDataStreamsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./holographic_data_streams').HolographicDataStreamsSystem;
+}

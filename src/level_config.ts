@@ -178,6 +178,7 @@ export type LevelEnvironments = {
     moonPalace?: boolean;
     planetaryHorizon?: boolean;
     reEntry?: boolean;
+    holographicDataStreams?: boolean;
     aquaticLife?: boolean;
     godRays?: GodRaysEnvironmentConfig;
     aurora?: AuroraEnvironmentConfig;
@@ -317,7 +318,6 @@ export type LevelConfig = {
      * Systems not listed (or false) are deactivated.
      */
     environments?: LevelEnvironments;
-    /** Optional chained grav-lens slingshot corridors. */
     gravLensCorridors?: GravLensCorridorConfig[];
     /** Derelict Buoy artifacts (Morse hack) — industrial zones L4–L5. */
     derelictBuoys?: DerelictBuoyConfig[];
@@ -602,6 +602,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
             cosmicCyberGrid: { enabled: true, speedMultiplier: 1.5 },
+            holographicDataStreams: true,
             bubbleCoral: { density: 0.85 },
             skyRailTerminal: true,
             comboCorridor: true,
