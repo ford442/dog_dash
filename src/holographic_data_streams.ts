@@ -85,7 +85,6 @@ export class HolographicDataStreamsSystem {
             const scaleY = 0.5 + Math.random();
             const scaleX = 0.5 + Math.random() * 1.5;
             dummy.scale.set(scaleX, scaleY, 1.0);
-
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
         }
