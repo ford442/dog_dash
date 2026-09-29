@@ -999,6 +999,24 @@ export const holographicDataStreams = defineEnvSystem<'holographicDataStreams'>(
     deactivate: (host) => host.holographicDataStreamsSystem.deactivate()
 });
 
+export const cosmicWebFilaments = defineEnvSystem<'cosmicWebFilaments'>({
+    flag: 'cosmicWebFilaments',
+    label: 'Cosmic Web Filaments',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    systemKey: 'cosmicWebFilaments',
+    load: () => import('../cosmic_web_filaments'),
+    install: (ctx, mod) => {
+        const { CosmicWebFilamentsSystem } = mod as typeof import('../cosmic_web_filaments');
+        ctx.installEnvPartial({ cosmicWebFilamentsSystem: new CosmicWebFilamentsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.cosmicWebFilamentsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.cosmicWebFilamentsSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1051,7 +1069,8 @@ export const ENV_SYSTEM_MANIFEST = [
     stardustVortex,
     bioluminescentSpores,
     quantumMirrors,
-    holographicDataStreams
+    holographicDataStreams,
+    cosmicWebFilaments
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

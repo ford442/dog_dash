@@ -229,6 +229,7 @@ function createLevelManager(
             bioluminescentSporesSystem: systems.bioluminescentSporesSystem,
             quantumMirrorsSystem: systems.quantumMirrorsSystem,
             holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
+            cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -316,6 +317,7 @@ function createLevelManager(
         bioluminescentSporesSystem: systems.bioluminescentSporesSystem,
         quantumMirrorsSystem: systems.quantumMirrorsSystem,
         holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
+        cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });
