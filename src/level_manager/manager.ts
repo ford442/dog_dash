@@ -115,6 +115,7 @@ export class LevelManager {
     bioluminescentSporesSystem: LevelEnvironmentPorts['bioluminescentSporesSystem'];
     quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
+    cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -189,6 +190,7 @@ export class LevelManager {
         this.bioluminescentSporesSystem = options.env.bioluminescentSporesSystem;
         this.quantumMirrorsSystem = options.env.quantumMirrorsSystem;
         this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
+        this.cosmicWebFilamentsSystem = options.env.cosmicWebFilamentsSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -433,6 +435,7 @@ export class LevelManager {
         if (enabled('bioluminescentSpores') && this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.update(delta, cameraX, playerPos);
         if (enabled('quantumMirrors') && this.quantumMirrorsSystem) this.quantumMirrorsSystem.update(delta, cameraX, speed);
         if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
+        if (enabled('cosmicWebFilaments') && this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.update(delta, cameraX, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -507,6 +510,7 @@ export class LevelManager {
         if (this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.cleanup?.();
         if (this.quantumMirrorsSystem) this.quantumMirrorsSystem.cleanup?.();
         if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
+        if (this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

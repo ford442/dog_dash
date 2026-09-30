@@ -81,7 +81,8 @@ import {
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
     createQuantumMirrorsSystemStub,
-    createHolographicDataStreamsSystemStub
+    createHolographicDataStreamsSystemStub,
+    createCosmicWebFilamentsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -208,6 +209,7 @@ export type GameSystems = {
     bioluminescentSporesSystem: BioluminescentSporesSystem;
     quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem;
     holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem;
+    cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -465,6 +467,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const bioluminescentSporesSystem: BioluminescentSporesSystem = createBioluminescentSporesSystemStub();
     const quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem = createQuantumMirrorsSystemStub();
     const holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem = createHolographicDataStreamsSystemStub();
+    const cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem = createCosmicWebFilamentsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -544,6 +547,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         bioluminescentSporesSystem,
         quantumMirrorsSystem,
         holographicDataStreamsSystem,
+        cosmicWebFilamentsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,

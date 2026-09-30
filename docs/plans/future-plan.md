@@ -180,3 +180,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshStandardNodeMaterial` using TSL to create a chromatic, prism-like reflective surface that glitters using sine waves and time.
 - Animates based on time, with shards slowly drifting and twisting in space.
 - Integrated via LevelManager to add a surreal, dimensional-rift atmosphere to specific levels.
+
+18. Cosmic Web Filaments
+
+**The Technique:** Massive, intertwined strands of glowing energy representing the cosmic web that connects galaxies. These filaments drift slowly in the deep background and pulse with light that travels along their length. Built using `InstancedMesh` with elongated geometries and TSL `MeshBasicNodeMaterial` to render scrolling energy pulses.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.CylinderGeometry` (or thin elongated planes) for rendering the filaments.
+- Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture that simulates energy flowing along the strands.
+- Animates based on `time` and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space levels.

@@ -679,3 +679,13 @@ export function createHolographicDataStreamsSystemStub(): import('./holographic_
         cleanup: () => { }
     } as unknown as import('./holographic_data_streams').HolographicDataStreamsSystem;
 }
+
+export function createCosmicWebFilamentsSystemStub(): import('./cosmic_web_filaments').CosmicWebFilamentsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
+}
