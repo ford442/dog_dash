@@ -73,7 +73,8 @@ const PLUGIN_ORDER = [
     'bioluminescentSpores',
     'quantumMirrors',
     'holographicDataStreams',
-    'cosmicWebFilaments'
+    'cosmicWebFilaments',
+    'magneticPlasmaArcs'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

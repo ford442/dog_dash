@@ -230,6 +230,7 @@ function createLevelManager(
             quantumMirrorsSystem: systems.quantumMirrorsSystem,
             holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
             cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
+            magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -318,6 +319,7 @@ function createLevelManager(
         quantumMirrorsSystem: systems.quantumMirrorsSystem,
         holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
         cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
+        magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });

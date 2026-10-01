@@ -116,6 +116,7 @@ export class LevelManager {
     quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
+    magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -191,6 +192,7 @@ export class LevelManager {
         this.quantumMirrorsSystem = options.env.quantumMirrorsSystem;
         this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
         this.cosmicWebFilamentsSystem = options.env.cosmicWebFilamentsSystem;
+        this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -436,6 +438,7 @@ export class LevelManager {
         if (enabled('quantumMirrors') && this.quantumMirrorsSystem) this.quantumMirrorsSystem.update(delta, cameraX, speed);
         if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
         if (enabled('cosmicWebFilaments') && this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.update(delta, cameraX, speed);
+        if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -511,6 +514,7 @@ export class LevelManager {
         if (this.quantumMirrorsSystem) this.quantumMirrorsSystem.cleanup?.();
         if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
         if (this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.cleanup?.();
+        if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();
