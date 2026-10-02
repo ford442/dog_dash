@@ -621,6 +621,15 @@ export function createCosmicCyberGridSystemStub(): import('./cosmic_cyber_grid')
     } as unknown as import('./cosmic_cyber_grid').CosmicCyberGridSystem;
 }
 
+export function createHolographicDataStreamsSystemStub(): import('./holographic_data_streams').HolographicDataStreamsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, speed: number = 8) => { }
+    } as unknown as import('./holographic_data_streams').HolographicDataStreamsSystem;
+}
+
 export function createEnergyRiftsSystemStub(): import('./energy_rifts').EnergyRiftsSystem {
     return {
         active: false,

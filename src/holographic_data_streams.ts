@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { time, vec2, vec3, vec4, color, uniform, mix, float, step, fract, uv } from 'three/tsl';
+import { time, vec2, vec3, vec4, color, uniform, mix, sin, positionLocal, float, smoothstep, fract, abs, uv, step, length } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
 import { fbm } from './clouds/noise';
@@ -11,10 +11,9 @@ export interface HolographicDataStreamsConfig {
     color2?: number;
 }
 
-const MAX_STREAMS = 40; // Max buffer size
-const DEFAULT_STREAMS = 20;
+const MAX_STREAMS = 50;
 
-function createDataStreamMaterial(color1: number, color2: number) {
+function createHolographicMaterial(color1: number, color2: number, uSpeed: any) {
     const mat = new MeshBasicNodeMaterial({
         transparent: true,
         blending: THREE.AdditiveBlending,
@@ -25,29 +24,26 @@ function createDataStreamMaterial(color1: number, color2: number) {
     const c1 = color(color1);
     const c2 = color(color2);
 
-    const baseUv = uv();
+    // Scroll data vertically
+    const scroll = time.mul(uSpeed).mul(0.8);
 
-    // Create scrolling grid effect
-    const scrollUv = vec2(baseUv.x, baseUv.y.add(time.mul(0.5)));
+    // Create matrix-like data blocks using stepped noise
+    const gridUv = uv().mul(vec2(10.0, 40.0)).add(vec2(0.0, scroll));
 
-    // Noise to create gaps in the stream
-    const noiseVal = fbm(vec3(scrollUv.x.mul(10.0), scrollUv.y.mul(2.0), time.mul(0.1)));
+    const noiseVal = fbm(gridUv);
+    const steppedNoise = step(0.6, fract(noiseVal.mul(10.0)));
 
-    // Blocky glitchy pattern
-    const blockyUv = vec2(
-        step(0.5, fract(baseUv.x.mul(20.0))),
-        step(0.5, fract(scrollUv.y.mul(40.0)))
-    );
-
-    const isData = blockyUv.x.mul(blockyUv.y).mul(step(0.4, noiseVal));
-
-    const mixFactor = fract(baseUv.y.add(time.mul(0.2)));
+    const mixFactor = sin(time.mul(1.5).add(uv().x.mul(5.0))).mul(0.5).add(0.5);
     const baseColor = mix(c1, c2, mixFactor);
 
-    // Fade top and bottom
-    const fadeY = baseUv.y.mul(float(1.0).sub(baseUv.y)).mul(4.0);
+    // Fade edges (shape it like a vertical ribbon)
+    const fadeX = smoothstep(0.5, 0.0, abs(uv().x.sub(0.5)));
+    const fadeY = smoothstep(0.5, 0.2, abs(uv().y.sub(0.5)));
 
-    mat.colorNode = vec4(baseColor, isData.mul(fadeY).mul(0.6));
+    // Combine noise blocks with edges
+    const alpha = steppedNoise.mul(fadeX).mul(fadeY).mul(0.8);
+
+    mat.colorNode = vec4(baseColor, alpha);
 
     return mat;
 }
@@ -57,30 +53,38 @@ export class HolographicDataStreamsSystem {
     active: boolean = false;
     mesh!: THREE.InstancedMesh;
 
-    streamCount: number = DEFAULT_STREAMS;
+    streamCount: number = MAX_STREAMS;
+    uSpeed = uniform(1.0);
     width: number = 2000;
+
+    dummy = new THREE.Object3D();
+    mat4 = new THREE.Matrix4();
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
-        const geo = new THREE.PlaneGeometry(100, 600, 1, 1);
-        // Default colors: neon cyan and purple
-        const mat = createDataStreamMaterial(0x00ffff, 0xff00ff);
+        const geo = new THREE.PlaneGeometry(8, 60);
+        const mat = createHolographicMaterial(0x00ffcc, 0x0044ff, this.uSpeed);
 
-        this.mesh = new THREE.InstancedMesh(geo, mat, MAX_STREAMS);
+        this.mesh = new THREE.InstancedMesh(geo, mat, this.streamCount);
         this.mesh.frustumCulled = false;
-        this.mesh.renderOrder = -15;
+        this.mesh.renderOrder = -8; // Mid-background
 
         const dummy = new THREE.Object3D();
-        for (let i = 0; i < MAX_STREAMS; i++) {
+        for (let i = 0; i < this.streamCount; i++) {
             const x = (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * 600;
-            const z = -200 - Math.random() * 300;
+            const y = (Math.random() - 0.5) * 100;
+            const z = -20 - Math.random() * 60;
             dummy.position.set(x, y, z);
 
-            const scaleX = 0.5 + Math.random();
-            const scaleY = 0.5 + Math.random() * 1.5;
-            dummy.scale.set(scaleX, scaleY, 1);
+            // Randomly tilt some ribbons slightly, keep others vertical
+            dummy.rotation.x = (Math.random() - 0.5) * 0.1;
+            dummy.rotation.y = (Math.random() - 0.5) * 0.1;
+            dummy.rotation.z = (Math.random() - 0.5) * 0.1;
+
+            const scaleY = 0.5 + Math.random();
+            const scaleX = 0.5 + Math.random() * 1.5;
+            dummy.scale.set(scaleX, scaleY, 1.0);
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
         }
@@ -99,12 +103,12 @@ export class HolographicDataStreamsSystem {
     activate(config?: HolographicDataStreamsConfig) {
         if (this.active) return;
         this.active = true;
-        this.streamCount = Math.min(MAX_STREAMS, Math.floor(DEFAULT_STREAMS * (config?.density ?? 1.0)));
+        this.streamCount = Math.min(Math.floor(MAX_STREAMS * (config?.density ?? 1.0)), MAX_STREAMS);
         this.mesh.count = this.streamCount;
         this.mesh.visible = true;
 
         if (config?.color1 !== undefined || config?.color2 !== undefined) {
-            const mat = createDataStreamMaterial(config.color1 ?? 0x00ffff, config.color2 ?? 0xff00ff);
+            const mat = createHolographicMaterial(config.color1 ?? 0x00ffcc, config.color2 ?? 0x0044ff, this.uSpeed);
             if (this.mesh.material) {
                 (this.mesh.material as any).dispose?.();
             }
@@ -121,32 +125,32 @@ export class HolographicDataStreamsSystem {
         decorationBudget.syncCount('holographic_data_streams', 0);
     }
 
-    update(delta: number, cameraX: number, playerSpeed: number = 8) {
+    update(delta: number, cameraX: number, speed: number = 8) {
         if (!this.active) return;
 
-        const dummy = new THREE.Object3D();
-        const mat4 = new THREE.Matrix4();
-        const margin = 500;
+        this.uSpeed.value = 1.0 + speed * 0.05;
+
+        const margin = 200;
         const limitBack = cameraX - (this.width / 2) - margin;
         const limitFront = cameraX + (this.width / 2) + margin;
 
         for (let i = 0; i < this.streamCount; i++) {
-            this.mesh.getMatrixAt(i, mat4);
-            mat4.decompose(dummy.position, dummy.quaternion, dummy.scale);
+            this.mesh.getMatrixAt(i, this.mat4);
+            this.mat4.decompose(this.dummy.position, this.dummy.quaternion, this.dummy.scale);
 
-            const parallaxSpeed = 30.0 / Math.abs(dummy.position.z);
-            dummy.position.x -= delta * playerSpeed * parallaxSpeed;
+            // Drift slowly left to create parallax
+            this.dummy.position.x -= delta * (10.0 + this.dummy.position.z * 0.1);
 
-            if (dummy.position.x < limitBack) {
-                dummy.position.x += this.width + margin * 2;
-                dummy.position.y = (Math.random() - 0.5) * 600;
-            } else if (dummy.position.x > limitFront) {
-                dummy.position.x -= this.width + margin * 2;
-                dummy.position.y = (Math.random() - 0.5) * 600;
+            if (this.dummy.position.x < limitBack) {
+                this.dummy.position.x += this.width + margin * 2;
+                this.dummy.position.y = (Math.random() - 0.5) * 100;
+            } else if (this.dummy.position.x > limitFront) {
+                this.dummy.position.x -= this.width + margin * 2;
+                this.dummy.position.y = (Math.random() - 0.5) * 100;
             }
 
-            dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, dummy.matrix);
+            this.dummy.updateMatrix();
+            this.mesh.setMatrixAt(i, this.dummy.matrix);
         }
         this.mesh.instanceMatrix.needsUpdate = true;
     }
