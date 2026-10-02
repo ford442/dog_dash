@@ -190,3 +190,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture that simulates energy flowing along the strands.
 - Animates based on `time` and slowly scrolls to provide parallax depth.
 - Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space levels.
+
+20. Pulsar Lighthouse Beams
+
+**The Technique:** Distant spinning neutron stars sweeping volumetric fan beams across the playfield.
+
+**Specific Implementation:**
+- A handful of distant pulsar cores, plus an `InstancedMesh` of wide beam planes or cones.
+- TSL `MeshBasicNodeMaterial`, additive blending, angular sweep from `time`, opacity falloff at the edges of the fan.
+- Beam sweep rate and intensity kick up with player's speed, using the same momentum hook the other deferred modules use.
+- Integrated via LevelManager to add an active, sweeping lighthouse effect to deep space levels.

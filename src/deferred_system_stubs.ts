@@ -621,6 +621,15 @@ export function createCosmicCyberGridSystemStub(): import('./cosmic_cyber_grid')
     } as unknown as import('./cosmic_cyber_grid').CosmicCyberGridSystem;
 }
 
+export function createPulsarLighthouseSystemStub(): import('./pulsar_lighthouse').PulsarLighthouseSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
+    } as unknown as import('./pulsar_lighthouse').PulsarLighthouseSystem;
+}
+
 export function createEnergyRiftsSystemStub(): import('./energy_rifts').EnergyRiftsSystem {
     return {
         active: false,

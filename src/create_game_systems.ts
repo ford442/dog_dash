@@ -1,6 +1,7 @@
 import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
 import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
+import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
 import type { StardustVortexSystem } from './stardust_vortex';
@@ -34,6 +35,7 @@ import {
     createFossilizedSpaceWhalesSystemStub,
     createHyperspaceTunnelSystemStub,
     createCosmicCyberGridSystemStub,
+    createPulsarLighthouseSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -203,6 +205,7 @@ export type GameSystems = {
     fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem;
     hyperspaceTunnelSystem: HyperspaceTunnelSystem;
     cosmicCyberGridSystem: CosmicCyberGridSystem;
+    pulsarLighthouseSystem: PulsarLighthouseSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
@@ -461,6 +464,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem = createFossilizedSpaceWhalesSystemStub();
     const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
     const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
+    const pulsarLighthouseSystem: PulsarLighthouseSystem = createPulsarLighthouseSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
@@ -541,6 +545,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         fossilizedSpaceWhalesSystem,
         hyperspaceTunnelSystem,
         cosmicCyberGridSystem,
+        pulsarLighthouseSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,
