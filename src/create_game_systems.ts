@@ -82,7 +82,8 @@ import {
     createBioluminescentSporesSystemStub,
     createQuantumMirrorsSystemStub,
     createHolographicDataStreamsSystemStub,
-    createCosmicWebFilamentsSystemStub
+    createCosmicWebFilamentsSystemStub,
+    createMagneticPlasmaArcsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -210,6 +211,7 @@ export type GameSystems = {
     quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem;
     holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem;
     cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
+    magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -468,6 +470,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem = createQuantumMirrorsSystemStub();
     const holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem = createHolographicDataStreamsSystemStub();
     const cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem = createCosmicWebFilamentsSystemStub();
+    const magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem = createMagneticPlasmaArcsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -548,6 +551,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         quantumMirrorsSystem,
         holographicDataStreamsSystem,
         cosmicWebFilamentsSystem,
+        magneticPlasmaArcsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,

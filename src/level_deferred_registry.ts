@@ -67,7 +67,8 @@ export const DEFERRED_ENV_FLAGS = [
     'bioluminescentSpores',
     'quantumMirrors',
     'holographicDataStreams',
-    'cosmicWebFilaments'
+    'cosmicWebFilaments',
+    'magneticPlasmaArcs'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -167,7 +168,8 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     bioluminescentSpores: 'bioluminescentSpores',
     quantumMirrors: 'quantumMirrors',
     holographicDataStreams: 'holographicDataStreams',
-    cosmicWebFilaments: 'cosmicWebFilaments'
+    cosmicWebFilaments: 'cosmicWebFilaments',
+    magneticPlasmaArcs: 'magneticPlasmaArcs'
 };
 
 /** Pure load predicates for non-env deferred systems. */
