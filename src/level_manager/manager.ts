@@ -109,7 +109,6 @@ export class LevelManager {
     fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
     hyperspaceTunnelSystem: LevelEnvironmentPorts['hyperspaceTunnelSystem'];
     cosmicCyberGridSystem: LevelEnvironmentPorts['cosmicCyberGridSystem'];
-    holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     energyRiftsSystem: LevelEnvironmentPorts['energyRiftsSystem'];
     prismaticCrystalsSystem: LevelEnvironmentPorts['prismaticCrystalsSystem'];
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
@@ -117,6 +116,7 @@ export class LevelManager {
     quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
+    pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
@@ -186,7 +186,6 @@ export class LevelManager {
         this.fossilizedSpaceWhalesSystem = options.env.fossilizedSpaceWhalesSystem;
         this.hyperspaceTunnelSystem = options.env.hyperspaceTunnelSystem;
         this.cosmicCyberGridSystem = options.env.cosmicCyberGridSystem;
-        this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
         this.energyRiftsSystem = options.env.energyRiftsSystem;
         this.prismaticCrystalsSystem = options.env.prismaticCrystalsSystem;
         this.stardustVortexSystem = options.env.stardustVortexSystem;
@@ -194,6 +193,7 @@ export class LevelManager {
         this.quantumMirrorsSystem = options.env.quantumMirrorsSystem;
         this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
         this.cosmicWebFilamentsSystem = options.env.cosmicWebFilamentsSystem;
+        this.pulsarLighthouseSystem = options.env.pulsarLighthouseSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
@@ -433,7 +433,6 @@ export class LevelManager {
         if (this.galacticCoreSystem) this.galacticCoreSystem.update(delta, cameraX, playerPos);
         if (enabled('hyperspaceTunnel') && this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.update(delta, cameraX, speed);
         if (enabled('cosmicCyberGrid') && this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.update(delta, cameraX, speed);
-        if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
         if (enabled('energyRifts') && this.energyRiftsSystem) this.energyRiftsSystem.update(delta, cameraX, speed);
         if (enabled('prismaticCrystals') && this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.update(delta, cameraX, playerPos);
         if (enabled('stardustVortex') && this.stardustVortexSystem) this.stardustVortexSystem.update(delta, cameraX, speed);
@@ -441,6 +440,7 @@ export class LevelManager {
         if (enabled('quantumMirrors') && this.quantumMirrorsSystem) this.quantumMirrorsSystem.update(delta, cameraX, speed);
         if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
         if (enabled('cosmicWebFilaments') && this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.update(delta, cameraX, speed);
+        if (enabled('pulsarLighthouse') && this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.update(delta, cameraX, speed);
         if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
@@ -510,7 +510,6 @@ export class LevelManager {
         if (this.fossilizedSpaceWhalesSystem) this.fossilizedSpaceWhalesSystem.cleanup?.();
         if (this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.cleanup?.();
         if (this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.cleanup?.();
-        if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
         if (this.energyRiftsSystem) this.energyRiftsSystem.cleanup?.();
         if (this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.cleanup?.();
         if (this.stardustVortexSystem) this.stardustVortexSystem.cleanup?.();
@@ -518,6 +517,7 @@ export class LevelManager {
         if (this.quantumMirrorsSystem) this.quantumMirrorsSystem.cleanup?.();
         if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
         if (this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.cleanup?.();
+        if (this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.cleanup?.();
         if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools

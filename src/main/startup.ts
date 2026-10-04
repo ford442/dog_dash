@@ -223,7 +223,6 @@ function createLevelManager(
             fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
             hyperspaceTunnelSystem: systems.hyperspaceTunnelSystem,
             cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
-            holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
             energyRiftsSystem: systems.energyRiftsSystem,
             prismaticCrystalsSystem: systems.prismaticCrystalsSystem,
             stardustVortexSystem: systems.stardustVortexSystem,
@@ -231,6 +230,7 @@ function createLevelManager(
             quantumMirrorsSystem: systems.quantumMirrorsSystem,
             holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
             cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
+            pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
@@ -313,7 +313,6 @@ function createLevelManager(
         fossilizedSpaceWhalesSystem: systems.fossilizedSpaceWhalesSystem,
         hyperspaceTunnelSystem: systems.hyperspaceTunnelSystem,
         cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
-        holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
         energyRiftsSystem: systems.energyRiftsSystem,
         prismaticCrystalsSystem: systems.prismaticCrystalsSystem,
         stardustVortexSystem: systems.stardustVortexSystem,
@@ -321,6 +320,7 @@ function createLevelManager(
         quantumMirrorsSystem: systems.quantumMirrorsSystem,
         holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
         cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
+        pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
