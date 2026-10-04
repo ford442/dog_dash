@@ -109,7 +109,6 @@ export class LevelManager {
     fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
     hyperspaceTunnelSystem: LevelEnvironmentPorts['hyperspaceTunnelSystem'];
     cosmicCyberGridSystem: LevelEnvironmentPorts['cosmicCyberGridSystem'];
-    holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     energyRiftsSystem: LevelEnvironmentPorts['energyRiftsSystem'];
     prismaticCrystalsSystem: LevelEnvironmentPorts['prismaticCrystalsSystem'];
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
@@ -187,7 +186,6 @@ export class LevelManager {
         this.fossilizedSpaceWhalesSystem = options.env.fossilizedSpaceWhalesSystem;
         this.hyperspaceTunnelSystem = options.env.hyperspaceTunnelSystem;
         this.cosmicCyberGridSystem = options.env.cosmicCyberGridSystem;
-        this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
         this.energyRiftsSystem = options.env.energyRiftsSystem;
         this.prismaticCrystalsSystem = options.env.prismaticCrystalsSystem;
         this.stardustVortexSystem = options.env.stardustVortexSystem;
@@ -435,7 +433,6 @@ export class LevelManager {
         if (this.galacticCoreSystem) this.galacticCoreSystem.update(delta, cameraX, playerPos);
         if (enabled('hyperspaceTunnel') && this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.update(delta, cameraX, speed);
         if (enabled('cosmicCyberGrid') && this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.update(delta, cameraX, speed);
-        if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
         if (enabled('energyRifts') && this.energyRiftsSystem) this.energyRiftsSystem.update(delta, cameraX, speed);
         if (enabled('prismaticCrystals') && this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.update(delta, cameraX, playerPos);
         if (enabled('stardustVortex') && this.stardustVortexSystem) this.stardustVortexSystem.update(delta, cameraX, speed);
@@ -513,7 +510,6 @@ export class LevelManager {
         if (this.fossilizedSpaceWhalesSystem) this.fossilizedSpaceWhalesSystem.cleanup?.();
         if (this.hyperspaceTunnelSystem) this.hyperspaceTunnelSystem.cleanup?.();
         if (this.cosmicCyberGridSystem) this.cosmicCyberGridSystem.cleanup?.();
-        if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
         if (this.energyRiftsSystem) this.energyRiftsSystem.cleanup?.();
         if (this.prismaticCrystalsSystem) this.prismaticCrystalsSystem.cleanup?.();
         if (this.stardustVortexSystem) this.stardustVortexSystem.cleanup?.();

@@ -113,7 +113,6 @@ export type LevelEnvironmentPorts = {
     fossilizedSpaceWhalesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     hyperspaceTunnelSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     cosmicCyberGridSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
-    holographicDataStreamsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     energyRiftsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     prismaticCrystalsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     stardustVortexSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -167,7 +166,6 @@ export type LevelManagerOptions = {
     fossilizedSpaceWhalesSystem: LevelEnvironmentPorts['fossilizedSpaceWhalesSystem'];
     hyperspaceTunnelSystem: LevelEnvironmentPorts['hyperspaceTunnelSystem'];
     cosmicCyberGridSystem: LevelEnvironmentPorts['cosmicCyberGridSystem'];
-    holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     energyRiftsSystem: LevelEnvironmentPorts['energyRiftsSystem'];
     prismaticCrystalsSystem: LevelEnvironmentPorts['prismaticCrystalsSystem'];
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
