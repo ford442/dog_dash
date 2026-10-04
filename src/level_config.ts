@@ -223,6 +223,7 @@ export type LevelEnvironments = {
     quantumMirrors?: boolean | import('./quantum_mirrors').QuantumMirrorsConfig;
     cosmicWebFilaments?: boolean | import('./cosmic_web_filaments').CosmicWebFilamentsConfig;
     pulsarLighthouse?: boolean | import('./pulsar_lighthouse').PulsarLighthouseConfig;
+    magneticPlasmaArcs?: boolean | import('./magnetic_plasma_arcs').MagneticPlasmaArcsConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -457,7 +458,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             flowerConstellations: true,
-            hideAndSeekStars: true
+            hideAndSeekStars: true,
+            magneticPlasmaArcs: { density: 1.5, speed: 1.2 }
         },
         vignettes: {
             geodeClearings: 0.5

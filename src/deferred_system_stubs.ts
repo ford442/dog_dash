@@ -698,3 +698,13 @@ export function createCosmicWebFilamentsSystemStub(): import('./cosmic_web_filam
         cleanup: () => { }
     } as unknown as import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
 }
+
+export function createMagneticPlasmaArcsSystemStub(): import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
+}

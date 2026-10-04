@@ -68,6 +68,7 @@ export const DEFERRED_ENV_FLAGS = [
     'quantumMirrors',
     'holographicDataStreams',
     'cosmicWebFilaments',
+    'magneticPlasmaArcs',
     'pulsarLighthouse'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -169,6 +170,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     quantumMirrors: 'quantumMirrors',
     holographicDataStreams: 'holographicDataStreams',
     cosmicWebFilaments: 'cosmicWebFilaments',
+    magneticPlasmaArcs: 'magneticPlasmaArcs',
     pulsarLighthouse: 'pulsarLighthouse'
 };
 

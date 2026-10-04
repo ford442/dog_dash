@@ -231,6 +231,7 @@ function createLevelManager(
             holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
             cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
             pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
+            magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -320,6 +321,7 @@ function createLevelManager(
         holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
         cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
         pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
+        magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });

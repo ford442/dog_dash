@@ -1035,6 +1035,24 @@ export const cosmicWebFilaments = defineEnvSystem<'cosmicWebFilaments'>({
     deactivate: (host) => host.cosmicWebFilamentsSystem.deactivate()
 });
 
+export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
+    flag: 'magneticPlasmaArcs',
+    label: 'Magnetic Plasma Arcs',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 20 },
+    systemKey: 'magneticPlasmaArcs',
+    load: () => import('../magnetic_plasma_arcs'),
+    install: (ctx, mod) => {
+        const { MagneticPlasmaArcsSystem } = mod as typeof import('../magnetic_plasma_arcs');
+        ctx.installEnvPartial({ magneticPlasmaArcsSystem: new MagneticPlasmaArcsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.magneticPlasmaArcsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.magneticPlasmaArcsSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1089,6 +1107,7 @@ export const ENV_SYSTEM_MANIFEST = [
     quantumMirrors,
     holographicDataStreams,
     cosmicWebFilaments,
+    magneticPlasmaArcs,
     pulsarLighthouse
 ] as const;
 

@@ -74,6 +74,7 @@ const PLUGIN_ORDER = [
     'quantumMirrors',
     'holographicDataStreams',
     'cosmicWebFilaments',
+    'magneticPlasmaArcs',
     'pulsarLighthouse'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
