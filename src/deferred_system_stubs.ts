@@ -708,3 +708,13 @@ export function createMagneticPlasmaArcsSystemStub(): import('./magnetic_plasma_
         cleanup: () => { }
     } as unknown as import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
 }
+
+export function createOrbitalMegastructuresSystemStub(): import('./orbital_megastructures').OrbitalMegastructuresSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./orbital_megastructures').OrbitalMegastructuresSystem;
+}

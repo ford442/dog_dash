@@ -887,6 +887,24 @@ export const pulsarLighthouse = defineEnvSystem<'pulsarLighthouse'>({
     deactivate: (host) => host.pulsarLighthouseSystem.deactivate()
 });
 
+export const orbitalMegastructures = defineEnvSystem<'orbitalMegastructures'>({
+    flag: 'orbitalMegastructures',
+    label: 'Orbital Megastructures',
+    role: 'backdrop',
+    biomes: ['industrial'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'orbitalMegastructures',
+    load: () => import('../orbital_megastructures'),
+    install: (ctx, mod) => {
+        const { OrbitalMegastructuresSystem } = mod as typeof import('../orbital_megastructures');
+        ctx.installEnvPartial({ orbitalMegastructuresSystem: new OrbitalMegastructuresSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.orbitalMegastructuresSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.orbitalMegastructuresSystem.deactivate()
+});
+
 export const cosmicCyberGrid = defineEnvSystem<'cosmicCyberGrid'>({
     flag: 'cosmicCyberGrid',
     label: 'Cosmic Cyber Grid',
@@ -1108,7 +1126,8 @@ export const ENV_SYSTEM_MANIFEST = [
     holographicDataStreams,
     cosmicWebFilaments,
     magneticPlasmaArcs,
-    pulsarLighthouse
+    pulsarLighthouse,
+    orbitalMegastructures
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
