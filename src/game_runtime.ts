@@ -129,6 +129,7 @@ export type NestedEnvRuntime = {
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
     aquaticLifeManager: AquaticLifeManager;
+    stardustVortexSystem: GameSystems['stardustVortexSystem'];
 };
 
 export type NestedRuntime = {
@@ -227,7 +228,8 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         weatherSystem: ctx.weatherSystem,
         ghostDebrisSystem: ctx.ghostDebrisSystem,
         voidJellyfishSystem: ctx.voidJellyfishSystem,
-        aquaticLifeManager: ctx.aquaticLifeManager
+        aquaticLifeManager: ctx.aquaticLifeManager,
+        stardustVortexSystem: ctx.stardustVortexSystem
     };
 }
 
@@ -259,7 +261,8 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         weatherSystem: ctx.weatherSystem,
         ghostDebrisSystem: ctx.ghostDebrisSystem,
         voidJellyfishSystem: ctx.voidJellyfishSystem,
-        aquaticLifeManager: ctx.aquaticLifeManager
+        aquaticLifeManager: ctx.aquaticLifeManager,
+        stardustVortexSystem: ctx.stardustVortexSystem
     });
 }
 

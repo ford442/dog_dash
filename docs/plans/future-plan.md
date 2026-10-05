@@ -150,3 +150,63 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or similar large crystal forms.
 - Custom TSL `MeshStandardNodeMaterial` with time-based procedural noise and color shifting to create a prismatic, iridescent surface treatment.
 - Adds soft pulsing glow based on time and player proximity, with edge fading to keep the silhouettes ethereal at extreme angles.
+
+15. Stardust Vortexes
+
+**The Technique:** Massive, swirling galaxies or vortexes rendered in the deep parallax background. Built using large planes and TSL noise to create a spiraling accretion effect that slowly rotates over time.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.PlaneGeometry` for rendering vortex disks.
+- Custom `MeshBasicNodeMaterial` driving spiraling texture lookups and fading edges `positionLocal` to warp the geometry.
+- Animates slowly based on `time` and scrolls gently across the sky as the player progresses.
+- Configured via LevelManager to add depth to cosmic levels.
+
+16. Bioluminescent Spore Clouds
+
+**The Technique:** Floating, gently pulsating spores that drift organically across the screen and occasionally burst into bright, shimmering stardust when the player flies through them. Built using `InstancedMesh` with TSL `MeshStandardNodeMaterial` for organic pulsating colors that shift between vibrant bio-luminescent hues.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.DodecahedronGeometry` or a cluster of spheres for rendering the spores.
+- Custom `MeshStandardNodeMaterial` driving a pulsating bio-glow using sine waves based on time.
+- Animates slowly using a fluid, drifting motion.
+- Integrated via LevelManager to add a serene, alien atmosphere to specific levels.
+
+14. Quantum Mirror Anomalies
+
+**The Technique:** Floating, shattered crystalline shards and reflective mirror fragments drifting through the background. They slowly rotate and spin, catching the light. Built using `InstancedMesh` with TSL `MeshStandardNodeMaterial` for refractive or shimmering colors that pulse and warp when the player flies near them.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.IcosahedronGeometry` (modified for jaggedness via vertex displacement) to render floating mirror shards.
+- Custom `MeshStandardNodeMaterial` using TSL to create a chromatic, prism-like reflective surface that glitters using sine waves and time.
+- Animates based on time, with shards slowly drifting and twisting in space.
+- Integrated via LevelManager to add a surreal, dimensional-rift atmosphere to specific levels.
+
+18. Cosmic Web Filaments
+
+**The Technique:** Massive, intertwined strands of glowing energy representing the cosmic web that connects galaxies. These filaments drift slowly in the deep background and pulse with light that travels along their length. Built using `InstancedMesh` with elongated geometries and TSL `MeshBasicNodeMaterial` to render scrolling energy pulses.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.CylinderGeometry` (or thin elongated planes) for rendering the filaments.
+- Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture that simulates energy flowing along the strands.
+- Animates based on `time` and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space levels.
+
+19. Magnetic Plasma Arcs
+
+**The Technique:** Massive, looping arcs of glowing plasma erupting from the deep background, simulating solar flares or magnetic field disturbances. Built using `InstancedMesh` with `THREE.TorusGeometry` (rendered as half-arcs) and TSL `MeshBasicNodeMaterial` to render scrolling fiery noise along the arcs.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.TorusGeometry` configured to 180 degrees (Math.PI) to render the arcs.
+- Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture that simulates plasma flowing along the magnetic field lines.
+- Animates based on `time` and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space and orbital levels.
+
+20. Pulsar Lighthouse Beams
+
+**The Technique:** Distant spinning neutron stars sweeping volumetric fan beams across the playfield.
+
+**Specific Implementation:**
+- A handful of distant pulsar cores, plus an `InstancedMesh` of wide beam planes or cones.
+- TSL `MeshBasicNodeMaterial`, additive blending, angular sweep from `time`, opacity falloff at the edges of the fan.
+- Beam sweep rate and intensity kick up with player's speed, using the same momentum hook the other deferred modules use.
+- Integrated via LevelManager to add an active, sweeping lighthouse effect to deep space levels.

@@ -62,7 +62,15 @@ export const DEFERRED_ENV_FLAGS = [
     'hyperspaceTunnel',
     'cosmicCyberGrid',
     'energyRifts',
-    'prismaticCrystals'
+    'prismaticCrystals',
+    'stardustVortex',
+    'bioluminescentSpores',
+    'quantumMirrors',
+    'holographicDataStreams',
+    'cosmicWebFilaments',
+    'magneticPlasmaArcs',
+    'pulsarLighthouse',
+    'orbitalMegastructures'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -157,7 +165,15 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     hyperspaceTunnel: 'hyperspaceTunnel',
     cosmicCyberGrid: 'cosmicCyberGrid',
     energyRifts: 'energyRifts',
-    prismaticCrystals: 'prismaticCrystals'
+    prismaticCrystals: 'prismaticCrystals',
+    stardustVortex: 'stardustVortex',
+    bioluminescentSpores: 'bioluminescentSpores',
+    quantumMirrors: 'quantumMirrors',
+    holographicDataStreams: 'holographicDataStreams',
+    cosmicWebFilaments: 'cosmicWebFilaments',
+    magneticPlasmaArcs: 'magneticPlasmaArcs',
+    pulsarLighthouse: 'pulsarLighthouse',
+    orbitalMegastructures: 'orbitalMegastructures'
 };
 
 /** Pure load predicates for non-env deferred systems. */

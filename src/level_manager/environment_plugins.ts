@@ -68,7 +68,15 @@ const PLUGIN_ORDER = [
     'hyperspaceTunnel',
     'cosmicCyberGrid',
     'energyRifts',
-    'prismaticCrystals'
+    'prismaticCrystals',
+    'stardustVortex',
+    'bioluminescentSpores',
+    'quantumMirrors',
+    'holographicDataStreams',
+    'cosmicWebFilaments',
+    'magneticPlasmaArcs',
+    'pulsarLighthouse',
+    'orbitalMegastructures'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

@@ -621,6 +621,15 @@ export function createCosmicCyberGridSystemStub(): import('./cosmic_cyber_grid')
     } as unknown as import('./cosmic_cyber_grid').CosmicCyberGridSystem;
 }
 
+export function createPulsarLighthouseSystemStub(): import('./pulsar_lighthouse').PulsarLighthouseSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
+    } as unknown as import('./pulsar_lighthouse').PulsarLighthouseSystem;
+}
+
 export function createEnergyRiftsSystemStub(): import('./energy_rifts').EnergyRiftsSystem {
     return {
         active: false,
@@ -638,4 +647,74 @@ export function createPrismaticCrystalsSystemStub(): import('./prismatic_crystal
         update: (delta: number, cameraX: number, playerPos?: import('three').Vector3, playerSpeed: number = 8) => { },
         cleanup: () => { }
     } as unknown as import('./prismatic_crystals').PrismaticCrystalsSystem;
+}
+
+export function createStardustVortexSystemStub(): import('./stardust_vortex').StardustVortexSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./stardust_vortex').StardustVortexSystem;
+}
+
+export function createBioluminescentSporesSystemStub(): import('./bioluminescent_spores').BioluminescentSporesSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerPos?: import('three').Vector3) => { },
+        cleanup: () => { }
+    } as unknown as import('./bioluminescent_spores').BioluminescentSporesSystem;
+}
+
+export function createQuantumMirrorsSystemStub(): import('./quantum_mirrors').QuantumMirrorsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 10) => { },
+        cleanup: () => { }
+    } as unknown as import('./quantum_mirrors').QuantumMirrorsSystem;
+}
+
+export function createHolographicDataStreamsSystemStub(): import('./holographic_data_streams').HolographicDataStreamsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./holographic_data_streams').HolographicDataStreamsSystem;
+}
+
+export function createCosmicWebFilamentsSystemStub(): import('./cosmic_web_filaments').CosmicWebFilamentsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
+}
+
+export function createMagneticPlasmaArcsSystemStub(): import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
+}
+
+export function createOrbitalMegastructuresSystemStub(): import('./orbital_megastructures').OrbitalMegastructuresSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./orbital_megastructures').OrbitalMegastructuresSystem;
 }

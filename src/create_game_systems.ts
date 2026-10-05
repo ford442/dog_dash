@@ -1,8 +1,12 @@
 import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
 import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
+import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
+import type { OrbitalMegastructuresSystem } from './orbital_megastructures';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
+import type { StardustVortexSystem } from './stardust_vortex';
+import type { BioluminescentSporesSystem } from './bioluminescent_spores';
 import type { SpaceGardenSystem } from './space_garden';
 import type { ComboCorridorSystem } from './combo_corridor';
 import type { BouncePadsSystem } from './bounce_pads';
@@ -34,6 +38,8 @@ import {
     createCosmicCyberGridSystemStub,
     createEnergyRiftsSystemStub,
     createPrismaticCrystalsSystemStub,
+    createPulsarLighthouseSystemStub,
+    createOrbitalMegastructuresSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -75,7 +81,13 @@ import {
     createGravLensManagerStub,
     createDerelictBuoyManagerStub,
     createDataMonolithManagerStub,
-    createMagicPaintbrushSystemStub
+    createMagicPaintbrushSystemStub,
+    createStardustVortexSystemStub,
+    createBioluminescentSporesSystemStub,
+    createQuantumMirrorsSystemStub,
+    createHolographicDataStreamsSystemStub,
+    createCosmicWebFilamentsSystemStub,
+    createMagneticPlasmaArcsSystemStub
 } from './deferred_system_stubs';
 import type { ReEntrySystem } from './reentry';
 import type { WaterfallSystem } from './waterfall';
@@ -196,8 +208,16 @@ export type GameSystems = {
     fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem;
     hyperspaceTunnelSystem: HyperspaceTunnelSystem;
     cosmicCyberGridSystem: CosmicCyberGridSystem;
+    pulsarLighthouseSystem: PulsarLighthouseSystem;
+    orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
+    stardustVortexSystem: StardustVortexSystem;
+    bioluminescentSporesSystem: BioluminescentSporesSystem;
+    quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem;
+    holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem;
+    cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
+    magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
 
     candyFieldSystem: CandyFieldSystem;
     singingGeodeSystem: SingingGeodeSystem;
@@ -449,8 +469,16 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const fossilizedSpaceWhalesSystem: FossilizedSpaceWhalesSystem = createFossilizedSpaceWhalesSystemStub();
     const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
     const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
+    const pulsarLighthouseSystem: PulsarLighthouseSystem = createPulsarLighthouseSystemStub();
+    const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
+    const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
+    const bioluminescentSporesSystem: BioluminescentSporesSystem = createBioluminescentSporesSystemStub();
+    const quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem = createQuantumMirrorsSystemStub();
+    const holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem = createHolographicDataStreamsSystemStub();
+    const cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem = createCosmicWebFilamentsSystemStub();
+    const magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem = createMagneticPlasmaArcsSystemStub();
     const candyFieldSystem: CandyFieldSystem = createCandyFieldSystemStub();
     const singingGeodeSystem: SingingGeodeSystem = createSingingGeodeSystemStub();
     const flowerConstellationsSystem: FlowerConstellationsSystem = createFlowerConstellationsSystemStub();
@@ -524,8 +552,16 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         fossilizedSpaceWhalesSystem,
         hyperspaceTunnelSystem,
         cosmicCyberGridSystem,
+        pulsarLighthouseSystem,
+        orbitalMegastructuresSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
+        stardustVortexSystem,
+        bioluminescentSporesSystem,
+        quantumMirrorsSystem,
+        holographicDataStreamsSystem,
+        cosmicWebFilamentsSystem,
+        magneticPlasmaArcsSystem,
         candyFieldSystem,
         singingGeodeSystem,
         flowerConstellationsSystem,

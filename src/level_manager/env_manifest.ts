@@ -869,6 +869,42 @@ export const hyperspaceTunnel = defineEnvSystem<'hyperspaceTunnel'>({
     deactivate: (host) => host.hyperspaceTunnelSystem.deactivate()
 });
 
+export const pulsarLighthouse = defineEnvSystem<'pulsarLighthouse'>({
+    flag: 'pulsarLighthouse',
+    label: 'Pulsar Lighthouses',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 12 }, // 6 pulsars * 2 beams each = 12
+    systemKey: 'pulsarLighthouse',
+    load: () => import('../pulsar_lighthouse'),
+    install: (ctx, mod) => {
+        const { PulsarLighthouseSystem } = mod as typeof import('../pulsar_lighthouse');
+        ctx.installEnvPartial({ pulsarLighthouseSystem: new PulsarLighthouseSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.pulsarLighthouseSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.pulsarLighthouseSystem.deactivate()
+});
+
+export const orbitalMegastructures = defineEnvSystem<'orbitalMegastructures'>({
+    flag: 'orbitalMegastructures',
+    label: 'Orbital Megastructures',
+    role: 'backdrop',
+    biomes: ['industrial'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'orbitalMegastructures',
+    load: () => import('../orbital_megastructures'),
+    install: (ctx, mod) => {
+        const { OrbitalMegastructuresSystem } = mod as typeof import('../orbital_megastructures');
+        ctx.installEnvPartial({ orbitalMegastructuresSystem: new OrbitalMegastructuresSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.orbitalMegastructuresSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.orbitalMegastructuresSystem.deactivate()
+});
+
 export const cosmicCyberGrid = defineEnvSystem<'cosmicCyberGrid'>({
     flag: 'cosmicCyberGrid',
     label: 'Cosmic Cyber Grid',
@@ -923,10 +959,117 @@ export const prismaticCrystals = defineEnvSystem<'prismaticCrystals'>({
     deactivate: (host) => host.prismaticCrystalsSystem.deactivate()
 });
 
+export const stardustVortex = defineEnvSystem<'stardustVortex'>({
+    flag: 'stardustVortex',
+    label: 'Stardust Vortex',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'stardustVortex',
+    load: () => import('../stardust_vortex'),
+    install: (ctx, mod) => {
+        const { StardustVortexSystem } = mod as typeof import('../stardust_vortex');
+        ctx.installEnvPartial({ stardustVortexSystem: new StardustVortexSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.stardustVortexSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.stardustVortexSystem.deactivate()
+});
+
+export const bioluminescentSpores = defineEnvSystem<'bioluminescentSpores'>({
+    flag: 'bioluminescentSpores',
+    label: 'Bioluminescent Spore Clouds',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'bioluminescentSpores',
+    load: () => import('../bioluminescent_spores'),
+    install: (ctx, mod) => {
+        const { BioluminescentSporesSystem } = mod as typeof import('../bioluminescent_spores');
+        ctx.installEnvPartial({ bioluminescentSporesSystem: new BioluminescentSporesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.bioluminescentSporesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.bioluminescentSporesSystem.deactivate()
+});
+
 /**
  * Declaration order (minus load-only flags) is `DEFERRED_ENV_PLUGIN_ORDER`.
  */
 
+export const quantumMirrors = defineEnvSystem<'quantumMirrors'>({
+    flag: 'quantumMirrors',
+    label: 'Quantum Mirror Anomalies',
+    role: 'backdrop',
+    biomes: ['crystalline'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 30 },
+    systemKey: 'quantumMirrors',
+    load: () => import('../quantum_mirrors'),
+    install: (ctx, mod) => {
+        const { QuantumMirrorsSystem } = mod as typeof import('../quantum_mirrors');
+        ctx.installEnvPartial({ quantumMirrorsSystem: new QuantumMirrorsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.quantumMirrorsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.quantumMirrorsSystem.deactivate()
+});
+
+export const holographicDataStreams = defineEnvSystem<'holographicDataStreams'>({
+    flag: 'holographicDataStreams',
+    label: 'Holographic Data Streams',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 40 },
+    systemKey: 'holographicDataStreams',
+    load: () => import('../holographic_data_streams'),
+    install: (ctx, mod) => {
+        const { HolographicDataStreamsSystem } = mod as typeof import('../holographic_data_streams');
+        ctx.installEnvPartial({ holographicDataStreamsSystem: new HolographicDataStreamsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.holographicDataStreamsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.holographicDataStreamsSystem.deactivate()
+});
+
+export const cosmicWebFilaments = defineEnvSystem<'cosmicWebFilaments'>({
+    flag: 'cosmicWebFilaments',
+    label: 'Cosmic Web Filaments',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    systemKey: 'cosmicWebFilaments',
+    load: () => import('../cosmic_web_filaments'),
+    install: (ctx, mod) => {
+        const { CosmicWebFilamentsSystem } = mod as typeof import('../cosmic_web_filaments');
+        ctx.installEnvPartial({ cosmicWebFilamentsSystem: new CosmicWebFilamentsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.cosmicWebFilamentsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.cosmicWebFilamentsSystem.deactivate()
+});
+
+export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
+    flag: 'magneticPlasmaArcs',
+    label: 'Magnetic Plasma Arcs',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 20 },
+    systemKey: 'magneticPlasmaArcs',
+    load: () => import('../magnetic_plasma_arcs'),
+    install: (ctx, mod) => {
+        const { MagneticPlasmaArcsSystem } = mod as typeof import('../magnetic_plasma_arcs');
+        ctx.installEnvPartial({ magneticPlasmaArcsSystem: new MagneticPlasmaArcsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.magneticPlasmaArcsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.magneticPlasmaArcsSystem.deactivate()
+});
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -975,7 +1118,15 @@ export const ENV_SYSTEM_MANIFEST = [
     hyperspaceTunnel,
     cosmicCyberGrid,
     energyRifts,
-    prismaticCrystals
+    prismaticCrystals,
+    stardustVortex,
+    bioluminescentSpores,
+    quantumMirrors,
+    holographicDataStreams,
+    cosmicWebFilaments,
+    magneticPlasmaArcs,
+    pulsarLighthouse,
+    orbitalMegastructures
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
