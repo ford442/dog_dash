@@ -200,3 +200,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture that simulates plasma flowing along the magnetic field lines.
 - Animates based on `time` and slowly scrolls to provide parallax depth.
 - Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space and orbital levels.
+
+20. Pulsar Lighthouse Beams
+
+**The Technique:** Volumetric sweeping fan beams sweeping across the deep space background. Built using `InstancedMesh` with TSL `MeshBasicNodeMaterial` for volumetric sweeping fan beams.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `PlaneGeometry` (or similar) to render beams.
+- Custom `MeshBasicNodeMaterial` using TSL to create a sweeping fan effect.
+- Animates based on `time` and rotates the beams.
+- Integrated via LevelManager to add a sweeping cosmic lighthouse effect.
