@@ -222,7 +222,9 @@ export type LevelEnvironments = {
     bioluminescentSpores?: boolean | import('./bioluminescent_spores').BioluminescentSporesConfig;
     quantumMirrors?: boolean | import('./quantum_mirrors').QuantumMirrorsConfig;
     cosmicWebFilaments?: boolean | import('./cosmic_web_filaments').CosmicWebFilamentsConfig;
+    pulsarLighthouse?: boolean | import('./pulsar_lighthouse').PulsarLighthouseConfig;
     magneticPlasmaArcs?: boolean | import('./magnetic_plasma_arcs').MagneticPlasmaArcsConfig;
+    orbitalMegastructures?: boolean | import('./orbital_megastructures').OrbitalMegastructuresConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -538,6 +540,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             flowerConstellations: true,
+            orbitalMegastructures: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff }
         },
         vignettes: {
             roseArches: 1.2
@@ -710,7 +713,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             fossilizedSpaceWhales: true,
             energyRifts: true,
             prismaticCrystals: true,
-            bioluminescentSpores: true
+            bioluminescentSpores: true,
+            pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 }
         },
         vignettes: {
             treeGroves: 0.8,

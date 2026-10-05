@@ -1,41 +1,49 @@
 import * as THREE from 'three';
-import { time, vec3, color, uniform, sin, mix, positionWorld, normalLocal, normalView, cameraPosition, length, smoothstep, max } from 'three/tsl';
+import { time, vec3, vec4, color, uniform, sin, mix, positionLocal, length, smoothstep, abs, normalWorld, instancedDynamicBufferAttribute } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
+import { fbm } from './clouds/noise';
 
 export interface PrismaticCrystalsConfig {
+    enabled: boolean;
     density?: number;
     color1?: number;
     color2?: number;
 }
 
-const MAX_CRYSTALS = 80;
+const MAX_CRYSTALS = 25;
 
-function createCrystalMaterial(color1: number, color2: number, uPlayerPos: any) {
+function createPrismaticMaterial(
+    color1: number,
+    color2: number,
+    uSpeed: any,
+    uPlayerPos: any,
+    instanceMatrix: THREE.InstancedBufferAttribute
+) {
     const mat = new MeshStandardNodeMaterial({
-        roughness: 0.1,
-        metalness: 0.8,
         transparent: true,
-        opacity: 0.9,
-        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
         depthWrite: false,
+        side: THREE.FrontSide,
+        roughness: 0.1,
+        metalness: 0.8
     });
 
     const c1 = color(color1);
     const c2 = color(color2);
 
-    // Iridescence/Prismatic effect based on normal and view
-    const viewDir = vec3(0, 0, 1); // Simple view dir for instanced
-    const fresnel = max(0.0, vec3(1.0).sub(normalView).dot(viewDir));
-    const prismaticColor = mix(c1, c2, sin(fresnel.mul(10.0).add(time.mul(2.0))).mul(0.5).add(0.5));
-
-    // Player interaction glow
-    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const t = time.mul(uSpeed).add(positionLocal.x.mul(0.01));
+    const noiseVal = fbm(normalWorld.xyz.add(t));
+    const mixFactor = sin(t.mul(2.0).add(noiseVal.mul(4.0))).mul(0.5).add(0.5);
+    const baseColor = mix(c1, c2, mixFactor);
+    const crystalOrigin = instancedDynamicBufferAttribute(instanceMatrix, 'vec4', 16, 12).xyz;
+    const distToPlayer = length(crystalOrigin.sub(uPlayerPos));
     const glowIntensity = smoothstep(150.0, 0.0, distToPlayer);
-    const finalColor = prismaticColor.add(color(0xffffff).mul(glowIntensity.mul(0.5)));
+    const finalColor = baseColor.add(color(0xffffff).mul(glowIntensity.mul(0.35)));
+    const fade = smoothstep(1.0, 0.2, abs(positionLocal.z).div(20.0));
 
-    mat.colorNode = finalColor;
-    mat.emissiveNode = finalColor.mul(0.2);
+    mat.colorNode = vec4(finalColor, fade.mul(0.8));
+    mat.emissiveNode = finalColor.mul(0.4);
 
     return mat;
 }
@@ -46,28 +54,25 @@ export class PrismaticCrystalsSystem {
     mesh!: THREE.InstancedMesh;
 
     crystalCount: number = MAX_CRYSTALS;
-    width: number = 2000;
+    uSpeed = uniform(1.0);
     uPlayerPos = uniform(vec3(0, 0, 0));
+    width: number = 1800;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
-        // Use Octahedron for crystal shape
-        const geo = new THREE.OctahedronGeometry(4, 0);
-        // Elongate it to look more like a crystal
-        geo.scale(0.5, 1.5, 0.5);
-
-        const mat = createCrystalMaterial(0x00ffff, 0xff00ff, this.uPlayerPos);
-
-        this.mesh = new THREE.InstancedMesh(geo, mat, this.crystalCount);
+        const geo = new THREE.DodecahedronGeometry(15, 0);
+        this.mesh = new THREE.InstancedMesh(geo, new MeshStandardNodeMaterial(), this.crystalCount);
+        this.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+        this.mesh.material = createPrismaticMaterial(0x00ffff, 0xff00ff, this.uSpeed, this.uPlayerPos, this.mesh.instanceMatrix);
         this.mesh.frustumCulled = false;
-        this.mesh.renderOrder = -5;
+        this.mesh.renderOrder = -10;
 
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.crystalCount; i++) {
             const x = (Math.random() - 0.5) * this.width;
             const y = (Math.random() - 0.5) * 120;
-            const z = -20 - Math.random() * 80;
+            const z = -80 - Math.random() * 80;
             dummy.position.set(x, y, z);
 
             dummy.rotation.x = Math.random() * Math.PI;
@@ -99,7 +104,13 @@ export class PrismaticCrystalsSystem {
         this.mesh.visible = true;
 
         if (config?.color1 !== undefined || config?.color2 !== undefined) {
-            const mat = createCrystalMaterial(config.color1 ?? 0x00ffff, config.color2 ?? 0xff00ff, this.uPlayerPos);
+            const mat = createPrismaticMaterial(
+                config.color1 ?? 0x00ffff,
+                config.color2 ?? 0xff00ff,
+                this.uSpeed,
+                this.uPlayerPos,
+                this.mesh.instanceMatrix
+            );
             if (this.mesh.material) {
                 (this.mesh.material as any).dispose?.();
             }
@@ -116,12 +127,13 @@ export class PrismaticCrystalsSystem {
         decorationBudget.syncCount('prismatic_crystals', 0);
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number, playerPos?: THREE.Vector3, playerSpeed: number = 8) {
         if (!this.active) return;
 
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }
+        this.uSpeed.value = playerSpeed * 0.1;
 
         const dummy = new THREE.Object3D();
         const mat4 = new THREE.Matrix4();
@@ -133,12 +145,9 @@ export class PrismaticCrystalsSystem {
             this.mesh.getMatrixAt(i, mat4);
             mat4.decompose(dummy.position, dummy.quaternion, dummy.scale);
 
-            // Drift slowly left and spin
-            dummy.position.x -= delta * 15.0 * (1.0 / dummy.scale.x); // parallax based on size
-
-            // Spin
-            dummy.rotation.x += delta * 0.2;
-            dummy.rotation.y += delta * 0.3;
+            dummy.position.x -= delta * (5.0 + (i % 3));
+            dummy.rotation.x += delta * 0.1;
+            dummy.rotation.y += delta * 0.15;
 
             if (dummy.position.x < limitBack) {
                 dummy.position.x += this.width + margin * 2;
@@ -158,7 +167,7 @@ export class PrismaticCrystalsSystem {
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if (Array.isArray(this.mesh.material)) {
-            this.mesh.material.forEach(m => m.dispose());
+            this.mesh.material.forEach((m: THREE.Material) => m.dispose());
         } else {
             this.mesh.material.dispose();
         }
