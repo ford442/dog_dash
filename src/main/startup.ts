@@ -231,6 +231,7 @@ function createLevelManager(
             holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
             cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
             pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
+            orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
@@ -321,6 +322,7 @@ function createLevelManager(
         holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
         cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
         pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
+        orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem

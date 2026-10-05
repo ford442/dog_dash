@@ -75,7 +75,8 @@ const PLUGIN_ORDER = [
     'holographicDataStreams',
     'cosmicWebFilaments',
     'magneticPlasmaArcs',
-    'pulsarLighthouse'
+    'pulsarLighthouse',
+    'orbitalMegastructures'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

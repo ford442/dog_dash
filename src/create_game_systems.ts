@@ -2,6 +2,7 @@ import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
 import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
+import type { OrbitalMegastructuresSystem } from './orbital_megastructures';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
 import type { StardustVortexSystem } from './stardust_vortex';
@@ -36,6 +37,7 @@ import {
     createHyperspaceTunnelSystemStub,
     createCosmicCyberGridSystemStub,
     createPulsarLighthouseSystemStub,
+    createOrbitalMegastructuresSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -207,6 +209,7 @@ export type GameSystems = {
     hyperspaceTunnelSystem: HyperspaceTunnelSystem;
     cosmicCyberGridSystem: CosmicCyberGridSystem;
     pulsarLighthouseSystem: PulsarLighthouseSystem;
+    orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
@@ -467,6 +470,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
     const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
     const pulsarLighthouseSystem: PulsarLighthouseSystem = createPulsarLighthouseSystemStub();
+    const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
@@ -549,6 +553,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         hyperspaceTunnelSystem,
         cosmicCyberGridSystem,
         pulsarLighthouseSystem,
+        orbitalMegastructuresSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,
