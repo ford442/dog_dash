@@ -203,10 +203,10 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 
 20. Pulsar Lighthouse Beams
 
-**The Technique:** Distant spinning neutron stars sweeping volumetric fan beams across the playfield.
+**The Technique:** Volumetric sweeping fan beams sweeping across the deep space background. Built using `InstancedMesh` with TSL `MeshBasicNodeMaterial` for volumetric sweeping fan beams.
 
 **Specific Implementation:**
-- A handful of distant pulsar cores, plus an `InstancedMesh` of wide beam planes or cones.
-- TSL `MeshBasicNodeMaterial`, additive blending, angular sweep from `time`, opacity falloff at the edges of the fan.
-- Beam sweep rate and intensity kick up with player's speed, using the same momentum hook the other deferred modules use.
-- Integrated via LevelManager to add an active, sweeping lighthouse effect to deep space levels.
+- Uses `InstancedMesh` with `PlaneGeometry` (or similar) to render beams.
+- Custom `MeshBasicNodeMaterial` using TSL to create a sweeping fan effect.
+- Animates based on `time` and rotates the beams.
+- Integrated via LevelManager to add a sweeping cosmic lighthouse effect.
