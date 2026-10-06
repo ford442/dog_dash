@@ -70,7 +70,8 @@ export const DEFERRED_ENV_FLAGS = [
     'cosmicWebFilaments',
     'magneticPlasmaArcs',
     'pulsarLighthouse',
-    'orbitalMegastructures'
+    'orbitalMegastructures',
+    'ascendantMonoliths'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -173,7 +174,8 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     cosmicWebFilaments: 'cosmicWebFilaments',
     magneticPlasmaArcs: 'magneticPlasmaArcs',
     pulsarLighthouse: 'pulsarLighthouse',
-    orbitalMegastructures: 'orbitalMegastructures'
+    orbitalMegastructures: 'orbitalMegastructures',
+    ascendantMonoliths: 'ascendantMonoliths'
 };
 
 /** Pure load predicates for non-env deferred systems. */

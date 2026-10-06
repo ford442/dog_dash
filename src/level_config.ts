@@ -225,6 +225,7 @@ export type LevelEnvironments = {
     pulsarLighthouse?: boolean | import('./pulsar_lighthouse').PulsarLighthouseConfig;
     magneticPlasmaArcs?: boolean | import('./magnetic_plasma_arcs').MagneticPlasmaArcsConfig;
     orbitalMegastructures?: boolean | import('./orbital_megastructures').OrbitalMegastructuresConfig;
+    ascendantMonoliths?: boolean | import('./ascendant_monoliths').AscendantMonolithsConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -540,7 +541,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             flowerConstellations: true,
-            orbitalMegastructures: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff }
+            orbitalMegastructures: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
+            ascendantMonoliths: { density: 1.0 }
         },
         vignettes: {
             roseArches: 1.2
