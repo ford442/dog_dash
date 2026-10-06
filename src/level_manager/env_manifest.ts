@@ -869,6 +869,42 @@ export const hyperspaceTunnel = defineEnvSystem<'hyperspaceTunnel'>({
     deactivate: (host) => host.hyperspaceTunnelSystem.deactivate()
 });
 
+export const pulsarLighthouse = defineEnvSystem<'pulsarLighthouse'>({
+    flag: 'pulsarLighthouse',
+    label: 'Pulsar Lighthouses',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 12 }, // 6 pulsars * 2 beams each = 12
+    systemKey: 'pulsarLighthouse',
+    load: () => import('../pulsar_lighthouse'),
+    install: (ctx, mod) => {
+        const { PulsarLighthouseSystem } = mod as typeof import('../pulsar_lighthouse');
+        ctx.installEnvPartial({ pulsarLighthouseSystem: new PulsarLighthouseSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.pulsarLighthouseSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.pulsarLighthouseSystem.deactivate()
+});
+
+export const orbitalMegastructures = defineEnvSystem<'orbitalMegastructures'>({
+    flag: 'orbitalMegastructures',
+    label: 'Orbital Megastructures',
+    role: 'backdrop',
+    biomes: ['industrial'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'orbitalMegastructures',
+    load: () => import('../orbital_megastructures'),
+    install: (ctx, mod) => {
+        const { OrbitalMegastructuresSystem } = mod as typeof import('../orbital_megastructures');
+        ctx.installEnvPartial({ orbitalMegastructuresSystem: new OrbitalMegastructuresSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.orbitalMegastructuresSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.orbitalMegastructuresSystem.deactivate()
+});
+
 export const cosmicCyberGrid = defineEnvSystem<'cosmicCyberGrid'>({
     flag: 'cosmicCyberGrid',
     label: 'Cosmic Cyber Grid',
@@ -909,10 +945,10 @@ export const prismaticCrystals = defineEnvSystem<'prismaticCrystals'>({
     flag: 'prismaticCrystals',
     label: 'Prismatic Crystals',
     role: 'backdrop',
-    biomes: ['nebula'],
+    biomes: ['nebula', 'crystalline'],
     paletteTags: ['neon', 'iridescent'],
     difficultyWeight: 1,
-    budget: { category: 'background3d', instances: 80 },
+    budget: { category: 'background3d', instances: 25 },
     systemKey: 'prismaticCrystals',
     load: () => import('../prismatic_crystals'),
     install: (ctx, mod) => {
@@ -1034,7 +1070,6 @@ export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
     activate: (host, value) => host.magneticPlasmaArcsSystem.activate(objectConfig(value)),
     deactivate: (host) => host.magneticPlasmaArcsSystem.deactivate()
 });
-
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1089,7 +1124,9 @@ export const ENV_SYSTEM_MANIFEST = [
     quantumMirrors,
     holographicDataStreams,
     cosmicWebFilaments,
-    magneticPlasmaArcs
+    magneticPlasmaArcs,
+    pulsarLighthouse,
+    orbitalMegastructures
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
