@@ -718,3 +718,13 @@ export function createOrbitalMegastructuresSystemStub(): import('./orbital_megas
         cleanup: () => { }
     } as unknown as import('./orbital_megastructures').OrbitalMegastructuresSystem;
 }
+
+export function createAscendantMonolithsSystemStub(): import('./ascendant_monoliths').AscendantMonolithsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
+}
