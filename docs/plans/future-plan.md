@@ -211,6 +211,16 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Animates based on `time` and rotates the beams.
 - Integrated via LevelManager to add a sweeping cosmic lighthouse effect.
 
+22. Ascendant Monoliths
+
+**The Technique:** Massive, mysterious rectangular alien monoliths drifting slowly in the deep background. Built using `InstancedMesh` with `THREE.BoxGeometry` and TSL `MeshStandardNodeMaterial` with glowing runic patterns scrolling vertically.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.BoxGeometry` for rendering the monoliths.
+- Custom `MeshStandardNodeMaterial` using TSL to create a scrolling emissive noise texture that simulates glowing alien runes.
+- Animates based on `time` and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a mysterious, ancient atmosphere to cosmic levels.
+
 23. Echoing Void-Ripples
 
 **The Technique:** Massive, expanding concentric ripples in spacetime that occasionally trigger in the deep background, looking like drops in a cosmic pond. Built using `InstancedMesh` with `THREE.PlaneGeometry` and TSL `MeshBasicNodeMaterial` for distorting/glowing concentric waves that expand and fade over time.

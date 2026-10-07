@@ -626,7 +626,8 @@ export function createPulsarLighthouseSystemStub(): import('./pulsar_lighthouse'
         active: false,
         activate: () => { },
         deactivate: () => { },
-        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
     } as unknown as import('./pulsar_lighthouse').PulsarLighthouseSystem;
 }
 
@@ -726,4 +727,14 @@ export function createOrbitalMegastructuresSystemStub(): import('./orbital_megas
         update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
         cleanup: () => { }
     } as unknown as import('./orbital_megastructures').OrbitalMegastructuresSystem;
+}
+
+export function createAscendantMonolithsSystemStub(): import('./ascendant_monoliths').AscendantMonolithsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
 }

@@ -120,6 +120,7 @@ export class LevelManager {
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
+    ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
 
     readonly GEOLOGICAL_SPAWN_CAPS = {
         cloud: 8,
@@ -199,6 +200,7 @@ export class LevelManager {
         this.echoingVoidRipplesSystem = options.env.echoingVoidRipplesSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
         this.orbitalMegastructuresSystem = options.env.orbitalMegastructuresSystem;
+        this.ascendantMonolithsSystem = options.env.ascendantMonolithsSystem;
 
         // Stub until ensureGameplayReady loads the real CloudSystem chunk.
         this.cloudSystem = {
@@ -448,6 +450,7 @@ export class LevelManager {
         if (enabled('echoingVoidRipples') && this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.update(delta, cameraX, speed);
         if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('orbitalMegastructures') && this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.update(delta, cameraX, speed);
+        if (enabled('ascendantMonoliths') && this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.update(delta, cameraX, speed);
         if (enabled('chromaShift')) this.chromaShiftSystem.update(delta, playerPos);
         if (enabled('stormGeodes') && this.stormGeodeSystem) this.stormGeodeSystem.update(delta, cameraX, playerPos);
         this.wishLanternSystem.update(delta, cameraX, playerPos);
@@ -527,6 +530,7 @@ export class LevelManager {
         if (this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.cleanup?.();
         if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
         if (this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.cleanup?.();
+        if (this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.cleanup?.();
 
         // Re-baseline decoration counters after clears; re-sync still-live streams/pools
         decorationBudget.resetCounts();

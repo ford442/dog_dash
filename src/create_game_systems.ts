@@ -3,6 +3,7 @@ import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
 import type { OrbitalMegastructuresSystem } from './orbital_megastructures';
+import type { AscendantMonolithsSystem } from './ascendant_monoliths';
 import type { EchoingVoidRipplesSystem } from './echoing_void_ripples';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
@@ -41,6 +42,7 @@ import {
     createPrismaticCrystalsSystemStub,
     createPulsarLighthouseSystemStub,
     createOrbitalMegastructuresSystemStub,
+    createAscendantMonolithsSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -212,6 +214,7 @@ export type GameSystems = {
     cosmicCyberGridSystem: CosmicCyberGridSystem;
     pulsarLighthouseSystem: PulsarLighthouseSystem;
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
+    ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
@@ -474,6 +477,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
     const pulsarLighthouseSystem: PulsarLighthouseSystem = createPulsarLighthouseSystemStub();
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
+    const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
@@ -558,6 +562,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         cosmicCyberGridSystem,
         pulsarLighthouseSystem,
         orbitalMegastructuresSystem,
+        ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,

@@ -232,6 +232,7 @@ function createLevelManager(
             cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
             pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
             orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
+            ascendantMonolithsSystem: systems.ascendantMonolithsSystem,
             echoingVoidRipplesSystem: systems.echoingVoidRipplesSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
 
@@ -324,6 +325,7 @@ function createLevelManager(
         cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
         pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
         orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
+        ascendantMonolithsSystem: systems.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: systems.echoingVoidRipplesSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,

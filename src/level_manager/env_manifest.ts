@@ -923,6 +923,24 @@ export const orbitalMegastructures = defineEnvSystem<'orbitalMegastructures'>({
     deactivate: (host) => host.orbitalMegastructuresSystem.deactivate()
 });
 
+export const ascendantMonoliths = defineEnvSystem<'ascendantMonoliths'>({
+    flag: 'ascendantMonoliths',
+    label: 'Ascendant Monoliths',
+    role: 'backdrop',
+    biomes: ['crystalline', 'nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 10 },
+    systemKey: 'ascendantMonoliths',
+    load: () => import('../ascendant_monoliths'),
+    install: (ctx, mod) => {
+        const { AscendantMonolithsSystem } = mod as typeof import('../ascendant_monoliths');
+        ctx.installEnvPartial({ ascendantMonolithsSystem: new AscendantMonolithsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.ascendantMonolithsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.ascendantMonolithsSystem.deactivate()
+});
+
 export const cosmicCyberGrid = defineEnvSystem<'cosmicCyberGrid'>({
     flag: 'cosmicCyberGrid',
     label: 'Cosmic Cyber Grid',
@@ -1144,8 +1162,9 @@ export const ENV_SYSTEM_MANIFEST = [
     cosmicWebFilaments,
     magneticPlasmaArcs,
     pulsarLighthouse,
-    echoingVoidRipples,
-    orbitalMegastructures
+    orbitalMegastructures,
+    ascendantMonoliths,
+    echoingVoidRipples
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */
