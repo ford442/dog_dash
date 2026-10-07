@@ -689,6 +689,16 @@ export function createQuantumMirrorsSystemStub(): import('./quantum_mirrors').Qu
     } as unknown as import('./quantum_mirrors').QuantumMirrorsSystem;
 }
 
+export function createCelestialClockworksSystemStub(): import('./celestial_clockworks').CelestialClockworksSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerPos?: import('three').Vector3) => { },
+        cleanup: () => { }
+    } as unknown as import('./celestial_clockworks').CelestialClockworksSystem;
+}
+
 export function createHolographicDataStreamsSystemStub(): import('./holographic_data_streams').HolographicDataStreamsSystem {
     return {
         active: false,
