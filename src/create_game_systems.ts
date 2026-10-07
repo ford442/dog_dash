@@ -4,6 +4,7 @@ import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
 import type { OrbitalMegastructuresSystem } from './orbital_megastructures';
 import type { AscendantMonolithsSystem } from './ascendant_monoliths';
+import type { EchoingVoidRipplesSystem } from './echoing_void_ripples';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
 import type { StardustVortexSystem } from './stardust_vortex';
@@ -86,6 +87,7 @@ import {
     createMagicPaintbrushSystemStub,
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
+    createEchoingVoidRipplesSystemStub,
     createQuantumMirrorsSystemStub,
     createHolographicDataStreamsSystemStub,
     createCosmicWebFilamentsSystemStub,
@@ -213,6 +215,7 @@ export type GameSystems = {
     pulsarLighthouseSystem: PulsarLighthouseSystem;
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
+    echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
@@ -475,6 +478,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const pulsarLighthouseSystem: PulsarLighthouseSystem = createPulsarLighthouseSystemStub();
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
+    const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
@@ -559,6 +563,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         pulsarLighthouseSystem,
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
+        echoingVoidRipplesSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,

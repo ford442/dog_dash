@@ -77,7 +77,8 @@ const PLUGIN_ORDER = [
     'magneticPlasmaArcs',
     'pulsarLighthouse',
     'orbitalMegastructures',
-    'ascendantMonoliths'
+    'ascendantMonoliths',
+    'echoingVoidRipples'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

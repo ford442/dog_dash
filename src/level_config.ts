@@ -168,6 +168,7 @@ export type LevelEnvironments = {
     clouds?: boolean | CloudsEnvironmentConfig;
     biological?: boolean;
     nebula?: boolean;
+    echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     /**
      * Parallax ribbon/veil sheets (one 8-instance layer); uses level skyColors.
      * Off on every level — the sheets are large, overdrawing and read as
@@ -787,6 +788,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             singingGeodes: { density: 20 },
             quantumMirrors: true,
             cosmicWebFilaments: true,
+            echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
             // Finale beat: the Galactic Core swells across the last stretch of
             // the run (level 6 spans x 4200 → 5200, the Moon threshold).
             galacticCore: {

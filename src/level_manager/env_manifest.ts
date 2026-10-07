@@ -887,6 +887,24 @@ export const pulsarLighthouse = defineEnvSystem<'pulsarLighthouse'>({
     deactivate: (host) => host.pulsarLighthouseSystem.deactivate()
 });
 
+export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
+    flag: 'echoingVoidRipples',
+    label: 'Echoing Void Ripples',
+    role: 'backdrop',
+    biomes: ['nebula'], // Void is not a valid Biome type
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    systemKey: 'echoingVoidRipples',
+    load: () => import('../echoing_void_ripples'),
+    install: (ctx, mod) => {
+        const { EchoingVoidRipplesSystem } = mod as typeof import('../echoing_void_ripples');
+        ctx.installEnvPartial({ echoingVoidRipplesSystem: new EchoingVoidRipplesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.echoingVoidRipplesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.echoingVoidRipplesSystem.deactivate()
+});
+
 export const orbitalMegastructures = defineEnvSystem<'orbitalMegastructures'>({
     flag: 'orbitalMegastructures',
     label: 'Orbital Megastructures',
@@ -1145,7 +1163,8 @@ export const ENV_SYSTEM_MANIFEST = [
     magneticPlasmaArcs,
     pulsarLighthouse,
     orbitalMegastructures,
-    ascendantMonoliths
+    ascendantMonoliths,
+    echoingVoidRipples
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

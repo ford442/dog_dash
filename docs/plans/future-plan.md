@@ -220,3 +220,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshStandardNodeMaterial` using TSL to create a scrolling emissive noise texture that simulates glowing alien runes.
 - Animates based on `time` and slowly scrolls to provide parallax depth.
 - Integrated via LevelManager to add a mysterious, ancient atmosphere to cosmic levels.
+
+23. Echoing Void-Ripples
+
+**The Technique:** Massive, expanding concentric ripples in spacetime that occasionally trigger in the deep background, looking like drops in a cosmic pond. Built using `InstancedMesh` with `THREE.PlaneGeometry` and TSL `MeshBasicNodeMaterial` for distorting/glowing concentric waves that expand and fade over time.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.PlaneGeometry` for rendering the ripples.
+- Custom `MeshBasicNodeMaterial` using TSL to create expanding sine-wave rings that fade smoothly at the edges.
+- Animates based on `time` to expand the rings and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a surreal, fluid atmosphere to deep space levels.
