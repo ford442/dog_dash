@@ -626,7 +626,8 @@ export function createPulsarLighthouseSystemStub(): import('./pulsar_lighthouse'
         active: false,
         activate: () => { },
         deactivate: () => { },
-        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { }
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
     } as unknown as import('./pulsar_lighthouse').PulsarLighthouseSystem;
 }
 
