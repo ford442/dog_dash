@@ -70,6 +70,7 @@ export const DEFERRED_ENV_FLAGS = [
     'cosmicWebFilaments',
     'magneticPlasmaArcs',
     'pulsarLighthouse',
+    'echoingVoidRipples',
     'orbitalMegastructures'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -173,6 +174,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     cosmicWebFilaments: 'cosmicWebFilaments',
     magneticPlasmaArcs: 'magneticPlasmaArcs',
     pulsarLighthouse: 'pulsarLighthouse',
+    echoingVoidRipples: 'echoingVoidRipples',
     orbitalMegastructures: 'orbitalMegastructures'
 };
 
