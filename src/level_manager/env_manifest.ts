@@ -905,6 +905,26 @@ export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
     deactivate: (host) => host.echoingVoidRipplesSystem.deactivate()
 });
 
+
+
+export const celestialClockworks = defineEnvSystem<'celestialClockworks'>({
+    flag: 'celestialClockworks',
+    label: 'Celestial Clockworks',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    systemKey: 'celestialClockworks',
+    load: () => import('../celestial_clockworks'),
+    install: (ctx, mod) => {
+        const { CelestialClockworksSystem } = mod as typeof import('../celestial_clockworks');
+        ctx.installEnvPartial({ celestialClockworksSystem: new CelestialClockworksSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.celestialClockworksSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.celestialClockworksSystem.deactivate()
+});
+
 export const orbitalMegastructures = defineEnvSystem<'orbitalMegastructures'>({
     flag: 'orbitalMegastructures',
     label: 'Orbital Megastructures',
@@ -1183,7 +1203,8 @@ export const ENV_SYSTEM_MANIFEST = [
     pulsarLighthouse,
     orbitalMegastructures,
     ascendantMonoliths,
-    echoingVoidRipples
+    echoingVoidRipples,
+    celestialClockworks
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

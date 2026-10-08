@@ -1,14 +1,30 @@
 import * as THREE from 'three';
-import { time, vec2, vec3, color, float, positionLocal, uv, distance, sin, cos, smoothstep, mix, varying, atan2 } from 'three/tsl';
+import { vec2, color, uv, sin, smoothstep, float, varying, atan2, length, abs, time, mix } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
 
 export type CelestialClockworksConfig = {
     density?: number;
     speed?: number;
+    color1?: number;
+    color2?: number;
 };
 
-const MAX_GEARS = 20;
+const MAX_GEARS = 15;
+const BUDGET_ID = 'celestial_clockworks';
+const SPREAD_X = 8000;
+const WORLD_SCROLL = 8;
+
+type Gear = {
+    x: number;
+    y: number;
+    z: number;
+    scale: number;
+    rotationSpeed: number;
+    rotation: number;
+    tiltX: number;
+    tiltY: number;
+};
 
 export class CelestialClockworksSystem {
     scene: THREE.Scene;
@@ -18,19 +34,12 @@ export class CelestialClockworksSystem {
     speedMultiplier: number = 1.0;
 
     private dummy = new THREE.Object3D();
-    private mat4 = new THREE.Matrix4();
-    private gearData: {
-        x: number;
-        y: number;
-        z: number;
-        scale: number;
-        rotationSpeed: number;
-        baseRotation: number;
-    }[] = [];
+    private color1 = new THREE.Color(0xd4af37);
+    private color2 = new THREE.Color(0xc0c0c0);
+    private gearData: Gear[] = [];
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
-
         const geo = new THREE.PlaneGeometry(1, 1);
         const mat = new MeshBasicNodeMaterial({
             transparent: true,
@@ -39,48 +48,34 @@ export class CelestialClockworksSystem {
             side: THREE.DoubleSide
         });
 
-        // TSL Shader for a glowing gear
         const vUv = varying(uv());
-        const center = vec2(0.5, 0.5);
-        const diff = vUv.sub(center);
-        const dist = distance(vUv, center);
-        const angle = atan2(diff.y, diff.x);
+        const centeredUv = vUv.sub(vec2(0.5, 0.5));
+        const r = length(centeredUv).mul(2.0);
+        const theta = atan2(centeredUv.y, centeredUv.x);
 
-        // Gear teeth logic
-        const numTeeth = 12.0;
-        const toothWave = sin(angle.mul(numTeeth));
-        // map -1 to 1 into a flat outer ridge with bumps
-        const ridge = smoothstep(-0.5, 0.5, toothWave);
+        const teeth = sin(theta.mul(12.0)).mul(0.1);
+        const outerShape = float(0.8).add(teeth);
+        const spokes = abs(sin(theta.mul(6.0))).pow(10.0).mul(0.5);
+        const spokeCutout = smoothstep(0.1, 0.0, spokes)
+            .mul(smoothstep(0.3, 0.32, r))
+            .mul(smoothstep(0.8, 0.78, r));
+        const innerRing = smoothstep(0.4, 0.42, r).sub(smoothstep(0.48, 0.5, r));
+        const holeCutout = smoothstep(0.2, 0.22, r);
 
-        // base radius
-        const radius = float(0.35);
-        const outerEdge = radius.add(ridge.mul(0.08));
+        const finalAlpha = smoothstep(outerShape.add(0.02), outerShape, r)
+            .sub(spokeCutout)
+            .add(innerRing)
+            .clamp(0.0, 1.0)
+            .mul(holeCutout);
 
-        // Create the solid gear shape
-        const gearShape = smoothstep(outerEdge.add(0.02), outerEdge, dist);
-
-        // Inner hole
-        const hole = smoothstep(0.1, 0.12, dist);
-
-        // Inner ring gap
-        const innerRingOut = smoothstep(0.2, 0.22, dist);
-        const innerRingIn = smoothstep(0.25, 0.23, dist);
-        const cutouts = innerRingOut.mul(innerRingIn).mul(sin(angle.mul(4.0)).add(1.0).mul(0.5));
-
-        const finalAlpha = gearShape.mul(hole).sub(cutouts).max(0.0);
-
-        // Add some glowing noise over time
-        const pulse = sin(time.mul(2.0).add(dist.mul(10.0))).mul(0.5).add(0.5);
-        const baseColor = color(0xffaa00);
-        const glowColor = mix(baseColor, color(0xffffff), pulse.mul(0.5));
-
-        mat.colorNode = glowColor;
-        mat.opacityNode = finalAlpha.mul(0.6); // slight transparency
+        const pulse = sin(time.mul(2.0).add(r.mul(8.0))).mul(0.5).add(0.5);
+        const metal = mix(color(this.color1), color(this.color2), sin(theta).mul(0.5).add(0.5));
+        mat.colorNode = mix(metal, color(0xffffff), pulse.mul(0.35));
+        mat.opacityNode = finalAlpha.mul(0.6);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, MAX_GEARS);
         this.mesh.frustumCulled = false;
-        this.mesh.renderOrder = -4; // background
-
+        this.mesh.renderOrder = -6;
         this.scene.add(this.mesh);
         this.deactivate();
     }
@@ -90,34 +85,30 @@ export class CelestialClockworksSystem {
         this.active = true;
         this.mesh.visible = true;
 
-        const density = config?.density ?? 1.0;
-        this.count = Math.max(1, Math.floor(MAX_GEARS * density));
-        this.mesh.count = this.count;
+        const density = Math.min(1.0, config?.density ?? 1.0);
         this.speedMultiplier = config?.speed ?? 1.0;
+        if (config?.color1 !== undefined) this.color1.setHex(config.color1);
+        if (config?.color2 !== undefined) this.color2.setHex(config.color2);
 
-        decorationBudget.syncCount('celestialClockworks', this.count);
-
+        this.count = Math.max(0, Math.min(MAX_GEARS, Math.floor(MAX_GEARS * density)));
+        this.mesh.count = this.count;
+        decorationBudget.syncCount(BUDGET_ID, this.count);
         this.gearData = [];
+
         for (let i = 0; i < this.count; i++) {
-            const z = -400 - Math.random() * 800; // Deep background
-            // Spread them widely
-            const x = (Math.random() - 0.5) * 4000;
-            const y = (Math.random() - 0.5) * 2000;
-
-            const scale = 300 + Math.random() * 500;
             const rotationSpeed = (Math.random() > 0.5 ? 1 : -1) * (0.05 + Math.random() * 0.1);
-
-            this.gearData.push({
-                x, y, z, scale, rotationSpeed, baseRotation: Math.random() * Math.PI * 2
-            });
-
-            this.mat4.identity();
-            this.mat4.makeTranslation(x, y, z);
-            this.mat4.decompose(this.dummy.position, this.dummy.quaternion, this.dummy.scale);
-            this.dummy.scale.set(scale, scale, 1);
-            this.dummy.rotation.z = this.gearData[i].baseRotation;
-            this.dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, this.dummy.matrix);
+            const gear: Gear = {
+                x: (Math.random() * SPREAD_X) - SPREAD_X / 2,
+                y: (Math.random() * 2000) - 1000,
+                z: -1500 - Math.random() * 2000,
+                scale: 200 + Math.random() * 600,
+                rotationSpeed,
+                rotation: Math.random() * Math.PI * 2,
+                tiltX: Math.sin(i * 1.23) * 0.3,
+                tiltY: Math.cos(i * 2.34) * 0.3
+            };
+            this.gearData.push(gear);
+            this.writeInstance(i, gear);
         }
         this.mesh.instanceMatrix.needsUpdate = true;
     }
@@ -127,53 +118,46 @@ export class CelestialClockworksSystem {
         this.active = false;
         this.mesh.visible = false;
         this.count = 0;
-        decorationBudget.syncCount('celestialClockworks', 0);
+        decorationBudget.syncCount(BUDGET_ID, 0);
     }
 
-    update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {
+    update(delta: number, cameraX: number, _playerPos?: THREE.Vector3) {
         if (!this.active) return;
 
-        let needsUpdate = false;
+        const halfSpread = SPREAD_X / 2;
         for (let i = 0; i < this.count; i++) {
-            const data = this.gearData[i];
-            data.baseRotation += data.rotationSpeed * delta * this.speedMultiplier;
+            const gear = this.gearData[i];
+            const depthFactor = Math.max(0.4, Math.abs(gear.z) / 1000);
+            gear.x -= delta * WORLD_SCROLL * 0.1 * this.speedMultiplier / depthFactor;
+            gear.rotation += gear.rotationSpeed * delta * this.speedMultiplier;
 
-            // Parallax wrap around
-            const margin = 1000;
-            const width = 4000;
-            const limitBack = cameraX - (width / 2) - margin;
-            const limitFront = cameraX + (width / 2) + margin;
-
-            if (data.x < limitBack) {
-                data.x += width + margin * 2;
-                data.y = (Math.random() - 0.5) * 2000;
-            } else if (data.x > limitFront) {
-                data.x -= width + margin * 2;
-                data.y = (Math.random() - 0.5) * 2000;
+            if (gear.x < cameraX - halfSpread) {
+                gear.x += SPREAD_X;
+                gear.y = (Math.random() * 2000) - 1000;
+            } else if (gear.x > cameraX + halfSpread) {
+                gear.x -= SPREAD_X;
+                gear.y = (Math.random() * 2000) - 1000;
             }
-
-            this.mat4.identity();
-            this.mat4.makeTranslation(data.x, data.y, data.z);
-            this.mat4.decompose(this.dummy.position, this.dummy.quaternion, this.dummy.scale);
-            this.dummy.scale.set(data.scale, data.scale, 1);
-            this.dummy.rotation.z = data.baseRotation;
-            this.dummy.updateMatrix();
-            this.mesh.setMatrixAt(i, this.dummy.matrix);
-            needsUpdate = true;
+            this.writeInstance(i, gear);
         }
-
-        if (needsUpdate) {
-            this.mesh.instanceMatrix.needsUpdate = true;
-        }
+        this.mesh.instanceMatrix.needsUpdate = true;
     }
 
     cleanup() {
         if (this.mesh) {
             this.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
-            (this.mesh.material as any).dispose?.();
+            (this.mesh.material as { dispose?: () => void }).dispose?.();
         }
         this.count = 0;
-        decorationBudget.syncCount('celestialClockworks', 0);
+        decorationBudget.syncCount(BUDGET_ID, 0);
+    }
+
+    private writeInstance(index: number, gear: Gear) {
+        this.dummy.position.set(gear.x, gear.y, gear.z);
+        this.dummy.rotation.set(gear.tiltX, gear.tiltY, gear.rotation);
+        this.dummy.scale.set(gear.scale, gear.scale, 1);
+        this.dummy.updateMatrix();
+        this.mesh.setMatrixAt(index, this.dummy.matrix);
     }
 }

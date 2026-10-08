@@ -233,10 +233,10 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 
 24. Celestial Clockworks
 
-**The Technique:** Massive, slowly rotating, semi-transparent astral gears in the deep background. Built using `InstancedMesh` with `THREE.PlaneGeometry` and a custom TSL `MeshBasicNodeMaterial` using polar coordinates to procedurally generate the gear shape and glowing teeth.
+**The Technique:** Massive, slowly turning ethereal gear mechanisms floating in the deep background, suggesting the universe itself is an intricate machine. Built using `InstancedMesh` and TSL `MeshBasicNodeMaterial` with polar coordinates to procedurally generate gear shapes with teeth and spokes.
 
 **Specific Implementation:**
 - Uses `InstancedMesh` with `THREE.PlaneGeometry` for rendering the gears.
-- Custom `MeshBasicNodeMaterial` using TSL and `atan2` for procedural procedural teeth, rings, and glowing noise.
-- Animates based on `time` and parallax scrolling wrap around.
-- Integrated via LevelManager to add a majestic, mechanical atmosphere to deep space levels.
+- Custom `MeshBasicNodeMaterial` using TSL to create procedural gear shapes (using polar coordinates `atan2` and `length`) that rotate.
+- Animates based on `time` to rotate the gears and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a surreal, cosmic-mechanical atmosphere to specific levels.

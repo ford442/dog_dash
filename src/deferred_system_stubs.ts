@@ -748,3 +748,12 @@ export function createAscendantMonolithsSystemStub(): import('./ascendant_monoli
         cleanup: () => { }
     } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
 }
+
+export function createCelestialClockworksSystemStub(): import('./celestial_clockworks').CelestialClockworksSystem {
+    return {
+        activate: (_config?: any) => {},
+        deactivate: () => {},
+        update: (_delta: number, _cameraX: number, _speed?: number) => {},
+        cleanup: () => {}
+    } as any;
+}
