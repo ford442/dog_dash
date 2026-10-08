@@ -114,6 +114,7 @@ export class LevelManager {
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
     bioluminescentSporesSystem: LevelEnvironmentPorts['bioluminescentSporesSystem'];
     quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
+    celestialClockworksSystem: LevelEnvironmentPorts['celestialClockworksSystem'];
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
@@ -195,6 +196,7 @@ export class LevelManager {
         this.stardustVortexSystem = options.env.stardustVortexSystem;
         this.bioluminescentSporesSystem = options.env.bioluminescentSporesSystem;
         this.quantumMirrorsSystem = options.env.quantumMirrorsSystem;
+        this.celestialClockworksSystem = options.env.celestialClockworksSystem;
         this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
         this.cosmicWebFilamentsSystem = options.env.cosmicWebFilamentsSystem;
         this.pulsarLighthouseSystem = options.env.pulsarLighthouseSystem;
@@ -446,6 +448,7 @@ export class LevelManager {
         if (enabled('stardustVortex') && this.stardustVortexSystem) this.stardustVortexSystem.update(delta, cameraX, speed);
         if (enabled('bioluminescentSpores') && this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.update(delta, cameraX, playerPos);
         if (enabled('quantumMirrors') && this.quantumMirrorsSystem) this.quantumMirrorsSystem.update(delta, cameraX, speed);
+        if (enabled('celestialClockworks') && this.celestialClockworksSystem) this.celestialClockworksSystem.update(delta, cameraX, playerPos);
         if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
         if (enabled('cosmicWebFilaments') && this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.update(delta, cameraX, speed);
         if (enabled('pulsarLighthouse') && this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.update(delta, cameraX, speed);
@@ -527,6 +530,7 @@ export class LevelManager {
         if (this.stardustVortexSystem) this.stardustVortexSystem.cleanup?.();
         if (this.bioluminescentSporesSystem) this.bioluminescentSporesSystem.cleanup?.();
         if (this.quantumMirrorsSystem) this.quantumMirrorsSystem.cleanup?.();
+        if (this.celestialClockworksSystem) this.celestialClockworksSystem.cleanup?.();
         if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
         if (this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.cleanup?.();
         if (this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.cleanup?.();

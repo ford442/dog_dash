@@ -118,6 +118,7 @@ export type LevelEnvironmentPorts = {
     stardustVortexSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     bioluminescentSporesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     quantumMirrorsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
+    celestialClockworksSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     holographicDataStreamsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     cosmicWebFilamentsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     pulsarLighthouseSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -175,6 +176,7 @@ export type LevelManagerOptions = {
     stardustVortexSystem: LevelEnvironmentPorts['stardustVortexSystem'];
     bioluminescentSporesSystem: LevelEnvironmentPorts['bioluminescentSporesSystem'];
     quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
+    celestialClockworksSystem: LevelEnvironmentPorts['celestialClockworksSystem'];
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];

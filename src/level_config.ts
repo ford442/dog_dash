@@ -208,6 +208,7 @@ export type LevelEnvironments = {
     fossilizedSpaceWhales?: boolean | { density?: number };
     windCurrents?: boolean | WindCurrentsEnvironmentConfig;
     bouncePads?: boolean | BouncePadsEnvironmentConfig;
+    celestialClockworks?: { speed?: number, density?: number } | boolean;
     /** Glowing air-tokens that refill boost / grant a lift (ideas.md §18.1 1H). */
     airTokens?: boolean | import('./air_tokens').AirTokensEnvironmentConfig;
     timeShiftZones?: boolean | import('./time_shift_zones').TimeShiftZonesEnvironmentConfig;
@@ -701,6 +702,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         koiSchoolDensity: 4,
         bubbleCoralDensity: 5,
         environments: {
+            celestialClockworks: { density: 1.0, speed: 1.0 },
             dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },

@@ -1073,6 +1073,24 @@ export const quantumMirrors = defineEnvSystem<'quantumMirrors'>({
     deactivate: (host) => host.quantumMirrorsSystem.deactivate()
 });
 
+export const celestialClockworks = defineEnvSystem<'celestialClockworks'>({
+    flag: 'celestialClockworks',
+    label: 'Celestial Clockworks',
+    role: 'backdrop',
+    biomes: ['nebula', 'industrial'],
+    paletteTags: ['warm'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 20 },
+    systemKey: 'celestialClockworks',
+    load: () => import('../celestial_clockworks'),
+    install: (ctx, mod) => {
+        const { CelestialClockworksSystem } = mod as typeof import('../celestial_clockworks');
+        ctx.installEnvPartial({ celestialClockworksSystem: new CelestialClockworksSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.celestialClockworksSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.celestialClockworksSystem.deactivate()
+});
+
 export const holographicDataStreams = defineEnvSystem<'holographicDataStreams'>({
     flag: 'holographicDataStreams',
     label: 'Holographic Data Streams',
@@ -1178,6 +1196,7 @@ export const ENV_SYSTEM_MANIFEST = [
     stardustVortex,
     bioluminescentSpores,
     quantumMirrors,
+    celestialClockworks,
     holographicDataStreams,
     cosmicWebFilaments,
     magneticPlasmaArcs,

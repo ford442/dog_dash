@@ -90,6 +90,7 @@ import {
     createEchoingVoidRipplesSystemStub,
     createCelestialClockworksSystemStub,
     createQuantumMirrorsSystemStub,
+    createCelestialClockworksSystemStub,
     createHolographicDataStreamsSystemStub,
     createCosmicWebFilamentsSystemStub,
     createMagneticPlasmaArcsSystemStub
@@ -223,6 +224,7 @@ export type GameSystems = {
     stardustVortexSystem: StardustVortexSystem;
     bioluminescentSporesSystem: BioluminescentSporesSystem;
     quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem;
+    celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem;
     cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
     magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
@@ -487,6 +489,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
     const bioluminescentSporesSystem: BioluminescentSporesSystem = createBioluminescentSporesSystemStub();
     const quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem = createQuantumMirrorsSystemStub();
+    const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem = createHolographicDataStreamsSystemStub();
     const cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem = createCosmicWebFilamentsSystemStub();
     const magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem = createMagneticPlasmaArcsSystemStub();
@@ -573,6 +576,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         stardustVortexSystem,
         bioluminescentSporesSystem,
         quantumMirrorsSystem,
+        celestialClockworksSystem,
         holographicDataStreamsSystem,
         cosmicWebFilamentsSystem,
         magneticPlasmaArcsSystem,
