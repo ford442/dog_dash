@@ -78,7 +78,8 @@ const PLUGIN_ORDER = [
     'pulsarLighthouse',
     'orbitalMegastructures',
     'ascendantMonoliths',
-    'echoingVoidRipples'
+    'echoingVoidRipples',
+    'celestialClockworks'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

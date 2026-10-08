@@ -230,3 +230,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` using TSL to create expanding sine-wave rings that fade smoothly at the edges.
 - Animates based on `time` to expand the rings and slowly scrolls to provide parallax depth.
 - Integrated via LevelManager to add a surreal, fluid atmosphere to deep space levels.
+
+24. Celestial Clockworks
+
+**The Technique:** Massive, slowly turning ethereal gear mechanisms floating in the deep background, suggesting the universe itself is an intricate machine. Built using `InstancedMesh` and TSL `MeshBasicNodeMaterial` with polar coordinates to procedurally generate gear shapes with teeth and spokes.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.PlaneGeometry` for rendering the gears.
+- Custom `MeshBasicNodeMaterial` using TSL to create procedural gear shapes (using polar coordinates `atan2` and `length`) that rotate.
+- Animates based on `time` to rotate the gears and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a surreal, cosmic-mechanical atmosphere to specific levels.

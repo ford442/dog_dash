@@ -234,6 +234,7 @@ function createLevelManager(
             orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
             ascendantMonolithsSystem: systems.ascendantMonolithsSystem,
             echoingVoidRipplesSystem: systems.echoingVoidRipplesSystem,
+            celestialClockworksSystem: systems.celestialClockworksSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
 
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
@@ -327,6 +328,7 @@ function createLevelManager(
         orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
         ascendantMonolithsSystem: systems.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: systems.echoingVoidRipplesSystem,
+        celestialClockworksSystem: systems.celestialClockworksSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem

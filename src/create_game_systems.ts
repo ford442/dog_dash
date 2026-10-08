@@ -88,6 +88,7 @@ import {
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
     createEchoingVoidRipplesSystemStub,
+    createCelestialClockworksSystemStub,
     createQuantumMirrorsSystemStub,
     createHolographicDataStreamsSystemStub,
     createCosmicWebFilamentsSystemStub,
@@ -216,6 +217,7 @@ export type GameSystems = {
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
+    celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
@@ -479,6 +481,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
+    const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
@@ -564,6 +567,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
+        celestialClockworksSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,
