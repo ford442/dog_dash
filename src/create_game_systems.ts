@@ -89,8 +89,8 @@ import {
     createBioluminescentSporesSystemStub,
     createEchoingVoidRipplesSystemStub,
     createCelestialClockworksSystemStub,
+    createGalacticLeylinesSystemStub,
     createQuantumMirrorsSystemStub,
-    createCelestialClockworksSystemStub,
     createHolographicDataStreamsSystemStub,
     createCosmicWebFilamentsSystemStub,
     createMagneticPlasmaArcsSystemStub
@@ -219,12 +219,12 @@ export type GameSystems = {
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
+    galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
     bioluminescentSporesSystem: BioluminescentSporesSystem;
     quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem;
-    celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem;
     cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem;
     magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem;
@@ -484,12 +484,12 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
+    const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
     const bioluminescentSporesSystem: BioluminescentSporesSystem = createBioluminescentSporesSystemStub();
     const quantumMirrorsSystem: import('./quantum_mirrors').QuantumMirrorsSystem = createQuantumMirrorsSystemStub();
-    const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const holographicDataStreamsSystem: import('./holographic_data_streams').HolographicDataStreamsSystem = createHolographicDataStreamsSystemStub();
     const cosmicWebFilamentsSystem: import('./cosmic_web_filaments').CosmicWebFilamentsSystem = createCosmicWebFilamentsSystemStub();
     const magneticPlasmaArcsSystem: import('./magnetic_plasma_arcs').MagneticPlasmaArcsSystem = createMagneticPlasmaArcsSystemStub();
@@ -571,12 +571,12 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
         celestialClockworksSystem,
+        galacticLeylinesSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,
         bioluminescentSporesSystem,
         quantumMirrorsSystem,
-        celestialClockworksSystem,
         holographicDataStreamsSystem,
         cosmicWebFilamentsSystem,
         magneticPlasmaArcsSystem,

@@ -67,6 +67,7 @@ export const DEFERRED_ENV_FLAGS = [
     'bioluminescentSpores',
     'quantumMirrors',
     'celestialClockworks',
+    'galacticLeylines',
     'holographicDataStreams',
     'cosmicWebFilaments',
     'magneticPlasmaArcs',
@@ -74,7 +75,6 @@ export const DEFERRED_ENV_FLAGS = [
     'orbitalMegastructures',
     'ascendantMonoliths',
     'echoingVoidRipples',
-    'celestialClockworks'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -174,6 +174,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     bioluminescentSpores: 'bioluminescentSpores',
     quantumMirrors: 'quantumMirrors',
     celestialClockworks: 'celestialClockworks',
+    galacticLeylines: 'galacticLeylines',
     holographicDataStreams: 'holographicDataStreams',
     cosmicWebFilaments: 'cosmicWebFilaments',
     magneticPlasmaArcs: 'magneticPlasmaArcs',
@@ -181,7 +182,6 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     orbitalMegastructures: 'orbitalMegastructures',
     ascendantMonoliths: 'ascendantMonoliths',
     echoingVoidRipples: 'echoingVoidRipples',
-    celestialClockworks: 'celestialClockworks',
 };
 
 /** Pure load predicates for non-env deferred systems. */

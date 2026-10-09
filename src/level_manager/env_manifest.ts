@@ -907,6 +907,23 @@ export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
 
 
 
+export const galacticLeylines = defineEnvSystem<'galacticLeylines'>({
+    flag: 'galacticLeylines',
+    label: 'Galactic Leylines',
+    role: 'backdrop',
+    biomes: ['nebula', 'industrial', 'crystalline'],
+    paletteTags: ['cool'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 30 },
+
+    load: () => import('../galactic_leylines'),
+    install: (ctx, mod) => {
+        const { GalacticLeylinesSystem } = mod as typeof import('../galactic_leylines');
+        ctx.installEnvPartial({ galacticLeylinesSystem: new GalacticLeylinesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.galacticLeylinesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.galacticLeylinesSystem.deactivate()
+});
 export const celestialClockworks = defineEnvSystem<'celestialClockworks'>({
     flag: 'celestialClockworks',
     label: 'Celestial Clockworks',
@@ -1072,25 +1089,6 @@ export const quantumMirrors = defineEnvSystem<'quantumMirrors'>({
     activate: (host, value) => host.quantumMirrorsSystem.activate(objectConfig(value)),
     deactivate: (host) => host.quantumMirrorsSystem.deactivate()
 });
-
-export const celestialClockworks = defineEnvSystem<'celestialClockworks'>({
-    flag: 'celestialClockworks',
-    label: 'Celestial Clockworks',
-    role: 'backdrop',
-    biomes: ['nebula', 'industrial'],
-    paletteTags: ['warm'],
-    difficultyWeight: 1,
-    budget: { category: 'background3d', instances: 20 },
-    systemKey: 'celestialClockworks',
-    load: () => import('../celestial_clockworks'),
-    install: (ctx, mod) => {
-        const { CelestialClockworksSystem } = mod as typeof import('../celestial_clockworks');
-        ctx.installEnvPartial({ celestialClockworksSystem: new CelestialClockworksSystem(ctx.scene) });
-    },
-    activate: (host, value) => host.celestialClockworksSystem.activate(objectConfig(value)),
-    deactivate: (host) => host.celestialClockworksSystem.deactivate()
-});
-
 export const holographicDataStreams = defineEnvSystem<'holographicDataStreams'>({
     flag: 'holographicDataStreams',
     label: 'Holographic Data Streams',
@@ -1197,6 +1195,7 @@ export const ENV_SYSTEM_MANIFEST = [
     bioluminescentSpores,
     quantumMirrors,
     celestialClockworks,
+    galacticLeylines,
     holographicDataStreams,
     cosmicWebFilaments,
     magneticPlasmaArcs,
@@ -1204,7 +1203,6 @@ export const ENV_SYSTEM_MANIFEST = [
     orbitalMegastructures,
     ascendantMonoliths,
     echoingVoidRipples,
-    celestialClockworks
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

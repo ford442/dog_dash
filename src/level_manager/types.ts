@@ -119,11 +119,11 @@ export type LevelEnvironmentPorts = {
     bioluminescentSporesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     quantumMirrorsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     celestialClockworksSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
+    galacticLeylinesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     holographicDataStreamsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     cosmicWebFilamentsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     pulsarLighthouseSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     echoingVoidRipplesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
-    celestialClockworksSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     ascendantMonolithsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -177,11 +177,11 @@ export type LevelManagerOptions = {
     bioluminescentSporesSystem: LevelEnvironmentPorts['bioluminescentSporesSystem'];
     quantumMirrorsSystem: LevelEnvironmentPorts['quantumMirrorsSystem'];
     celestialClockworksSystem: LevelEnvironmentPorts['celestialClockworksSystem'];
+    galacticLeylinesSystem: LevelEnvironmentPorts['galacticLeylinesSystem'];
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
-    celestialClockworksSystem: LevelEnvironmentPorts['celestialClockworksSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
