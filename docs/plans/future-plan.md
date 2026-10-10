@@ -240,3 +240,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` using TSL to create procedural gear shapes (using polar coordinates `atan2` and `length`) that rotate.
 - Animates based on `time` to rotate the gears and slowly scrolls to provide parallax depth.
 - Integrated via LevelManager to add a surreal, cosmic-mechanical atmosphere to specific levels.
+
+25. Galactic Leylines
+
+**The Technique:** Massive, intertwined strands of glowing energy representing the cosmic web that connects galaxies. These leylines drift slowly in the deep background and pulse with light that travels along their length. Built using `InstancedMesh` with thin elongated planes and TSL `MeshBasicNodeMaterial` to render scrolling energy pulses.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.PlaneGeometry` (or thin elongated shapes) for rendering the leylines.
+- Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture that simulates energy flowing along the strands.
+- Animates based on `time` and slowly scrolls to provide parallax depth.
+- Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space levels.

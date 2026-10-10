@@ -73,6 +73,7 @@ const PLUGIN_ORDER = [
     'bioluminescentSpores',
     'quantumMirrors',
     'celestialClockworks',
+    'galacticLeylines',
     'holographicDataStreams',
     'cosmicWebFilaments',
     'magneticPlasmaArcs',

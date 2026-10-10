@@ -689,6 +689,15 @@ export function createQuantumMirrorsSystemStub(): import('./quantum_mirrors').Qu
     } as unknown as import('./quantum_mirrors').QuantumMirrorsSystem;
 }
 
+export function createGalacticLeylinesSystemStub(): import('./galactic_leylines').GalacticLeylinesSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, speed?: number) => { },
+        cleanup: () => { }
+    } as unknown as import('./galactic_leylines').GalacticLeylinesSystem;
+}
 export function createCelestialClockworksSystemStub(): import('./celestial_clockworks').CelestialClockworksSystem {
     return {
         active: false,
@@ -747,13 +756,4 @@ export function createAscendantMonolithsSystemStub(): import('./ascendant_monoli
         update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
         cleanup: () => { }
     } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
-}
-
-export function createCelestialClockworksSystemStub(): import('./celestial_clockworks').CelestialClockworksSystem {
-    return {
-        activate: (_config?: any) => {},
-        deactivate: () => {},
-        update: (_delta: number, _cameraX: number, _speed?: number) => {},
-        cleanup: () => {}
-    } as any;
 }
