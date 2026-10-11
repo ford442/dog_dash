@@ -887,6 +887,24 @@ export const pulsarLighthouse = defineEnvSystem<'pulsarLighthouse'>({
     deactivate: (host) => host.pulsarLighthouseSystem.deactivate()
 });
 
+export const chronoTesseracts = defineEnvSystem<'chronoTesseracts'>({
+    flag: 'chronoTesseracts',
+    label: 'Chrono Tesseracts',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 20 },
+    systemKey: 'chronoTesseracts',
+    load: () => import('../chrono_tesseracts'),
+    install: (ctx, mod) => {
+        const { ChronoTesseractsSystem } = mod as typeof import('../chrono_tesseracts');
+        ctx.installEnvPartial({ chronoTesseractsSystem: new ChronoTesseractsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.chronoTesseractsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.chronoTesseractsSystem.deactivate()
+});
+
 export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
     flag: 'echoingVoidRipples',
     label: 'Echoing Void Ripples',
@@ -1203,6 +1221,7 @@ export const ENV_SYSTEM_MANIFEST = [
     orbitalMegastructures,
     ascendantMonoliths,
     echoingVoidRipples,
+    chronoTesseracts,
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

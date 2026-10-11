@@ -43,6 +43,7 @@ import {
     createPulsarLighthouseSystemStub,
     createOrbitalMegastructuresSystemStub,
     createAscendantMonolithsSystemStub,
+    createChronoTesseractsSystemStub,
     createBossManagerStub,
     createPlanetaryHorizonSystemStub,
     createMoonPalaceSystemStub,
@@ -218,6 +219,7 @@ export type GameSystems = {
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
+    chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
     energyRiftsSystem: EnergyRiftsSystem;
@@ -483,6 +485,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
+    const chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem = createChronoTesseractsSystemStub();
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
@@ -570,6 +573,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
+        chronoTesseractsSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
         energyRiftsSystem,

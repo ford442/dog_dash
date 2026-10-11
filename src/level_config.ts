@@ -171,6 +171,7 @@ export type LevelEnvironments = {
     echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     /**
      * Parallax ribbon/veil sheets (one 8-instance layer); uses level skyColors.
      * Off on every level — the sheets are large, overdrawing and read as
@@ -720,7 +721,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             energyRifts: true,
             prismaticCrystals: true,
             bioluminescentSpores: true,
-            pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 }
+            pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 },
+            chronoTesseracts: { density: 1.0, speed: 1.0 }
         },
         vignettes: {
             treeGroves: 0.8,

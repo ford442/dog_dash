@@ -134,6 +134,7 @@ export type NestedEnvRuntime = {
     galacticLeylinesSystem: GameSystems['galacticLeylinesSystem'];
     ascendantMonolithsSystem: GameSystems['ascendantMonolithsSystem'];
     echoingVoidRipplesSystem: GameSystems['echoingVoidRipplesSystem'];
+    chronoTesseractsSystem: GameSystems['chronoTesseractsSystem'];
 };
 
 export type NestedRuntime = {
@@ -238,6 +239,7 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         galacticLeylinesSystem: ctx.galacticLeylinesSystem,
         ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
     };
 }
 
@@ -275,6 +277,7 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         galacticLeylinesSystem: ctx.galacticLeylinesSystem,
         ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
     });
 }
 

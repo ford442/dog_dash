@@ -127,6 +127,7 @@ export type LevelEnvironmentPorts = {
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     ascendantMonolithsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
+    chronoTesseractsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     comboCorridorSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     shootingStarsSystem?: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; };
     bouncePadsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerPos?: THREE.Vector3) => void; cleanup: () => void; checkCollision: (pos: THREE.Vector3, velY: number) => number | null; };
@@ -185,4 +186,5 @@ export type LevelManagerOptions = {
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
+    chronoTesseractsSystem: LevelEnvironmentPorts['chronoTesseractsSystem'];
 };

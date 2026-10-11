@@ -75,6 +75,7 @@ export const DEFERRED_ENV_FLAGS = [
     'orbitalMegastructures',
     'ascendantMonoliths',
     'echoingVoidRipples',
+    'chronoTesseracts',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -182,6 +183,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     orbitalMegastructures: 'orbitalMegastructures',
     ascendantMonoliths: 'ascendantMonoliths',
     echoingVoidRipples: 'echoingVoidRipples',
+    chronoTesseracts: 'chronoTesseracts',
 };
 
 /** Pure load predicates for non-env deferred systems. */

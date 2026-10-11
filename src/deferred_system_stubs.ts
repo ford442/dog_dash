@@ -757,3 +757,13 @@ export function createAscendantMonolithsSystemStub(): import('./ascendant_monoli
         cleanup: () => { }
     } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
 }
+
+export function createChronoTesseractsSystemStub(): import('./chrono_tesseracts').ChronoTesseractsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 10) => { },
+        cleanup: () => { }
+    } as unknown as import('./chrono_tesseracts').ChronoTesseractsSystem;
+}
