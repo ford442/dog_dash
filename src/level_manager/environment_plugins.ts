@@ -74,6 +74,7 @@ const PLUGIN_ORDER = [
     'quantumMirrors',
     'celestialClockworks',
     'galacticLeylines',
+    'chronoTesseracts',
     'holographicDataStreams',
     'cosmicWebFilaments',
     'magneticPlasmaArcs',

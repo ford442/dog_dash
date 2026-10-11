@@ -90,6 +90,7 @@ import {
     createEchoingVoidRipplesSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
+    createChronoTesseractsSystemStub,
     createQuantumMirrorsSystemStub,
     createHolographicDataStreamsSystemStub,
     createCosmicWebFilamentsSystemStub,
@@ -220,6 +221,7 @@ export type GameSystems = {
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
+    chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem;
     energyRiftsSystem: EnergyRiftsSystem;
     prismaticCrystalsSystem: PrismaticCrystalsSystem;
     stardustVortexSystem: StardustVortexSystem;
@@ -485,6 +487,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
+    const chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem = createChronoTesseractsSystemStub() as any;
     const energyRiftsSystem: EnergyRiftsSystem = createEnergyRiftsSystemStub();
     const prismaticCrystalsSystem: PrismaticCrystalsSystem = createPrismaticCrystalsSystemStub();
     const stardustVortexSystem: StardustVortexSystem = createStardustVortexSystemStub();
@@ -572,6 +575,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         echoingVoidRipplesSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
+        chronoTesseractsSystem,
         energyRiftsSystem,
         prismaticCrystalsSystem,
         stardustVortexSystem,

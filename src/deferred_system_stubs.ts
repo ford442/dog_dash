@@ -757,3 +757,12 @@ export function createAscendantMonolithsSystemStub(): import('./ascendant_monoli
         cleanup: () => { }
     } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
 }
+
+export function createChronoTesseractsSystemStub(): import('./level_manager/types').LevelEnvironmentPorts['chronoTesseractsSystem'] {
+    return {
+        activate: () => { },
+        deactivate: () => { },
+        update: () => { },
+        cleanup: () => { }
+    };
+}
