@@ -132,6 +132,7 @@ export type NestedEnvRuntime = {
     stardustVortexSystem: GameSystems['stardustVortexSystem'];
     celestialClockworksSystem: GameSystems['celestialClockworksSystem'];
     galacticLeylinesSystem: GameSystems['galacticLeylinesSystem'];
+    chronoTesseractsSystem: GameSystems['chronoTesseractsSystem'];
     ascendantMonolithsSystem: GameSystems['ascendantMonolithsSystem'];
     echoingVoidRipplesSystem: GameSystems['echoingVoidRipplesSystem'];
 };
@@ -236,6 +237,7 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         stardustVortexSystem: ctx.stardustVortexSystem,
         celestialClockworksSystem: ctx.celestialClockworksSystem,
         galacticLeylinesSystem: ctx.galacticLeylinesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
         ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
     };

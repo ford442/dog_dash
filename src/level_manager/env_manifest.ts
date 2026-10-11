@@ -924,6 +924,25 @@ export const galacticLeylines = defineEnvSystem<'galacticLeylines'>({
     activate: (host, value) => host.galacticLeylinesSystem.activate(objectConfig(value)),
     deactivate: (host) => host.galacticLeylinesSystem.deactivate()
 });
+
+export const chronoTesseracts = defineEnvSystem<'chronoTesseracts'>({
+    flag: 'chronoTesseracts',
+    label: 'Chrono Tesseracts',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 3,
+    budget: { category: 'background3d', instances: 25 },
+
+    load: () => import('../chrono_tesseracts'),
+    install: (ctx, mod) => {
+        const { ChronoTesseractsSystem } = mod as typeof import('../chrono_tesseracts');
+        ctx.installEnvPartial({ chronoTesseractsSystem: new ChronoTesseractsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.chronoTesseractsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.chronoTesseractsSystem.deactivate()
+});
+
 export const celestialClockworks = defineEnvSystem<'celestialClockworks'>({
     flag: 'celestialClockworks',
     label: 'Celestial Clockworks',
@@ -1196,6 +1215,7 @@ export const ENV_SYSTEM_MANIFEST = [
     quantumMirrors,
     celestialClockworks,
     galacticLeylines,
+    chronoTesseracts,
     holographicDataStreams,
     cosmicWebFilaments,
     magneticPlasmaArcs,
