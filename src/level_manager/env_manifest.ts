@@ -887,24 +887,6 @@ export const pulsarLighthouse = defineEnvSystem<'pulsarLighthouse'>({
     deactivate: (host) => host.pulsarLighthouseSystem.deactivate()
 });
 
-export const chronoTesseracts = defineEnvSystem<'chronoTesseracts'>({
-    flag: 'chronoTesseracts',
-    label: 'Chrono Tesseracts',
-    role: 'backdrop',
-    biomes: ['nebula'],
-    paletteTags: ['neon'],
-    difficultyWeight: 1,
-    budget: { category: 'background3d', instances: 20 },
-    systemKey: 'chronoTesseracts',
-    load: () => import('../chrono_tesseracts'),
-    install: (ctx, mod) => {
-        const { ChronoTesseractsSystem } = mod as typeof import('../chrono_tesseracts');
-        ctx.installEnvPartial({ chronoTesseractsSystem: new ChronoTesseractsSystem(ctx.scene) });
-    },
-    activate: (host, value) => host.chronoTesseractsSystem.activate(objectConfig(value)),
-    deactivate: (host) => host.chronoTesseractsSystem.deactivate()
-});
-
 export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
     flag: 'echoingVoidRipples',
     label: 'Echoing Void Ripples',
@@ -942,6 +924,25 @@ export const galacticLeylines = defineEnvSystem<'galacticLeylines'>({
     activate: (host, value) => host.galacticLeylinesSystem.activate(objectConfig(value)),
     deactivate: (host) => host.galacticLeylinesSystem.deactivate()
 });
+
+export const chronoTesseracts = defineEnvSystem<'chronoTesseracts'>({
+    flag: 'chronoTesseracts',
+    label: 'Chrono Tesseracts',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 3,
+    budget: { category: 'background3d', instances: 20 },
+
+    load: () => import('../chrono_tesseracts'),
+    install: (ctx, mod) => {
+        const { ChronoTesseractsSystem } = mod as typeof import('../chrono_tesseracts');
+        ctx.installEnvPartial({ chronoTesseractsSystem: new ChronoTesseractsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.chronoTesseractsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.chronoTesseractsSystem.deactivate()
+});
+
 export const celestialClockworks = defineEnvSystem<'celestialClockworks'>({
     flag: 'celestialClockworks',
     label: 'Celestial Clockworks',
@@ -1160,6 +1161,25 @@ export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
     activate: (host, value) => host.magneticPlasmaArcsSystem.activate(objectConfig(value)),
     deactivate: (host) => host.magneticPlasmaArcsSystem.deactivate()
 });
+
+export const quantumFoamBubbles = defineEnvSystem<'quantumFoamBubbles'>({
+    flag: 'quantumFoamBubbles',
+    label: 'Quantum Foam Bubbles',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 3,
+    budget: { category: 'background3d', instances: 50 },
+    systemKey: 'quantumFoamBubbles',
+    load: () => import('../quantum_foam_bubbles'),
+    install: (ctx, mod) => {
+        const { QuantumFoamBubblesSystem } = mod as typeof import('../quantum_foam_bubbles');
+        ctx.installEnvPartial({ quantumFoamBubblesSystem: new QuantumFoamBubblesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.quantumFoamBubblesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.quantumFoamBubblesSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1214,6 +1234,7 @@ export const ENV_SYSTEM_MANIFEST = [
     quantumMirrors,
     celestialClockworks,
     galacticLeylines,
+    chronoTesseracts,
     holographicDataStreams,
     cosmicWebFilaments,
     magneticPlasmaArcs,
@@ -1221,7 +1242,7 @@ export const ENV_SYSTEM_MANIFEST = [
     orbitalMegastructures,
     ascendantMonoliths,
     echoingVoidRipples,
-    chronoTesseracts,
+    quantumFoamBubbles,
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

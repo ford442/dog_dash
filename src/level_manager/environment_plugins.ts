@@ -74,6 +74,7 @@ const PLUGIN_ORDER = [
     'quantumMirrors',
     'celestialClockworks',
     'galacticLeylines',
+    'chronoTesseracts',
     'holographicDataStreams',
     'cosmicWebFilaments',
     'magneticPlasmaArcs',
@@ -81,7 +82,7 @@ const PLUGIN_ORDER = [
     'orbitalMegastructures',
     'ascendantMonoliths',
     'echoingVoidRipples',
-    'chronoTesseracts',
+    'quantumFoamBubbles',
     'celestialClockworks'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 

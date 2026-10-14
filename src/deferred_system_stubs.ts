@@ -767,3 +767,12 @@ export function createChronoTesseractsSystemStub(): import('./chrono_tesseracts'
         cleanup: () => { }
     } as unknown as import('./chrono_tesseracts').ChronoTesseractsSystem;
 }
+
+export function createQuantumFoamBubblesSystemStub(): import('./level_manager/types').LevelEnvironmentPorts['quantumFoamBubblesSystem'] {
+    return {
+        activate: () => { },
+        deactivate: () => { },
+        update: () => { },
+        cleanup: () => { }
+    } as unknown as import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
+}

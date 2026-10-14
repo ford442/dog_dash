@@ -169,6 +169,7 @@ export type LevelEnvironments = {
     biological?: boolean;
     nebula?: boolean;
     echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
@@ -794,8 +795,10 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             quantumMirrors: true,
             cosmicWebFilaments: true,
             echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
+            quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
             celestialClockworks: { density: 1.0, speed: 1.0, color1: 0xd4af37, color2: 0xc0c0c0 },
             galacticLeylines: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
+            chronoTesseracts: { density: 1.0, speed: 1.0, color1: 0x8a2be2, color2: 0x00ffff },
             // Finale beat: the Galactic Core swells across the last stretch of
             // the run (level 6 spans x 4200 → 5200, the Moon threshold).
             galacticCore: {
