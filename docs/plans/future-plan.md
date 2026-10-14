@@ -191,6 +191,7 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Animates based on `time` and slowly scrolls to provide parallax depth.
 - Integrated via LevelManager to add a grand, universe-scale atmosphere to deep space levels.
 
+
 19. Magnetic Plasma Arcs
 
 **The Technique:** Massive, looping arcs of glowing plasma erupting from the deep background, simulating solar flares or magnetic field disturbances. Built using `InstancedMesh` with `THREE.TorusGeometry` (rendered as half-arcs) and TSL `MeshBasicNodeMaterial` to render scrolling fiery noise along the arcs.
@@ -253,10 +254,10 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 
 26. Chrono Tesseracts
 
-**The Technique:** Enormous, slowly rotating 4D hypercubes (tesseracts) drifting through the background, representing fractured space-time. Built using `InstancedMesh` with wireframe-like structures and TSL `MeshBasicNodeMaterial` for procedural glowing vertices and edges that shift colors over time.
+**The Technique:** Massive, slowly rotating 4D-like wireframe hypercubes (tesseracts) floating in the deep background, suggesting rifts in spacetime geometry. Built using `InstancedMesh` with `THREE.BoxGeometry` and TSL `MeshBasicNodeMaterial` for slowly rotating, glowing, semi-transparent edges.
 
 **Specific Implementation:**
-- Uses `InstancedMesh` with `THREE.BoxGeometry` or custom wireframe geometries for rendering the hypercube structures.
-- Custom `MeshBasicNodeMaterial` using TSL to create a procedural glow and shifting chromatic colors representing temporal distortion.
-- Animates based on `time` to constantly rotate the inner and outer shapes and slowly scroll for parallax depth.
-- Integrated via LevelManager to add a surreal, temporally fractured atmosphere to deep space levels.
+- Uses `InstancedMesh` with `THREE.BoxGeometry` (or wireframe) for rendering the tesseracts.
+- Custom `MeshBasicNodeMaterial` using TSL to create glowing edges and a semi-transparent interior.
+- Animates based on `time` to slowly rotate the tesseracts on multiple axes and scrolls to provide parallax depth.
+- Integrated via LevelManager to add a surreal, extra-dimensional atmosphere to deep space levels.

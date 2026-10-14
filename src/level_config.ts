@@ -722,7 +722,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             energyRifts: true,
             prismaticCrystals: true,
             bioluminescentSpores: true,
-            pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 }
+            pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 },
+            chronoTesseracts: { density: 1.0, speed: 1.0 }
         },
         vignettes: {
             treeGroves: 0.8,

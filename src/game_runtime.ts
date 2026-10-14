@@ -279,6 +279,7 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         galacticLeylinesSystem: ctx.galacticLeylinesSystem,
         ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
         quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     });
 }

@@ -932,7 +932,7 @@ export const chronoTesseracts = defineEnvSystem<'chronoTesseracts'>({
     biomes: ['nebula'],
     paletteTags: ['cool', 'iridescent'],
     difficultyWeight: 3,
-    budget: { category: 'background3d', instances: 25 },
+    budget: { category: 'background3d', instances: 20 },
 
     load: () => import('../chrono_tesseracts'),
     install: (ctx, mod) => {
