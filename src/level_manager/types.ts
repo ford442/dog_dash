@@ -125,6 +125,7 @@ export type LevelEnvironmentPorts = {
     cosmicWebFilamentsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     pulsarLighthouseSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     echoingVoidRipplesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
+    quantumFoamBubblesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     ascendantMonolithsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -184,6 +185,7 @@ export type LevelManagerOptions = {
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
+    quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];

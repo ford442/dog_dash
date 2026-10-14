@@ -121,6 +121,7 @@ export class LevelManager {
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
+    quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
@@ -204,6 +205,7 @@ export class LevelManager {
         this.cosmicWebFilamentsSystem = options.env.cosmicWebFilamentsSystem;
         this.pulsarLighthouseSystem = options.env.pulsarLighthouseSystem;
         this.echoingVoidRipplesSystem = options.env.echoingVoidRipplesSystem;
+        this.quantumFoamBubblesSystem = options.env.quantumFoamBubblesSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
         this.orbitalMegastructuresSystem = options.env.orbitalMegastructuresSystem;
         this.ascendantMonolithsSystem = options.env.ascendantMonolithsSystem;
@@ -457,6 +459,7 @@ export class LevelManager {
         if (enabled('cosmicWebFilaments') && this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.update(delta, cameraX, speed);
         if (enabled('pulsarLighthouse') && this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.update(delta, cameraX, speed);
         if (enabled('echoingVoidRipples') && this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.update(delta, cameraX, speed);
+        if (enabled('quantumFoamBubbles') && this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.update(delta, cameraX, speed);
         if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('orbitalMegastructures') && this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.update(delta, cameraX, speed);
         if (enabled('ascendantMonoliths') && this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.update(delta, cameraX, speed);
@@ -540,6 +543,7 @@ export class LevelManager {
         if (this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.cleanup?.();
         if (this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.cleanup?.();
         if (this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.cleanup?.();
+        if (this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.cleanup?.();
         if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
         if (this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.cleanup?.();
         if (this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.cleanup?.();
