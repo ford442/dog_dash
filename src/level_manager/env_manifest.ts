@@ -1161,6 +1161,25 @@ export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
     activate: (host, value) => host.magneticPlasmaArcsSystem.activate(objectConfig(value)),
     deactivate: (host) => host.magneticPlasmaArcsSystem.deactivate()
 });
+
+export const quantumFoamBubbles = defineEnvSystem<'quantumFoamBubbles'>({
+    flag: 'quantumFoamBubbles',
+    label: 'Quantum Foam Bubbles',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['cool', 'iridescent'],
+    difficultyWeight: 3,
+    budget: { category: 'background3d', instances: 50 },
+    systemKey: 'quantumFoamBubbles',
+    load: () => import('../quantum_foam_bubbles'),
+    install: (ctx, mod) => {
+        const { QuantumFoamBubblesSystem } = mod as typeof import('../quantum_foam_bubbles');
+        ctx.installEnvPartial({ quantumFoamBubblesSystem: new QuantumFoamBubblesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.quantumFoamBubblesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.quantumFoamBubblesSystem.deactivate()
+});
+
 export const ENV_SYSTEM_MANIFEST = [
     dynamicStarfield,
     dayNightCycle,
@@ -1223,6 +1242,7 @@ export const ENV_SYSTEM_MANIFEST = [
     orbitalMegastructures,
     ascendantMonoliths,
     echoingVoidRipples,
+    quantumFoamBubbles,
 ] as const;
 
 /** Flags with no activate/deactivate wiring — excluded from plugin-order comparisons. */

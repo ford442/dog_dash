@@ -135,6 +135,7 @@ export type NestedEnvRuntime = {
     chronoTesseractsSystem: GameSystems['chronoTesseractsSystem'];
     ascendantMonolithsSystem: GameSystems['ascendantMonolithsSystem'];
     echoingVoidRipplesSystem: GameSystems['echoingVoidRipplesSystem'];
+    quantumFoamBubblesSystem: GameSystems['quantumFoamBubblesSystem'];
 };
 
 export type NestedRuntime = {
@@ -240,6 +241,7 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         chronoTesseractsSystem: ctx.chronoTesseractsSystem,
         ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     };
 }
 
@@ -277,6 +279,7 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         galacticLeylinesSystem: ctx.galacticLeylinesSystem,
         ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
         echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     });
 }
 

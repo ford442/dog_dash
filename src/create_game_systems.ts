@@ -88,6 +88,7 @@ import {
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
     createEchoingVoidRipplesSystemStub,
+    createQuantumFoamBubblesSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
     createChronoTesseractsSystemStub,
@@ -219,6 +220,7 @@ export type GameSystems = {
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
+    quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
     chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem;
@@ -485,6 +487,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
+    const quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem = createQuantumFoamBubblesSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
     const chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem = createChronoTesseractsSystemStub() as any;
@@ -573,6 +576,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
+        quantumFoamBubblesSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
         chronoTesseractsSystem,
