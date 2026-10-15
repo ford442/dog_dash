@@ -261,3 +261,13 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` using TSL to create glowing edges and a semi-transparent interior.
 - Animates based on `time` to slowly rotate the tesseracts on multiple axes and scrolls to provide parallax depth.
 - Integrated via LevelManager to add a surreal, extra-dimensional atmosphere to deep space levels.
+
+28. Astral Resonance Rings
+
+**The Technique:** Massive, concentric glowing rings that slowly expand and rotate in the deep background, like the shockwaves of ancient cosmic events. Built using `InstancedMesh` with `THREE.TorusGeometry` and TSL `MeshBasicNodeMaterial` for procedural energy pulses and fading edges.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.TorusGeometry` for rendering the rings.
+- Custom `MeshBasicNodeMaterial` using TSL to create a scrolling energy pulse and smooth edge fading.
+- Animates based on `time` to slowly expand and rotate the rings, and scrolls to provide parallax depth.
+- Integrated via LevelManager to add a majestic, ancient cosmic atmosphere to specific levels.
