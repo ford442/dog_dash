@@ -169,6 +169,7 @@ export type LevelEnvironments = {
     biological?: boolean;
     nebula?: boolean;
     echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    radiantHalos?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
@@ -723,6 +724,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             prismaticCrystals: true,
             bioluminescentSpores: true,
             pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 },
+            radiantHalos: { density: 1.0, speed: 1.0, color1: 0xffaa00, color2: 0xffffff },
             chronoTesseracts: { density: 1.0, speed: 1.0 }
         },
         vignettes: {

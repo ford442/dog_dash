@@ -262,6 +262,16 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Animates based on `time` to slowly rotate the tesseracts on multiple axes and scrolls to provide parallax depth.
 - Integrated via LevelManager to add a surreal, extra-dimensional atmosphere to deep space levels.
 
+27. Radiant Halos
+
+**The Technique:** Colossal, glowing celestial rings or halos floating majestically in the deep parallax background. Built using `InstancedMesh` with `THREE.TorusGeometry` and TSL `MeshBasicNodeMaterial` for procedural, shifting gradients and ethereal light pulses.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.TorusGeometry` for rendering the halos.
+- Custom `MeshBasicNodeMaterial` using TSL to create a shifting color gradient and pulsing light using sine waves and time.
+- Animates based on `time` to slowly rotate and subtly pulse the halos.
+- Integrated via LevelManager to add a divine, majestic atmosphere to cosmic levels.
+
 28. Astral Resonance Rings
 
 **The Technique:** Massive, concentric glowing rings that slowly expand and rotate in the deep background, like the shockwaves of ancient cosmic events. Built using `InstancedMesh` with `THREE.TorusGeometry` and TSL `MeshBasicNodeMaterial` for procedural energy pulses and fading edges.

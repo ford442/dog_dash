@@ -5,6 +5,7 @@ import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
 import type { OrbitalMegastructuresSystem } from './orbital_megastructures';
 import type { AscendantMonolithsSystem } from './ascendant_monoliths';
 import type { EchoingVoidRipplesSystem } from './echoing_void_ripples';
+import type { RadiantHalosSystem } from './radiant_halos';
 import type { EnergyRiftsSystem } from './energy_rifts';
 import type { PrismaticCrystalsSystem } from './prismatic_crystals';
 import type { StardustVortexSystem } from './stardust_vortex';
@@ -88,6 +89,7 @@ import {
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
     createEchoingVoidRipplesSystemStub,
+    createRadiantHalosSystemStub,
     createQuantumFoamBubblesSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
@@ -220,6 +222,7 @@ export type GameSystems = {
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
+    radiantHalosSystem: RadiantHalosSystem;
     quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
@@ -487,6 +490,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
+    const radiantHalosSystem: RadiantHalosSystem = createRadiantHalosSystemStub();
     const quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem = createQuantumFoamBubblesSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
@@ -576,6 +580,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
+        radiantHalosSystem,
         quantumFoamBubblesSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
