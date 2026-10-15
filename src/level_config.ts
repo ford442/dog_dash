@@ -170,6 +170,7 @@ export type LevelEnvironments = {
     nebula?: boolean;
     echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     radiantHalos?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
@@ -723,7 +724,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             prismaticCrystals: true,
             bioluminescentSpores: true,
             pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 },
-            radiantHalos: { density: 1.0, speed: 1.0, color1: 0xffaa00, color2: 0xffffff }
+            radiantHalos: { density: 1.0, speed: 1.0, color1: 0xffaa00, color2: 0xffffff },
+            chronoTesseracts: { density: 1.0, speed: 1.0 }
         },
         vignettes: {
             treeGroves: 0.8,
@@ -795,6 +797,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             quantumMirrors: true,
             cosmicWebFilaments: true,
             echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
+            quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
             celestialClockworks: { density: 1.0, speed: 1.0, color1: 0xd4af37, color2: 0xc0c0c0 },
             galacticLeylines: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
             chronoTesseracts: { density: 1.0, speed: 1.0, color1: 0x8a2be2, color2: 0x00ffff },

@@ -768,11 +768,21 @@ export function createAscendantMonolithsSystemStub(): import('./ascendant_monoli
     } as unknown as import('./ascendant_monoliths').AscendantMonolithsSystem;
 }
 
-export function createChronoTesseractsSystemStub(): import('./level_manager/types').LevelEnvironmentPorts['chronoTesseractsSystem'] {
+export function createChronoTesseractsSystemStub(): import('./chrono_tesseracts').ChronoTesseractsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 10) => { },
+        cleanup: () => { }
+    } as unknown as import('./chrono_tesseracts').ChronoTesseractsSystem;
+}
+
+export function createQuantumFoamBubblesSystemStub(): import('./level_manager/types').LevelEnvironmentPorts['quantumFoamBubblesSystem'] {
     return {
         activate: () => { },
         deactivate: () => { },
         update: () => { },
         cleanup: () => { }
-    };
+    } as unknown as import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
 }

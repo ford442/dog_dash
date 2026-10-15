@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { vec2, color, uv, sin, smoothstep, time, mix, length, vec3, abs } from 'three/tsl';
+import { time, vec2, vec3, color, positionLocal, uv, distance, sin, smoothstep, float, mix, varying, abs } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
 
@@ -10,25 +10,21 @@ export type ChronoTesseractsConfig = {
     color2?: number;
 };
 
-const MAX_CUBES = 25;
+const MAX_TESSERACTS = 20;
 const BUDGET_ID = 'chronoTesseracts';
 const SPREAD_X = 6000;
-const SPREAD_Y = 1500;
-const WORLD_SCROLL = 5;
+const SPREAD_Y = 3000;
+const SPREAD_Z = 2000;
+const BASE_SCROLL = 2;
 
-type Tesseract = {
+type TesseractData = {
     x: number;
     y: number;
     z: number;
     scale: number;
-    rotationX: number;
-    rotationY: number;
-    rotationZ: number;
-    rotSpeedX: number;
-    rotSpeedY: number;
-    rotSpeedZ: number;
-    speedOffset: number;
-    pulseOffset: number;
+    rotationAxis: THREE.Vector3;
+    rotationSpeed: number;
+    colorOffset: number;
 };
 
 export class ChronoTesseractsSystem {
@@ -39,63 +35,70 @@ export class ChronoTesseractsSystem {
     speedMultiplier: number = 1.0;
 
     private dummy = new THREE.Object3D();
-    private color1 = new THREE.Color(0x00ffff);
-    private color2 = new THREE.Color(0xff00ff);
-    private cubeData: Tesseract[] = [];
+    private dummyMat = new THREE.Matrix4();
+    private data: TesseractData[] = [];
+    private color1 = new THREE.Color(0x88ffff);
+    private color2 = new THREE.Color(0xff88ff);
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        // Creating a wireframe-like material by evaluating edge distance in TSL using UV coordinates
+        // For BoxGeometry, we map edges. A standard wireframe geometry is not strictly required if we fake it.
+        // Actually, let's use a BoxGeometry and a TSL material that glows at the edges using uv.
 
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
         const material = new MeshBasicNodeMaterial({
             transparent: true,
             depthWrite: false,
             side: THREE.DoubleSide,
-            blending: THREE.AdditiveBlending,
-            wireframe: true
+            blending: THREE.AdditiveBlending
         });
 
-        const vUv = uv();
+        const vUv = varying(uv());
         const uTime = time;
 
-        const pulse = sin(uTime.mul(2.0)).mul(0.5).add(0.5);
+        // Create an edge glow effect (distance from the center of each face)
+        const distX = abs(vUv.x.sub(0.5)).mul(2.0); // 0 at center, 1 at edges
+        const distY = abs(vUv.y.sub(0.5)).mul(2.0); // 0 at center, 1 at edges
 
-        // Color mix
-        const mixRatio = sin(uTime.mul(1.5)).mul(0.5).add(0.5);
+        // Combine them to get edges. We want it bright near the edges.
+        const maxDist = distX.max(distY);
+        const edgeAlpha = smoothstep(0.85, 1.0, maxDist).add(0.1); // Base alpha + bright edges
+
+        // Add some procedural pulsing
+        const pulse = sin(uTime.mul(2.0).add(vUv.x.mul(10.0))).mul(0.2).add(0.8);
+        const finalAlpha = edgeAlpha.mul(pulse);
+
+        // Mix colors based on time and uv
+        const mixRatio = sin(uTime.add(vUv.y.mul(5.0))).mul(0.5).add(0.5);
         const finalColor = mix(color(this.color1), color(this.color2), mixRatio);
 
         material.colorNode = finalColor;
-        material.opacityNode = pulse.mul(0.8).add(0.2);
+        material.opacityNode = finalAlpha;
 
-        this.mesh = new THREE.InstancedMesh(geometry, material, MAX_CUBES);
+        this.mesh = new THREE.InstancedMesh(geometry, material, MAX_TESSERACTS);
         this.mesh.frustumCulled = false;
-        this.mesh.renderOrder = -1;
+        this.mesh.renderOrder = -3; // deep background
 
-        for (let i = 0; i < MAX_CUBES; i++) {
-            this.cubeData.push({
+        for (let i = 0; i < MAX_TESSERACTS; i++) {
+            this.data.push({
                 x: (Math.random() - 0.5) * SPREAD_X,
                 y: (Math.random() - 0.5) * SPREAD_Y,
-                z: -300 - Math.random() * 800,
-                scale: 50 + Math.random() * 150,
-                rotationX: Math.random() * Math.PI * 2,
-                rotationY: Math.random() * Math.PI * 2,
-                rotationZ: Math.random() * Math.PI * 2,
-                rotSpeedX: (Math.random() - 0.5) * 0.5,
-                rotSpeedY: (Math.random() - 0.5) * 0.5,
-                rotSpeedZ: (Math.random() - 0.5) * 0.5,
-                speedOffset: 0.2 + Math.random() * 1.5,
-                pulseOffset: Math.random() * Math.PI * 2
+                z: -1000 - Math.random() * SPREAD_Z,
+                scale: 100 + Math.random() * 300,
+                rotationAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5).normalize(),
+                rotationSpeed: (0.1 + Math.random() * 0.4) * (Math.random() < 0.5 ? 1 : -1),
+                colorOffset: Math.random() * Math.PI * 2
             });
-            this.dummy.position.set(0, 0, 0);
-            this.dummy.scale.set(0, 0, 0);
+            this.dummyMat.identity();
+            this.dummyMat.decompose(this.dummy.position, this.dummy.quaternion, this.dummy.scale);
+            this.dummy.scale.set(0,0,0);
             this.dummy.updateMatrix();
             this.mesh.setMatrixAt(i, this.dummy.matrix);
         }
 
-        this.mesh.instanceMatrix.needsUpdate = true;
         this.scene.add(this.mesh);
-
         this.deactivate();
     }
 
@@ -108,13 +111,13 @@ export class ChronoTesseractsSystem {
             if (config.color1 !== undefined) this.color1.setHex(config.color1);
             if (config.color2 !== undefined) this.color2.setHex(config.color2);
             if (config.density !== undefined) {
-                this.count = Math.floor(config.density * MAX_CUBES);
+                this.count = Math.floor(config.density * MAX_TESSERACTS);
             } else {
-                this.count = MAX_CUBES;
+                this.count = MAX_TESSERACTS;
             }
             if (config.speed !== undefined) this.speedMultiplier = config.speed;
         } else {
-            this.count = MAX_CUBES;
+            this.count = MAX_TESSERACTS;
         }
 
         this.mesh.count = this.count;
@@ -132,17 +135,13 @@ export class ChronoTesseractsSystem {
         if (!this.active) return;
 
         for (let i = 0; i < this.count; i++) {
-            const data = this.cubeData[i];
+            const data = this.data[i];
 
-            // Slow parallax scroll
-            const scrollAmount = WORLD_SCROLL * this.speedMultiplier * (speed / 10) * data.speedOffset;
-
-            data.rotationX += data.rotSpeedX * delta;
-            data.rotationY += data.rotSpeedY * delta;
-            data.rotationZ += data.rotSpeedZ * delta;
+            // Parallax scroll
+            const scrollAmount = BASE_SCROLL * this.speedMultiplier * (speed / 10);
 
             // Re-center around camera
-            let currentX = data.x - cameraX * (0.1 + (0.5 * data.speedOffset));
+            let currentX = data.x - cameraX * 0.2; // 0.2 parallax factor
 
             // Wrap logic
             const halfSpread = SPREAD_X / 2;
@@ -153,11 +152,18 @@ export class ChronoTesseractsSystem {
                 data.x -= SPREAD_X;
             }
 
-            currentX = data.x - cameraX * (0.1 + (0.5 * data.speedOffset));
+            currentX = data.x - cameraX * 0.2;
+
+            // Setup rotation based on time (delta)
+            this.dummyMat.identity();
 
             this.dummy.position.set(currentX, data.y, data.z);
-            this.dummy.rotation.set(data.rotationX, data.rotationY, data.rotationZ);
             this.dummy.scale.set(data.scale, data.scale, data.scale);
+
+            // Increment rotation
+            const totalRotation = performance.now() * 0.001 * data.rotationSpeed * this.speedMultiplier;
+            this.dummy.quaternion.setFromAxisAngle(data.rotationAxis, totalRotation);
+
             this.dummy.updateMatrix();
             this.mesh.setMatrixAt(i, this.dummy.matrix);
         }
