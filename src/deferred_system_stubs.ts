@@ -640,6 +640,16 @@ export function createEchoingVoidRipplesSystemStub(): import('./echoing_void_rip
     } as unknown as import('./echoing_void_ripples').EchoingVoidRipplesSystem;
 }
 
+export function createRadiantHalosSystemStub(): import('./radiant_halos').RadiantHalosSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./radiant_halos').RadiantHalosSystem;
+}
+
 export function createEnergyRiftsSystemStub(): import('./energy_rifts').EnergyRiftsSystem {
     return {
         active: false,
