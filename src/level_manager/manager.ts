@@ -120,6 +120,7 @@ export class LevelManager {
     holographicDataStreamsSystem: LevelEnvironmentPorts['holographicDataStreamsSystem'];
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
+    voidLatticeNetworksSystem: LevelEnvironmentPorts['voidLatticeNetworksSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
     radiantHalosSystem: LevelEnvironmentPorts['radiantHalosSystem'];
     quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
@@ -205,6 +206,7 @@ export class LevelManager {
         this.holographicDataStreamsSystem = options.env.holographicDataStreamsSystem;
         this.cosmicWebFilamentsSystem = options.env.cosmicWebFilamentsSystem;
         this.pulsarLighthouseSystem = options.env.pulsarLighthouseSystem;
+        this.voidLatticeNetworksSystem = options.env.voidLatticeNetworksSystem;
         this.echoingVoidRipplesSystem = options.env.echoingVoidRipplesSystem;
         this.radiantHalosSystem = options.env.radiantHalosSystem;
         this.quantumFoamBubblesSystem = options.env.quantumFoamBubblesSystem;
@@ -460,6 +462,7 @@ export class LevelManager {
         if (enabled('holographicDataStreams') && this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.update(delta, cameraX, speed);
         if (enabled('cosmicWebFilaments') && this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.update(delta, cameraX, speed);
         if (enabled('pulsarLighthouse') && this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.update(delta, cameraX, speed);
+        if (enabled('voidLatticeNetworks') && this.voidLatticeNetworksSystem) this.voidLatticeNetworksSystem.update(delta, cameraX, playerPos);
         if (enabled('echoingVoidRipples') && this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.update(delta, cameraX, speed);
         if (enabled('radiantHalos') && this.radiantHalosSystem) this.radiantHalosSystem.update(delta, cameraX, speed);
         if (enabled('quantumFoamBubbles') && this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.update(delta, cameraX, speed);
@@ -545,6 +548,7 @@ export class LevelManager {
         if (this.holographicDataStreamsSystem) this.holographicDataStreamsSystem.cleanup?.();
         if (this.cosmicWebFilamentsSystem) this.cosmicWebFilamentsSystem.cleanup?.();
         if (this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.cleanup?.();
+        if (this.voidLatticeNetworksSystem) this.voidLatticeNetworksSystem.cleanup?.();
         if (this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.cleanup?.();
         if (this.radiantHalosSystem) this.radiantHalosSystem.cleanup?.();
         if (this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.cleanup?.();
