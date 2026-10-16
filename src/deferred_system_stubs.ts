@@ -786,3 +786,13 @@ export function createQuantumFoamBubblesSystemStub(): import('./level_manager/ty
         cleanup: () => { }
     } as unknown as import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
 }
+
+export function createVoidLatticeNetworksSystemStub(): import('./void_lattice_networks').VoidLatticeNetworksSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerPos?: import('three').Vector3) => { },
+        cleanup: () => { }
+    } as unknown as import('./void_lattice_networks').VoidLatticeNetworksSystem;
+}

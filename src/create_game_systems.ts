@@ -91,6 +91,7 @@ import {
     createEchoingVoidRipplesSystemStub,
     createRadiantHalosSystemStub,
     createQuantumFoamBubblesSystemStub,
+    createVoidLatticeNetworksSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
     createChronoTesseractsSystemStub,
@@ -219,6 +220,7 @@ export type GameSystems = {
     hyperspaceTunnelSystem: HyperspaceTunnelSystem;
     cosmicCyberGridSystem: CosmicCyberGridSystem;
     pulsarLighthouseSystem: PulsarLighthouseSystem;
+    voidLatticeNetworksSystem: import('./void_lattice_networks').VoidLatticeNetworksSystem;
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
@@ -487,6 +489,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const hyperspaceTunnelSystem: HyperspaceTunnelSystem = createHyperspaceTunnelSystemStub();
     const cosmicCyberGridSystem: CosmicCyberGridSystem = createCosmicCyberGridSystemStub();
     const pulsarLighthouseSystem: PulsarLighthouseSystem = createPulsarLighthouseSystemStub();
+    const voidLatticeNetworksSystem: import('./void_lattice_networks').VoidLatticeNetworksSystem = createVoidLatticeNetworksSystemStub();
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
@@ -577,6 +580,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         hyperspaceTunnelSystem,
         cosmicCyberGridSystem,
         pulsarLighthouseSystem,
+        voidLatticeNetworksSystem,
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
