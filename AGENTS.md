@@ -1,6 +1,6 @@
 # Dog Dash Agent Notes
 
-Dog Dash uses Three.js with WebGPU as the primary renderer and WebGL2 as a debug fallback.
+Dog Dash uses Three.js with a WebGPU-only renderer (no live WebGL fallback — see below).
 
 ## Renderer: WebGPU only
 
@@ -50,11 +50,11 @@ When a TSL value is reassigned across node subtypes (e.g. `let total = float(0.0
 
 Gameplay systems are constructed in `createGameSystems()` / bootstrap (`src/main/startup.ts`), not at import time. Shared state is the typed `GameContext` on `game` (`src/game_runtime.ts`). Domain modules take ports — see `docs/GAME_CONTEXT.md`.
 
-**Environment features:** register in `src/level_env_registry.ts` (one entry for deferred systems). Do not land features via one-shot `patch_*.py` sed scripts — those caused half-wired systems (e.g. Cloud Castles). `npm run check:env-registry` validates the closed loop.
+**Environment features:** add one `defineEnvSystem` entry to `ENV_SYSTEM_MANIFEST` in `src/level_manager/env_manifest.ts` (load/install/activate/deactivate, `budget`, biome/role/palette metadata); `src/level_env_registry.ts` derives `DEFERRED_ENV_REGISTRY` from it — do not hand-write a second table. See the header of `level_env_registry.ts` for the full checklist. Do not land features via one-shot `patch_*.py` sed scripts — those caused half-wired systems (e.g. Cloud Castles). `npm run check:env-registry` and `tests/unit/env_manifest_parity.test.ts` validate the closed loop.
 
 ## Cursor Cloud specific instructions
 
-Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + typecheck ratchet). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint config; quality gates are brace check, env-registry check, typecheck baseline, the `tests/unit/` `node --test` suite, production build, and Playwright smoke.
+Standard commands live in `README.md` / `package.json` / `CLAUDE.md` (`npm run dev` on :5173, `npm run build`, `npm run check` for braces + env-registry + typecheck ratchet + unit tests). `predev`/`prebuild` rebuild the AssemblyScript WASM automatically, so no separate WASM step is needed for normal dev. There is no ESLint config; quality gates are brace check, env-registry check, typecheck baseline, the `tests/unit/` `node --test` suite, production build, and Playwright smoke.
 
 Non-obvious caveats for headless/cloud verification:
 
