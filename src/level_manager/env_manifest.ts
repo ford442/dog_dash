@@ -1185,7 +1185,7 @@ export const dimensionalFractures = defineEnvSystem<'dimensionalFractures'>({
     flag: 'dimensionalFractures',
     label: 'Dimensional Fractures',
     role: 'backdrop',
-    biomes: ['nebula', 'neon'],
+    biomes: ['nebula'],
     paletteTags: ['neon'],
     difficultyWeight: 3,
     budget: { category: 'background3d', instances: 15 },

@@ -125,6 +125,7 @@ export class LevelManager {
     radiantHalosSystem: LevelEnvironmentPorts['radiantHalosSystem'];
     quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
+    dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
@@ -212,6 +213,7 @@ export class LevelManager {
         this.radiantHalosSystem = options.env.radiantHalosSystem;
         this.quantumFoamBubblesSystem = options.env.quantumFoamBubblesSystem;
         this.etherealSupernovaRemnantsSystem = options.env.etherealSupernovaRemnantsSystem;
+        this.dimensionalFracturesSystem = options.dimensionalFracturesSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
         this.orbitalMegastructuresSystem = options.env.orbitalMegastructuresSystem;
         this.ascendantMonolithsSystem = options.env.ascendantMonolithsSystem;
