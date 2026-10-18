@@ -171,6 +171,7 @@ export type LevelEnvironments = {
     echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     radiantHalos?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    etherealSupernovaRemnants?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;

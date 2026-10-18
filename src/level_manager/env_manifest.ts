@@ -1180,6 +1180,25 @@ export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
     deactivate: (host) => host.magneticPlasmaArcsSystem.deactivate()
 });
 
+
+export const etherealSupernovaRemnants = defineEnvSystem<'etherealSupernovaRemnants'>({
+    flag: 'etherealSupernovaRemnants',
+    label: 'Ethereal Supernova Remnants',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    systemKey: 'etherealSupernovaRemnants',
+    load: () => import('../ethereal_supernova_remnants'),
+    install: (ctx, mod) => {
+        const { EtherealSupernovaRemnantsSystem } = mod as typeof import('../ethereal_supernova_remnants');
+        ctx.installEnvPartial({ etherealSupernovaRemnantsSystem: new EtherealSupernovaRemnantsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.etherealSupernovaRemnantsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.etherealSupernovaRemnantsSystem.deactivate()
+});
+
 export const quantumFoamBubbles = defineEnvSystem<'quantumFoamBubbles'>({
     flag: 'quantumFoamBubbles',
     label: 'Quantum Foam Bubbles',
@@ -1261,6 +1280,7 @@ export const ENV_SYSTEM_MANIFEST = [
     ascendantMonoliths,
     echoingVoidRipples,
     radiantHalos,
+    etherealSupernovaRemnants,
     quantumFoamBubbles,
 ] as const;
 
