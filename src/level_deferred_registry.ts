@@ -79,6 +79,7 @@ export const DEFERRED_ENV_FLAGS = [
     'radiantHalos',
     'quantumFoamBubbles',
     'etherealSupernovaRemnants',
+    'dimensionalFractures',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -190,6 +191,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     radiantHalos: 'radiantHalos',
     quantumFoamBubbles: 'quantumFoamBubbles',
     etherealSupernovaRemnants: 'etherealSupernovaRemnants',
+    dimensionalFractures: 'dimensionalFractures',
 };
 
 /** Pure load predicates for non-env deferred systems. */

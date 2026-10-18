@@ -172,6 +172,7 @@ export type LevelEnvironments = {
     radiantHalos?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     etherealSupernovaRemnants?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    dimensionalFractures?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
@@ -799,6 +800,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             cosmicWebFilaments: true,
             echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
             quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
+            dimensionalFractures: { density: 1.0, speed: 1.0, color1: 0xff00ff, color2: 0x00ffff },
             celestialClockworks: { density: 1.0, speed: 1.0, color1: 0xd4af37, color2: 0xc0c0c0 },
             galacticLeylines: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
             chronoTesseracts: { density: 1.0, speed: 1.0, color1: 0x8a2be2, color2: 0x00ffff },
