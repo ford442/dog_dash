@@ -77,6 +77,7 @@ export const DEFERRED_ENV_FLAGS = [
     'ascendantMonoliths',
     'echoingVoidRipples',
     'radiantHalos',
+    'voidLatticeNetworks',
     'quantumFoamBubbles',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -187,6 +188,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     ascendantMonoliths: 'ascendantMonoliths',
     echoingVoidRipples: 'echoingVoidRipples',
     radiantHalos: 'radiantHalos',
+    voidLatticeNetworks: 'voidLatticeNetworks',
     quantumFoamBubbles: 'quantumFoamBubbles',
 };
 

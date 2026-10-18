@@ -905,6 +905,23 @@ export const radiantHalos = defineEnvSystem<'radiantHalos'>({
     deactivate: (host) => host.radiantHalosSystem.deactivate()
 });
 
+export const voidLatticeNetworks = defineEnvSystem<'voidLatticeNetworks'>({
+    flag: 'voidLatticeNetworks',
+    label: 'Void Lattice Networks',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    load: () => import('../void_lattice_networks'),
+    install: (ctx, mod) => {
+        const { VoidLatticeNetworksSystem } = mod as typeof import('../void_lattice_networks');
+        ctx.installEnvPartial({ voidLatticeNetworksSystem: new VoidLatticeNetworksSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.voidLatticeNetworksSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.voidLatticeNetworksSystem.deactivate()
+});
+
 export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
     flag: 'echoingVoidRipples',
     label: 'Echoing Void Ripples',
@@ -1261,6 +1278,7 @@ export const ENV_SYSTEM_MANIFEST = [
     ascendantMonoliths,
     echoingVoidRipples,
     radiantHalos,
+    voidLatticeNetworks,
     quantumFoamBubbles,
 ] as const;
 
