@@ -83,6 +83,7 @@ const PLUGIN_ORDER = [
     'ascendantMonoliths',
     'echoingVoidRipples',
     'radiantHalos',
+    'voidLatticeNetworks',
     'quantumFoamBubbles',
     'etherealSupernovaRemnants',
     'celestialClockworks'
