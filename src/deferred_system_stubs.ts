@@ -796,3 +796,13 @@ export function createVoidLatticeNetworksSystemStub(): import('./void_lattice_ne
         cleanup: () => { }
     } as unknown as import('./void_lattice_networks').VoidLatticeNetworksSystem;
 }
+
+export function createEtherealSupernovaRemnantsSystemStub(): import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as unknown as import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem;
+}
