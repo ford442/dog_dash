@@ -797,6 +797,16 @@ export function createVoidLatticeNetworksSystemStub(): import('./void_lattice_ne
     } as unknown as import('./void_lattice_networks').VoidLatticeNetworksSystem;
 }
 
+export function createDimensionalFracturesSystemStub(): import('./dimensional_fractures').DimensionalFracturesSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
+        cleanup: () => { }
+    } as unknown as import('./dimensional_fractures').DimensionalFracturesSystem;
+}
+
 export function createEtherealSupernovaRemnantsSystemStub(): import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem {
     return {
         active: false,

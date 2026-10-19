@@ -92,6 +92,7 @@ import {
     createRadiantHalosSystemStub,
     createQuantumFoamBubblesSystemStub,
     createEtherealSupernovaRemnantsSystemStub,
+    createDimensionalFracturesSystemStub,
     createVoidLatticeNetworksSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
@@ -228,6 +229,7 @@ export type GameSystems = {
     radiantHalosSystem: RadiantHalosSystem;
     quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
     etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem;
+    dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
     chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem;
@@ -498,6 +500,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const radiantHalosSystem: RadiantHalosSystem = createRadiantHalosSystemStub();
     const quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem = createQuantumFoamBubblesSystemStub() as any;
     const etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem = createEtherealSupernovaRemnantsSystemStub() as any;
+    const dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem = createDimensionalFracturesSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
     const chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem = createChronoTesseractsSystemStub();
@@ -590,6 +593,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         radiantHalosSystem,
         quantumFoamBubblesSystem,
         etherealSupernovaRemnantsSystem,
+        dimensionalFracturesSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
         chronoTesseractsSystem,

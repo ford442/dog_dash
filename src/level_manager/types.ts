@@ -128,6 +128,7 @@ export type LevelEnvironmentPorts = {
     radiantHalosSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     quantumFoamBubblesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     etherealSupernovaRemnantsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
+    dimensionalFracturesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerSpeed?: number) => void; cleanup: () => void; };
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     ascendantMonolithsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -191,6 +192,7 @@ export type LevelManagerOptions = {
     radiantHalosSystem: LevelEnvironmentPorts['radiantHalosSystem'];
     quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
+    dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];

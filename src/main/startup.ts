@@ -233,6 +233,7 @@ function createLevelManager(
             radiantHalosSystem: systems.radiantHalosSystem,
             quantumFoamBubblesSystem: systems.quantumFoamBubblesSystem,
             etherealSupernovaRemnantsSystem: systems.etherealSupernovaRemnantsSystem,
+            dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -332,6 +333,7 @@ function createLevelManager(
         radiantHalosSystem: systems.radiantHalosSystem,
         quantumFoamBubblesSystem: systems.quantumFoamBubblesSystem,
         etherealSupernovaRemnantsSystem: systems.etherealSupernovaRemnantsSystem,
+        dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem

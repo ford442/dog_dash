@@ -1198,6 +1198,23 @@ export const magneticPlasmaArcs = defineEnvSystem<'magneticPlasmaArcs'>({
 });
 
 
+export const dimensionalFractures = defineEnvSystem<'dimensionalFractures'>({
+    flag: 'dimensionalFractures',
+    label: 'Dimensional Fractures',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 3,
+    budget: { category: 'background3d', instances: 15 },
+    load: () => import('../dimensional_fractures'),
+    install: (ctx, mod) => {
+        const { DimensionalFracturesSystem } = mod as typeof import('../dimensional_fractures');
+        ctx.installEnvPartial({ dimensionalFracturesSystem: new DimensionalFracturesSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.dimensionalFracturesSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.dimensionalFracturesSystem.deactivate()
+});
+
 export const etherealSupernovaRemnants = defineEnvSystem<'etherealSupernovaRemnants'>({
     flag: 'etherealSupernovaRemnants',
     label: 'Ethereal Supernova Remnants',
@@ -1299,6 +1316,7 @@ export const ENV_SYSTEM_MANIFEST = [
     radiantHalos,
     voidLatticeNetworks,
     etherealSupernovaRemnants,
+    dimensionalFractures,
     quantumFoamBubbles,
 ] as const;
 
