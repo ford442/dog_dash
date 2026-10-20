@@ -281,3 +281,28 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` using TSL to create a scrolling energy pulse and smooth edge fading.
 - Animates based on `time` to slowly expand and rotate the rings, and scrolls to provide parallax depth.
 - Integrated via LevelManager to add a majestic, ancient cosmic atmosphere to specific levels.
+29. Void Lattice Networks
+
+**The Technique:** Massive, deep-space geometric lattice structures composed of interconnected nodes and glowing edges. Built using `InstancedMesh` with `THREE.OctahedronGeometry` (for nodes) and thin cylinders (for edges), with TSL `MeshBasicNodeMaterial` for scrolling energy pulses through the lattice.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.OctahedronGeometry` (and wireframes) for rendering the lattice nodes and connections.
+- Custom `MeshBasicNodeMaterial` using TSL to create a scrolling noise texture simulating energy routing through the cosmic network.
+- Animates based on `time` to slowly rotate the entire structure and scrolls to provide parallax depth.
+- Integrated via LevelManager to add a surreal, artificial-intelligence scale atmosphere to cosmic levels.
+30. Ethereal Supernova Remnants
+
+**The Technique:** Expanding clouds of glowing plasma. Built using `InstancedMesh` with `THREE.SphereGeometry` and TSL `MeshBasicNodeMaterial`.
+31. Dimensional Fractures
+
+**The Technique:** Procedurally shifting energy textures within space rifts. Built using `InstancedMesh` with `THREE.IcosahedronGeometry` and TSL `MeshBasicNodeMaterial`.
+32. Quantum Singularity Core
+
+**The Technique:** Massive, warping gravitational anomaly surrounded by event horizon lensing. Built using `InstancedMesh` with `THREE.SphereGeometry` and custom TSL `MeshBasicNodeMaterial` for extreme light-bending and swirling particle accretion.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.SphereGeometry` to represent singularity cores.
+- Custom `MeshBasicNodeMaterial` driving intense, scrolling high-contrast noise and simulated gravitational lensing distortions around the edges using screen-space UV manipulation.
+- Surrounding accretion disk uses flat `THREE.PlaneGeometry` with extreme centrifugal animated textures.
+- Animates based on `time` and aggressively distorts stars/nebulae behind it via depth/UV warping.
+- Integrated via LevelManager to serve as a deep-space hazard or central background feature in climax levels.

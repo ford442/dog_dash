@@ -92,6 +92,7 @@ import {
     createRadiantHalosSystemStub,
     createQuantumFoamBubblesSystemStub,
     createEtherealSupernovaRemnantsSystemStub,
+    createQuantumSingularityCoreSystemStub,
     createDimensionalFracturesSystemStub,
     createVoidLatticeNetworksSystemStub,
     createCelestialClockworksSystemStub,
@@ -229,6 +230,7 @@ export type GameSystems = {
     radiantHalosSystem: RadiantHalosSystem;
     quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
     etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem;
+    quantumSingularityCoreSystem: import('./quantum_singularity_core').QuantumSingularityCoreSystem;
     dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
@@ -500,6 +502,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const radiantHalosSystem: RadiantHalosSystem = createRadiantHalosSystemStub();
     const quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem = createQuantumFoamBubblesSystemStub() as any;
     const etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem = createEtherealSupernovaRemnantsSystemStub() as any;
+    const quantumSingularityCoreSystem: import('./quantum_singularity_core').QuantumSingularityCoreSystem = createQuantumSingularityCoreSystemStub() as any;
     const dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem = createDimensionalFracturesSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
@@ -593,6 +596,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         radiantHalosSystem,
         quantumFoamBubblesSystem,
         etherealSupernovaRemnantsSystem,
+        quantumSingularityCoreSystem,
         dimensionalFracturesSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,

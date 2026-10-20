@@ -86,6 +86,7 @@ const PLUGIN_ORDER = [
     'voidLatticeNetworks',
     'quantumFoamBubbles',
     'etherealSupernovaRemnants',
+    'quantumSingularityCore',
     'dimensionalFractures',
     'celestialClockworks'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
