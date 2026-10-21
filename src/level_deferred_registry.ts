@@ -80,6 +80,7 @@ export const DEFERRED_ENV_FLAGS = [
     'voidLatticeNetworks',
     'quantumFoamBubbles',
     'etherealSupernovaRemnants',
+    'quantumSingularityCore',
     'dimensionalFractures',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -193,6 +194,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     voidLatticeNetworks: 'voidLatticeNetworks',
     quantumFoamBubbles: 'quantumFoamBubbles',
     etherealSupernovaRemnants: 'etherealSupernovaRemnants',
+    quantumSingularityCore: 'quantumSingularityCore',
     dimensionalFractures: 'dimensionalFractures',
 };
 

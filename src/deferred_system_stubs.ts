@@ -807,6 +807,16 @@ export function createDimensionalFracturesSystemStub(): import('./dimensional_fr
     } as unknown as import('./dimensional_fractures').DimensionalFracturesSystem;
 }
 
+export function createQuantumSingularityCoreSystemStub(): import('./quantum_singularity_core').QuantumSingularityCoreSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as any;
+}
+
 export function createEtherealSupernovaRemnantsSystemStub(): import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem {
     return {
         active: false,

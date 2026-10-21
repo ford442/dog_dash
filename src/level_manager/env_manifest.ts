@@ -1215,6 +1215,24 @@ export const dimensionalFractures = defineEnvSystem<'dimensionalFractures'>({
     deactivate: (host) => host.dimensionalFracturesSystem.deactivate()
 });
 
+export const quantumSingularityCore = defineEnvSystem<'quantumSingularityCore'>({
+    flag: 'quantumSingularityCore',
+    label: 'Quantum Singularity Core',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 2,
+    budget: { category: 'background3d', instances: 5 },
+    systemKey: 'quantumSingularityCore',
+    load: () => import('../quantum_singularity_core'),
+    install: (ctx, mod) => {
+        const { QuantumSingularityCoreSystem } = mod as typeof import('../quantum_singularity_core');
+        ctx.installEnvPartial({ quantumSingularityCoreSystem: new QuantumSingularityCoreSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.quantumSingularityCoreSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.quantumSingularityCoreSystem.deactivate()
+});
+
 export const etherealSupernovaRemnants = defineEnvSystem<'etherealSupernovaRemnants'>({
     flag: 'etherealSupernovaRemnants',
     label: 'Ethereal Supernova Remnants',
@@ -1316,6 +1334,7 @@ export const ENV_SYSTEM_MANIFEST = [
     radiantHalos,
     voidLatticeNetworks,
     etherealSupernovaRemnants,
+    quantumSingularityCore,
     dimensionalFractures,
     quantumFoamBubbles,
 ] as const;
