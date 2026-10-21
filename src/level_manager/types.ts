@@ -130,6 +130,7 @@ export type LevelEnvironmentPorts = {
     etherealSupernovaRemnantsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     quantumSingularityCoreSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     dimensionalFracturesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerSpeed?: number) => void; cleanup: () => void; };
+    cosmicStringHorizonsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     ascendantMonolithsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -195,6 +196,7 @@ export type LevelManagerOptions = {
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
     quantumSingularityCoreSystem: LevelEnvironmentPorts['quantumSingularityCoreSystem'];
     dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
+    cosmicStringHorizonsSystem: LevelEnvironmentPorts['cosmicStringHorizonsSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];

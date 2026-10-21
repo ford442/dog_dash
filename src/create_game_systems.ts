@@ -94,6 +94,7 @@ import {
     createEtherealSupernovaRemnantsSystemStub,
     createQuantumSingularityCoreSystemStub,
     createDimensionalFracturesSystemStub,
+    createCosmicStringHorizonsSystemStub,
     createVoidLatticeNetworksSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
@@ -232,6 +233,7 @@ export type GameSystems = {
     etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem;
     quantumSingularityCoreSystem: import('./quantum_singularity_core').QuantumSingularityCoreSystem;
     dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem;
+    cosmicStringHorizonsSystem: import('./cosmic_string_horizons').CosmicStringHorizonsSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
     chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem;
@@ -504,6 +506,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem = createEtherealSupernovaRemnantsSystemStub() as any;
     const quantumSingularityCoreSystem: import('./quantum_singularity_core').QuantumSingularityCoreSystem = createQuantumSingularityCoreSystemStub() as any;
     const dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem = createDimensionalFracturesSystemStub() as any;
+    const cosmicStringHorizonsSystem: import('./cosmic_string_horizons').CosmicStringHorizonsSystem = createCosmicStringHorizonsSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
     const chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem = createChronoTesseractsSystemStub();
@@ -598,6 +601,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         etherealSupernovaRemnantsSystem,
         quantumSingularityCoreSystem,
         dimensionalFracturesSystem,
+        cosmicStringHorizonsSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
         chronoTesseractsSystem,

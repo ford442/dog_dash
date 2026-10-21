@@ -127,6 +127,7 @@ export class LevelManager {
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
     quantumSingularityCoreSystem: LevelEnvironmentPorts['quantumSingularityCoreSystem'];
     dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
+    cosmicStringHorizonsSystem: LevelEnvironmentPorts['cosmicStringHorizonsSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
@@ -216,6 +217,7 @@ export class LevelManager {
         this.etherealSupernovaRemnantsSystem = options.env.etherealSupernovaRemnantsSystem;
         this.quantumSingularityCoreSystem = options.env.quantumSingularityCoreSystem;
         this.dimensionalFracturesSystem = options.dimensionalFracturesSystem;
+        this.cosmicStringHorizonsSystem = options.env.cosmicStringHorizonsSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
         this.orbitalMegastructuresSystem = options.env.orbitalMegastructuresSystem;
         this.ascendantMonolithsSystem = options.env.ascendantMonolithsSystem;
@@ -474,6 +476,7 @@ export class LevelManager {
         if (enabled('quantumFoamBubbles') && this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.update(delta, cameraX, speed);
         if (enabled('etherealSupernovaRemnants') && this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.update(delta, cameraX, speed);
         if (enabled('quantumSingularityCore') && this.quantumSingularityCoreSystem) this.quantumSingularityCoreSystem.update(delta, cameraX, speed);
+        if (enabled('cosmicStringHorizons') && this.cosmicStringHorizonsSystem) this.cosmicStringHorizonsSystem.update(delta, cameraX, speed);
         if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('orbitalMegastructures') && this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.update(delta, cameraX, speed);
         if (enabled('ascendantMonoliths') && this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.update(delta, cameraX, speed);
@@ -562,6 +565,7 @@ export class LevelManager {
         if (this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.cleanup?.();
         if (this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.cleanup?.();
         if (this.quantumSingularityCoreSystem) this.quantumSingularityCoreSystem.cleanup?.();
+        if (this.cosmicStringHorizonsSystem) this.cosmicStringHorizonsSystem.cleanup?.();
         if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
         if (this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.cleanup?.();
         if (this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.cleanup?.();

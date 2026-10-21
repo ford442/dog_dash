@@ -235,6 +235,7 @@ function createLevelManager(
             etherealSupernovaRemnantsSystem: systems.etherealSupernovaRemnantsSystem,
             quantumSingularityCoreSystem: systems.quantumSingularityCoreSystem,
             dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
+            cosmicStringHorizonsSystem: systems.cosmicStringHorizonsSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -336,6 +337,7 @@ function createLevelManager(
         etherealSupernovaRemnantsSystem: systems.etherealSupernovaRemnantsSystem,
         quantumSingularityCoreSystem: systems.quantumSingularityCoreSystem,
         dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
+        cosmicStringHorizonsSystem: systems.cosmicStringHorizonsSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem

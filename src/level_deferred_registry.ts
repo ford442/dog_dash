@@ -82,6 +82,7 @@ export const DEFERRED_ENV_FLAGS = [
     'etherealSupernovaRemnants',
     'quantumSingularityCore',
     'dimensionalFractures',
+    'cosmicStringHorizons',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -196,6 +197,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     etherealSupernovaRemnants: 'etherealSupernovaRemnants',
     quantumSingularityCore: 'quantumSingularityCore',
     dimensionalFractures: 'dimensionalFractures',
+    cosmicStringHorizons: 'cosmicStringHorizons',
 };
 
 /** Pure load predicates for non-env deferred systems. */
