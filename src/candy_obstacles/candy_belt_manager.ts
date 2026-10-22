@@ -337,7 +337,7 @@ export class CandyBeltManager {
             const offset = new THREE.Vector3(
                 Math.cos(angle) * 0.6,
                 Math.sin(angle) * 0.6,
-                (Math.random() - 0.5) * 0.4
+                (getRunRngFork('candy').random() - 0.5) * 0.4
             );
             const pos = ring.position.clone().add(offset);
             this.spawnCandyAsteroid(pos.x, pos.y, pos.z, CandyType.JELLYBEAN, flavors[i % flavors.length]);
@@ -450,25 +450,25 @@ export class CandyBeltManager {
             this.shards.push({
                 position: candy.position.clone().add(
                     new THREE.Vector3(
-                        (Math.random() - 0.5) * candy.radius,
-                        (Math.random() - 0.5) * candy.radius,
-                        (Math.random() - 0.5) * candy.radius
+                        (Math.random() - 0.5) * candy.radius, // visual-only
+                        (Math.random() - 0.5) * candy.radius, // visual-only
+                        (Math.random() - 0.5) * candy.radius // visual-only
                     )
                 ),
                 velocity: vel,
                 rotation: new THREE.Vector3(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
+                    Math.random() * Math.PI, // visual-only
+                    Math.random() * Math.PI, // visual-only
+                    Math.random() * Math.PI // visual-only
                 ),
                 rotSpeed: new THREE.Vector3(
-                    (Math.random() - 0.5) * 10,
-                    (Math.random() - 0.5) * 10,
+                    (Math.random() - 0.5) * 10, // visual-only
+                    (Math.random() - 0.5) * 10, // visual-only
                     0
                 ),
-                life: 1.5 + Math.random(),
+                life: 1.5 + Math.random(), // visual-only
                 maxLife: 2.0,
-                size: 0.1 + Math.random() * 0.15,
+                size: 0.1 + Math.random() * 0.15, // visual-only
                 color: new THREE.Color(color)
             });
         });
@@ -495,26 +495,26 @@ export class CandyBeltManager {
         const color = new THREE.Color(colorHex);
         
         for (let i = 0; i < 20; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const speed = 1 + Math.random() * 3;
+            const angle = Math.random() * Math.PI * 2; // visual-only
+            const speed = 1 + Math.random() * 3; // visual-only
             
             this.sparkles.push({
                 position: position.clone().add(
                     new THREE.Vector3(
-                        (Math.random() - 0.5) * 2,
-                        (Math.random() - 0.5) * 2,
-                        (Math.random() - 0.5) * 2
+                        (Math.random() - 0.5) * 2, // visual-only
+                        (Math.random() - 0.5) * 2, // visual-only
+                        (Math.random() - 0.5) * 2 // visual-only
                     )
                 ),
                 velocity: new THREE.Vector3(
                     Math.cos(angle) * speed,
                     Math.abs(Math.sin(angle)) * speed + 1,
-                    (Math.random() - 0.5) * speed
+                    (Math.random() - 0.5) * speed // visual-only
                 ),
-                life: 1.0 + Math.random() * 0.5,
+                life: 1.0 + Math.random() * 0.5, // visual-only
                 maxLife: 1.5,
-                size: 0.05 + Math.random() * 0.1,
-                color: color.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.2)
+                size: 0.05 + Math.random() * 0.1, // visual-only
+                color: color.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.2) // visual-only
             });
         }
     }
@@ -613,8 +613,8 @@ export class CandyBeltManager {
             
             // Float upward with slight drift
             sparkle.position.addScaledVector(sparkle.velocity, dt);
-            sparkle.velocity.x += (Math.random() - 0.5) * dt;
-            sparkle.velocity.z += (Math.random() - 0.5) * dt;
+            sparkle.velocity.x += (Math.random() - 0.5) * dt; // visual-only
+            sparkle.velocity.z += (Math.random() - 0.5) * dt; // visual-only
             sparkle.velocity.y *= 0.98; // Slow down upward motion
             
             // Twinkle

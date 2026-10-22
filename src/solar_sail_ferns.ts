@@ -21,6 +21,7 @@ import {
 } from 'three/tsl';
 import { ParticleSystem } from './particles';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
+import { gameplayRandom } from './run_seed';
 
 const MAX_FERNS = 12;
 const MAX_BLADES_PER_FERN = 8;
@@ -184,8 +185,8 @@ export class SolarSailFernManager {
         ];
 
         for (let i = 0; i < count; i++) {
-            const x = startX + 20 + Math.random() * Math.max(30, width - 40);
-            const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+            const x = startX + 20 + gameplayRandom('flora') * Math.max(30, width - 40);
+            const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
             const z = randomZInRange(zRange);
             this.spawnFern(x, y, z);
         }
@@ -195,14 +196,14 @@ export class SolarSailFernManager {
         if (this.ferns.length >= MAX_FERNS) return false;
         if (this.activeBlades + MAX_BLADES_PER_FERN > MAX_BLADE_INSTANCES) return false;
 
-        const bladeCount = 5 + Math.floor(Math.random() * 4);
+        const bladeCount = 5 + Math.floor(gameplayRandom('flora') * 4);
         const bladeStart = this.activeBlades;
-        const tintIndex = Math.floor(Math.random() * SAIL_TINTS.length);
+        const tintIndex = Math.floor(Math.random() * SAIL_TINTS.length); // visual-only
         const tint = SAIL_TINTS[tintIndex];
 
         for (let b = 0; b < bladeCount; b++) {
             const idx = bladeStart + b;
-            this.bladePhases[idx] = Math.random() * Math.PI * 2;
+            this.bladePhases[idx] = Math.random() * Math.PI * 2; // visual-only
             this.bladeTints[idx * 3] = tint.r;
             this.bladeTints[idx * 3 + 1] = tint.g;
             this.bladeTints[idx * 3 + 2] = tint.b;
@@ -214,11 +215,11 @@ export class SolarSailFernManager {
             x,
             y,
             z,
-            scale: 0.85 + Math.random() * 0.55,
-            yaw: Math.random() * Math.PI * 2,
+            scale: 0.85 + gameplayRandom('flora') * 0.55,
+            yaw: Math.random() * Math.PI * 2, // visual-only
             bladeCount,
             bladeStart,
-            phase: Math.random() * Math.PI * 2,
+            phase: Math.random() * Math.PI * 2, // visual-only
             tintIndex,
             boostCooldown: 0,
             clipCooldown: 0

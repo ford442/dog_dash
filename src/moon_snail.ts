@@ -13,6 +13,7 @@ import { CreatureInteractionResult } from './creature_types';
 import { PowerUpType } from './powerup_manager';
 import { createGummyTranslucent, createIridescentCrystal } from './candy_materials';
 import { markShared, noteGeometryCreated } from './gpu_resources';
+import { gameplayRandom } from './run_seed';
 
 type SnailState = 'drifting' | 'blessing' | 'blessed';
 
@@ -108,8 +109,8 @@ export class MoonSnail {
     private trailTimer = 0;
     private bumpCooldown = 0;
     private hasBlessed = false;
-    private phase = Math.random() * Math.PI * 2;
-    private crawlSpeed = 0.32 + Math.random() * 0.12;
+    private phase = gameplayRandom('creatures') * Math.PI * 2;
+    private crawlSpeed = 0.32 + gameplayRandom('creatures') * 0.12;
     private lastPlayerPos = new THREE.Vector3();
     private hasLastPlayer = false;
 
@@ -129,7 +130,7 @@ export class MoonSnail {
 
     constructor(scene: THREE.Scene, x: number, y: number, z: number, tintColor?: number) {
         this.position = new THREE.Vector3(x, y, z);
-        this.phase = Math.random() * Math.PI * 2;
+        this.phase = gameplayRandom('creatures') * Math.PI * 2;
 
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
@@ -236,7 +237,7 @@ export class MoonSnail {
     }
 
     private pickBlessing(): PowerUpType {
-        return Math.random() < 0.5
+        return gameplayRandom('creatures') < 0.5
             ? PowerUpType.FLOWER_CROWN_BOOST
             : PowerUpType.TWINKLE_STAR_MAGNET;
     }
@@ -261,8 +262,8 @@ export class MoonSnail {
         const trailPos = this.position.clone();
         trailPos.x += 5.5;
         trailPos.y += Math.sin(this.time * 0.8 + this.phase) * 0.4;
-        trailPos.z += (Math.random() - 0.5) * 1.2;
-        const color = TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)];
+        trailPos.z += (Math.random() - 0.5) * 1.2; // visual-only
+        const color = TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)]; // visual-only
         particleSystem.emit(trailPos, color, 2, 1.8, 0.2, 0.55);
     }
 
@@ -289,7 +290,7 @@ export class MoonSnail {
 
         this.trailTimer -= dt;
         if (this.trailTimer <= 0) {
-            this.trailTimer = 0.42 + Math.random() * 0.18;
+            this.trailTimer = 0.42 + Math.random() * 0.18; // visual-only
             this.emitTrail(particleSystem);
         }
 

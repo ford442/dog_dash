@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { time, positionLocal, color, sin, mix, float, uniform } from 'three/tsl';
 import type { TSLNode } from '../tsl_types';
+import { gameplayRandom } from '../run_seed';
 import {
     magmaCycleAt,
     magmaGlobCount,
@@ -105,7 +106,7 @@ function spawnGlobs(heart: THREE.Mesh): void {
     }
     existing.length = 0;
 
-    const count = magmaGlobCount(Math.random);
+    const count = magmaGlobCount(() => gameplayRandom('geology'));
     const dirs = magmaGlobDirections(count);
     const geo = new THREE.SphereGeometry(MAGMA_GLOB_RADIUS, 8, 8);
     const mat = new THREE.MeshStandardMaterial({

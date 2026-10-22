@@ -307,19 +307,19 @@ export class BubbleLayer {
         this.scales = new Float32Array(this.count);
 
         for (let i = 0; i < this.count; i++) {
-            const x = (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * this.height;
-            const z = this.baseZ + (Math.random() - 0.5) * this.depth;
+            const x = (Math.random() - 0.5) * this.width; // visual-only
+            const y = (Math.random() - 0.5) * this.height; // visual-only
+            const z = this.baseZ + (Math.random() - 0.5) * this.depth; // visual-only
 
             this.positions[i*3] = x;
             this.positions[i*3+1] = y;
             this.positions[i*3+2] = z;
 
             // Random upward speed
-            this.speeds[i] = 2.0 + Math.random() * 3.0;
+            this.speeds[i] = 2.0 + Math.random() * 3.0; // visual-only
 
             this.dummy.position.set(x, y, z);
-            const s = 0.5 + Math.random() * 1.0;
+            const s = 0.5 + Math.random() * 1.0; // visual-only
             this.scales[i] = s;
             this.dummy.scale.setScalar(s);
 
@@ -352,7 +352,7 @@ export class BubbleLayer {
                 y = bottomY;
                 this.positions[idx+1] = y;
                 // Randomize X slightly on respawn
-                x = cameraX + (Math.random() - 0.5) * this.width;
+                x = cameraX + (Math.random() - 0.5) * this.width; // visual-only
                 this.positions[idx] = x;
             }
 
@@ -455,15 +455,15 @@ export class SplashSystem {
                 this.ages[i] = 1.0; // Life starts at 1.0
 
                 // Position
-                this.positions[i*3] = position.x + (Math.random() - 0.5) * 0.5;
-                this.positions[i*3+1] = position.y + (Math.random() - 0.5) * 0.5;
-                this.positions[i*3+2] = position.z + (Math.random() - 0.5) * 0.5;
+                this.positions[i*3] = position.x + (Math.random() - 0.5) * 0.5; // visual-only
+                this.positions[i*3+1] = position.y + (Math.random() - 0.5) * 0.5; // visual-only
+                this.positions[i*3+2] = position.z + (Math.random() - 0.5) * 0.5; // visual-only
 
                 // Velocity (Explosive upward/outward)
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 5.0 + Math.random() * 5.0;
+                const angle = Math.random() * Math.PI * 2; // visual-only
+                const speed = 5.0 + Math.random() * 5.0; // visual-only
                 this.velocities[i*3] = Math.cos(angle) * speed;
-                this.velocities[i*3+1] = (Math.random() * 5.0) + 5.0; // Upward bias
+                this.velocities[i*3+1] = (Math.random() * 5.0) + 5.0; // visual-only: Upward bias
                 this.velocities[i*3+2] = Math.sin(angle) * speed;
 
                 spawned++;

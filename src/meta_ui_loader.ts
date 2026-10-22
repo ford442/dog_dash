@@ -6,7 +6,7 @@
 
 import { scene, camera } from './scene_context';
 import { game } from './game_runtime';
-import type { HubMode } from './hub_screen';
+import type { HubMode, HubTab } from './hub_screen';
 import type { SaveManager } from './save_manager';
 
 type JourneyMapModule = typeof import('./journey_map');
@@ -40,9 +40,9 @@ export async function ensureBestiaryUi(): Promise<BestiaryModule> {
 }
 
 /** Open the Space Base hub (loads hub + crafting + bestiary UI chunk). */
-export async function openHubScreenLazy(mode: HubMode): Promise<void> {
+export async function openHubScreenLazy(mode: HubMode, initialTab?: HubTab): Promise<void> {
     const { openHubScreen } = await ensureHubIntegration();
-    openHubScreen(mode);
+    openHubScreen(mode, initialTab);
 }
 
 /** Construct real VictorySystem + TutorialSystem before first gameplay frame. */

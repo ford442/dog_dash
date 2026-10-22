@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { decorationBudget } from '../decoration_budget';
 import { PitcherMinion } from './pitcher_minion';
 import { PHASE_NAMES, type BossConfig, type BossHitboxEntry, type BossPhase } from './types';
+import { gameplayRandom } from '../run_seed';
+import { scheduleSim } from '../sim_clock';
 
 export class StarEaterBoss {
     scene: THREE.Scene;
@@ -143,17 +145,17 @@ export class StarEaterBoss {
         const colors = new Float32Array(particleCount * 3);
 
         for (let i = 0; i < particleCount; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const radius = 8 + Math.random() * 12;
-            const height = (Math.random() - 0.5) * 2;
+            const angle = Math.random() * Math.PI * 2; // visual-only
+            const radius = 8 + Math.random() * 12; // visual-only
+            const height = (Math.random() - 0.5) * 2; // visual-only
 
             positions[i * 3] = Math.cos(angle) * radius;
             positions[i * 3 + 1] = height;
             positions[i * 3 + 2] = Math.sin(angle) * radius;
 
-            colors[i * 3] = 0.8 + Math.random() * 0.2;
-            colors[i * 3 + 1] = 0.2 + Math.random() * 0.3;
-            colors[i * 3 + 2] = 0.6 + Math.random() * 0.4;
+            colors[i * 3] = 0.8 + Math.random() * 0.2; // visual-only
+            colors[i * 3 + 1] = 0.2 + Math.random() * 0.3; // visual-only
+            colors[i * 3 + 2] = 0.6 + Math.random() * 0.4; // visual-only
         }
 
         diskGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -192,7 +194,7 @@ export class StarEaterBoss {
         this.rageTimer = 0;
         this.debrisTimer = 0;
 
-        const minionCount = 2 + Math.floor(Math.random() * 3);
+        const minionCount = 2 + Math.floor(gameplayRandom('boss') * 3);
         this.minions = [];
         for (let i = 0; i < minionCount; i++) {
             this.minions.push(new PitcherMinion(this.group, i, minionCount));
@@ -315,7 +317,8 @@ export class StarEaterBoss {
         if (this.debrisTimer > 6) {
             this.debrisTimer = 0;
             for (let i = 0; i < 3; i++) {
-                setTimeout(() => this.spawnMouthDebris(), i * 300);
+                // Sim-timed: each volley spawns real asteroids.
+                scheduleSim(i * 0.3, () => this.spawnMouthDebris());
             }
         }
 
@@ -379,8 +382,8 @@ export class StarEaterBoss {
     private spawnMouthDebris(homing = false): void {
         const mouthPos = new THREE.Vector3(
             this.group.position.x + 8,
-            this.group.position.y + (Math.random() - 0.5) * 4,
-            (Math.random() - 0.5) * 4
+            this.group.position.y + (gameplayRandom('boss') - 0.5) * 4,
+            (gameplayRandom('boss') - 0.5) * 4
         );
         this.spawnDebris(mouthPos, homing);
     }

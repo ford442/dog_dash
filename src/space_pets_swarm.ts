@@ -59,18 +59,18 @@ export class SpacePetsSwarmSystem {
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.count; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * this.width,
-                (Math.random() - 0.5) * 30,
-                -20 - Math.random() * 40 // Parallax depth layers
+                (Math.random() - 0.5) * this.width, // visual-only
+                (Math.random() - 0.5) * 30, // visual-only
+                -20 - Math.random() * 40 // visual-only; Parallax depth layers
             );
 
             dummy.rotation.set(
-                (Math.random() - 0.5) * 0.4,
-                Math.PI + (Math.random() - 0.5) * 0.4, // facing roughly towards camera
-                (Math.random() - 0.5) * 0.2
+                (Math.random() - 0.5) * 0.4, // visual-only
+                Math.PI + (Math.random() - 0.5) * 0.4, // visual-only; facing roughly towards camera
+                (Math.random() - 0.5) * 0.2 // visual-only
             );
 
-            const scale = 0.6 + Math.random() * 0.6;
+            const scale = 0.6 + Math.random() * 0.6; // visual-only
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
@@ -131,17 +131,17 @@ export class SpacePetsSwarmSystem {
                     // Sparkle burst when very close
                     if (distToPlayer < 8.0 && this.burstCooldowns[i] === 0 && this.particles) {
                         this.particles.emit(pos.clone(), 0xffd700, 5, 2.0, 0.4, 0.8);
-                        this.burstCooldowns[i] = 2.0 + Math.random() * 2.0; // Cooldown
+                        this.burstCooldowns[i] = 2.0 + Math.random() * 2.0; // visual-only; Cooldown
                     }
                 }
             }
 
             if (pos.x < limitBack) {
                 pos.x += this.width + margin * 2;
-                pos.y = (Math.random() - 0.5) * 30;
+                pos.y = (Math.random() - 0.5) * 30; // visual-only
             } else if (pos.x > limitFront) {
                 pos.x -= this.width + margin * 2;
-                pos.y = (Math.random() - 0.5) * 30;
+                pos.y = (Math.random() - 0.5) * 30; // visual-only
             }
 
             matrix.setPosition(pos);

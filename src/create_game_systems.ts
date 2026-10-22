@@ -293,7 +293,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         const heatGen = upgradeSystem.getModifiedHeatGeneration(8);
         if (!heatSystem.addHeat(heatGen)) return;
 
-        audioSystem.playShoot(Math.random());
+        audioSystem.playShoot(Math.random()); // visual-only
 
         const upgradeColor = upgradeSystem.getProjectileColor();
         if (upgradeColor) {

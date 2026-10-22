@@ -9,6 +9,7 @@ import {
 } from './toy_rockets';
 
 import { CollisionLayer, type SpatialIndex } from './spatial_index';
+import { gameplayRandom } from './run_seed';
 
 const _collisionNormal = new THREE.Vector3();
 const _impactVelocity = new THREE.Vector3();
@@ -92,12 +93,12 @@ export class SlingableObjectSystem {
 
     createObject(position: THREE.Vector3, config: SlingableObjectConfig = {}): SlingableObjectInstance {
         const kind: SlingableKind = config.kind ?? 'rock';
-        const radius = config.radius ?? (1.0 + Math.random() * 0.7);
-        const mass = config.mass ?? (1.4 + Math.random() * 1.3);
+        const radius = config.radius ?? (1.0 + gameplayRandom('slingables') * 0.7);
+        const mass = config.mass ?? (1.4 + gameplayRandom('slingables') * 1.3);
         const velocity = config.velocity?.clone() ?? new THREE.Vector3(
-            -1.0 - Math.random() * 1.4,
-            (Math.random() - 0.5) * 1.8,
-            (Math.random() - 0.5) * 0.8
+            -1.0 - gameplayRandom('slingables') * 1.4,
+            (gameplayRandom('slingables') - 0.5) * 1.8,
+            (gameplayRandom('slingables') - 0.5) * 0.8
         );
 
         // Per-kind palette defaults (still overridable via config)
@@ -179,8 +180,8 @@ export class SlingableObjectSystem {
                     new THREE.SphereGeometry(radius * 0.08, 6, 6),
                     new THREE.MeshBasicMaterial({ color: 0x66ff99 })
                 );
-                const a = Math.random() * Math.PI * 2;
-                const h = Math.random() * Math.PI * 0.5;
+                const a = Math.random() * Math.PI * 2; // visual-only
+                const h = Math.random() * Math.PI * 0.5; // visual-only
                 fleck.position.set(
                     Math.cos(a) * Math.sin(h) * radius * 0.95,
                     Math.cos(h) * radius * 0.95,
@@ -269,20 +270,20 @@ export class SlingableObjectSystem {
                 : kind === 'toyRocket'
                     ? Math.max(2, Math.round(radius * 2))
                     : Math.max(1, Math.round(radius * 1.5)),
-            trailTimer: Math.random() * 0.08,
+            trailTimer: Math.random() * 0.08, // visual-only
             spin: new THREE.Vector3(
-                (Math.random() - 0.5) * 1.4,
-                (Math.random() - 0.5) * 1.2,
-                (Math.random() - 0.5) * 1.4
+                (Math.random() - 0.5) * 1.4, // visual-only
+                (Math.random() - 0.5) * 1.2, // visual-only
+                (Math.random() - 0.5) * 1.4 // visual-only
             ),
             shellMaterial: shell.material as THREE.MeshBasicMaterial,
             bodyMaterial,
             kind,
             highlightGroup,
             highlightMaterial,
-            chromaHue: kind === 'chromaRock' ? Math.random() : undefined,
+            chromaHue: kind === 'chromaRock' ? Math.random() : undefined, // visual-only
             toyVariant: kind === 'toyRocket' ? (config.toyVariant ?? 'bentFin') : undefined,
-            idlePhase: kind === 'toyRocket' ? Math.random() * Math.PI * 2 : undefined
+            idlePhase: kind === 'toyRocket' ? Math.random() * Math.PI * 2 : undefined // visual-only
         };
 
         group.userData = {
@@ -400,9 +401,9 @@ export class SlingableObjectSystem {
                 position.clone(),
                 heartColors[i],
                 3,
-                3.5 + Math.random() * 2,
+                3.5 + Math.random() * 2, // visual-only
                 0.75,
-                0.35 + Math.random() * 0.2
+                0.35 + Math.random() * 0.2 // visual-only
             );
         }
     }
@@ -442,7 +443,7 @@ export class SlingableObjectSystem {
                     });
                     // Spore confetti burst
                     for (let c = 0; c < 5; c++) {
-                        const hue = Math.random();
+                        const hue = Math.random(); // visual-only
                         _hueColor.setHSL(hue, 0.8, 0.65);
                         this.particleSystem.emit(
                             obj.group.position.clone(),

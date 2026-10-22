@@ -84,17 +84,17 @@ export class ShootingStarsSystem {
     }
 
     private resetStar(index: number, cameraX: number, initial: boolean = false) {
-        const startX = cameraX + 300 + Math.random() * 800; // Spawn far ahead
-        const startY = 80 + Math.random() * 60; // High up
-        const startZ = this.bounds.minZ + Math.random() * (this.bounds.maxZ - this.bounds.minZ);
+        const startX = cameraX + 300 + Math.random() * 800; // Spawn far ahead // visual-only
+        const startY = 80 + Math.random() * 60; // High up // visual-only
+        const startZ = this.bounds.minZ + Math.random() * (this.bounds.maxZ - this.bounds.minZ); // visual-only
 
         // Fast downward diagonal trajectory
-        const speed = 120 + Math.random() * 80;
-        const angle = -Math.PI / 4 + (Math.random() - 0.5) * 0.2; // roughly 45 degrees down-left
+        const speed = 120 + Math.random() * 80; // visual-only
+        const angle = -Math.PI / 4 + (Math.random() - 0.5) * 0.2; // roughly 45 degrees down-left // visual-only
 
         const vx = -Math.cos(angle) * speed;
         const vy = Math.sin(angle) * speed; // Negative because angle is negative
-        const vz = (Math.random() - 0.5) * 10;
+        const vz = (Math.random() - 0.5) * 10; // visual-only
 
         // Initial dummy placement offscreen
         const x = initial ? -9999 : startX;
@@ -113,10 +113,10 @@ export class ShootingStarsSystem {
         this.dummy.rotation.x = Math.atan2(vy, vz);
         this.dummy.rotation.y = Math.atan2(vx, vz);
         // Add a slight roll
-        this.dummy.rotation.z = Math.random() * Math.PI;
+        this.dummy.rotation.z = Math.random() * Math.PI; // visual-only
 
         // Random scale variation
-        const scale = 0.5 + Math.random() * 1.5;
+        const scale = 0.5 + Math.random() * 1.5; // visual-only
         this.dummy.scale.set(scale, scale, scale);
 
         this.dummy.updateMatrix();
@@ -158,7 +158,7 @@ export class ShootingStarsSystem {
 
             // If it's a hidden/initial star, occasionally spawn it
             if (x === -9999) {
-                if (Math.random() < 0.01 * delta * 60) {
+                if (Math.random() < 0.01 * delta * 60) { // visual-only
                      this.resetStar(i, cameraX);
                 }
                 continue;
@@ -190,19 +190,19 @@ export class ShootingStarsSystem {
             this.mesh.setMatrixAt(i, this.dummy.matrix);
 
             // Occasionally emit sparkle particles as they fly
-            if (Math.random() < 0.05 && this.particleSystem && x > cameraX - 50 && x < cameraX + 300) {
+            if (Math.random() < 0.05 && this.particleSystem && x > cameraX - 50 && x < cameraX + 300) { // visual-only
                  this.particleSystem.emit(new THREE.Vector3(x, y, z), 0xffb6c1, 1, 0.5, 0.2, 0.5);
             }
 
             // Check boundaries - if passed bottom or far left, reset
             if (y < -40 || x < cameraX - 100) {
                 // Occasional "drop" effect (simulate collectible spawning context visually)
-                if (playerPos && Math.random() < 0.1 && Math.abs(x - playerPos.x) < 150) {
+                if (playerPos && Math.random() < 0.1 && Math.abs(x - playerPos.x) < 150) { // visual-only
                     this.particleSystem.emit(new THREE.Vector3(x, Math.max(y, 0), z), 0xffd700, 15, 3.0, 0.6, 0.8);
                 }
 
                 // Wait randomly before respawning or respawn immediately
-                if (Math.random() < 0.5) {
+                if (Math.random() < 0.5) { // visual-only
                     this.resetStar(i, cameraX);
                 } else {
                     this.instanceData[i * 6] = -9999;

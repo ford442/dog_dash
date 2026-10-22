@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { BossEncounterConfig } from '../level_config';
 import { StarEaterBoss } from './star_eater_boss';
 import { ZephyrBoss } from './zephyr_boss';
 import type { BossPhase } from './types';
@@ -7,6 +8,8 @@ export class BossManager {
     private scene: THREE.Scene;
     private currentBoss: StarEaterBoss | ZephyrBoss | null = null;
     private bossSpawned = false;
+    /** triggerX of the last scripted encounter fought (each gate fires once). */
+    private lastEncounterX: number | null = null;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
@@ -23,8 +26,11 @@ export class BossManager {
             getPlayerPosition: () => THREE.Vector3 | null;
             spawnDebris: (pos: THREE.Vector3, homing?: boolean) => void;
             onBossStart: () => void;
-        }
+        },
+        encounter?: BossEncounterConfig
     ): boolean {
+        if (encounter) return this.checkEncounterSpawn(playerX, encounter, callbacks);
+
         // Level 4 capstone: Zephyr Boss
         const isLevel4Capstone = level === 4 && !this.bossSpawned && levelDistance
             && playerX > levelDistance - 500;
@@ -66,6 +72,32 @@ export class BossManager {
         return true;
     }
 
+    /**
+     * Endless Dash boss gate: spawn the encounter's boss once the player passes
+     * `triggerX`. Kraken gates are spawned by the obstacle system instead.
+     */
+    private checkEncounterSpawn(
+        playerX: number,
+        encounter: BossEncounterConfig,
+        callbacks: Parameters<BossManager['checkBossSpawn']>[3]
+    ): boolean {
+        if (encounter.kind === 'kraken') return false;
+        if (this.lastEncounterX === encounter.triggerX || playerX <= encounter.triggerX) return false;
+        const boss = this.currentBoss;
+        if (boss && boss.isActive && boss.phase !== 'defeated') return false;
+
+        // A defeated Zephyr keeps falling with isActive set; clear it before the next gate.
+        if (boss?.isActive) boss.destroy();
+        this.lastEncounterX = encounter.triggerX;
+        const options = { spawnX: playerX, arenaWidth: 60, health: encounter.kind === 'zephyr' ? 200 : 300 };
+        this.currentBoss = encounter.kind === 'zephyr'
+            ? new ZephyrBoss(this.scene, options, callbacks)
+            : new StarEaterBoss(this.scene, options, callbacks);
+        this.currentBoss.activate(playerX);
+        callbacks.onBossStart();
+        return true;
+    }
+
     update(delta: number): {
         bossActive: boolean;
         pullForce: number;
@@ -99,6 +131,7 @@ export class BossManager {
             this.currentBoss = null;
         }
         this.bossSpawned = false;
+        this.lastEncounterX = null;
     }
 
     getBoss(): StarEaterBoss | ZephyrBoss | null {

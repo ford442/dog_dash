@@ -5,6 +5,7 @@ import { FlowerConstellation } from './constellation';
 import { HeartPollenSystem } from './pollen';
 import { GoldenSparkleSystem } from './sparkle';
 import { FlowerType } from './types';
+import { gameplayRandom } from '../run_seed';
 
 export class ConstellationManager {
     private scene: THREE.Scene;
@@ -41,12 +42,12 @@ export class ConstellationManager {
     ): void {
         for (let i = 0; i < count; i++) {
             // Random position
-            const x = xMin + Math.random() * (xMax - xMin);
-            const y = yMin + Math.random() * (yMax - yMin);
-            const z = -5 - Math.random() * 15; // Background depth
+            const x = xMin + gameplayRandom('environment') * (xMax - xMin);
+            const y = yMin + gameplayRandom('environment') * (yMax - yMin);
+            const z = -5 - gameplayRandom('environment') * 15; // Background depth
 
             // Random flower type
-            const type = Math.floor(Math.random() * 4) as FlowerType;
+            const type = Math.floor(gameplayRandom('environment') * 4) as FlowerType;
 
             const position = new THREE.Vector3(x, y, z);
             const flower = new FlowerConstellation(type, position, this.scene);
@@ -73,7 +74,7 @@ export class ConstellationManager {
             flower.update(dt);
 
             // Sunflowers emit golden sparkles occasionally
-            if (flower.type === FlowerType.SUNFLOWER && Math.random() < 0.02) {
+            if (flower.type === FlowerType.SUNFLOWER && Math.random() < 0.02) { // visual-only
                 this.goldenSparkles.emit(flower.getPosition(), 2);
             }
         }

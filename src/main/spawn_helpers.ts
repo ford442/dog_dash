@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import { createGravityAnchorAtPosition, createGeodeAtPosition, createIceNeedleClusterAtPosition } from '../environment';
 import type { SlingableObjectConfig } from '../slingable_objects';
 import { game } from '../game_runtime';
+import { gameplayRandom } from '../run_seed';
 
 export function spawnTarsiersForGravityAnchor(anchor: THREE.Group) {
     if (game.debugSystem.isEnabled('spaceFriends')) {
-        const count = 2 + Math.floor(Math.random() * 3);
+        const count = 2 + Math.floor(gameplayRandom('slingables') * 3);
         game.friendsManager.spawnTarsiersNearAnchor(anchor.position, count);
     }
 }

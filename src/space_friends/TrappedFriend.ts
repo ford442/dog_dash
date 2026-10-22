@@ -54,7 +54,7 @@ export class TrappedFriend {
             const bar = new THREE.Mesh(barGeo, barMat);
             const angle = (i / barCount) * Math.PI * 2;
             bar.position.set(Math.cos(angle) * 0.7, Math.sin(angle) * 0.3, Math.sin(angle) * 0.7);
-            bar.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            bar.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI); // visual-only
             this.cage.add(bar);
         }
         this.group.add(this.cage);

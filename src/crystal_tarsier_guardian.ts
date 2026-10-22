@@ -14,6 +14,7 @@ import { time, color, mix, sin, float } from 'three/tsl';
 import { ParticleSystem, DebrisSystem } from './particles';
 import { AudioSystem } from './audio_system';
 import { CreatureInteractionResult } from './creature_types';
+import { gameplayRandom } from './run_seed';
 
 type GuardianState = 'idle' | 'calm' | 'blessing' | 'gifted' | 'panic' | 'gone';
 
@@ -52,7 +53,7 @@ export class CrystalTarsierGuardian {
 
     constructor(scene: THREE.Scene, x: number, y: number, z: number) {
         this.position = new THREE.Vector3(x, y, z);
-        this.phaseOffset = Math.random() * Math.PI * 2;
+        this.phaseOffset = gameplayRandom('creatures') * Math.PI * 2;
 
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
@@ -74,7 +75,7 @@ export class CrystalTarsierGuardian {
 
         // Smaller accent shards around the base
         for (let i = 0; i < 4; i++) {
-            const shardGeo = new THREE.ConeGeometry(0.35, 1.1 + Math.random() * 0.6, 5);
+            const shardGeo = new THREE.ConeGeometry(0.35, 1.1 + Math.random() * 0.6, 5); // visual-only
             const shard = new THREE.Mesh(shardGeo, spireMat);
             const angle = (i / 4) * Math.PI * 2;
             shard.position.set(Math.cos(angle) * 0.9, -2.2, Math.sin(angle) * 0.9);

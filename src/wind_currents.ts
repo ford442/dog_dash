@@ -3,6 +3,7 @@ import { disposeObject } from './utils';
 import { time, vec3, color, uniform, sin, float, mod, positionLocal } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 
 export type WindZoneConfig = {
     x: number;
@@ -100,15 +101,15 @@ export class WindCurrentsSystem {
 
             for (let i = 0; i < count; i++) {
                 // Random position within zone bounds
-                const x = zone.x - zone.width/2 + Math.random() * zone.width;
-                const y = zone.y - zone.height/2 + Math.random() * zone.height;
-                const z = -5 - Math.random() * 15; // deep background to near background
+                const x = zone.x - zone.width/2 + gameplayRandom('environment') * zone.width;
+                const y = zone.y - zone.height/2 + gameplayRandom('environment') * zone.height;
+                const z = -5 - gameplayRandom('environment') * 15; // deep background to near background
 
                 dummy.position.set(x, y, z);
                 dummy.rotation.z = angle;
 
                 // Random scale
-                const scaleX = 0.5 + Math.random() * 2.0;
+                const scaleX = 0.5 + gameplayRandom('environment') * 2.0;
                 dummy.scale.set(scaleX, 1, 1);
 
                 dummy.updateMatrix();

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gameplayRandom } from './run_seed';
 
 // Mathematical enemy formation patterns for Dog Dash
 // Uses parametric equations for interesting movement patterns
@@ -287,20 +288,20 @@ export function getRandomPattern(
         'helix', 'ring', 'cross', 'v_formation', 'diamond', 'chaos'
     ];
     
-    const type = patterns[Math.floor(Math.random() * patterns.length)];
-    const count = 5 + Math.floor(Math.random() * 8) + Math.floor(difficulty * 3);
+    const type = patterns[Math.floor(gameplayRandom('enemies') * patterns.length)];
+    const count = 5 + Math.floor(gameplayRandom('enemies') * 8) + Math.floor(difficulty * 3);
     
     return {
         type,
         centerX,
         centerY,
         count,
-        spacing: 2 + Math.random() * 2,
-        speed: 0.5 + Math.random() * 1.5 + difficulty * 0.3,
-        amplitude: 2 + Math.random() * 4 + difficulty,
-        frequency: 0.5 + Math.random() * 1.5,
-        phase: Math.random() * Math.PI * 2,
-        radius: 2 + Math.random() * 4
+        spacing: 2 + gameplayRandom('enemies') * 2,
+        speed: 0.5 + gameplayRandom('enemies') * 1.5 + difficulty * 0.3,
+        amplitude: 2 + gameplayRandom('enemies') * 4 + difficulty,
+        frequency: 0.5 + gameplayRandom('enemies') * 1.5,
+        phase: gameplayRandom('enemies') * Math.PI * 2,
+        radius: 2 + gameplayRandom('enemies') * 4
     };
 }
 

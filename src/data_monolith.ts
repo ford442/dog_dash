@@ -13,6 +13,7 @@
 
 import * as THREE from 'three';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 import {
     HackSession, createHackOverlay, createHackPanel, renderMistakePips,
     HACK_ACCENT, HACK_ACCENT_GOOD, HACK_ACCENT_WARN, type HackFailReason
@@ -56,11 +57,11 @@ function cellKey(cell: Cell): string {
 
 /** Generates a monotonic-ish path from left edge to right edge across the grid. */
 function generateTracePath(size: number): Cell[] {
-    let r = Math.floor(Math.random() * size);
+    let r = Math.floor(gameplayRandom('pickups') * size);
     const path: Cell[] = [{ r, c: 0 }];
     for (let c = 1; c < size; c++) {
         // Optionally jog vertically before stepping right, keeping in-bounds.
-        const jog = Math.random();
+        const jog = gameplayRandom('pickups');
         if (jog < 0.33 && r > 0) {
             r -= 1;
             path.push({ r, c: c - 1 });
@@ -100,13 +101,13 @@ export function createMonolithPuzzle(tier: MonolithTier): MonolithPuzzle {
     const startEnd = new Set([cellKey(path[0]), cellKey(path[path.length - 1])]);
     let guard = 0;
     while (firewalls.length < config.firewalls && guard++ < 200) {
-        const r = Math.floor(Math.random() * size);
-        const c = Math.floor(Math.random() * size);
+        const r = Math.floor(gameplayRandom('pickups') * size);
+        const c = Math.floor(gameplayRandom('pickups') * size);
         const key = `${r},${c}`;
         if (startEnd.has(key)) continue;
         if (config.firewallSpeed === 0 && pathSet.has(key)) continue; // static must stay off-path
         if (firewalls.some(f => f.r === r && f.c === c)) continue;
-        firewalls.push({ r, c, dir: Math.random() < 0.5 ? 1 : -1, progress: 0 });
+        firewalls.push({ r, c, dir: gameplayRandom('pickups') < 0.5 ? 1 : -1, progress: 0 });
     }
     return { size, path, firewalls, pathSet, config };
 }
@@ -146,7 +147,7 @@ function createMonolithMesh(tier: MonolithTier): THREE.Group {
             new THREE.BoxGeometry(1.8, 0.05, 0.02),
             new THREE.MeshBasicMaterial({ color: traceColor, transparent: true, opacity: 0.75 })
         );
-        trace.position.set((Math.random() - 0.5) * 0.6, -1.6 + i * 0.8, 0.26);
+        trace.position.set((Math.random() - 0.5) * 0.6, -1.6 + i * 0.8, 0.26); // visual-only
         trace.userData.isTrace = true;
         group.add(trace);
     }

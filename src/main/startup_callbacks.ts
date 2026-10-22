@@ -10,6 +10,9 @@ import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPop
 import { getMaterialDisplayName, getMaterialColor } from '../resource_inventory';
 import { recordChapterComplete } from '../journey_progress';
 import { openHubScreenLazy } from '../meta_ui_loader';
+import { getSimTime, getSimTimeMs } from '../sim_clock';
+import { gameplayRandom } from '../run_seed';
+import { isArchitectRun, isCampaignRun } from '../journey_layout';
 
 export function reportComboObjectiveProgress(): void {
     const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
@@ -28,7 +31,8 @@ export function wireStartupCallbacks(): void {
     game.hudManager.getJourneyLevel = () => game.levelManager?.currentLevel ?? 1;
     game.hudManager.getRescuedFriendCount = () => game.friendsManager?.getRescuedCount?.() ?? 0;
     game.hudManager.getCompletedChapters = () => [...(game.completedChaptersThisRun || [])];
-    game.hudManager.openHub = (mode) => { void openHubScreenLazy(mode); };
+    // After a playtest the hub opens straight onto the Architect Lab.
+    game.hudManager.openHub = (mode) => { void openHubScreenLazy(mode, isArchitectRun() ? 'architect' : undefined); };
 
     game.resourceHarvester.onMaterialCollected = (evt) => {
         const name = getMaterialDisplayName(evt.id);
@@ -76,7 +80,7 @@ export function wireStartupCallbacks(): void {
         if (game.powerUpManager.getCombinedModifiers().doubleValue) {
             scaled *= 2;
         }
-        const mult = performance.now() < game.scoreMultiplierUntil ? game.scoreMultiplierValue : 1;
+        const mult = getSimTimeMs() < game.scoreMultiplierUntil ? game.scoreMultiplierValue : 1;
         originalAddScore(Math.round(scaled * mult));
     };
 
@@ -139,7 +143,7 @@ function wireFriendsCallbacks(): void {
             dogController.triggerAnimation(DogAnimationState.VICTORY, 1.8);
             const moonPupMemory = saveManager.hasMemory('moon_pup');
             game.scoreMultiplierValue = 2;
-            game.scoreMultiplierUntil = performance.now() + (moonPupMemory ? 16000 : 10000);
+            game.scoreMultiplierUntil = getSimTimeMs() + (moonPupMemory ? 16000 : 10000);
             if (player) juiceManager.showFloatingText('Good Dog! Score x2!', player.position.clone(), '#ffe4b5', 26);
             audioSystem.playMagicSequence('power_up');
             creatureCatalogManager.catalog('moon_pup');
@@ -163,7 +167,7 @@ function wireFriendsCallbacks(): void {
     game.friendsManager.onOtterGift = (position, cores) => {
         const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController } = game;
         const otterMemory = saveManager.hasMemory('cosmic_otter');
-        const totalCores = cores + (otterMemory && Math.random() < 0.35 ? 1 : 0);
+        const totalCores = cores + (otterMemory && gameplayRandom('pickups') < 0.35 ? 1 : 0);
         playerState.cores += totalCores;
         saveManager.addCores(totalCores);
         creatureCatalogManager.catalog('cosmic_otter');
@@ -194,7 +198,7 @@ function wireFriendsCallbacks(): void {
         const sealMemory = saveManager.hasMemory('stellar_seal_pup');
         const glowDuration = sealMemory ? 5.5 : 3.5;
         const glowMultiplier = sealMemory ? 2.2 : 1.7;
-        const boosted = orbManager.boostGlowNearby(position, 14, glowMultiplier, glowDuration, game.clock.getElapsedTime(), game.spatialIndex);
+        const boosted = orbManager.boostGlowNearby(position, 14, glowMultiplier, glowDuration, getSimTime(), game.spatialIndex);
         creatureCatalogManager.catalog('stellar_seal_pup');
         if (healthRestore && healthRestore > 0) {
             playerState.health = Math.min(playerState.health + healthRestore, playerState.maxHealth);
@@ -229,7 +233,7 @@ function wireFriendsCallbacks(): void {
         const lemurMemory = saveManager.hasMemory('lunar_lemur');
         orbManager.spawnHeartOrb(position.x, position.y, position.z);
         creatureCatalogManager.catalog('lunar_lemur');
-        if (lemurMemory) orbManager.boostGlowNearby(position, 16, 2.0, 6.5, game.clock.getElapsedTime(), game.spatialIndex);
+        if (lemurMemory) orbManager.boostGlowNearby(position, 16, 2.0, 6.5, getSimTime(), game.spatialIndex);
         if (player) {
             juiceManager.showFloatingText('Heart Fruit!', position.clone(), '#ff69b4', 22);
             juiceManager.burstMagic(position.clone());
@@ -245,7 +249,9 @@ function wireObjectiveComplete(): void {
         if (!game.completedChaptersThisRun.includes(level)) {
             game.completedChaptersThisRun.push(level);
         }
-        recordChapterComplete(game.saveManager, level);
+        // Endless chapters and Architect sandboxes never unlock campaign chapters.
+        const campaign = isCampaignRun();
+        if (campaign) recordChapterComplete(game.saveManager, level);
 
         game.dogController.triggerAnimation(DogAnimationState.DELIGHTED, 2.5);
         game.juiceManager.showFloatingText('Chapter Complete!', player.position.clone(), '#ffcc00', 32);
@@ -256,12 +262,14 @@ function wireObjectiveComplete(): void {
         game.levelManager.enterFastLane();
         game.friendsManager.triggerVictoryFlyby(3.0);
         for (let i = 0; i < 5; i++) {
-            const ox = player.position.x + 20 + i * 15 + Math.random() * 8;
-            const oy = (Math.random() - 0.5) * 10;
+            const ox = player.position.x + 20 + i * 15 + gameplayRandom('pickups') * 8;
+            const oy = (gameplayRandom('pickups') - 0.5) * 10;
             game.orbManager.spawnRandomOrb(ox, oy, 0);
         }
 
-        // Moon journey map — 2D overlay after each chapter victory.
+        // Moon journey map — 2D overlay after each chapter victory. Endless and
+        // Architect runs have no Moon map: the fast lane above is the whole celebration.
+        if (!campaign) return;
         const wasPaused = isGamePaused;
         if (!wasPaused) setIsGamePaused(true);
         game.hudManager.showJourneyMapOverlay('chapter', {

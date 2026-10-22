@@ -1,4 +1,8 @@
-import { RUN_SEED_SCHEMA_VERSION, type RunModifier, type RunSeed } from './types';
+import { RUN_SEED_SCHEMA_VERSION, type RunCampaignId, type RunModifier, type RunSeed } from './types';
+
+const CAMPAIGN_IDS: readonly RunCampaignId[] = ['campaign', 'endless', 'architect'];
+/** Mirrors `ARCHITECT_MAX_PLACEMENTS`; the architect chunk re-checks every placement with its schema. */
+const MAX_ARCHITECT_PLACEMENTS = 24;
 
 function randomUint32(): number {
     if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
@@ -25,14 +29,17 @@ function isValidModifier(raw: unknown): raw is RunModifier {
         return typeof m.tier === 'number' && Number.isFinite(m.tier);
     }
     if (m.kind === 'architect') {
-        return Array.isArray(m.brushes) && m.brushes.every((b) => typeof b === 'string');
+        return Array.isArray(m.placements)
+            && m.placements.length <= MAX_ARCHITECT_PLACEMENTS
+            && m.placements.every((p) => !!p && typeof p === 'object' && !Array.isArray(p));
     }
     return false;
 }
 
 function normalizeRunSeed(raw: Record<string, unknown>): RunSeed | null {
     if (raw.version !== RUN_SEED_SCHEMA_VERSION) return null;
-    if (raw.campaignId !== 'campaign') return null;
+    if (!CAMPAIGN_IDS.includes(raw.campaignId as RunCampaignId)) return null;
+    const campaignId = raw.campaignId as RunCampaignId;
     const rngSeed = Number(raw.rngSeed);
     if (!Number.isFinite(rngSeed)) return null;
     const modifiers: RunModifier[] = [];
@@ -44,7 +51,7 @@ function normalizeRunSeed(raw: Record<string, unknown>): RunSeed | null {
     }
     return {
         version: RUN_SEED_SCHEMA_VERSION,
-        campaignId: 'campaign',
+        campaignId,
         rngSeed: rngSeed >>> 0,
         modifiers
     };

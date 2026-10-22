@@ -43,7 +43,8 @@ export function toStored(recording: GhostRecording): StoredGhostRecording {
         seed: recording.seed,
         base,
         deltas,
-        duration: recording.duration
+        duration: recording.duration,
+        ...optionalTraceFields(recording)
     };
 }
 
@@ -52,6 +53,15 @@ export function fromStored(stored: StoredGhostRecording): GhostRecording {
         version: GHOST_SCHEMA_VERSION,
         seed: stored.seed,
         frames: decompressFrames(stored.base, stored.deltas),
-        duration: stored.duration
+        duration: stored.duration,
+        ...optionalTraceFields(stored)
     };
+}
+
+function optionalTraceFields(src: Pick<GhostRecording, 'startChapter' | 'inputs' | 'touchUsed'>) {
+    const out: Pick<GhostRecording, 'startChapter' | 'inputs' | 'touchUsed'> = {};
+    if (src.startChapter !== undefined) out.startChapter = src.startChapter;
+    if (src.inputs !== undefined) out.inputs = src.inputs;
+    if (src.touchUsed !== undefined) out.touchUsed = src.touchUsed;
+    return out;
 }

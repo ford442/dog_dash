@@ -12,6 +12,7 @@ import {
     resolveBubbleCoralClusterCount
 } from '../../level_spawn_rules';
 import { gravityAnchors } from '../../environment';
+import { gameplayRandom } from '../../run_seed';
 /** Space friends, aquatic life, starlight koi, bubble coral. */
 export function updateCombatFriends(delta: number): void {
     if (!player) return;
@@ -50,8 +51,8 @@ export function updateCombatFriends(delta: number): void {
             }
 
             for (let s = 0; s < 5; s++) {
-                const sx = player.position.x + 100 + Math.random() * (cfgA.distance - 300);
-                const sy = (Math.random() - 0.5) * 16;
+                const sx = player.position.x + 100 + gameplayRandom('friends') * (cfgA.distance - 300);
+                const sy = (gameplayRandom('friends') - 0.5) * 16;
                 game.friendsManager.spawnSealPup(sx, sy);
             }
         }
@@ -76,7 +77,7 @@ export function updateCombatFriends(delta: number): void {
 
         game.whaleSongTimer -= delta;
         if (game.whaleSongTimer <= 0) {
-            game.whaleSongTimer = 25 + Math.random() * 15;
+            game.whaleSongTimer = 25 + Math.random() * 15; // visual-only
             game.audioSystem.playWhaleSong();
         }
     } else if (game.aquaticLifeSpawnedLevel !== null) {

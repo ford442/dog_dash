@@ -114,12 +114,12 @@ export class MoonPalaceSystem {
         for (let i = 0; i < this.sparkles.length && spawned < count; i++) {
             const p = this.sparkles[i];
             if (p.life <= 0) {
-                p.life = 1.0 + Math.random() * 1.5;
+                p.life = 1.0 + Math.random() * 1.5; // visual-only
                 p.maxLife = p.life;
 
                 // Spawn randomly on the surface of the sphere
-                const angle1 = Math.random() * Math.PI * 2;
-                const angle2 = Math.random() * Math.PI;
+                const angle1 = Math.random() * Math.PI * 2; // visual-only
+                const angle2 = Math.random() * Math.PI; // visual-only
                 const r = 60; // sphere radius
                 p.pos.set(
                     Math.sin(angle2) * Math.cos(angle1) * r,
@@ -128,11 +128,11 @@ export class MoonPalaceSystem {
                 );
 
                 p.vel.set(
-                    (Math.random() - 0.5) * 2,
-                    2 + Math.random() * 3, // drift upwards
-                    (Math.random() - 0.5) * 2
+                    (Math.random() - 0.5) * 2, // visual-only
+                    2 + Math.random() * 3, // drift upwards // visual-only
+                    (Math.random() - 0.5) * 2 // visual-only
                 );
-                p.scale = 0.5 + Math.random() * 1.5;
+                p.scale = 0.5 + Math.random() * 1.5; // visual-only
                 spawned++;
             }
         }
@@ -241,7 +241,7 @@ export class MoonPalaceSystem {
 
         for (let i = 0; i < count; i++) {
             const angle = (i / count) * Math.PI * 2;
-            const y = (Math.random() - 0.5) * 40;
+            const y = (Math.random() - 0.5) * 40; // visual-only
             const r = 60.5;
             dummy.position.set(Math.cos(angle) * r, y, Math.sin(angle) * r);
             // Face outward
@@ -301,7 +301,7 @@ export class MoonPalaceSystem {
                 this.spawnSparkles(50);
             } else if (dist < 300) {
                 // Continuous small spawn when near
-                if (Math.random() < 0.1) this.spawnSparkles(2);
+                if (Math.random() < 0.1) this.spawnSparkles(2); // visual-only
             }
             this.lastPlayerDist = dist;
         }

@@ -7,7 +7,8 @@
  */
 import { game, syncNestedGameSlices } from './game_runtime';
 import { getLevelSpan } from './depth_layers';
-import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
+import { LEVEL_CONFIG, type LevelConfig } from './level_config';
+import { getJourneyLayout } from './journey_layout';
 import type { LevelEnvironmentPorts } from './level_manager/types';
 import {
     installDeferredSystem,
@@ -100,7 +101,7 @@ export function prefetchLevelSystems(levelIndex: number): void {
 
 /** Ensure systems for a level transition are loaded before startLevel runs. */
 export async function ensureLevelSystemsForLevel(levelIndex: number): Promise<void> {
-    const cfg = LEVEL_CONFIG[levelIndex];
+    const cfg = getJourneyLayout().configs[levelIndex];
     await loadKeys(systemsNeededForLevel(cfg));
 }
 
@@ -111,20 +112,27 @@ export async function ensureSlingableSystems(): Promise<void> {
 
 /** Prefetch the next level chunk when the player is ~75% through the current segment. */
 export function maybePrefetchNextLevel(playerX: number, currentLevel: number): void {
-    if (currentLevel >= 6) return;
-    const { startX, length } = getLevelSpan(currentLevel);
+    const nextLevel = getJourneyLayout().next(currentLevel);
+    if (nextLevel === null) return;
+    const { startX, endX, length } = getLevelSpan(currentLevel);
     const progress = length > 0 ? (playerX - startX) / length : 0;
     if (progress >= 0.75) {
-        prefetchLevelSystems(currentLevel + 1);
+        prefetchLevelSystems(nextLevel);
     }
-    const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[currentLevel];
-    if (nextBoundary !== undefined && playerX > nextBoundary - length * 0.15) {
-        prefetchLevelSystems(currentLevel + 1);
+    if (playerX > endX - length * 0.15) {
+        prefetchLevelSystems(nextLevel);
     }
 }
 
 export function isGameplayReady(): boolean {
     return loaded.size > 0 || systemsNeededForLevel(LEVEL_CONFIG[1]).every((k) => loaded.has(k));
+}
+
+/** True when every deferred chunk a chapter needs is installed (startLevel can run synchronously). */
+export function areLevelSystemsLoaded(levelIndex: number): boolean {
+    const cfg = getJourneyLayout().configs[levelIndex];
+    if (!cfg) return true;
+    return systemsNeededForLevel(cfg).every((k) => loaded.has(k));
 }
 
 export function isSystemLoaded(key: SystemKey): boolean {

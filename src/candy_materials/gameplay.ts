@@ -21,13 +21,14 @@ import type { CandyFlavor, CandyAsteroidVariant } from './shared';
 import { FLAVORS, CANDY_FLAVOR_COLORS, candyMaterialUniforms, updateCandyMaterialGlobals } from './shared';
 import { createCandyGloss, createGummyTranslucent } from './factories';
 import { retainMaterial, noteMaterialCreated } from '../gpu_resources';
+import { gameplayRandom } from '../run_seed';
 
 export function pickCandyFlavor(): CandyFlavor {
-    return FLAVORS[Math.floor(Math.random() * FLAVORS.length)];
+    return FLAVORS[Math.floor(gameplayRandom('candy') * FLAVORS.length)];
 }
 
 export function pickCandyVariant(): CandyAsteroidVariant {
-    return Math.random() < 0.3 ? 'comet' : 'gummy';
+    return gameplayRandom('candy') < 0.3 ? 'comet' : 'gummy';
 }
 
 const obstacleMaterialCache = new Map<string, THREE.MeshPhysicalMaterial>();

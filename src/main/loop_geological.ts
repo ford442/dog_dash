@@ -9,6 +9,7 @@ import { MagicalEffectType } from '../magical_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { getLevelSpan } from '../depth_layers';
+import { gameplayRandom } from '../run_seed';
 import {
     shouldSpawnStarlightKoi,
     shouldSpawnBubbleCoral,
@@ -37,6 +38,7 @@ import { verletBodyPool } from '../verlet_body_pool';
 import {
     applyEnergyDrain, regenEnergy, CRYO_DURATION
 } from '../geological/flora_gameplay';
+import { scheduleSim } from '../sim_clock';
 
 export function updateLoopGeological(delta: number, time: number): void {
         // --- NEW: Update Geological Objects ---
@@ -90,13 +92,13 @@ export function updateLoopGeological(delta: number, time: number): void {
                                 const geodeTag = (geode.userData.speciesId as string) || 'fracturedGeode';
                                 game.resourceHarvester.harvest(geodeTag, 'destroy', geode.position.clone());
                                 // Release gems (Void Gems) based on quality
-                                const gemCount = Math.floor(3 + Math.random() * 3 * geode.userData.quality);
+                                const gemCount = Math.floor(3 + gameplayRandom('geology') * 3 * geode.userData.quality);
                                 for (let i = 0; i < gemCount; i++) {
                                     // Add small offset
                                     const offset = new THREE.Vector3(
-                                        (Math.random() - 0.5) * 2,
-                                        (Math.random() - 0.5) * 2,
-                                        (Math.random() - 0.5) * 2
+                                        (gameplayRandom('geology') - 0.5) * 2,
+                                        (gameplayRandom('geology') - 0.5) * 2,
+                                        (gameplayRandom('geology') - 0.5) * 2
                                     );
                                     const orbPos = geode.position.clone().add(offset);
                                     // Spawn a valuable floating orb
@@ -237,7 +239,7 @@ export function updateLoopGeological(delta: number, time: number): void {
                         }
     
                         // Visual damage effect (red tint pulse)
-                        if (Math.random() < 0.05 * leechIntensity) {
+                        if (Math.random() < 0.05 * leechIntensity) { // visual-only
                             const rocket = player.children[0];
                             if (rocket) {
                                 rocket.traverse((child: any) => {
@@ -320,7 +322,7 @@ export function updateLoopGeological(delta: number, time: number): void {
                         );
                         activePlayer.position.z += interaction.force.z;
                         activePlayer.position.y += interaction.force.y * 0.35;
-                        if (interaction.hitPoint && Math.random() < 0.25) {
+                        if (interaction.hitPoint && Math.random() < 0.25) { // visual-only
                             game.particleSystem.emit(interaction.hitPoint, 0xcc44ff, 2, 2.0, 0.5);
                         }
                     }
@@ -332,7 +334,7 @@ export function updateLoopGeological(delta: number, time: number): void {
                         playerState.vineBleedTimer = 10;
                         playerState.vineBleedDps = interaction.bleedDamagePerSec;
                         playerState.invincible = true;
-                        setTimeout(() => { playerState.invincible = false; }, 1200);
+                        scheduleSim(1.2, () => { playerState.invincible = false; });
                         game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
                         game.juiceManager.shakeScreen(ShakeType.MEDIUM, 0.5);
                         updateHealthDisplay(playerState);
@@ -347,7 +349,7 @@ export function updateLoopGeological(delta: number, time: number): void {
                     playerState.vineBleedTimer = Math.max(0, playerState.vineBleedTimer - delta);
                     if (!playerState.invincible && playerState.vineBleedDps > 0) {
                         const bleedTick = playerState.vineBleedDps * delta;
-                        if (Math.random() < bleedTick * 0.15) {
+                        if (gameplayRandom('geology') < bleedTick * 0.15) {
                             playerState.health = Math.max(0, playerState.health - 1);
                             game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
                             updateHealthDisplay(playerState);
@@ -444,7 +446,7 @@ export function updateLoopGeological(delta: number, time: number): void {
                 if (tick.globHit && player && !playerState.invincible) {
                     playerState.health = Math.max(0, playerState.health - 1);
                     playerState.invincible = true;
-                    setTimeout(() => { playerState.invincible = false; }, 900);
+                    scheduleSim(0.9, () => { playerState.invincible = false; });
                     game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
                     updateHealthDisplay(playerState);
                 }
@@ -510,12 +512,12 @@ export function updateLoopGeological(delta: number, time: number): void {
                         }
                     }
                     // Inflow particles — emit from random field-edge position toward core
-                    if (Math.random() < 0.08) {
+                    if (Math.random() < 0.08) { // visual-only
                         const inflowColor: number = (anchor.userData.inflowColor as number) ?? 0x4466ff;
                         const fieldR = (anchor.userData.fieldRadius as number) ?? 40;
                         // Random point on the field sphere surface
-                        const theta = Math.random() * Math.PI * 2;
-                        const phi   = Math.acos(2 * Math.random() - 1);
+                        const theta = Math.random() * Math.PI * 2; // visual-only
+                        const phi   = Math.acos(2 * Math.random() - 1); // visual-only
                         const spawnPos = new THREE.Vector3(
                             anchor.position.x + fieldR * 0.7 * Math.sin(phi) * Math.cos(theta),
                             anchor.position.y + fieldR * 0.7 * Math.sin(phi) * Math.sin(theta),
@@ -525,7 +527,7 @@ export function updateLoopGeological(delta: number, time: number): void {
                         const inwardDir = new THREE.Vector3()
                             .subVectors(anchor.position, spawnPos)
                             .normalize()
-                            .multiplyScalar(2.5 + Math.random() * 1.5);
+                            .multiplyScalar(2.5 + Math.random() * 1.5); // visual-only
                         game.particleSystem.emit(spawnPos, inflowColor, 1, inwardDir.length(), 0.35);
                     }
     

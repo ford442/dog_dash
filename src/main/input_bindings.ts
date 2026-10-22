@@ -11,13 +11,16 @@ import {
     createHeatBar, createBoostDisplay, createRollDisplay,
     createBarkDisplay, createTetherDisplay, createCoresDisplay, createGrenadeDisplay
 } from './hud_displays';
-import { throwGrenade } from './grenade';
 import { RESOLUTION_RATIOS } from './render_helpers';
-import { ensureGameplayReady } from '../level_systems_loader';
+import { ensureGameplayReady, ensureLevelSystemsForLevel } from '../level_systems_loader';
 import { consumePendingStartChapter } from '../hub_pending_chapter';
 import { consumePendingRunSeed, parseSeedFromUrl } from '../hub_pending_seed';
-import { beginRun, createDefaultRunSeed, getRunRng } from '../run_seed';
+import { beginRun, createDefaultRunSeed, getRunRng, type RunSeed } from '../run_seed';
+import { consumeEndlessSeedFromHash } from '../endless/seed';
+import { CAMPAIGN_LAYOUT, getJourneyLayout, setJourneyLayout, type JourneyLayout } from '../journey_layout';
+import { hasDebugUrlFlag } from '../renderer_mode';
 import { biomeNoise } from '../biome_noise';
+import { resetSimClock } from '../sim_clock';
 import {
     ghostRunRecorder,
     ghostRunReplayer,
@@ -27,32 +30,100 @@ import {
 import { getLevelSpan } from '../depth_layers';
 import { spawnDeferredPrototypeContent, spawnDeferredVideoStars } from './startup';
 import { ensureBestiaryUi, prefetchMetaUi } from '../meta_ui_loader';
+import { restartRun } from './restart_run';
 
 async function beginGameplay(): Promise<void> {
+    const endlessSeed = consumeEndlessSeedFromHash();
+    const urlSeed = parseSeedFromUrl();
+    const pendingSeed = consumePendingRunSeed();
+    let seed = endlessSeed ?? urlSeed ?? pendingSeed ?? createDefaultRunSeed();
+
+    // Endless is post-campaign: a shared #endless link on a save that has not
+    // reached the Moon starts the campaign instead (?debug skips the check).
+    if (seed.campaignId === 'endless' && !hasDebugUrlFlag('debug')) {
+        const { endlessUnlockState } = await import('../endless/unlock');
+        if (!endlessUnlockState(game.saveManager).unlocked) {
+            console.warn('[endless] Endless Dash unlocks after the campaign; starting the campaign.');
+            seed = createDefaultRunSeed();
+        }
+    }
+
+    // An Architect course that fails its schema or budget never starts (fail
+    // closed): say why on the HUD and fly the campaign instead.
+    if (seed.campaignId === 'architect') {
+        const { resolveArchitectRun } = await import('../architect/run');
+        const resolved = resolveArchitectRun(seed);
+        if (!resolved.ok) {
+            console.warn(`[architect] ${resolved.reason} Starting the campaign.`);
+            game.hudManager.showNotice(`🏗️ ${resolved.reason}`);
+            seed = createDefaultRunSeed();
+        }
+    }
+
+    // A hub "Go to chapter" request survives the reload via localStorage.
+    const pending = consumePendingStartChapter();
+    await startRun(seed, pending, { loadGhost: true });
+}
+
+/**
+ * Seeds the run, loads the systems the first chapter needs and starts the
+ * level. Shared by the title-screen click and the headless replay harness,
+ * which passes its fixture seed and chapter directly (no URL, no hub
+ * localStorage, no ghost overlay).
+ */
+export async function startRun(
+    seed: RunSeed,
+    requestedChapter: number | null,
+    options: {
+        loadGhost: boolean;
+        /** Journey to fly instead of the one the seed implies (headless coverage runs). */
+        layout?: JourneyLayout;
+    }
+): Promise<void> {
+    // The journey this run flies: the campaign, the Endless chapter sequence
+    // generated from the seed, or an Architect sandbox course (both
+    // code-split; never loaded otherwise).
+    if (options.layout) {
+        setJourneyLayout(options.layout);
+    } else if (seed.campaignId === 'endless') {
+        const { createEndlessLayout } = await import('../endless/layout');
+        setJourneyLayout(createEndlessLayout(seed.rngSeed));
+    } else if (seed.campaignId === 'architect') {
+        const { createArchitectRunLayout } = await import('../architect/run');
+        setJourneyLayout(createArchitectRunLayout(seed));
+    } else {
+        setJourneyLayout(CAMPAIGN_LAYOUT);
+    }
+    const layout = getJourneyLayout();
+    game.hudManager.setJourneyTicksVisible(layout.mode === 'campaign');
+
     await ensureGameplayReady();
-    void spawnDeferredPrototypeContent();
+    if (layout.mode !== 'campaign') await ensureLevelSystemsForLevel(layout.firstChapter);
+    // Seed before the prototype set-pieces so their anchors, tarsiers and
+    // slingables draw from the run streams. Awaited (not fire-and-forget) so
+    // they exist before the first sim step on every machine.
+    beginRun(seed);
+    await spawnDeferredPrototypeContent();
     void spawnDeferredVideoStars();
     prefetchMetaUi();
 
-    const urlSeed = parseSeedFromUrl();
-    const pendingSeed = consumePendingRunSeed();
-    const seed = urlSeed ?? pendingSeed ?? createDefaultRunSeed();
-    beginRun(seed);
     biomeNoise.bindRunSeed(seed.rngSeed);
     game.activeRunSeed = seed;
     game.runRng = getRunRng();
+    resetSimClock();
 
     ghostRunRecorder.begin(seed);
-    const prevGhost = loadGhostRecording();
+    const prevGhost = options.loadGhost ? loadGhostRecording() : null;
     if (prevGhost && ghostMatchesSeed(prevGhost, seed)) {
         ghostRunReplayer.setRecording(prevGhost);
     } else {
         ghostRunReplayer.setRecording(null);
     }
 
-    // A hub "Go to chapter" request survives the reload via localStorage.
-    const pending = consumePendingStartChapter();
-    const startChapter = pending && game.saveManager.isLevelUnlocked(pending) ? pending : 1;
+    const startChapter = layout.mode !== 'campaign'
+        ? layout.firstChapter
+        : requestedChapter && game.saveManager.isLevelUnlocked(requestedChapter) ? requestedChapter : 1;
+    ghostRunRecorder.setStartChapter(startChapter);
     // The journey is one continuous run (player.x 0->5200), so launching a
     // later chapter means placing the rocket at that chapter's start X.
     if (startChapter > 1 && player) {
@@ -91,7 +162,7 @@ const instructions = document.getElementById('instructions');
 export function setupInputBindings(): void {
     setupKeyboardControls({
         getPlayer: () => player,
-        weaponSystem: game.weaponSystem,
+        requestFire: () => { game.wantsFire = true; },
         reEntrySystem: game.reEntrySystem
     });
 
@@ -109,7 +180,7 @@ export function setupInputBindings(): void {
             createRollDisplay();
             createBarkDisplay();
             createTetherDisplay();
-            createGrenadeDisplay(() => throwGrenade());
+            createGrenadeDisplay(() => { game.wantsGrenade = true; });
 
             const rollStyle = document.createElement('style');
             rollStyle.textContent = `
@@ -137,7 +208,7 @@ export function setupInputBindings(): void {
                 setIsGamePaused(true);
                 game.hudManager.showPauseMenu(
                     () => { setIsGamePaused(false); },
-                    () => { location.reload(); }
+                    restartRun
                 );
             }
         }
@@ -255,7 +326,8 @@ export function setupInputBindings(): void {
 
     window.addEventListener('keydown', (e) => {
         if (e.code === 'KeyG' && !e.repeat && gameStarted) {
-            throwGrenade();
+            // Latched; loop_core throws it at the top of the next sim step.
+            game.wantsGrenade = true;
         }
     });
 

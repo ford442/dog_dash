@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { color, time, sin, float, vec4, mix, uniform } from 'three/tsl';
+import { getSimTime } from './sim_clock';
 
 /**
  * Creates a TSL material for the plasma bolt.
@@ -74,7 +75,7 @@ export class Projectile {
         this.mesh.position.addScaledVector(this.velocity, delta);
 
         // Flicker light
-        this.light.intensity = 1.5 + Math.random();
+        this.light.intensity = 1.5 + Math.random(); // visual-only
     }
 
     setColor(hex: number) {
@@ -91,7 +92,7 @@ export class WeaponSystem {
     uProjectileColor: any;
 
     // Cooldown logic
-    lastFireTime: number = 0;
+    lastFireTime: number = -Infinity;
     fireRate: number = 0.15; // Seconds between shots
 
     constructor(scene: THREE.Scene) {
@@ -116,7 +117,9 @@ export class WeaponSystem {
     }
 
     fire(position: THREE.Vector3, forwardDirection: THREE.Vector3) {
-        const now = Date.now() / 1000;
+        // Sim time, not Date.now(): the cooldown must gate the same shots in a
+        // headless replay and at any display refresh rate.
+        const now = getSimTime();
         if (now - this.lastFireTime < this.fireRate) return;
         this.lastFireTime = now;
 

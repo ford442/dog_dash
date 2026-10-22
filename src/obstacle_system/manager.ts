@@ -59,6 +59,9 @@ export class ObstacleSystem implements ObstacleSystemHost {
     grazeWindowBonusTimer = 0;
 
     level6KrakenSpawned = false;
+    /** triggerX of the last Endless Kraken gate spawned, and that gate's Kraken. */
+    private krakenGateX: number | null = null;
+    private krakenGateSquid: NebulaKraken | null = null;
 
     constructor(options: ObstacleSystemOptions) {
         this.options = options;
@@ -234,8 +237,11 @@ export class ObstacleSystem implements ObstacleSystemHost {
         const currentLevel = this.options.getCurrentLevel();
         // L6 capstone is the Star-Eater Pitcher (boss_system); Kraken still spawns randomly elsewhere.
         const isLevel6Capstone = false;
+        // Endless Dash Kraken boss gate: one scripted Kraken once the player passes triggerX.
+        const gate = currentCfg?.bossEncounter?.kind === 'kraken' ? currentCfg.bossEncounter : undefined;
+        const isKrakenGate = gate !== undefined && this.krakenGateX !== gate.triggerX && playerX > gate.triggerX;
 
-        if (isLevel6Capstone || (squidRate > 0 && this.squids.length === 0 && obstacleRng().chance(squidRate))) {
+        if (isLevel6Capstone || isKrakenGate || (squidRate > 0 && this.squids.length === 0 && obstacleRng().chance(squidRate))) {
             const spawnX = playerX + 55;
             const spawnY = (obstacleRng().random() - 0.5) * 12;
             const squid = new NebulaKraken({
@@ -245,6 +251,10 @@ export class ObstacleSystem implements ObstacleSystemHost {
             }, spawnX, spawnY);
             if (isLevel6Capstone) {
                 this.level6KrakenSpawned = true;
+            }
+            if (isKrakenGate) {
+                this.krakenGateX = gate.triggerX;
+                this.krakenGateSquid = squid;
             }
             this.squids.push(squid);
         }
@@ -452,5 +462,10 @@ export class ObstacleSystem implements ObstacleSystemHost {
 
     getSquids(): NebulaKraken[] {
         return this.squids;
+    }
+
+    /** The Kraken spawned by the current Endless boss gate (null outside one). */
+    getKrakenGateSquid(): NebulaKraken | null {
+        return this.krakenGateSquid;
     }
 }

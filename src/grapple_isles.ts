@@ -42,21 +42,21 @@ export class GrappleIslesSystem {
 
             const dummy = new THREE.Object3D();
             for (let j = 0; j < params.count; j++) {
-                const x = (Math.random() - 0.5) * params.width;
-                const y = (Math.random() - 0.5) * 40;
+                const x = (Math.random() - 0.5) * params.width; // visual-only
+                const y = (Math.random() - 0.5) * 40; // visual-only
 
                 // Random scale
-                const s = 4 + Math.random() * 8 + (i * 2); // Foreground islands are larger
+                const s = 4 + Math.random() * 8 + (i * 2); // visual-only; Foreground islands are larger
                 dummy.position.set(x, y, params.z);
 
                 // Random rotation
                 dummy.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
+                    Math.random() * Math.PI, // visual-only
+                    Math.random() * Math.PI, // visual-only
+                    Math.random() * Math.PI // visual-only
                 );
 
-                dummy.scale.set(s, s * (0.6 + Math.random() * 0.4), s);
+                dummy.scale.set(s, s * (0.6 + Math.random() * 0.4), s); // visual-only
                 dummy.updateMatrix();
                 mesh.setMatrixAt(j, dummy.matrix);
             }
@@ -169,13 +169,14 @@ export class GrappleIslesSystem {
         }
     }
 
+    /**
+     * Level-start reset (LevelManager.disposeLevelStreamingResources runs it
+     * right after the env plugins activate). The four layer meshes are a
+     * fixed pool built once and reused by every activation, so they stay:
+     * disposing them here left `update()` indexing an empty pool while active.
+     */
     cleanup() {
-        decorationBudget.syncCount('grapple_isles', 0);
-        this.layerMeshes.forEach(mesh => {
-            this.scene.remove(mesh);
-            mesh.geometry.dispose();
-            (mesh.material as any).dispose?.();
-        });
-        this.layerMeshes = [];
+        const total = this.active ? this.layerMeshes.reduce((sum, m) => sum + m.count, 0) : 0;
+        decorationBudget.syncCount('grapple_isles', total);
     }
 }

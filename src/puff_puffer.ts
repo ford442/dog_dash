@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ParticleSystem } from './particles';
 import { AudioSystem } from './audio_system';
 import { CreatureInteractionResult } from './creature_types';
+import { gameplayRandom } from './run_seed';
 
 type PufferState = 'idle' | 'inflating' | 'puffed' | 'deflating';
 
@@ -196,7 +197,7 @@ export class PuffPuffer {
                 drift: new THREE.Vector3(
                     Math.cos(angle) * 0.4,
                     Math.sin(angle) * 0.25,
-                    (Math.random() - 0.5) * 0.2
+                    (gameplayRandom('creatures') - 0.5) * 0.2
                 )
             });
         }

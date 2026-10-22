@@ -26,6 +26,12 @@ jobs:
       - name: Unit tests
         run: npm run test:unit
 
+      - name: Math.random gate
+        run: npm run check:math-random
+
+      - name: Headless chapter replays (seed + input trace, no GPU)
+        run: npm run test:replay
+
       - name: Build (brace check, WASM, Vite)
         run: npm run build
 

@@ -18,6 +18,7 @@ import {
 } from './hud_elements';
 import { HUDScreens } from './hud_screens';
 import { ensureJourneyMap } from '../meta_ui_loader';
+import { getJourneyLayout } from '../journey_layout';
 import type { JourneyMapMode, JourneyMapSnapshot } from '../journey_map/types';
 
 export class HUDManager {
@@ -258,6 +259,13 @@ export class HUDManager {
         }
     }
 
+    /** The bar's tick marks are campaign chapter boundaries; an Endless run hides them. */
+    setJourneyTicksVisible(visible: boolean): void {
+        document.querySelectorAll<HTMLElement>('.hud-journey-tick').forEach((tick) => {
+            tick.style.display = visible ? '' : 'none';
+        });
+    }
+
     updateJourneyProgress(percent: number, level: number): void {
         const clamped = Math.min(100, Math.max(0, percent));
 
@@ -268,7 +276,7 @@ export class HUDManager {
         if (rocket) rocket.style.left = `${clamped}%`;
 
         const label = document.getElementById('hud-journey-label');
-        if (label) label.textContent = `Lvl ${level}/6`;
+        if (label) label.textContent = getJourneyLayout().progressLabel(level);
     }
 
     private isMilestone(score: number): boolean {
@@ -468,6 +476,23 @@ export class HUDManager {
         });
         // Acceptance: map visible after victory (2D overlay above the card).
         this.showJourneyMapOverlay('victory');
+    }
+
+    /** Architect sandbox finish line: no Moon and no journey map. */
+    showCourseCompleteScreen(stats: GameStats, onFlyAgain: () => void): void {
+        this.screens.showVictoryScreen(stats, {
+            title: 'Course Complete! 🏁',
+            message: 'You flew your very own course! 🏗️🐕',
+            playAgainLabel: '🔁 Fly it again',
+            onPlayAgain: onFlyAgain,
+            hubLabel: '🏗️ Back to the Lab',
+            onOpenHub: this.openHub ? () => this.openHub!('victory') : undefined
+        });
+    }
+
+    /** Short HUD banner, e.g. why a shared Architect course was refused. */
+    showNotice(text: string, seconds = 7): void {
+        this.screens.showNotice(text, seconds);
     }
 
     /** Open the Moon Journey Map (2D DOM overlay — safe for WebGL2 fallback). */

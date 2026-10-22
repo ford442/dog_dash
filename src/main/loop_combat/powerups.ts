@@ -5,6 +5,7 @@ import { game } from '../../game_runtime';
 import { PowerUpType } from '../../powerup_manager';
 import { MagicalEffectType } from '../../magical_effects';
 import { CollisionLayer } from '../../spatial_index';
+import { gameplayRandom } from '../../run_seed';
 
 function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
     const hits = game.spatialIndex.query(playerPos.x, playerPos.y, playerPos.z, radius, CollisionLayer.Obstacle);
@@ -16,7 +17,7 @@ function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
         if (obsRadius >= 1.2) continue;
 
         const pastelColors = [0xffb6c1, 0xffc0cb, 0xe6e6fa, 0xb0e0e6, 0x98fb98];
-        const candyColor = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+        const candyColor = pastelColors[Math.floor(Math.random() * pastelColors.length)]; // visual-only
         (obs.material as THREE.MeshStandardMaterial).color.setHex(candyColor);
         (obs.material as THREE.MeshStandardMaterial).emissive.setHex(candyColor);
         (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.3;
@@ -25,7 +26,7 @@ function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
         game.particleSystem.emit(obs.position.clone(), candyColor, 5, 3.0, 0.4, 0.6);
         game.particleSystem.emit(obs.position.clone(), 0xffffff, 3, 2.0, 0.3, 0.4);
 
-        if (obsRadius < 0.6 && Math.random() < 0.05) {
+        if (obsRadius < 0.6 && gameplayRandom('powerups') < 0.05) {
             game.particleSystem.emit(obs.position.clone(), candyColor, 10, 4.0, 0.6, 1.0);
             game.obstacleSystem.splitAsteroid(obs);
             game.audioSystem.playMagicSound('happy');
@@ -88,7 +89,7 @@ function applyCandyVortex(playerPos: THREE.Vector3, delta: number): void {
 
         if (dist < 6) {
             const pastelColors = [0xff6b6b, 0xffffff, 0x00ff00];
-            const color = pastelColors[Math.floor(Math.random() * pastelColors.length)];
+            const color = pastelColors[Math.floor(Math.random() * pastelColors.length)]; // visual-only
             game.particleSystem.emit(obs.position.clone(), color, 6, 4.0, 0.5, 0.5);
             if (dist < 3 && (obs.userData.radius || 1) < 1.0) {
                 game.obstacleSystem.splitAsteroid(obs);

@@ -4,6 +4,7 @@ import type { AudioPort } from '../ports';
 import { CollectibleOrb } from './orb';
 import { OrbType } from './types';
 import { CollisionLayer, type SpatialIndex } from '../spatial_index';
+import { gameplayRandom } from '../run_seed';
 
 /** Manages all collectible orbs in the game */
 export class OrbManager {
@@ -50,7 +51,7 @@ export class OrbManager {
 
     /** Spawn a random orb type */
     spawnRandomOrb(x: number, y: number, z: number = 0): CollectibleOrb {
-        const rand = Math.random();
+        const rand = gameplayRandom('pickups');
         let type: OrbType;
 
         if (rand < 0.05) {

@@ -85,13 +85,13 @@ export class LivingGeodeTitan {
         // --- Inner crystal cluster, lining the inside of the hollow ---
         const crystalMat = createGeodeShellMaterial();
         for (let i = 0; i < 14; i++) {
-            const len = 1.2 + Math.random() * 2.5;
-            const geo = new THREE.ConeGeometry(0.5 + Math.random() * 0.6, len, 6);
+            const len = 1.2 + Math.random() * 2.5; // visual-only
+            const geo = new THREE.ConeGeometry(0.5 + Math.random() * 0.6, len, 6); // visual-only
             const crystal = new THREE.Mesh(geo, crystalMat.clone());
 
             // Scatter on the inner shell surface, pointing inward toward center
-            const phi = Math.random() * Math.PI * 1.5;
-            const theta = Math.random() * Math.PI;
+            const phi = Math.random() * Math.PI * 1.5; // visual-only
+            const theta = Math.random() * Math.PI; // visual-only
             const r = this.OUTER_RADIUS * 0.85;
             const px = r * Math.sin(theta) * Math.cos(phi);
             const py = r * Math.cos(theta);
