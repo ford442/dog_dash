@@ -807,6 +807,16 @@ export function createDimensionalFracturesSystemStub(): import('./dimensional_fr
     } as unknown as import('./dimensional_fractures').DimensionalFracturesSystem;
 }
 
+export function createCosmicStringHorizonsSystemStub(): import('./cosmic_string_horizons').CosmicStringHorizonsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
+        cleanup: () => { }
+    } as unknown as import('./cosmic_string_horizons').CosmicStringHorizonsSystem;
+}
+
 export function createQuantumSingularityCoreSystemStub(): import('./quantum_singularity_core').QuantumSingularityCoreSystem {
     return {
         active: false,

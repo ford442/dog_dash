@@ -178,6 +178,7 @@ export type LevelEnvironments = {
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    cosmicStringHorizons?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     /**
      * Parallax ribbon/veil sheets (one 8-instance layer); uses level skyColors.
      * Off on every level — the sheets are large, overdrawing and read as

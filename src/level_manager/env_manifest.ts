@@ -1215,6 +1215,23 @@ export const dimensionalFractures = defineEnvSystem<'dimensionalFractures'>({
     deactivate: (host) => host.dimensionalFracturesSystem.deactivate()
 });
 
+export const cosmicStringHorizons = defineEnvSystem<'cosmicStringHorizons'>({
+    flag: 'cosmicStringHorizons',
+    label: 'Cosmic String Horizons',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 2,
+    budget: { category: 'background3d', instances: 10 },
+    load: () => import('../cosmic_string_horizons'),
+    install: (ctx, mod) => {
+        const { CosmicStringHorizonsSystem } = mod as typeof import('../cosmic_string_horizons');
+        ctx.installEnvPartial({ cosmicStringHorizonsSystem: new CosmicStringHorizonsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.cosmicStringHorizonsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.cosmicStringHorizonsSystem.deactivate()
+});
+
 export const quantumSingularityCore = defineEnvSystem<'quantumSingularityCore'>({
     flag: 'quantumSingularityCore',
     label: 'Quantum Singularity Core',
@@ -1336,6 +1353,7 @@ export const ENV_SYSTEM_MANIFEST = [
     etherealSupernovaRemnants,
     quantumSingularityCore,
     dimensionalFractures,
+    cosmicStringHorizons,
     quantumFoamBubbles,
 ] as const;
 

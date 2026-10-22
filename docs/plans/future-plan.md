@@ -306,3 +306,12 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Surrounding accretion disk uses flat `THREE.PlaneGeometry` with extreme centrifugal animated textures.
 - Animates based on `time` and aggressively distorts stars/nebulae behind it via depth/UV warping.
 - Integrated via LevelManager to serve as a deep-space hazard or central background feature in climax levels.
+33. Cosmic String Horizons
+
+**The Technique:** Massive vibrating cosmic strings that stretch across the observable universe, distorting space and emitting strange energy pulses. Built using `InstancedMesh` with elongated geometries and custom TSL `MeshBasicNodeMaterial` for shimmering, vibrating waves.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.CylinderGeometry` (or thin stretched box geometry) to represent the strings.
+- Custom `MeshBasicNodeMaterial` driving high-frequency sinusoidal vibrations, procedural noise for energy bursts, and chromatic aberration at the edges.
+- Animates based on `time` with intense localized energy spikes that scroll along the string length.
+- Integrated via LevelManager to serve as a deep-space background feature for highly volatile cosmic levels.
