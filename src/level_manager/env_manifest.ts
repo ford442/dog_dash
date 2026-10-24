@@ -1232,6 +1232,23 @@ export const cosmicStringHorizons = defineEnvSystem<'cosmicStringHorizons'>({
     deactivate: (host) => host.cosmicStringHorizonsSystem.deactivate()
 });
 
+export const etherealPrismaticRibbons = defineEnvSystem<'etherealPrismaticRibbons'>({
+    flag: 'etherealPrismaticRibbons',
+    label: 'Ethereal Prismatic Ribbons',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon', 'iridescent'],
+    difficultyWeight: 2,
+    budget: { category: 'background3d', instances: 12 },
+    load: () => import('../ethereal_prismatic_ribbons'),
+    install: (ctx, mod) => {
+        const { EtherealPrismaticRibbonsSystem } = mod as typeof import('../ethereal_prismatic_ribbons');
+        ctx.installEnvPartial({ etherealPrismaticRibbonsSystem: new EtherealPrismaticRibbonsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.etherealPrismaticRibbonsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.etherealPrismaticRibbonsSystem.deactivate()
+});
+
 export const quantumSingularityCore = defineEnvSystem<'quantumSingularityCore'>({
     flag: 'quantumSingularityCore',
     label: 'Quantum Singularity Core',
@@ -1354,6 +1371,7 @@ export const ENV_SYSTEM_MANIFEST = [
     quantumSingularityCore,
     dimensionalFractures,
     cosmicStringHorizons,
+    etherealPrismaticRibbons,
     quantumFoamBubbles,
 ] as const;
 
