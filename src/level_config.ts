@@ -179,6 +179,7 @@ export type LevelEnvironments = {
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     cosmicStringHorizons?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    etherealPrismaticRibbons?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     /**
      * Parallax ribbon/veil sheets (one 8-instance layer); uses level skyColors.
      * Off on every level — the sheets are large, overdrawing and read as
@@ -802,6 +803,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             singingGeodes: { density: 20 },
             quantumMirrors: true,
             cosmicWebFilaments: true,
+            etherealPrismaticRibbons: true,
             echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
             quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
             dimensionalFractures: { density: 1.0, speed: 1.0, color1: 0xff00ff, color2: 0x00ffff },
