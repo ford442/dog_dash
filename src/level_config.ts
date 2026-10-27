@@ -556,7 +556,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             },
             flowerConstellations: true,
             orbitalMegastructures: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
-            ascendantMonoliths: { density: 1.0 }
+            ascendantMonoliths: { density: 1.0 },
+            astralResonanceRings: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff }
         },
         vignettes: {
             roseArches: 1.2

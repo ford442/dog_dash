@@ -116,7 +116,7 @@ export class AstralResonanceRingsSystem {
         this.mesh.instanceMatrix.needsUpdate = true;
         this.scene.add(this.mesh);
 
-        decorationBudget.register('astralResonanceRings', {
+        decorationBudget.register('astral_resonance_rings', {
             label: 'Astral Resonance Rings',
             category: 'background3d',
             maxActive: this.ringCount
@@ -141,14 +141,14 @@ export class AstralResonanceRingsSystem {
             this.mesh.material = mat;
         }
 
-        decorationBudget.syncCount('astralResonanceRings', this.ringCount);
+        decorationBudget.syncCount('astral_resonance_rings', this.ringCount);
     }
 
     deactivate() {
         if (!this.active) return;
         this.active = false;
         this.mesh.visible = false;
-        decorationBudget.syncCount('astralResonanceRings', 0);
+        decorationBudget.syncCount('astral_resonance_rings', 0);
     }
 
     update(delta: number, cameraX: number, playerSpeed: number = 8) {
@@ -207,6 +207,6 @@ export class AstralResonanceRingsSystem {
         } else {
             this.mesh.material.dispose();
         }
-        decorationBudget.syncCount('astralResonanceRings', 0);
+        decorationBudget.syncCount('astral_resonance_rings', 0);
     }
 }
