@@ -122,6 +122,7 @@ export class LevelManager {
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     voidLatticeNetworksSystem: LevelEnvironmentPorts['voidLatticeNetworksSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
+    astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
     radiantHalosSystem: LevelEnvironmentPorts['radiantHalosSystem'];
     quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
@@ -129,6 +130,7 @@ export class LevelManager {
     dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
     cosmicStringHorizonsSystem: LevelEnvironmentPorts['cosmicStringHorizonsSystem'];
     astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
+    etherealPrismaticRibbonsSystem: LevelEnvironmentPorts['etherealPrismaticRibbonsSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
@@ -213,6 +215,7 @@ export class LevelManager {
         this.pulsarLighthouseSystem = options.env.pulsarLighthouseSystem;
         this.voidLatticeNetworksSystem = options.env.voidLatticeNetworksSystem;
         this.echoingVoidRipplesSystem = options.env.echoingVoidRipplesSystem;
+        this.astralResonanceRingsSystem = options.env.astralResonanceRingsSystem;
         this.radiantHalosSystem = options.env.radiantHalosSystem;
         this.quantumFoamBubblesSystem = options.env.quantumFoamBubblesSystem;
         this.etherealSupernovaRemnantsSystem = options.env.etherealSupernovaRemnantsSystem;
@@ -220,6 +223,7 @@ export class LevelManager {
         this.dimensionalFracturesSystem = options.dimensionalFracturesSystem;
         this.cosmicStringHorizonsSystem = options.env.cosmicStringHorizonsSystem;
         this.astralResonanceRingsSystem = options.env.astralResonanceRingsSystem;
+        this.etherealPrismaticRibbonsSystem = options.env.etherealPrismaticRibbonsSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
         this.orbitalMegastructuresSystem = options.env.orbitalMegastructuresSystem;
         this.ascendantMonolithsSystem = options.env.ascendantMonolithsSystem;
@@ -474,12 +478,14 @@ export class LevelManager {
         if (enabled('pulsarLighthouse') && this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.update(delta, cameraX, speed);
         if (enabled('voidLatticeNetworks') && this.voidLatticeNetworksSystem) this.voidLatticeNetworksSystem.update(delta, cameraX, playerPos);
         if (enabled('echoingVoidRipples') && this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.update(delta, cameraX, speed);
+        if (enabled('astralResonanceRings') && this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.update(delta, cameraX, speed);
         if (enabled('radiantHalos') && this.radiantHalosSystem) this.radiantHalosSystem.update(delta, cameraX, speed);
         if (enabled('quantumFoamBubbles') && this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.update(delta, cameraX, speed);
         if (enabled('etherealSupernovaRemnants') && this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.update(delta, cameraX, speed);
         if (enabled('quantumSingularityCore') && this.quantumSingularityCoreSystem) this.quantumSingularityCoreSystem.update(delta, cameraX, speed);
         if (enabled('cosmicStringHorizons') && this.cosmicStringHorizonsSystem) this.cosmicStringHorizonsSystem.update(delta, cameraX, speed);
         if (enabled('astralResonanceRings') && this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.update(delta, cameraX, speed);
+        if (enabled('etherealPrismaticRibbons') && this.etherealPrismaticRibbonsSystem) this.etherealPrismaticRibbonsSystem.update(delta, cameraX, speed);
         if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('orbitalMegastructures') && this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.update(delta, cameraX, speed);
         if (enabled('ascendantMonoliths') && this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.update(delta, cameraX, speed);
@@ -564,12 +570,14 @@ export class LevelManager {
         if (this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.cleanup?.();
         if (this.voidLatticeNetworksSystem) this.voidLatticeNetworksSystem.cleanup?.();
         if (this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.cleanup?.();
+        if (this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.cleanup?.();
         if (this.radiantHalosSystem) this.radiantHalosSystem.cleanup?.();
         if (this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.cleanup?.();
         if (this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.cleanup?.();
         if (this.quantumSingularityCoreSystem) this.quantumSingularityCoreSystem.cleanup?.();
         if (this.cosmicStringHorizonsSystem) this.cosmicStringHorizonsSystem.cleanup?.();
         if (this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.cleanup?.();
+        if (this.etherealPrismaticRibbonsSystem) this.etherealPrismaticRibbonsSystem.cleanup?.();
         if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
         if (this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.cleanup?.();
         if (this.ascendantMonolithsSystem) this.ascendantMonolithsSystem.cleanup?.();

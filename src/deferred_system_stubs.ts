@@ -827,12 +827,41 @@ export function createCosmicStringHorizonsSystemStub(): import('./cosmic_string_
     } as unknown as import('./cosmic_string_horizons').CosmicStringHorizonsSystem;
 }
 
+export function createAstralResonanceRingsSystemStub(): import('./astral_resonance_rings').AstralResonanceRingsSystem {
+    return {
+        activate: () => { },
+        deactivate: () => { },
+        update: () => { },
+        cleanup: () => { }
+    } as unknown as import('./astral_resonance_rings').AstralResonanceRingsSystem;
+}
+
+export function createEtherealPrismaticRibbonsSystemStub(): import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
+        cleanup: () => { }
+    } as unknown as import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem;
+}
+
 export function createQuantumSingularityCoreSystemStub(): import('./quantum_singularity_core').QuantumSingularityCoreSystem {
     return {
         active: false,
         activate: () => { },
         deactivate: () => { },
         update: (delta: number, cameraX: number, playerSpeed: number = 8) => { },
+        cleanup: () => { }
+    } as any;
+}
+
+export function createAstralResonanceRingsSystemStub(): import('./astral_resonance_rings').AstralResonanceRingsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
         cleanup: () => { }
     } as any;
 }

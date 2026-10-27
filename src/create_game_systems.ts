@@ -89,6 +89,7 @@ import {
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
     createEchoingVoidRipplesSystemStub,
+    createAstralResonanceRingsSystemStub,
     createRadiantHalosSystemStub,
     createQuantumFoamBubblesSystemStub,
     createEtherealSupernovaRemnantsSystemStub,
@@ -96,6 +97,7 @@ import {
     createDimensionalFracturesSystemStub,
     createCosmicStringHorizonsSystemStub,
     createAstralResonanceRingsSystemStub,
+    createEtherealPrismaticRibbonsSystemStub,
     createVoidLatticeNetworksSystemStub,
     createCelestialClockworksSystemStub,
     createGalacticLeylinesSystemStub,
@@ -229,6 +231,7 @@ export type GameSystems = {
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
+    astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem;
     radiantHalosSystem: RadiantHalosSystem;
     quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
     etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem;
@@ -236,6 +239,7 @@ export type GameSystems = {
     dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem;
     cosmicStringHorizonsSystem: import('./cosmic_string_horizons').CosmicStringHorizonsSystem;
     astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem;
+    etherealPrismaticRibbonsSystem: import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
     chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem;
@@ -503,6 +507,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
+    const astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem = createAstralResonanceRingsSystemStub();
     const radiantHalosSystem: RadiantHalosSystem = createRadiantHalosSystemStub();
     const quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem = createQuantumFoamBubblesSystemStub() as any;
     const etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem = createEtherealSupernovaRemnantsSystemStub() as any;
@@ -510,6 +515,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem = createDimensionalFracturesSystemStub() as any;
     const cosmicStringHorizonsSystem: import('./cosmic_string_horizons').CosmicStringHorizonsSystem = createCosmicStringHorizonsSystemStub() as any;
     const astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem = createAstralResonanceRingsSystemStub() as any;
+    const etherealPrismaticRibbonsSystem: import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem = createEtherealPrismaticRibbonsSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
     const chronoTesseractsSystem: import('./chrono_tesseracts').ChronoTesseractsSystem = createChronoTesseractsSystemStub();
@@ -599,6 +605,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
+        astralResonanceRingsSystem,
         radiantHalosSystem,
         quantumFoamBubblesSystem,
         etherealSupernovaRemnantsSystem,
@@ -606,6 +613,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dimensionalFracturesSystem,
         cosmicStringHorizonsSystem,
         astralResonanceRingsSystem,
+        etherealPrismaticRibbonsSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
         chronoTesseractsSystem,

@@ -315,3 +315,12 @@ These scenarios demonstrate how technical limitations were overcome with artisti
 - Custom `MeshBasicNodeMaterial` driving high-frequency sinusoidal vibrations, procedural noise for energy bursts, and chromatic aberration at the edges.
 - Animates based on `time` with intense localized energy spikes that scroll along the string length.
 - Integrated via LevelManager to serve as a deep-space background feature for highly volatile cosmic levels.
+34. Ethereal Prismatic Ribbons
+
+**The Technique:** Massive, gently twisting ribbons of pure light that weave through space and shift through prismatic colors. Built using `InstancedMesh` with elongated `THREE.PlaneGeometry` and custom TSL `MeshBasicNodeMaterial` for procedural color shifting and twisting effects.
+
+**Specific Implementation:**
+- Uses `InstancedMesh` with `THREE.PlaneGeometry` configured for flowing shapes across space.
+- Custom `MeshBasicNodeMaterial` driving sinusoidal twisting, procedural folding noise for core glowing, and prismatic color shifts based on UV length and time.
+- Animates based on `time` slowly scrolling left across the screen while twisting majestically along their lengths.
+- Integrated via LevelManager to serve as a majestic, radiant deep-space background feature.

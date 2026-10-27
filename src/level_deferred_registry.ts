@@ -76,6 +76,7 @@ export const DEFERRED_ENV_FLAGS = [
     'orbitalMegastructures',
     'ascendantMonoliths',
     'echoingVoidRipples',
+    'astralResonanceRings',
     'radiantHalos',
     'voidLatticeNetworks',
     'quantumFoamBubbles',
@@ -84,6 +85,7 @@ export const DEFERRED_ENV_FLAGS = [
     'dimensionalFractures',
     'cosmicStringHorizons',
     'astralResonanceRings',
+    'etherealPrismaticRibbons',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -192,6 +194,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     orbitalMegastructures: 'orbitalMegastructures',
     ascendantMonoliths: 'ascendantMonoliths',
     echoingVoidRipples: 'echoingVoidRipples',
+    astralResonanceRings: 'astralResonanceRings',
     radiantHalos: 'radiantHalos',
     voidLatticeNetworks: 'voidLatticeNetworks',
     quantumFoamBubbles: 'quantumFoamBubbles',
@@ -200,6 +203,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     dimensionalFractures: 'dimensionalFractures',
     cosmicStringHorizons: 'cosmicStringHorizons',
     astralResonanceRings: 'astralResonanceRings',
+    etherealPrismaticRibbons: 'etherealPrismaticRibbons',
 };
 
 /** Pure load predicates for non-env deferred systems. */

@@ -125,13 +125,15 @@ export type LevelEnvironmentPorts = {
     cosmicWebFilamentsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     pulsarLighthouseSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     echoingVoidRipplesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
+    astralResonanceRingsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     radiantHalosSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     quantumFoamBubblesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     etherealSupernovaRemnantsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     quantumSingularityCoreSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     dimensionalFracturesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerSpeed?: number) => void; cleanup: () => void; };
     cosmicStringHorizonsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
-    astralResonanceRingsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
+    astralResonanceRingsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerSpeed?: number) => void; cleanup: () => void; };
+    etherealPrismaticRibbonsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     ascendantMonolithsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -192,6 +194,7 @@ export type LevelManagerOptions = {
     cosmicWebFilamentsSystem: LevelEnvironmentPorts['cosmicWebFilamentsSystem'];
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
+    astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
     radiantHalosSystem: LevelEnvironmentPorts['radiantHalosSystem'];
     quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
@@ -199,6 +202,7 @@ export type LevelManagerOptions = {
     dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
     cosmicStringHorizonsSystem: LevelEnvironmentPorts['cosmicStringHorizonsSystem'];
     astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
+    etherealPrismaticRibbonsSystem: LevelEnvironmentPorts['etherealPrismaticRibbonsSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];
     ascendantMonolithsSystem: LevelEnvironmentPorts['ascendantMonolithsSystem'];
