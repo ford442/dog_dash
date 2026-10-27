@@ -84,6 +84,7 @@ export const DEFERRED_ENV_FLAGS = [
     'dimensionalFractures',
     'cosmicStringHorizons',
     'astralResonanceRings',
+    'etherealPrismaticRibbons',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 /** Environment flags constructed eagerly at bootstrap (stub or full). */
@@ -200,6 +201,7 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     dimensionalFractures: 'dimensionalFractures',
     cosmicStringHorizons: 'cosmicStringHorizons',
     astralResonanceRings: 'astralResonanceRings',
+    etherealPrismaticRibbons: 'etherealPrismaticRibbons',
 };
 
 /** Pure load predicates for non-env deferred systems. */

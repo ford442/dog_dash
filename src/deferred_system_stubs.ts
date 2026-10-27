@@ -826,6 +826,16 @@ export function createAstralResonanceRingsSystemStub(): import('./astral_resonan
     } as unknown as import('./astral_resonance_rings').AstralResonanceRingsSystem;
 }
 
+export function createEtherealPrismaticRibbonsSystemStub(): import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
+        cleanup: () => { }
+    } as unknown as import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem;
+}
+
 export function createQuantumSingularityCoreSystemStub(): import('./quantum_singularity_core').QuantumSingularityCoreSystem {
     return {
         active: false,
