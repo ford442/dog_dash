@@ -807,6 +807,16 @@ export function createDimensionalFracturesSystemStub(): import('./dimensional_fr
     } as unknown as import('./dimensional_fractures').DimensionalFracturesSystem;
 }
 
+export function createAstralResonanceRingsSystemStub(): import('./astral_resonance_rings').AstralResonanceRingsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
+        cleanup: () => { }
+    } as unknown as import('./astral_resonance_rings').AstralResonanceRingsSystem;
+}
+
 export function createCosmicStringHorizonsSystemStub(): import('./cosmic_string_horizons').CosmicStringHorizonsSystem {
     return {
         active: false,
