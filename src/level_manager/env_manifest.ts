@@ -922,6 +922,23 @@ export const voidLatticeNetworks = defineEnvSystem<'voidLatticeNetworks'>({
     deactivate: (host) => host.voidLatticeNetworksSystem.deactivate()
 });
 
+export const astralResonanceRings = defineEnvSystem<'astralResonanceRings'>({
+    flag: 'astralResonanceRings',
+    label: 'Astral Resonance Rings',
+    role: 'backdrop',
+    biomes: ['nebula'],
+    paletteTags: ['neon'],
+    difficultyWeight: 1,
+    budget: { category: 'background3d', instances: 15 },
+    load: () => import('../astral_resonance_rings'),
+    install: (ctx, mod) => {
+        const { AstralResonanceRingsSystem } = mod as typeof import('../astral_resonance_rings');
+        ctx.installEnvPartial({ astralResonanceRingsSystem: new AstralResonanceRingsSystem(ctx.scene) });
+    },
+    activate: (host, value) => host.astralResonanceRingsSystem.activate(objectConfig(value)),
+    deactivate: (host) => host.astralResonanceRingsSystem.deactivate()
+});
+
 export const echoingVoidRipples = defineEnvSystem<'echoingVoidRipples'>({
     flag: 'echoingVoidRipples',
     label: 'Echoing Void Ripples',
@@ -1365,6 +1382,7 @@ export const ENV_SYSTEM_MANIFEST = [
     orbitalMegastructures,
     ascendantMonoliths,
     echoingVoidRipples,
+    astralResonanceRings,
     radiantHalos,
     voidLatticeNetworks,
     etherealSupernovaRemnants,

@@ -89,6 +89,7 @@ import {
     createStardustVortexSystemStub,
     createBioluminescentSporesSystemStub,
     createEchoingVoidRipplesSystemStub,
+    createAstralResonanceRingsSystemStub,
     createRadiantHalosSystemStub,
     createQuantumFoamBubblesSystemStub,
     createEtherealSupernovaRemnantsSystemStub,
@@ -229,6 +230,7 @@ export type GameSystems = {
     orbitalMegastructuresSystem: OrbitalMegastructuresSystem;
     ascendantMonolithsSystem: AscendantMonolithsSystem;
     echoingVoidRipplesSystem: EchoingVoidRipplesSystem;
+    astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem;
     radiantHalosSystem: RadiantHalosSystem;
     quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem;
     etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem;
@@ -503,6 +505,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const orbitalMegastructuresSystem: OrbitalMegastructuresSystem = createOrbitalMegastructuresSystemStub();
     const ascendantMonolithsSystem: AscendantMonolithsSystem = createAscendantMonolithsSystemStub();
     const echoingVoidRipplesSystem: EchoingVoidRipplesSystem = createEchoingVoidRipplesSystemStub();
+    const astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem = createAstralResonanceRingsSystemStub();
     const radiantHalosSystem: RadiantHalosSystem = createRadiantHalosSystemStub();
     const quantumFoamBubblesSystem: import('./quantum_foam_bubbles').QuantumFoamBubblesSystem = createQuantumFoamBubblesSystemStub() as any;
     const etherealSupernovaRemnantsSystem: import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem = createEtherealSupernovaRemnantsSystemStub() as any;
@@ -599,6 +602,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         orbitalMegastructuresSystem,
         ascendantMonolithsSystem,
         echoingVoidRipplesSystem,
+        astralResonanceRingsSystem,
         radiantHalosSystem,
         quantumFoamBubblesSystem,
         etherealSupernovaRemnantsSystem,
