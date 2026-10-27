@@ -236,6 +236,7 @@ function createLevelManager(
             quantumSingularityCoreSystem: systems.quantumSingularityCoreSystem,
             dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
             cosmicStringHorizonsSystem: systems.cosmicStringHorizonsSystem,
+            astralResonanceRingsSystem: systems.astralResonanceRingsSystem,
             magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
@@ -338,6 +339,7 @@ function createLevelManager(
         quantumSingularityCoreSystem: systems.quantumSingularityCoreSystem,
         dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
         cosmicStringHorizonsSystem: systems.cosmicStringHorizonsSystem,
+        astralResonanceRingsSystem: systems.astralResonanceRingsSystem,
         magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem

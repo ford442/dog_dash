@@ -817,6 +817,15 @@ export function createCosmicStringHorizonsSystemStub(): import('./cosmic_string_
     } as unknown as import('./cosmic_string_horizons').CosmicStringHorizonsSystem;
 }
 
+export function createAstralResonanceRingsSystemStub(): import('./astral_resonance_rings').AstralResonanceRingsSystem {
+    return {
+        activate: () => { },
+        deactivate: () => { },
+        update: () => { },
+        cleanup: () => { }
+    } as unknown as import('./astral_resonance_rings').AstralResonanceRingsSystem;
+}
+
 export function createQuantumSingularityCoreSystemStub(): import('./quantum_singularity_core').QuantumSingularityCoreSystem {
     return {
         active: false,
