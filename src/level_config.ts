@@ -176,6 +176,7 @@ export type LevelEnvironments = {
     quantumSingularityCore?: { density?: number, color1?: number, color2?: number, speed?: number } | boolean;
     dimensionalFractures?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    astralResonanceRings?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     cosmicStringHorizons?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
@@ -472,7 +473,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             },
             flowerConstellations: true,
             hideAndSeekStars: true,
-            magneticPlasmaArcs: { density: 1.5, speed: 1.2 }
+            magneticPlasmaArcs: { density: 1.5, speed: 1.2 },
+            astralResonanceRings: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x8800ff }
         },
         vignettes: {
             geodeClearings: 0.5
