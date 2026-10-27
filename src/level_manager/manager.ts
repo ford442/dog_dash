@@ -122,6 +122,7 @@ export class LevelManager {
     pulsarLighthouseSystem: LevelEnvironmentPorts['pulsarLighthouseSystem'];
     voidLatticeNetworksSystem: LevelEnvironmentPorts['voidLatticeNetworksSystem'];
     echoingVoidRipplesSystem: LevelEnvironmentPorts['echoingVoidRipplesSystem'];
+    astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
     radiantHalosSystem: LevelEnvironmentPorts['radiantHalosSystem'];
     quantumFoamBubblesSystem: LevelEnvironmentPorts['quantumFoamBubblesSystem'];
     etherealSupernovaRemnantsSystem: LevelEnvironmentPorts['etherealSupernovaRemnantsSystem'];
@@ -213,6 +214,7 @@ export class LevelManager {
         this.pulsarLighthouseSystem = options.env.pulsarLighthouseSystem;
         this.voidLatticeNetworksSystem = options.env.voidLatticeNetworksSystem;
         this.echoingVoidRipplesSystem = options.env.echoingVoidRipplesSystem;
+        this.astralResonanceRingsSystem = options.env.astralResonanceRingsSystem;
         this.radiantHalosSystem = options.env.radiantHalosSystem;
         this.quantumFoamBubblesSystem = options.env.quantumFoamBubblesSystem;
         this.etherealSupernovaRemnantsSystem = options.env.etherealSupernovaRemnantsSystem;
@@ -474,6 +476,7 @@ export class LevelManager {
         if (enabled('pulsarLighthouse') && this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.update(delta, cameraX, speed);
         if (enabled('voidLatticeNetworks') && this.voidLatticeNetworksSystem) this.voidLatticeNetworksSystem.update(delta, cameraX, playerPos);
         if (enabled('echoingVoidRipples') && this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.update(delta, cameraX, speed);
+        if (enabled('astralResonanceRings') && this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.update(delta, cameraX, speed);
         if (enabled('radiantHalos') && this.radiantHalosSystem) this.radiantHalosSystem.update(delta, cameraX, speed);
         if (enabled('quantumFoamBubbles') && this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.update(delta, cameraX, speed);
         if (enabled('etherealSupernovaRemnants') && this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.update(delta, cameraX, speed);
@@ -564,6 +567,7 @@ export class LevelManager {
         if (this.pulsarLighthouseSystem) this.pulsarLighthouseSystem.cleanup?.();
         if (this.voidLatticeNetworksSystem) this.voidLatticeNetworksSystem.cleanup?.();
         if (this.echoingVoidRipplesSystem) this.echoingVoidRipplesSystem.cleanup?.();
+        if (this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.cleanup?.();
         if (this.radiantHalosSystem) this.radiantHalosSystem.cleanup?.();
         if (this.quantumFoamBubblesSystem) this.quantumFoamBubblesSystem.cleanup?.();
         if (this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.cleanup?.();

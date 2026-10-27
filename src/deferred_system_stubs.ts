@@ -837,6 +837,16 @@ export function createQuantumSingularityCoreSystemStub(): import('./quantum_sing
     } as any;
 }
 
+export function createAstralResonanceRingsSystemStub(): import('./astral_resonance_rings').AstralResonanceRingsSystem {
+    return {
+        active: false,
+        activate: () => { },
+        deactivate: () => { },
+        update: (delta: number, cameraX: number, playerSpeed?: number) => { },
+        cleanup: () => { }
+    } as any;
+}
+
 export function createEtherealSupernovaRemnantsSystemStub(): import('./ethereal_supernova_remnants').EtherealSupernovaRemnantsSystem {
     return {
         active: false,

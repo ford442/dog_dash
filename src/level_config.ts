@@ -169,6 +169,7 @@ export type LevelEnvironments = {
     biological?: boolean;
     nebula?: boolean;
     echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    astralResonanceRings?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     radiantHalos?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     voidLatticeNetworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
@@ -804,6 +805,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             quantumMirrors: true,
             cosmicWebFilaments: true,
             etherealPrismaticRibbons: true,
+            astralResonanceRings: true,
             echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
             quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
             dimensionalFractures: { density: 1.0, speed: 1.0, color1: 0xff00ff, color2: 0x00ffff },
