@@ -221,7 +221,6 @@ export class LevelManager {
         this.quantumSingularityCoreSystem = options.env.quantumSingularityCoreSystem;
         this.dimensionalFracturesSystem = options.dimensionalFracturesSystem;
         this.cosmicStringHorizonsSystem = options.env.cosmicStringHorizonsSystem;
-        this.astralResonanceRingsSystem = options.env.astralResonanceRingsSystem;
         this.etherealPrismaticRibbonsSystem = options.env.etherealPrismaticRibbonsSystem;
         this.magneticPlasmaArcsSystem = options.env.magneticPlasmaArcsSystem;
         this.orbitalMegastructuresSystem = options.env.orbitalMegastructuresSystem;
@@ -483,7 +482,6 @@ export class LevelManager {
         if (enabled('etherealSupernovaRemnants') && this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.update(delta, cameraX, speed);
         if (enabled('quantumSingularityCore') && this.quantumSingularityCoreSystem) this.quantumSingularityCoreSystem.update(delta, cameraX, speed);
         if (enabled('cosmicStringHorizons') && this.cosmicStringHorizonsSystem) this.cosmicStringHorizonsSystem.update(delta, cameraX, speed);
-        if (enabled('astralResonanceRings') && this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.update(delta, cameraX, speed);
         if (enabled('etherealPrismaticRibbons') && this.etherealPrismaticRibbonsSystem) this.etherealPrismaticRibbonsSystem.update(delta, cameraX, speed);
         if (enabled('magneticPlasmaArcs') && this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.update(delta, cameraX, speed);
         if (enabled('orbitalMegastructures') && this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.update(delta, cameraX, speed);
@@ -575,7 +573,6 @@ export class LevelManager {
         if (this.etherealSupernovaRemnantsSystem) this.etherealSupernovaRemnantsSystem.cleanup?.();
         if (this.quantumSingularityCoreSystem) this.quantumSingularityCoreSystem.cleanup?.();
         if (this.cosmicStringHorizonsSystem) this.cosmicStringHorizonsSystem.cleanup?.();
-        if (this.astralResonanceRingsSystem) this.astralResonanceRingsSystem.cleanup?.();
         if (this.etherealPrismaticRibbonsSystem) this.etherealPrismaticRibbonsSystem.cleanup?.();
         if (this.magneticPlasmaArcsSystem) this.magneticPlasmaArcsSystem.cleanup?.();
         if (this.orbitalMegastructuresSystem) this.orbitalMegastructuresSystem.cleanup?.();

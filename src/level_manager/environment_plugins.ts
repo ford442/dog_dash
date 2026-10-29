@@ -91,7 +91,6 @@ const PLUGIN_ORDER = [
     'dimensionalFractures',
     'cosmicStringHorizons',
     'etherealPrismaticRibbons',
-    'celestialClockworks'
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
 export function buildEnvironmentPlugins(

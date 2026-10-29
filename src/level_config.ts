@@ -805,7 +805,6 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             singingGeodes: { density: 20 },
             quantumMirrors: true,
             cosmicWebFilaments: true,
-            astralResonanceRings: true,
             etherealPrismaticRibbons: true,
             echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
             quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
