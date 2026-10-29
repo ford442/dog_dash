@@ -13,6 +13,8 @@ import { sporeClouds } from '../environment';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { saveLastRunSummary } from '../run_seed/save_last_run';
+import { getSimTime } from '../sim_clock';
+import { restartRun } from './restart_run';
 
 export function handleGameOver(): void {
     saveLastRunSummary();
@@ -26,7 +28,7 @@ export function handleGameOver(): void {
         distance: player ? Math.floor(player.position.x) : 0,
         orbsCollected: playerState.cores,
         powerUpsUsed: 0
-    }, () => location.reload());
+    }, restartRun);
 }
 
 export function createObstacleSystem(systems: {
@@ -67,7 +69,7 @@ export function createObstacleSystem(systems: {
         updateHealthDisplay: () => updateHealthDisplay(playerState),
         gameOver: handleGameOver,
         onPlayerHit: () => {
-            game.lastPlayerDamageTime = performance.now() * 0.001;
+            game.lastPlayerDamageTime = getSimTime();
             if (player) {
                 game.dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
                 game.juiceManager.shakeScreen(ShakeType.HEAVY);

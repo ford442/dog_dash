@@ -78,7 +78,7 @@ export class LiquidMetalBlob {
         this.splitTimer = 5.0; // Seconds before re-merge complete
 
         // Spawn droplets
-        const count = 5 + Math.floor(Math.random() * 4);
+        const count = 5 + Math.floor(Math.random() * 4); // visual-only
         const volumePerDroplet = (this.baseSize * this.baseSize * this.baseSize) / count;
         const dropletRadius = Math.cbrt(volumePerDroplet);
 
@@ -91,10 +91,10 @@ export class LiquidMetalBlob {
 
             // Random explosion velocity + impact influence
             const explosion = new THREE.Vector3(
-                (Math.random() - 0.5),
-                (Math.random() - 0.5),
-                (Math.random() - 0.5)
-            ).normalize().multiplyScalar(5.0 + Math.random() * 5.0);
+                (Math.random() - 0.5), // visual-only
+                (Math.random() - 0.5), // visual-only
+                (Math.random() - 0.5) // visual-only
+            ).normalize().multiplyScalar(5.0 + Math.random() * 5.0); // visual-only
 
             // Add some of the impact
             const impactDir = impactVelocity.clone().normalize().multiplyScalar(2.0);

@@ -100,6 +100,10 @@ export type RunState = {
     wasTouchBarking: boolean;
     wantsTether: boolean;
     wantsReleaseTether: boolean;
+    /** Keyboard fire, latched until the next sim step (see sim_input.ts). */
+    wantsFire: boolean;
+    /** Grenade key / HUD tap, latched until the next sim step. */
+    wantsGrenade: boolean;
 };
 
 /** Combat systems grouped on `game.combat` (still mirrored on the flat bag). */
@@ -336,6 +340,8 @@ export function createGameContextFrameState(): Pick<
     | 'wasTouchBarking'
     | 'wantsTether'
     | 'wantsReleaseTether'
+    | 'wantsFire'
+    | 'wantsGrenade'
     | 'reportComboObjectiveProgress'
     | 'handleGameOver'
     | 'rewireSlingableCallbacks'
@@ -386,6 +392,8 @@ export function createGameContextFrameState(): Pick<
         wasTouchBarking: false,
         wantsTether: false,
         wantsReleaseTether: false,
+        wantsFire: false,
+        wantsGrenade: false,
         reportComboObjectiveProgress: () => {},
         handleGameOver: () => {},
         rewireSlingableCallbacks: () => {},

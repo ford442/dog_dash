@@ -14,6 +14,7 @@ import { createIridescentCrystal, createCandyGloss } from './candy_materials';
 import type { AudioSystem } from './audio_system';
 import { decorationBudget } from './decoration_budget';
 import { markShared, noteGeometryCreated, noteMaterialCreated } from './gpu_resources';
+import { gameplayRandom } from './run_seed';
 
 const MAX_CHIMES = 8;
 const MAX_PENDANTS = 6;
@@ -102,9 +103,9 @@ class WindChimeMobile {
 
     constructor(x: number, y: number, z: number) {
         this.position = new THREE.Vector3(x, y, z);
-        this.phase = Math.random() * Math.PI * 2;
-        this.spinSpeed = 0.12 + Math.random() * 0.22;
-        this.noteSet = Math.floor(Math.random() * NOTE_SETS.length);
+        this.phase = Math.random() * Math.PI * 2; // visual-only
+        this.spinSpeed = 0.12 + Math.random() * 0.22; // visual-only
+        this.noteSet = Math.floor(Math.random() * NOTE_SETS.length); // visual-only
         this.accentColor = CRYSTAL_COLORS[this.noteSet % CRYSTAL_COLORS.length];
 
         this.group = new THREE.Group();
@@ -121,12 +122,12 @@ class WindChimeMobile {
         ring.rotation.x = Math.PI / 2;
         this.rotator.add(ring);
 
-        const pendantCount = 4 + Math.floor(Math.random() * 3);
+        const pendantCount = 4 + Math.floor(Math.random() * 3); // visual-only
         for (let i = 0; i < pendantCount; i++) {
-            const angle = (i / pendantCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.25;
-            const hangRadius = 0.22 + Math.random() * 0.14;
-            const length = 0.55 + Math.random() * 0.75;
-            const useCandy = Math.random() < 0.22;
+            const angle = (i / pendantCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.25; // visual-only
+            const hangRadius = 0.22 + Math.random() * 0.14; // visual-only
+            const length = 0.55 + Math.random() * 0.75; // visual-only
+            const useCandy = Math.random() < 0.22; // visual-only
 
             const pivot = new THREE.Group();
             pivot.position.set(
@@ -147,7 +148,7 @@ class WindChimeMobile {
                     : CRYSTAL_MATERIALS[i % CRYSTAL_MATERIALS.length]
             );
             prismMesh.position.y = -length;
-            prismMesh.rotation.y = Math.random() * Math.PI;
+            prismMesh.rotation.y = Math.random() * Math.PI; // visual-only
             pivot.add(prismMesh);
 
             this.pendants.push({
@@ -155,8 +156,8 @@ class WindChimeMobile {
                 stringMesh,
                 prismMesh,
                 length,
-                swayPhase: Math.random() * Math.PI * 2,
-                swaySpeed: 0.9 + Math.random() * 0.8
+                swayPhase: Math.random() * Math.PI * 2, // visual-only
+                swaySpeed: 0.9 + Math.random() * 0.8 // visual-only
             });
         }
     }
@@ -206,7 +207,7 @@ class WindChimeMobile {
         const speed = playerVel?.length() ?? 0;
         const pitchShift = 1 + playerPos.y * 0.0015 + speed * 0.004;
         const notes = NOTE_SETS[this.noteSet];
-        const noteCount = 2 + Math.floor(Math.random() * 2);
+        const noteCount = 2 + Math.floor(Math.random() * 2); // visual-only
         const picked = notes.slice(0, noteCount);
 
         if (audio) {
@@ -214,13 +215,13 @@ class WindChimeMobile {
         }
 
         if (particles) {
-            const sparkleCount = 1 + Math.floor(Math.random() * 2);
+            const sparkleCount = 1 + Math.floor(Math.random() * 2); // visual-only
             for (let s = 0; s < sparkleCount; s++) {
-                const pendant = this.pendants[Math.floor(Math.random() * this.pendants.length)];
+                const pendant = this.pendants[Math.floor(Math.random() * this.pendants.length)]; // visual-only
                 const sparklePos = _hubPos.clone();
-                sparklePos.y -= pendant.length * (0.4 + Math.random() * 0.5);
-                sparklePos.x += (Math.random() - 0.5) * 0.35;
-                sparklePos.z += (Math.random() - 0.5) * 0.35;
+                sparklePos.y -= pendant.length * (0.4 + Math.random() * 0.5); // visual-only
+                sparklePos.x += (Math.random() - 0.5) * 0.35; // visual-only
+                sparklePos.z += (Math.random() - 0.5) * 0.35; // visual-only
                 particles.emit(sparklePos, this.accentColor, 1, 2.2, 0.2, 0.55);
             }
         }
@@ -274,8 +275,8 @@ export class WindChimeManager {
         ];
 
         for (let i = 0; i < count; i++) {
-            const x = startX + 40 + Math.random() * Math.max(30, width - 70);
-            const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+            const x = startX + 40 + gameplayRandom('environment') * Math.max(30, width - 70);
+            const y = yRange[0] + gameplayRandom('environment') * (yRange[1] - yRange[0]);
             const z = randomZInRange(zRange);
             this.spawnChime(x, y, z);
         }
@@ -291,8 +292,8 @@ export class WindChimeManager {
         if (density <= 0 || length <= 0) return;
         const target = Math.min(MAX_CHIMES, Math.max(1, Math.floor(density * (length / UNITS_PER_SLICE))));
         for (let i = 0; i < target && this.chimes.length < MAX_CHIMES; i++) {
-            const x = startX + 60 + Math.random() * Math.max(40, length - 120);
-            const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+            const x = startX + 60 + gameplayRandom('environment') * Math.max(40, length - 120);
+            const y = yRange[0] + gameplayRandom('environment') * (yRange[1] - yRange[0]);
             const z = randomZInRange([DEPTH_LAYERS.MIDGROUND.min, DEPTH_LAYERS.BACKGROUND.max]);
             this.spawnChime(x, y, z);
         }

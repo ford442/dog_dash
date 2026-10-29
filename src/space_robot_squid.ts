@@ -15,6 +15,7 @@ import {
     abs,
     smoothstep
 } from 'three/tsl';
+import { gameplayRandom } from './run_seed';
 
 // ============================================================================
 // NEBULA KRAKEN — Giant Biomechanical Space Robot Squid
@@ -337,29 +338,29 @@ export class NebulaKraken {
         }
 
         // Mysterious AI decision-making
-        const roll = Math.random();
+        const roll = gameplayRandom('enemies');
 
         if (recentlyHurt && roll < 0.4) {
             // Sometimes retreats after damage, sometimes gets angry
             this.personality = roll < 0.2 ? 'retreating' : 'aggressive';
-            this.personalityDuration = 2.0 + Math.random() * 2.0;
+            this.personalityDuration = 2.0 + gameplayRandom('enemies') * 2.0;
         } else if (dist > 25 && roll < 0.6) {
             // Far from player: curious approach or quiet observation
             this.personality = roll < 0.3 ? 'curious' : 'observing';
-            this.personalityDuration = 3.0 + Math.random() * 3.0;
+            this.personalityDuration = 3.0 + gameplayRandom('enemies') * 3.0;
         } else if (dist < 15 && hpRatio < 0.5) {
             // Close and hurt: unpredictable
             const moods: PersonalityState[] = ['aggressive', 'contemplating', 'retreating', 'curious'];
-            this.personality = moods[Math.floor(Math.random() * moods.length)];
-            this.personalityDuration = 1.5 + Math.random() * 2.0;
+            this.personality = moods[Math.floor(gameplayRandom('enemies') * moods.length)];
+            this.personalityDuration = 1.5 + gameplayRandom('enemies') * 2.0;
         } else if (roll < 0.15) {
             // Rare contemplation pause – the squid seems to think
             this.personality = 'contemplating';
-            this.personalityDuration = 2.0 + Math.random() * 4.0;
+            this.personalityDuration = 2.0 + gameplayRandom('enemies') * 4.0;
         } else {
             // Default aggressive/curious cycle
             this.personality = roll < 0.5 ? 'aggressive' : 'curious';
-            this.personalityDuration = 2.0 + Math.random() * 3.0;
+            this.personalityDuration = 2.0 + gameplayRandom('enemies') * 3.0;
         }
     }
 
@@ -411,8 +412,8 @@ export class NebulaKraken {
                 this.group.position.x += Math.sign(dx) * 14 * delta;
                 this.group.position.y += Math.sign(dy) * 8 * delta;
                 // Jittering from damage / rage
-                this.group.position.x += (Math.random() - 0.5) * 0.5;
-                this.group.position.y += (Math.random() - 0.5) * 0.5;
+                this.group.position.x += (gameplayRandom('enemies') - 0.5) * 0.5;
+                this.group.position.y += (gameplayRandom('enemies') - 0.5) * 0.5;
                 break;
         }
     }
@@ -499,30 +500,30 @@ export class NebulaKraken {
         switch (this.currentPhase) {
             case 1:
                 // Phase 1: Void Sweep – menacing drift, occasional particles
-                if (Math.random() < 0.005) {
+                if (Math.random() < 0.005) { // visual-only
                     this.emitPurpleParticles(6, 3.0);
                 }
                 break;
 
             case 2:
                 // Phase 2: Ink Protocol – release ink clouds that obscure vision
-                if (this.inkCooldown <= 0 && Math.random() < 0.015) {
+                if (this.inkCooldown <= 0 && gameplayRandom('enemies') < 0.015) {
                     this.releaseInkCloud();
                     this.inkCooldown = 4.0; // 4-second cooldown between ink bursts
                 }
                 // Constant dripping particles
-                if (Math.random() < 0.02) {
+                if (Math.random() < 0.02) { // visual-only
                     this.emitPurpleParticles(3, 2.0);
                 }
                 break;
 
             case 3:
                 // Phase 3: Frenzy – hull fractures, intense energy release
-                if (Math.random() < 0.04) {
+                if (Math.random() < 0.04) { // visual-only
                     this.emitPurpleParticles(12, 6.0);
                 }
                 // EMP-like energy bursts
-                if (this.inkCooldown <= 0 && Math.random() < 0.02) {
+                if (this.inkCooldown <= 0 && gameplayRandom('enemies') < 0.02) {
                     this.releaseEnergyBurst(playerX, playerY);
                     this.inkCooldown = 2.0;
                 }
@@ -533,8 +534,8 @@ export class NebulaKraken {
     /** Emit purple particles from the body */
     private emitPurpleParticles(count: number, speed: number): void {
         const pos = this.group.position.clone().add(new THREE.Vector3(
-            (Math.random() - 0.5) * 4,
-            (Math.random() - 0.5) * 3,
+            (Math.random() - 0.5) * 4, // visual-only
+            (Math.random() - 0.5) * 3, // visual-only
             0
         ));
         this.options.particleSystem.emit(pos, COLOR_NEON_PURPLE, count, speed, 1.5, 1.2);
@@ -610,8 +611,8 @@ export class NebulaKraken {
             this.currentPhase = 3;
             // Armor plates start to fracture
             this.armorPlates.forEach(plate => {
-                plate.rotation.x += (Math.random() - 0.5) * 0.5;
-                plate.position.y += (Math.random() - 0.5) * 0.3;
+                plate.rotation.x += (Math.random() - 0.5) * 0.5; // visual-only
+                plate.position.y += (Math.random() - 0.5) * 0.3; // visual-only
             });
         }
 
@@ -630,9 +631,9 @@ export class NebulaKraken {
         // Multiple particle bursts in purple
         for (let i = 0; i < 5; i++) {
             const offset = new THREE.Vector3(
-                (Math.random() - 0.5) * 6,
-                (Math.random() - 0.5) * 6,
-                (Math.random() - 0.5) * 2
+                (Math.random() - 0.5) * 6, // visual-only
+                (Math.random() - 0.5) * 6, // visual-only
+                (Math.random() - 0.5) * 2 // visual-only
             );
             const burstPos = this.group.position.clone().add(offset);
             this.options.particleSystem.emit(burstPos, COLOR_NEON_PURPLE, 30, 8.0, 2.0, 2.0);

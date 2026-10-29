@@ -17,6 +17,7 @@ import {
     HackSession, createHackOverlay, createHackPanel, renderMistakePips,
     HACK_ACCENT, HACK_ACCENT_GOOD, HACK_ACCENT_WARN
 } from './hacking_minigame';
+import { gameplayRandom } from './run_seed';
 
 export const BUOY_DOCK_RADIUS = 3;      // plan: 3 m data dock sphere
 export const BUOY_EXTRACTION_TIME = 5;  // plan: 5 s extraction countdown
@@ -51,7 +52,7 @@ export interface MorseSequence {
 export function generateMorseSequence(): MorseSequence {
     // Prefer whole words, but clamp to the plan's 3–7 letter window.
     const pool = BUOY_WORDS.filter(w => w.length >= 3 && w.length <= 7);
-    const word = pool[Math.floor(Math.random() * pool.length)] ?? 'DOG';
+    const word = pool[Math.floor(gameplayRandom('pickups') * pool.length)] ?? 'DOG';
 
     const letters: MorseSymbol[][] = [];
     const symbols: MorseSymbol[] = [];

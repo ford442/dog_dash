@@ -54,34 +54,34 @@ export class CandyParallaxLayer {
         
         // Initialize instances
         for (let i = 0; i < this.count; i++) {
-            const x = (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * 40;
-            const z = this.baseZ + (Math.random() - 0.5) * this.depth;
+            const x = (Math.random() - 0.5) * this.width; // visual-only
+            const y = (Math.random() - 0.5) * 40; // visual-only
+            const z = this.baseZ + (Math.random() - 0.5) * this.depth; // visual-only
             
             this.positions[i * 3] = x;
             this.positions[i * 3 + 1] = y;
             this.positions[i * 3 + 2] = z;
             
-            const rx = Math.random() * Math.PI * 2;
-            const ry = Math.random() * Math.PI * 2;
-            const rz = Math.random() * Math.PI * 2;
+            const rx = Math.random() * Math.PI * 2; // visual-only
+            const ry = Math.random() * Math.PI * 2; // visual-only
+            const rz = Math.random() * Math.PI * 2; // visual-only
             
             this.rotations[i * 3] = rx;
             this.rotations[i * 3 + 1] = ry;
             this.rotations[i * 3 + 2] = rz;
             
-            this.rotationSpeeds[i * 3] = (Math.random() - 0.5) * 0.5;
-            this.rotationSpeeds[i * 3 + 1] = (Math.random() - 0.5) * 0.5;
-            this.rotationSpeeds[i * 3 + 2] = (Math.random() - 0.5) * 0.5;
+            this.rotationSpeeds[i * 3] = (Math.random() - 0.5) * 0.5; // visual-only
+            this.rotationSpeeds[i * 3 + 1] = (Math.random() - 0.5) * 0.5; // visual-only
+            this.rotationSpeeds[i * 3 + 2] = (Math.random() - 0.5) * 0.5; // visual-only
             
             // Store type and flavor
             this.candyTypes.push(this.getRandomType(config.type));
-            this.flavors.push(Object.values(CandyFlavor)[Math.floor(Math.random() * 6)]);
+            this.flavors.push(Object.values(CandyFlavor)[Math.floor(Math.random() * 6)]); // visual-only
             
             this.dummy.position.set(x, y, z);
             this.dummy.rotation.set(rx, ry, rz);
             
-            const scale = 0.5 + Math.random() * 0.8;
+            const scale = 0.5 + Math.random() * 0.8; // visual-only
             this.dummy.scale.setScalar(scale);
             
             this.dummy.updateMatrix();
@@ -172,7 +172,7 @@ private createCandyMaterial(type: string): THREE.Material {
             return configType as CandyType;
         }
         const types = Object.values(CandyType);
-        return types[Math.floor(Math.random() * types.length)];
+        return types[Math.floor(Math.random() * types.length)]; // visual-only
     }
 
     update(delta: number, cameraX: number, playerPos?: THREE.Vector3) {

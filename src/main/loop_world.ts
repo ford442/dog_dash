@@ -29,7 +29,8 @@ import { updateGravLensSystems } from './grav_lens_update';
 import { updateArtifacts } from './artifact_update';
 import { updateDreamPortals } from './dream_portal_update';
 import { updateGalacticCoreEffects } from './galactic_core_update';
-import { ghostRunReplayer } from '../ghost_run';
+import { ghostRunRecorder, ghostRunReplayer } from '../ghost_run';
+import { getSimTime } from '../sim_clock';
 
 export function updateLoopWorld(delta: number, time: number): void {
         // "Path to the Moon" gate animates independently of the planet horizon
@@ -52,7 +53,7 @@ export function updateLoopWorld(delta: number, time: number): void {
 
         if (player && game.debugSystem.isEnabled('ghostReplay')) {
             ghostRunReplayer.setVisible(true);
-            ghostRunReplayer.update(game.clock.getElapsedTime(), scene);
+            ghostRunReplayer.update(ghostRunRecorder.getElapsed(), scene);
         } else {
             ghostRunReplayer.setVisible(false);
         }
@@ -142,7 +143,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                 ...game.dreamPortalSystem.getScannables()
             ]);
             if (game.debugSystem.isEnabled('butterflySwarm')) {
-                const nowSec = performance.now() * 0.001;
+                const nowSec = getSimTime();
                 game.butterflySwarmSystem.update(delta, camera.position.x, player.position, {
                     grazeCombo: game.obstacleSystem.getGrazeCombo(),
                     slingCombo: game.slingComboManager.getCombo(),

@@ -48,10 +48,10 @@ export class HideAndSeekStarsSystem {
         this.instanceData = new Float32Array(this.count * 4);
 
         for (let i = 0; i < this.count; i++) {
-            const x = (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * 60;
-            const z = -30 - Math.random() * 50; // Tucked behind flowers
-            const phase = Math.random() * Math.PI * 2;
+            const x = (Math.random() - 0.5) * this.width; // visual-only
+            const y = (Math.random() - 0.5) * 60; // visual-only
+            const z = -30 - Math.random() * 50; // visual-only: Tucked behind flowers
+            const phase = Math.random() * Math.PI * 2; // visual-only
 
             this.instanceData[i * 4] = x;
             this.instanceData[i * 4 + 1] = y;
@@ -61,8 +61,8 @@ export class HideAndSeekStarsSystem {
             this.dummy.position.set(x, y, z);
 
             // Random initial rotation
-            this.dummy.rotation.x = Math.random() * Math.PI;
-            this.dummy.rotation.y = Math.random() * Math.PI;
+            this.dummy.rotation.x = Math.random() * Math.PI; // visual-only
+            this.dummy.rotation.y = Math.random() * Math.PI; // visual-only
             this.dummy.updateMatrix();
 
             this.mesh.setMatrixAt(i, this.dummy.matrix);

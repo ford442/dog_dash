@@ -2,7 +2,8 @@ import { ShakeType } from '../juice_effects';
 import * as THREE from 'three';
 import type { CloudSystem } from '../clouds';
 import { AtmosphereSystem } from '../sky';
-import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from '../level_config';
+import type { LevelConfig } from '../level_config';
+import { getJourneyLayout } from '../journey_layout';
 import type { IndustrialGeometryManager } from '../industrial_geometry';
 import { getLevelSpan } from '../depth_layers';
 import { playerState } from '../game_config';
@@ -31,11 +32,10 @@ import {
 import type { GeologicalSpawners, GeologicalCounts, LevelManagerOptions, LevelEnvironmentPorts } from './types';
 import { applyEnvironmentPlugins } from './environment_plugins';
 import { maybeStreamFoliage, populateZone } from './foliage_streaming';
-import { ensureLevelSystemsForLevel } from '../level_systems_loader';
+import { areLevelSystemsLoaded, ensureLevelSystemsForLevel } from '../level_systems_loader';
 
 export class LevelManager {
     currentLevel: number;
-    config: { [key: number]: LevelConfig };
     levelObjects: THREE.Object3D[];
     cloudSystem: CloudSystem;
     atmosphereSystem: AtmosphereSystem;
@@ -65,6 +65,8 @@ export class LevelManager {
      *  (reduced hazard density, bonus orbs) toward the level exit is active. */
     fastLaneActive = false;
     private fastLaneDensityFactor = 1.0;
+    /** Chapter whose async chunk load is in flight from checkProgress (null when none). */
+    private pendingLevelStart: number | null = null;
 
     particleSystem: LevelEnvironmentPorts['particleSystem'];
     juiceManager: LevelEnvironmentPorts['juiceManager'];
@@ -249,11 +251,15 @@ export class LevelManager {
         this.friendsManager = options.friendsManager;
         this.industrialGeometryManager = options.industrialGeometryManager;
         this.currentLevel = 1;
-        this.config = LEVEL_CONFIG;
 
         this.levelObjects = [];
         this.lastPopulatedEndX = -Infinity;
         this.objectDensityMultiplier = 1.0;
+    }
+
+    /** Chapter configs of the active journey (campaign `LEVEL_CONFIG` unless an Endless run is active). */
+    get config(): { [key: number]: LevelConfig } {
+        return getJourneyLayout().configs;
     }
 
     /** Wires (or re-wires, after a deferred lightning-bolt chunk swap) the
@@ -261,7 +267,7 @@ export class LevelManager {
     private wireLightningBoltStrike(): void {
         this.lightningBoltSystem.onBoltStrike = (pos, color) => {
             this.cloudSystem.triggerLightningAt(pos, color);
-            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color);
+            this.godRaySystem.triggerLightningFlash(0.5 + Math.random() * 1.5, color); // visual-only
 
             // Add impact effects: subtle screen shake and spark particles
             this.juiceManager.shakeScreen(ShakeType.LIGHT, 0.2);
@@ -338,13 +344,14 @@ export class LevelManager {
             }
         }
 
+        const layout = getJourneyLayout();
         const levelDiv = document.getElementById('level-display');
-        if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${cfg.name}`;
+        if (levelDiv) levelDiv.innerHTML = `${layout.chapterLabel(levelIndex)}: ${cfg.name}`;
         this.onUpdateLevelDisplay?.(levelIndex, cfg.name);
         this.onLevelStart?.(cfg);
 
         // Chapter sonic identity — crossfades from whatever was playing.
-        getAudioSystem().setChapterMusic(levelIndex);
+        getAudioSystem().setChapterMusic(layout.campaignTwin(levelIndex));
         applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
 
         populateZone(this, playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
@@ -383,7 +390,8 @@ export class LevelManager {
         const dreamyEnd = levelEndX - dreamyPadding;
 
 
-        if (levelIndex !== 4 && levelIndex !== 5) {
+        const campaignTwin = layout.campaignTwin(levelIndex);
+        if (campaignTwin !== 4 && campaignTwin !== 5) {
             this.candyManager.clear();
             this.candyManager.generateCandyBelt(
                 dreamyStart,
@@ -515,23 +523,41 @@ export class LevelManager {
     }
 
     checkProgress(playerX: number) {
-        const nextBoundary = LEVEL_DISTANCE_BOUNDARIES[this.currentLevel];
-        if (this.currentLevel < 6 && nextBoundary !== undefined && playerX > nextBoundary) {
-            const nextLevel = this.currentLevel + 1;
+        const layout = getJourneyLayout();
+        const nextLevel = layout.next(this.currentLevel);
+        if (nextLevel !== null && playerX > layout.span(this.currentLevel).endX) {
             // Stinger for the chapter just finished, then the next chapter's
             // bed crossfades in from startLevel.
             const audio = getAudioSystem();
+            // Already prefetched (the normal case — see maybePrefetchNextLevel):
+            // start in this very sim step. Deferring to a promise callback
+            // would land the chapter start on a different step at 30 Hz vs
+            // 144 Hz (the microtask runs after the frame's whole catch-up
+            // batch), breaking seed + input-trace replays.
+            if (areLevelSystemsLoaded(nextLevel)) {
+                this.pendingLevelStart = null;
+                audio.playChapterCompleteStinger();
+                audio.playDogBarkVariant('happy');
+                this.startLevel(nextLevel);
+                return;
+            }
+            // Slow network: chunks still downloading. Start once they land and
+            // don't queue a second start for every step until then. This path
+            // is not step-deterministic; replays preload every chapter.
+            if (this.pendingLevelStart === nextLevel) return;
+            this.pendingLevelStart = nextLevel;
             audio.playChapterCompleteStinger();
             audio.playDogBarkVariant('happy');
             void ensureLevelSystemsForLevel(nextLevel).then(() => {
+                if (this.pendingLevelStart !== nextLevel) return;
+                this.pendingLevelStart = null;
                 this.startLevel(nextLevel);
             });
         }
     }
 
     getJourneyProgress(playerX: number): { percent: number; level: number } {
-        const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
-        const percent = Math.min(100, Math.max(0, (playerX / total) * 100));
+        const percent = getJourneyLayout().progressPercent(playerX, this.currentLevel);
         return { percent, level: this.currentLevel };
     }
 

@@ -5,7 +5,7 @@ import { keys } from '../ui_controls';
 import { touchControls } from '../scene_context';
 import { player } from '../player_loader';
 import { updateHealthDisplay } from '../ui_controls';
-import { LEVEL_DISTANCE_BOUNDARIES } from '../level_config';
+import { getLevelSpan } from '../depth_layers';
 import { gravityAnchors } from '../environment';
 import { showRollPopup, updateBarkDisplay } from './hud_displays';
 import { BARK_RADIUS } from '../bark_blast_system';
@@ -58,7 +58,7 @@ export function updatePlayer(delta: number) {
                 25  // Max boost speed
             );
             // Play boost sound occasionally to avoid spam
-            if (Math.random() < 0.05) {
+            if (Math.random() < 0.05) { // visual-only
                 game.audioSystem.playBoost();
             }
         }
@@ -68,6 +68,13 @@ export function updatePlayer(delta: number) {
             const fireDirection = new THREE.Vector3(1, 0, 0);
             game.weaponSystem.fire(player.position, fireDirection);
         }
+    }
+
+    // Keyboard fire latched by ui_controls; consumed at the same point in
+    // the step as touch fire so replays reproduce the shot exactly.
+    if (game.wantsFire) {
+        game.wantsFire = false;
+        game.weaponSystem.fire(player.position, new THREE.Vector3(1, 0, 0));
     }
     
     if (isMovingUp) {
@@ -206,7 +213,7 @@ export function updatePlayer(delta: number) {
 
             if (isMovingUp) {
                 // Thrusting up / boost → bright, large, flickering green/magenta flame
-                const flicker = 0.9 + Math.random() * 0.3;
+                const flicker = 0.9 + Math.random() * 0.3; // visual-only
                 rocket.userData.flame.scale.set(flicker * 1.5, flicker * 3.0, flicker * 1.5);
                 
                 // Emit engine trail
@@ -214,13 +221,13 @@ export function updatePlayer(delta: number) {
                 exhaustPos.x -= 0.5;
                 exhaustPos.y -= 0.5;
 
-                const isMagenta = Math.random() > 0.5;
+                const isMagenta = Math.random() > 0.5; // visual-only
                 const boostColor = isMagenta ? 0xff00ff : 0x00ffaa;
 
                 game.particleSystem.emit(exhaustPos, boostColor, 2, 6.0, 1.0, 0.3);
             } else if (isMovingDown) {
                 // Diving → dim flame, warm orange to deep red trailing particles
-                const flicker = 0.4 + Math.random() * 0.2;
+                const flicker = 0.4 + Math.random() * 0.2; // visual-only
                 rocket.userData.flame.scale.set(flicker, flicker, flicker);
                 
                 // Extra downward streaks
@@ -236,15 +243,15 @@ export function updatePlayer(delta: number) {
                 game.particleSystem.emit(streakPos, diveColor, emitCount, particleSpeed, 0.5, 0.3);
             } else {
                 // Gliding / idle → smaller, softer flame
-                const flicker = 0.5 + Math.random() * 0.2;
+                const flicker = 0.5 + Math.random() * 0.2; // visual-only
                 rocket.userData.flame.scale.set(flicker, flicker * 1.5, flicker);
 
                 // Cyan/Soft blue trail for glide
                 const glidePos = player.position.clone();
                 glidePos.x -= 0.5;
                 glidePos.y -= 0.1;
-                if (Math.random() < 0.4) {
-                    const glideColor = Math.random() > 0.5 ? 0x00aaff : 0x44ffff;
+                if (Math.random() < 0.4) { // visual-only
+                    const glideColor = Math.random() > 0.5 ? 0x00aaff : 0x44ffff; // visual-only
                     game.particleSystem.emit(glidePos, glideColor, 1, 3.0, 0.6, 0.2);
                 }
             }
@@ -292,17 +299,17 @@ export function updatePlayer(delta: number) {
 
         // Enhanced flame: much larger, brighter
         if (rocket && rocket.userData.flame) {
-            const flicker = 0.9 + Math.random() * 0.4;
+            const flicker = 0.9 + Math.random() * 0.4; // visual-only
             rocket.userData.flame.scale.set(flicker * 2.2, flicker * 5.0, flicker * 2.2);
-            (rocket.userData.flame.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.5 + Math.random() * 1.0;
+            (rocket.userData.flame.material as THREE.MeshStandardMaterial).emissiveIntensity = 2.5 + Math.random() * 1.0; // visual-only
         }
 
         // Bright green/magenta afterburner trail particles for boost cohesiveness
         const exhaustPos = player.position.clone();
         exhaustPos.x -= 0.8;
         const colors = [0x00ffaa, 0x00ff00, 0xff00ff, 0xffffff];
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        game.particleSystem.emit(exhaustPos, color, 2, 6.0 + Math.random() * 2, 0.8, 0.25);
+        const color = colors[Math.floor(Math.random() * colors.length)]; // visual-only
+        game.particleSystem.emit(exhaustPos, color, 2, 6.0 + Math.random() * 2, 0.8, 0.25); // visual-only
 
         // Additional downward streak for contrast (cyan to match the theme)
         const streakPos = player.position.clone();
@@ -375,7 +382,7 @@ export function updatePlayer(delta: number) {
         game.particleSystem.emit(ghostPos, 0xffffff, 1, 2.5, 0.3, 0.15);
 
         // Bright white + cyan burst ring effect
-        if (Math.random() < 0.3) {
+        if (Math.random() < 0.3) { // visual-only
             const ringPos = player.position.clone();
             ringPos.x -= 0.2;
             game.particleSystem.emit(ringPos, 0x88ffff, 2, 5.0, 0.6, 0.2);
@@ -472,8 +479,8 @@ export function updatePlayer(delta: number) {
 
         // Emit particles along the tether beam
         const anchorPos = game.tetherSystem.getAnchorPosition();
-        if (anchorPos && Math.random() < 0.3) {
-            const t = Math.random();
+        if (anchorPos && Math.random() < 0.3) { // visual-only
+            const t = Math.random(); // visual-only
             const beamPoint = player.position.clone().lerp(anchorPos, t);
             game.particleSystem.emit(beamPoint, 0x00ffcc, 1, 2.5, 0.4, 0.15);
         }
@@ -600,9 +607,7 @@ export function updatePlayer(delta: number) {
     {
         const currentCfg = game.levelManager.config[game.levelManager.currentLevel];
         if (currentCfg?.objective?.type === 'survive') {
-            const levelStart = LEVEL_DISTANCE_BOUNDARIES[game.levelManager.currentLevel - 1] ?? 0;
-            const levelEnd = LEVEL_DISTANCE_BOUNDARIES[game.levelManager.currentLevel] ?? (levelStart + currentCfg.distance);
-            const span = levelEnd - levelStart;
+            const { startX: levelStart, length: span } = getLevelSpan(game.levelManager.currentLevel);
             if (span > 0 && player.position.x - levelStart >= span * 0.8) {
                 game.hudManager.updateObjectiveProgress(1, 1);
             }

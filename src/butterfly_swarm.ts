@@ -15,6 +15,7 @@ import {
 import type { ParticleSystem } from './particles';
 import type { AudioSystem } from './audio_system';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 
 /**
  * Butterfly Swarm System for Dog Dash
@@ -117,10 +118,10 @@ function initButterflyInstances(
     const phases = new Float32Array(count);
 
     for (let i = 0; i < count; i++) {
-        const x = (Math.random() - 0.5) * positionSpread.x;
-        const y = (Math.random() - 0.5) * positionSpread.y;
-        const z = (Math.random() - 0.5) * positionSpread.z - 20;
-        const phase = Math.random() * Math.PI * 2;
+        const x = (gameplayRandom('creatures') - 0.5) * positionSpread.x;
+        const y = (gameplayRandom('creatures') - 0.5) * positionSpread.y;
+        const z = (gameplayRandom('creatures') - 0.5) * positionSpread.z - 20;
+        const phase = gameplayRandom('creatures') * Math.PI * 2;
 
         instanceData[i * 4] = x;
         instanceData[i * 4 + 1] = y;
@@ -128,14 +129,14 @@ function initButterflyInstances(
         instanceData[i * 4 + 3] = phase;
 
         dummy.position.set(x, y, z);
-        dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-        const scale = 0.5 + Math.random() * 0.8;
+        dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI); // visual-only
+        const scale = 0.5 + Math.random() * 0.8; // visual-only
         dummy.scale.setScalar(scale);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
 
         phases[i] = phase;
-        const colorHex = palette[Math.floor(Math.random() * palette.length)];
+        const colorHex = palette[Math.floor(Math.random() * palette.length)]; // visual-only
         const colorObj = new THREE.Color(colorHex);
         colors[i * 3] = colorObj.r;
         colors[i * 3 + 1] = colorObj.g;
@@ -318,9 +319,9 @@ export class ButterflySwarmSystem {
             z += (targetZ - z) * delta * 0.5;
 
             if (x < cameraX - 40) {
-                x = cameraX + 60 + Math.random() * 20;
-                y = targetPos.y + (Math.random() - 0.5) * 40;
-                z = targetPos.z + (Math.random() - 0.5) * 40;
+                x = cameraX + 60 + gameplayRandom('creatures') * 20;
+                y = targetPos.y + (gameplayRandom('creatures') - 0.5) * 40;
+                z = targetPos.z + (gameplayRandom('creatures') - 0.5) * 40;
             }
             if (x > cameraX + 80) {
                 x = cameraX - 20;
@@ -379,9 +380,9 @@ export class ButterflySwarmSystem {
         if (slingCombo >= 3) chance += 0.00045;
         if (cleanFlight > 18) chance += 0.00025;
 
-        if (Math.random() >= chance) return;
+        if (gameplayRandom('creatures') >= chance) return;
 
-        const count = 6 + Math.floor(Math.random() * 5);
+        const count = 6 + Math.floor(gameplayRandom('creatures') * 5);
         this._spawnEscortGroup(playerPos, count);
         this.escortSpawnCooldown = ESCORT_SPAWN_COOLDOWN;
 
@@ -403,15 +404,15 @@ export class ButterflySwarmSystem {
 
         for (let i = 0; i < count; i++) {
             const idx = start + i;
-            const phase = Math.random() * Math.PI * 2;
-            const colorHex = palette[Math.floor(Math.random() * palette.length)];
+            const phase = Math.random() * Math.PI * 2; // visual-only
+            const colorHex = palette[Math.floor(Math.random() * palette.length)]; // visual-only
             const color = new THREE.Color(colorHex);
 
             slots.push({
                 phase,
                 orbitOffset: (i / count) * Math.PI * 2,
                 ring: 1.8 + (i % 3) * 0.55,
-                scale: 0.65 + Math.random() * 0.35,
+                scale: 0.65 + Math.random() * 0.35, // visual-only
                 color
             });
 
@@ -425,8 +426,8 @@ export class ButterflySwarmSystem {
             instanceStart: start,
             count,
             slots,
-            timeLeft: ESCORT_DURATION_MIN + Math.random() * (ESCORT_DURATION_MAX - ESCORT_DURATION_MIN),
-            orbitPhase: Math.random() * Math.PI * 2,
+            timeLeft: ESCORT_DURATION_MIN + gameplayRandom('creatures') * (ESCORT_DURATION_MAX - ESCORT_DURATION_MIN),
+            orbitPhase: Math.random() * Math.PI * 2, // visual-only
             hasShield: true,
             dispersing: false,
             disperseTimer: 0

@@ -2,6 +2,9 @@
  * Shared Z-depth bands for side-scroller placement.
  * X = scroll axis, Y = vertical flight, Z = depth (negative = into screen).
  */
+import { getJourneyLayout } from './journey_layout';
+import { gameplayRandom, type GameplayStream } from './run_seed';
+
 export const DEPTH_LAYERS = {
     /** Deepest parallax — galaxies, far castles */
     FAR_BACKGROUND: { min: -80, max: -55 } as const,
@@ -17,20 +20,21 @@ export const DEPTH_LAYERS = {
 
 export type DepthLayer = keyof typeof DEPTH_LAYERS;
 
-export function randomZInLayer(layer: DepthLayer): number {
+/**
+ * Seeded depth picks. Callers placing hazards / pickups pass their own
+ * gameplay stream; decor keeps the default 'environment' stream so its
+ * draw count (which scales with adaptive density) never shifts gameplay rolls.
+ */
+export function randomZInLayer(layer: DepthLayer, stream: GameplayStream = 'environment'): number {
     const band = DEPTH_LAYERS[layer];
-    return band.min + Math.random() * (band.max - band.min);
+    return band.min + gameplayRandom(stream) * (band.max - band.min);
 }
 
-export function randomZInRange(range: readonly [number, number]): number {
-    return range[0] + Math.random() * (range[1] - range[0]);
+export function randomZInRange(range: readonly [number, number], stream: GameplayStream = 'environment'): number {
+    return range[0] + gameplayRandom(stream) * (range[1] - range[0]);
 }
 
-import { LEVEL_DISTANCE_BOUNDARIES } from './level_config';
-
-/** Level segment length from cumulative boundaries. */
+/** Chapter segment of the active journey (campaign boundaries unless an Endless run is active). */
 export function getLevelSpan(levelIndex: number): { startX: number; endX: number; length: number } {
-    const startX = LEVEL_DISTANCE_BOUNDARIES[levelIndex - 1] ?? 0;
-    const endX = LEVEL_DISTANCE_BOUNDARIES[levelIndex] ?? startX;
-    return { startX, endX, length: Math.max(0, endX - startX) };
+    return getJourneyLayout().span(levelIndex);
 }

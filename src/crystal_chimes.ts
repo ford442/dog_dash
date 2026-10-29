@@ -26,6 +26,7 @@ import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import { createIridescentCrystal } from './candy_materials';
 import type { AudioPort } from './ports';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 
 const MAX_CLUSTERS = 12;
 const MAX_RODS_PER_CLUSTER = 7;
@@ -194,8 +195,8 @@ export class CrystalChimeManager {
         ];
 
         for (let i = 0; i < count; i++) {
-            const x = startX + 30 + Math.random() * Math.max(40, width - 60);
-            const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+            const x = startX + 30 + gameplayRandom('flora') * Math.max(40, width - 60);
+            const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
             const z = randomZInRange(zRange);
             this.spawnCluster(x, y, z);
         }
@@ -205,24 +206,24 @@ export class CrystalChimeManager {
         if (this.clusters.length >= MAX_CLUSTERS) return false;
         if (!decorationBudget.canSpawn('crystal_chimes')) return false;
 
-        const rodCount = 3 + Math.floor(Math.random() * 5);
+        const rodCount = 3 + Math.floor(gameplayRandom('flora') * 5);
         if (this.activeRods + rodCount > MAX_ROD_INSTANCES) return false;
         if (!decorationBudget.reportSpawn('crystal_chimes')) return false;
 
         const rodStart = this.activeRods;
-        const colorHex = CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)];
+        const colorHex = CRYSTAL_COLORS[Math.floor(Math.random() * CRYSTAL_COLORS.length)]; // visual-only
         const tint = new THREE.Color(colorHex);
         const rods: RodSlot[] = [];
         let maxHeight = 0;
 
         for (let r = 0; r < rodCount; r++) {
-            const angle = (r / rodCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-            const radius = 0.25 + Math.random() * 0.55;
-            const height = 3.5 + Math.random() * 5.5;
+            const angle = (r / rodCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4; // visual-only
+            const radius = 0.25 + Math.random() * 0.55; // visual-only
+            const height = 3.5 + gameplayRandom('flora') * 5.5;
             maxHeight = Math.max(maxHeight, height);
 
             const idx = rodStart + r;
-            this.rodPhases[idx] = Math.random() * Math.PI * 2;
+            this.rodPhases[idx] = Math.random() * Math.PI * 2; // visual-only
             this.rodTints[idx * 3] = tint.r;
             this.rodTints[idx * 3 + 1] = tint.g;
             this.rodTints[idx * 3 + 2] = tint.b;
@@ -231,14 +232,14 @@ export class CrystalChimeManager {
                 localX: Math.cos(angle) * radius,
                 localZ: Math.sin(angle) * radius,
                 height,
-                phase: Math.random() * Math.PI * 2
+                phase: Math.random() * Math.PI * 2 // visual-only
             });
         }
 
         this.activeRods += rodCount;
 
         const clusterIdx = this.clusters.length;
-        this.nodePhases[clusterIdx] = Math.random() * Math.PI * 2;
+        this.nodePhases[clusterIdx] = Math.random() * Math.PI * 2; // visual-only
         this.nodeTints[clusterIdx * 3] = tint.r;
         this.nodeTints[clusterIdx * 3 + 1] = tint.g;
         this.nodeTints[clusterIdx * 3 + 2] = tint.b;
@@ -250,10 +251,10 @@ export class CrystalChimeManager {
             rodCount,
             rodStart,
             rods,
-            noteSet: Math.floor(Math.random() * NOTE_SETS.length),
-            phase: Math.random() * Math.PI * 2,
+            noteSet: Math.floor(Math.random() * NOTE_SETS.length), // visual-only
+            phase: Math.random() * Math.PI * 2, // visual-only
             maxHeight,
-            triggerRadius: TRIGGER_RADIUS_MIN + Math.random() * (TRIGGER_RADIUS_MAX - TRIGGER_RADIUS_MIN),
+            triggerRadius: TRIGGER_RADIUS_MIN + gameplayRandom('flora') * (TRIGGER_RADIUS_MAX - TRIGGER_RADIUS_MIN),
             cooldown: 0,
             nodePulse: 0
         });
@@ -319,7 +320,7 @@ export class CrystalChimeManager {
 
                 results.push({ type: 'ring', position: _pos.clone() });
 
-                if (Math.random() < 0.14) {
+                if (gameplayRandom('flora') < 0.14) {
                     results.push({
                         type: 'star_bonus',
                         position: _pos.clone(),

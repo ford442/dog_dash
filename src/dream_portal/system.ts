@@ -149,7 +149,7 @@ export class DreamPortalSystem extends DreamPortalRoomOps {
                 theme
             },
             used: false,
-            phase: Math.random() * Math.PI * 2
+            phase: Math.random() * Math.PI * 2 // visual-only
         };
     }
 

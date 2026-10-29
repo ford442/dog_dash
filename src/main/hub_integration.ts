@@ -13,7 +13,8 @@ import {
     createHubScreen,
     setPendingStartChapter,
     type HubMode,
-    type HubRunSummary
+    type HubRunSummary,
+    type HubTab
 } from '../hub_screen';
 import { serializeRunSeed, tryGetRunSeed } from '../run_seed';
 
@@ -34,12 +35,13 @@ export function isHubOpen(): boolean {
     return hubElement !== null;
 }
 
-export function openHubScreen(mode: HubMode): void {
+export function openHubScreen(mode: HubMode, initialTab?: HubTab): void {
     if (hubElement) return;
     setIsGamePaused(true);
 
     hubElement = createHubScreen(game.saveManager, {
         mode,
+        initialTab,
         summary: buildRunSummary(),
         playSound: (name) => game.audioSystem.play(name, 0.6),
         onLaunchChapter: (chapter) => {

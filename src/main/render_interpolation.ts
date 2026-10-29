@@ -47,3 +47,102 @@ export class PositionInterpolator {
         return this.blended.lerpVectors(this.previous, this.current, a);
     }
 }
+
+/**
+ * Beyond this per-step jump the interpolator snaps instead of blending — a
+ * pooled projectile reused at a new muzzle position, or a boss teleport,
+ * must not streak across the screen for one frame.
+ */
+export const DEFAULT_SNAP_DISTANCE = 8;
+
+interface TrackedEntry {
+    readonly previous: THREE.Vector3;
+    readonly current: THREE.Vector3;
+    /** True sim position, saved while the blended pose is drawn. */
+    readonly saved: THREE.Vector3;
+    seenStep: number;
+}
+
+/**
+ * Render interpolation for a changing set of sim-driven objects (plasma
+ * bolts, slingables, the boss). Same contract as PositionInterpolator, but
+ * keyed by Object3D: call beginStep() / record() for every live object /
+ * endStep() once per fixed step, then applyBlend() right before the draw
+ * and restore() right after it.
+ *
+ * Objects not recorded in the latest step are forgotten, so a pooled object
+ * that goes inactive and is later respawned starts fresh at its new spot
+ * rather than blending from where it died.
+ */
+export class ObjectInterpolator {
+    private readonly entries = new Map<THREE.Object3D, TrackedEntry>();
+    private readonly blended: TrackedEntry[] = [];
+    private readonly blendedObjects: THREE.Object3D[] = [];
+    private step = 0;
+
+    constructor(private readonly snapDistance = DEFAULT_SNAP_DISTANCE) {}
+
+    beginStep(): void {
+        this.step++;
+    }
+
+    record(object: THREE.Object3D): void {
+        const position = object.position;
+        let entry = this.entries.get(object);
+        if (!entry) {
+            entry = {
+                previous: position.clone(),
+                current: position.clone(),
+                saved: new THREE.Vector3(),
+                seenStep: this.step
+            };
+            this.entries.set(object, entry);
+            return;
+        }
+        if (entry.current.distanceToSquared(position) > this.snapDistance * this.snapDistance) {
+            entry.previous.copy(position);
+        } else {
+            entry.previous.copy(entry.current);
+        }
+        entry.current.copy(position);
+        entry.seenStep = this.step;
+    }
+
+    endStep(): void {
+        for (const [object, entry] of this.entries) {
+            if (entry.seenStep !== this.step) this.entries.delete(object);
+        }
+    }
+
+    /** Writes the blended pose into each tracked object's position. Pair with restore(). */
+    applyBlend(alpha: number): void {
+        const a = Math.min(1, Math.max(0, alpha));
+        this.blended.length = 0;
+        this.blendedObjects.length = 0;
+        for (const [object, entry] of this.entries) {
+            entry.saved.copy(object.position);
+            object.position.lerpVectors(entry.previous, entry.current, a);
+            this.blended.push(entry);
+            this.blendedObjects.push(object);
+        }
+    }
+
+    /** Puts the true end-of-step sim positions back after the draw. */
+    restore(): void {
+        for (let i = 0; i < this.blendedObjects.length; i++) {
+            this.blendedObjects[i].position.copy(this.blended[i].saved);
+        }
+        this.blended.length = 0;
+        this.blendedObjects.length = 0;
+    }
+
+    reset(): void {
+        this.entries.clear();
+        this.blended.length = 0;
+        this.blendedObjects.length = 0;
+    }
+
+    size(): number {
+        return this.entries.size;
+    }
+}

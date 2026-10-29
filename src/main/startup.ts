@@ -35,6 +35,8 @@ import { jellyMossSoftBody } from '../jelly_moss_softbody';
 import { biomeNoise } from '../biome_noise';
 import { vacuumKelpSoftBody } from '../geological/vacuum_kelp';
 import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
+import { gameplayRandom } from '../run_seed';
+import { getJourneyLayout } from '../journey_layout';
 import { attachPixelRatioDebugSection } from '../pixel_ratio_debug';
 import { indexForPixelRatio, pixelRatioForPreset } from '../pixel_ratio';
 import {
@@ -297,12 +299,12 @@ function createLevelManager(
             }
             if (cfg.objective?.type === 'rescue' && game.levelManager.currentLevel === 3) {
                 const px = player?.position.x ?? 0;
-                game.friendsManager.spawnTrappedLemurIsland(px + 240, 5 + Math.random() * 4, -16 - Math.random() * 8);
+                game.friendsManager.spawnTrappedLemurIsland(px + 240, 5 + gameplayRandom('friends') * 4, -16 - gameplayRandom('friends') * 8);
             }
         },
         onUpdateLevelDisplay: (levelIndex, name) => {
             const levelDiv = document.getElementById('level-display');
-            if (levelDiv) levelDiv.innerHTML = `Level ${levelIndex}: ${name}`;
+            if (levelDiv) levelDiv.innerHTML = `${getJourneyLayout().chapterLabel(levelIndex)}: ${name}`;
         },
         dynamicStarfieldSystem: systems.dynamicStarfieldSystem,
         dayNightCycleSystem: systems.dayNightCycleSystem,
@@ -360,6 +362,18 @@ export async function initializeStartup(): Promise<void> {
         showError('Initialization Error', message);
         throw err;
     }
+
+    await composeGameContext();
+}
+
+/**
+ * Everything after the renderer exists: game systems, managers, level
+ * manager, obstacle system and the installed `GameContext`. Split out of
+ * `initializeStartup` so the headless replay harness
+ * (`tests/replay/headless_sim.ts`) can build the real composition root
+ * without a GPU — nothing below may touch `renderer` at construction time.
+ */
+export async function composeGameContext(options: { headless?: boolean } = {}): Promise<void> {
     const systems = createGameSystems({ scene, camera, playerState });
     bindEnvironmentSystems({
         particleSystem: systems.particleSystem,
@@ -553,6 +567,12 @@ export async function initializeStartup(): Promise<void> {
             }
         }
     });
+
+    // Headless replays await WASM so collision runs on the shipping backend
+    // from step 0; the browser keeps it non-blocking (JS fallback until ready).
+    const wasmReady = loadWasm();
+    if (options.headless) await wasmReady;
+
     void loadWasm();
     onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: unknown) => {
         game.effectManager.setTarget(loadedPlayer);
@@ -567,7 +587,7 @@ export async function initializeStartup(): Promise<void> {
     // Dev / `?debug` only: a handle on the composition root so set-pieces that
     // sit deep in a run (Dream Portals, the Galactic Core approach) can be
     // driven from the console or a browser test without playing to them.
-    if (import.meta.env.DEV || hasDebugUrlFlag('debug')) {
+    if (!options.headless && (import.meta.env.DEV || hasDebugUrlFlag('debug'))) {
         (window as unknown as { dogDash?: unknown }).dogDash = { game, playerState, scene, camera };
     }
 }

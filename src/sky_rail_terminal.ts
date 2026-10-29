@@ -3,6 +3,7 @@ import { disposeObject } from './utils';
 import { time, color, uniform, sin, positionWorld, length, uv, smoothstep } from 'three/tsl';
 import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 
 export interface SkyRailConfig {
     density?: number;
@@ -76,14 +77,14 @@ export class SkyRailTerminalSystem {
 
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.railCount; i++) {
-            const x = (Math.random() - 0.5) * 400;
-            const y = (Math.random() - 0.5) * 40;
-            const z = -20 - Math.random() * 80;
+            const x = (gameplayRandom('environment') - 0.5) * 400;
+            const y = (gameplayRandom('environment') - 0.5) * 40;
+            const z = -20 - gameplayRandom('environment') * 80;
 
             dummy.position.set(x, y, z);
             // Slightly angled rails
-            dummy.rotation.z = (Math.random() - 0.5) * 0.2;
-            dummy.scale.set(1 + Math.random() * 2, 1, 1);
+            dummy.rotation.z = (gameplayRandom('environment') - 0.5) * 0.2;
+            dummy.scale.set(1 + gameplayRandom('environment') * 2, 1, 1);
             dummy.updateMatrix();
             this.railMesh.setMatrixAt(i, dummy.matrix);
         }
@@ -119,13 +120,13 @@ export class SkyRailTerminalSystem {
 
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.terminalCount; i++) {
-            const x = (Math.random() - 0.5) * 400;
-            const y = -10 + (Math.random() - 0.5) * 30;
-            const z = -40 - Math.random() * 60;
+            const x = (gameplayRandom('environment') - 0.5) * 400;
+            const y = -10 + (gameplayRandom('environment') - 0.5) * 30;
+            const z = -40 - gameplayRandom('environment') * 60;
 
             dummy.position.set(x, y, z);
-            dummy.rotation.y = Math.random() * Math.PI;
-            dummy.scale.setScalar(1 + Math.random());
+            dummy.rotation.y = gameplayRandom('environment') * Math.PI;
+            dummy.scale.setScalar(1 + gameplayRandom('environment'));
             dummy.updateMatrix();
             this.terminalMesh.setMatrixAt(i, dummy.matrix);
         }
@@ -180,7 +181,7 @@ export class SkyRailTerminalSystem {
 
             if (position.x < limitBack) {
                 position.x += width + margin * 2;
-                position.y = (Math.random() - 0.5) * 40;
+                position.y = (gameplayRandom('environment') - 0.5) * 40;
             }
 
             dummy.position.copy(position);
@@ -201,7 +202,7 @@ export class SkyRailTerminalSystem {
 
             if (position.x < limitBack) {
                 position.x += width + margin * 2;
-                position.y = -10 + (Math.random() - 0.5) * 30;
+                position.y = -10 + (gameplayRandom('environment') - 0.5) * 30;
             }
 
             dummy.position.copy(position);

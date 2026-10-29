@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { ParticleSystem } from './particles';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import { createCandyGloss, setCandyBaseColor, setCandyEmissive } from './candy_materials';
+import { gameplayRandom } from './run_seed';
 
 const PASTEL_PALETTES = [
     [0xffb6c1, 0xffc0cb, 0xffe4e1, 0xfff0f5], // pink candy
@@ -81,17 +82,17 @@ export class PinwheelFlower {
         this.scene = scene;
         this.position = new THREE.Vector3(x, y, z);
         this.baseY = y;
-        this.phase = Math.random() * Math.PI * 2;
-        this.wobblePhase = Math.random() * Math.PI * 2;
+        this.phase = gameplayRandom('flora') * Math.PI * 2;
+        this.wobblePhase = Math.random() * Math.PI * 2; // visual-only
 
-        const scale = options?.scale ?? (0.85 + Math.random() * 0.55);
-        const bladeCount = options?.bladeCount ?? (4 + Math.floor(Math.random() * 3));
-        this.spinSpeed = options?.spinSpeed ?? (0.6 + Math.random() * 2.8) * (Math.random() < 0.5 ? 1 : -1);
+        const scale = options?.scale ?? (0.85 + gameplayRandom('flora') * 0.55);
+        const bladeCount = options?.bladeCount ?? (4 + Math.floor(Math.random() * 3)); // visual-only
+        this.spinSpeed = options?.spinSpeed ?? (0.6 + gameplayRandom('flora') * 2.8) * (gameplayRandom('flora') < 0.5 ? 1 : -1);
         this.outerRadius = 1.05 * scale;
         this.hubRadius = 0.22 * scale;
-        this.hasHubCollectible = options?.hasHubCollectible ?? Math.random() < 0.15;
+        this.hasHubCollectible = options?.hasHubCollectible ?? gameplayRandom('flora') < 0.15;
 
-        const palette = PASTEL_PALETTES[options?.paletteIndex ?? Math.floor(Math.random() * PASTEL_PALETTES.length)];
+        const palette = PASTEL_PALETTES[options?.paletteIndex ?? Math.floor(Math.random() * PASTEL_PALETTES.length)]; // visual-only
 
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
@@ -129,7 +130,7 @@ export class PinwheelFlower {
 
             const blade = new THREE.Mesh(BLADE_GEOMETRY, bladeMat);
             blade.rotation.z = angle;
-            blade.scale.set(0.75 + Math.random() * 0.2, 0.9 + Math.random() * 0.25, 1);
+            blade.scale.set(0.75 + Math.random() * 0.2, 0.9 + Math.random() * 0.25, 1); // visual-only
             this.rotator.add(blade);
             this.blades.push({ mesh: blade, baseColor, tipColor });
         }
@@ -298,8 +299,8 @@ export class PinwheelFloraManager {
     ): void {
         const count = Math.max(0, Math.floor(length * density * 0.14));
         for (let i = 0; i < count; i++) {
-            const x = startX + 30 + Math.random() * Math.max(40, length - 60);
-            const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
+            const x = startX + 30 + gameplayRandom('flora') * Math.max(40, length - 60);
+            const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
             const z = randomZInRange(zRange);
             this.spawnPinwheel(x, y, z);
         }
@@ -315,9 +316,9 @@ export class PinwheelFloraManager {
         if (density <= 0 || width <= 0) return;
         const count = Math.max(0, Math.floor(width * density * 0.12));
         for (let i = 0; i < count; i++) {
-            const x = startX + Math.random() * width;
-            const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-            const layerRoll = Math.random();
+            const x = startX + gameplayRandom('flora') * width;
+            const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
+            const layerRoll = gameplayRandom('flora');
             const z = layerRoll < 0.35
                 ? randomZInRange([DEPTH_LAYERS.BACKGROUND.min, DEPTH_LAYERS.BACKGROUND.max])
                 : layerRoll < 0.75

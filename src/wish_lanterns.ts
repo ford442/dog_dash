@@ -42,18 +42,18 @@ export class WishLanternSystem {
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.count; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * this.width,
-                (Math.random() - 0.5) * 20,
-                -10 - Math.random() * 40
+                (Math.random() - 0.5) * this.width, // visual-only
+                (Math.random() - 0.5) * 20, // visual-only
+                -10 - Math.random() * 40 // visual-only
             );
 
             dummy.rotation.set(
-                (Math.random() - 0.5) * 0.2,
-                (Math.random() - 0.5) * Math.PI,
-                (Math.random() - 0.5) * 0.2
+                (Math.random() - 0.5) * 0.2, // visual-only
+                (Math.random() - 0.5) * Math.PI, // visual-only
+                (Math.random() - 0.5) * 0.2 // visual-only
             );
 
-            const scale = 0.5 + Math.random() * 0.8;
+            const scale = 0.5 + Math.random() * 0.8; // visual-only
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
@@ -97,16 +97,16 @@ export class WishLanternSystem {
 
             if (pos.x < limitBack) {
                 pos.x += this.width + margin * 2;
-                pos.y = -15 - Math.random() * 10;
+                pos.y = -15 - Math.random() * 10; // visual-only
             }
             if (pos.x > limitFront) {
                 pos.x -= this.width + margin * 2;
-                pos.y = -15 - Math.random() * 10;
+                pos.y = -15 - Math.random() * 10; // visual-only
             }
 
             if (pos.y > 20) {
-                pos.y = -15 - Math.random() * 10;
-                pos.x = cameraX + (Math.random() - 0.5) * this.width;
+                pos.y = -15 - Math.random() * 10; // visual-only
+                pos.x = cameraX + (Math.random() - 0.5) * this.width; // visual-only
             }
 
             matrix.setPosition(pos);

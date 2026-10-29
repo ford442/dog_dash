@@ -2,23 +2,23 @@ import * as THREE from 'three';
 import { renderer } from '../scene_context';
 import { player } from '../player_loader';
 import { game } from '../game_runtime';
-import { updateLoopCore } from './loop_core';
-import { updateLoopCombat } from './loop_combat';
-import { updateLoopWorld } from './loop_world';
-import { updateLoopGeological } from './loop_geological';
-import { updateLoopFinish } from './loop_finish';
 import { renderGameFrame } from './render_helpers';
 import { updateFrameHousekeeping } from './frame_housekeeping';
-import { advanceAccumulator, interpolationAlpha, MAX_FRAME_DELTA, SIM_STEP } from './fixed_timestep';
-import { PositionInterpolator } from './render_interpolation';
+import { advanceAccumulator, interpolationAlpha, MAX_FRAME_DELTA } from './fixed_timestep';
+import { ObjectInterpolator, PositionInterpolator } from './render_interpolation';
+import { stepSimulation } from './sim_step';
+import { resetSimClock } from '../sim_clock';
 
 let accumulator = 0;
 const playerInterpolator = new PositionInterpolator();
+const objectInterpolator = new ObjectInterpolator();
 
 export function startGameLoop(): void {
     game.clock = new THREE.Clock();
     accumulator = 0;
+    resetSimClock();
     playerInterpolator.reset();
+    objectInterpolator.reset();
     renderer.setAnimationLoop(animate);
 }
 
@@ -27,49 +27,66 @@ function animate(): void {
     // Visual-only systems (screen shake, flashes, floating text) stay on
     // wall-clock delta; hit-pause freezes gameplay by shrinking it below.
     const hitPauseDelta = game.juiceManager.update(rawDelta);
-    const time = game.clock.getElapsedTime();
 
     const paused = updateFrameHousekeeping(rawDelta);
+    // No gameplay steps until startRun() has seeded the run: the title
+    // overlay is opaque, and a sim that idled behind it would make a run's
+    // starting state depend on how long the player sat on the title screen.
+    const runActive = game.activeRunSeed !== null;
 
-    if (paused) {
+    if (paused || !runActive) {
         accumulator = 0;
     } else {
         const { steps, remainder } = advanceAccumulator(accumulator, hitPauseDelta);
         accumulator = remainder;
         for (let i = 0; i < steps; i++) {
-            stepSimulation(time);
+            stepSimulation();
             if (player) playerInterpolator.recordStep(player.position);
+            recordInterpolatedObjects();
         }
     }
 
-    renderInterpolated(time);
-}
-
-function stepSimulation(time: number): void {
-    updateLoopCore(SIM_STEP, time);
-    if (updateLoopCombat(SIM_STEP, time)) return;
-    updateLoopWorld(SIM_STEP, time);
-    updateLoopGeological(SIM_STEP, time);
-    updateLoopFinish(time);
+    renderInterpolated();
 }
 
 /**
- * Draws the frame with the player's rendered mesh blended between its last
- * two simulation positions, so a fixed 60Hz sim doesn't look worse than
- * wall-clock movement on a high-refresh display. All other gameplay state
- * (collision, camera targeting, HUD) already ran against the true
- * end-of-step position inside stepSimulation — only this draw call sees the
- * interpolated blend, so no other consumer of player.position is affected.
+ * Fast sim-driven objects that would visibly hitch at 144 Hz against a
+ * 60 Hz sim: plasma bolts, slingables, and the boss body (core included).
  */
-function renderInterpolated(_time: number): void {
-    const interpolated = player ? playerInterpolator.getInterpolated(interpolationAlpha(accumulator)) : null;
-    if (!player || !interpolated) {
-        renderGameFrame();
-        return;
+function recordInterpolatedObjects(): void {
+    objectInterpolator.beginStep();
+    for (const projectile of game.weaponSystem.projectiles) {
+        if (projectile.active) objectInterpolator.record(projectile.mesh);
     }
+    for (const slingable of game.slingableObjectSystem.objects) {
+        if (slingable.active) objectInterpolator.record(slingable.group);
+    }
+    const boss = game.bossManager.getBoss();
+    if (boss) objectInterpolator.record(boss.group);
+    objectInterpolator.endStep();
+}
 
-    const truePosition = player.position.clone();
-    player.position.copy(interpolated);
-    renderGameFrame();
-    player.position.copy(truePosition);
+/**
+ * Draws the frame with the player and the tracked fast objects blended
+ * between their last two simulation positions, so a fixed 60Hz sim doesn't
+ * look worse than wall-clock movement on a high-refresh display. All other
+ * gameplay state (collision, camera targeting, HUD) already ran against the
+ * true end-of-step positions inside stepSimulation — only this draw call
+ * sees the interpolated blend, and true positions are restored right after.
+ */
+function renderInterpolated(): void {
+    const alpha = interpolationAlpha(accumulator);
+    const interpolated = player ? playerInterpolator.getInterpolated(alpha) : null;
+    const truePosition = player && interpolated ? player.position.clone() : null;
+
+    objectInterpolator.applyBlend(alpha);
+    if (player && interpolated) player.position.copy(interpolated);
+    game.juiceManager.applyShakeToCamera();
+    try {
+        renderGameFrame();
+    } finally {
+        game.juiceManager.removeShakeFromCamera();
+        if (player && truePosition) player.position.copy(truePosition);
+        objectInterpolator.restore();
+    }
 }

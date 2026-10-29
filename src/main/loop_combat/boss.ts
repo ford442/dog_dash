@@ -10,16 +10,20 @@ import { VictoryState } from '../../victory_system/victory_state';
 import { updateBossHealthBar } from '../boss_health_ui';
 import { CollisionLayer } from '../../spatial_index';
 import { rebuildGameplaySpatialHash } from '../../spatial_fill';
+import { getSimTime } from '../../sim_clock';
+import { gameplayRandom } from '../../run_seed';
+import { StarEaterBoss } from '../../boss_system';
 
 /** Boss spawn/update, WASM projectile hits, health bar. Returns true on mouth-snap death. */
 export function updateCombatBoss(delta: number): boolean {
     if (!player) return false;
 
     if (!playerState.bossActive) {
+        const levelCfg = game.levelManager.config[game.levelManager.currentLevel];
         const bossSpawned = game.bossManager.checkBossSpawn(
             player.position.x,
             playerState.level,
-            game.levelManager.config[game.levelManager.currentLevel]?.distance,
+            levelCfg?.distance,
             {
                 onDefeated: () => {
                     playerState.cores += 50;
@@ -72,7 +76,7 @@ export function updateCombatBoss(delta: number): boolean {
                     console.log('🎉 BOSS DEFEATED! +50 Cores');
                 },
                 onPlayerHit: () => {
-                    game.lastPlayerDamageTime = performance.now() * 0.001;
+                    game.lastPlayerDamageTime = getSimTime();
                     if (!playerState.invincible && !playerState.inSafeHarbor) {
                         playerState.health--;
                         game.audioSystem.play('hit');
@@ -91,7 +95,7 @@ export function updateCombatBoss(delta: number): boolean {
                     const speed = homing ? 12 : 8;
                     game.obstacleSystem.createAsteroid(
                         pos.x, pos.y, pos.z, homing ? 0.8 : 1.0,
-                        new THREE.Vector3(-speed - Math.random() * 5, (Math.random() - 0.5) * 5, 0)
+                        new THREE.Vector3(-speed - gameplayRandom('boss') * 5, (gameplayRandom('boss') - 0.5) * 5, 0)
                     );
                 },
                 onPhaseChange: (phase) => {
@@ -107,9 +111,13 @@ export function updateCombatBoss(delta: number): boolean {
                     playerState.autoScrollSpeed = 2;
                     game.audioSystem.play('boss_roar');
                     game.audioSystem.updateDroneIntensity(2.0);
-                    game.creatureCatalogManager.catalog('star_eater');
+                    // Zephyr has no bestiary entry (Endless gates spawn it too).
+                    if (game.bossManager.getBoss() instanceof StarEaterBoss) {
+                        game.creatureCatalogManager.catalog('star_eater');
+                    }
                 }
-            }
+            },
+            levelCfg?.bossEncounter
         );
 
         if (bossSpawned) {
@@ -212,6 +220,14 @@ export function updateCombatBossKraken(
                     game.saveManager.addCores(20);
                     if (player) {
                         game.juiceManager.showFloatingText('Kraken Memory +20', squid.getPosition().clone(), '#cc88ff', 22);
+                    }
+                }
+
+                if (squid.isDestroyed && squid === game.obstacleSystem.getKrakenGateSquid()) {
+                    // Endless Kraken boss gate cleared.
+                    const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
+                    if (objective?.type === 'boss') {
+                        game.hudManager.updateObjectiveProgress(objective.target, objective.target);
                     }
                 }
 

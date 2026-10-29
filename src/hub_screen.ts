@@ -32,6 +32,8 @@ export interface HubRunSummary {
 
 export interface HubScreenOptions {
     mode: HubMode;
+    /** Tab shown first (default: home). */
+    initialTab?: HubTab;
     summary?: HubRunSummary;
     /** Launch (or relaunch) a run starting at this chapter (1-6). */
     onLaunchChapter: (chapter: number) => void;
@@ -71,7 +73,7 @@ const SHOP_ITEMS: ShopItem[] = [
     { key: 'speedBonus', icon: '🚀', name: 'Super Thrusters', desc: 'Fly 10% faster' }
 ];
 
-type HubTab = 'home' | 'shop' | 'craft' | 'log' | 'journey';
+export type HubTab = 'home' | 'shop' | 'craft' | 'log' | 'journey' | 'endless' | 'architect';
 
 export function createHubScreen(saveManager: SaveManager, options: HubScreenOptions): HTMLDivElement {
     const play = options.playSound ?? (() => {});
@@ -135,6 +137,7 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
     const tabBar = document.createElement('div');
     tabBar.style.cssText = `
         display: flex;
+        flex-wrap: wrap;
         gap: 8px;
         width: 100%;
         max-width: 720px;
@@ -147,7 +150,9 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
         { id: 'shop', label: '⚡ Shop' },
         { id: 'craft', label: '🔨 Craft' },
         { id: 'log', label: '📖 Life Log' },
-        { id: 'journey', label: '🗺️ Chapters' }
+        { id: 'journey', label: '🗺️ Chapters' },
+        { id: 'endless', label: '♾️ Endless' },
+        { id: 'architect', label: '🏗️ Lab' }
     ];
     const tabButtons = new Map<HubTab, HTMLButtonElement>();
 
@@ -279,6 +284,8 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
             case 'craft': renderCraft(); break;
             case 'log': renderLog(); break;
             case 'journey': renderJourney(); break;
+            case 'endless': renderEndless(); break;
+            case 'architect': renderArchitect(); break;
         }
     }
 
@@ -608,8 +615,41 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
         }
     }
 
+    /** Endless tab lives in its own chunk (generator + descriptor tables); load it on first open. */
+    function renderEndless(): void {
+        const loading = card();
+        loading.textContent = '♾️ Charting the endless sky…';
+        panel.appendChild(loading);
+        void import('./endless/hub_tab').then(({ renderEndlessTab }) => {
+            if (activeTab !== 'endless' || !loading.isConnected) return;
+            panel.innerHTML = '';
+            renderEndlessTab(panel, { saveManager, card, bigButton, statRow, play, colors: HUB_COLORS });
+        }, (err) => {
+            console.warn('[hub] Endless tab failed to load:', err);
+            loading.textContent = '♾️ Endless Dash could not load. Check your connection and try again.';
+        });
+    }
+
+    /**
+     * Architect Lab: its own chunk (zod, brush table, course builder). The
+     * ArchitectManager is constructed here, only when the Lab opens.
+     */
+    function renderArchitect(): void {
+        const loading = card();
+        loading.textContent = '🏗️ Unpacking the brushes…';
+        panel.appendChild(loading);
+        void import('./architect/hub_tab').then(({ renderArchitectTab }) => {
+            if (activeTab !== 'architect' || !loading.isConnected) return;
+            panel.innerHTML = '';
+            renderArchitectTab(panel, { card, bigButton, play, colors: HUB_COLORS });
+        }, (err) => {
+            console.warn('[hub] Architect Lab failed to load:', err);
+            loading.textContent = '🏗️ The Architect Lab could not load. Check your connection and try again.';
+        });
+    }
+
     refreshCores();
-    switchTab('home');
+    switchTab(options.initialTab ?? 'home');
 
     return container;
 }

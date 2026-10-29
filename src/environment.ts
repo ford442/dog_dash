@@ -31,6 +31,7 @@ import type { WeaponSystem } from './weapons';
 import type { LiquidMetalSystem } from './geological/liquid_metal';
 import { disposeObject } from './utils';
 import { jellyMossSoftBody } from './jelly_moss_softbody';
+import { gameplayRandom } from './run_seed';
 
 /** Injected by bootstrap — environment never imports composition-root singletons. */
 export type EnvironmentSystems = {
@@ -67,7 +68,7 @@ function requireEnvSystems(): EnvironmentSystems {
 export const sporeClouds: SporeCloud[] = [];
 
 export function createSporeCloudAtPosition(x: number, y: number, z: number) {
-    const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(Math.random() * 500));
+    const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(gameplayRandom('geology') * 500));
     cloud.spores.userData.speciesId = 'sporeCloud';
     cloud.spores.userData.scanPosition = cloud.position;
     sporeClouds.push(cloud);
@@ -80,7 +81,7 @@ export function createSporeCloudAtPosition(x: number, y: number, z: number) {
 export const geodes: THREE.Group[] = [];
 
 export function createGeodeAtPosition(x: number, y: number, z: number) {
-    const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
+    const geode = createFracturedGeode({ size: 3 + gameplayRandom('geology') * 2 });
     geode.position.set(x, y, z);
     geode.userData.speciesId = 'fracturedGeode';
     scene.add(geode);
@@ -95,7 +96,7 @@ export const chromaRocks: THREE.Group[] = [];
 export const jellyMosses: THREE.Mesh[] = [];
 
 export function createJellyMossAtPosition(x: number, y: number, z: number, size?: number) {
-    const jellyMoss = createNebulaJellyMoss({ size: size || 2 + Math.random() * 8 });
+    const jellyMoss = createNebulaJellyMoss({ size: size || 2 + gameplayRandom('geology') * 8 });
     jellyMoss.position.set(x, y, z);
     jellyMoss.userData.speciesId = 'nebulaJellyMoss';
     scene.add(jellyMoss);
@@ -111,8 +112,8 @@ export const solarSails: THREE.Group[] = [];
 
 export function createSolarSailAtPosition(x: number, y: number, z: number) {
     const solarSail = createSolarSail({ 
-        leafCount: 6 + Math.floor(Math.random() * 6),
-        leafLength: 8 + Math.random() * 8
+        leafCount: 6 + Math.floor(gameplayRandom('flora') * 6),
+        leafLength: 8 + gameplayRandom('flora') * 8
     });
     solarSail.position.set(x, y, z);
     scene.add(solarSail);
@@ -126,7 +127,7 @@ export const voidRootBalls: THREE.Group[] = [];
 export function createVoidRootBallAtPosition(x: number, y: number, z: number) {
     if (!decorationBudget.canSpawn('void_root_ball')) return null;
     if (!decorationBudget.reportSpawn('void_root_ball')) return null;
-    const rootBall = createVoidRootBall({ size: 2 + Math.random() * 2 });
+    const rootBall = createVoidRootBall({ size: 2 + gameplayRandom('geology') * 2 });
     rootBall.position.set(x, y, z);
     rootBall.userData.speciesId = 'voidRootBall';
     scene.add(rootBall);
@@ -137,8 +138,9 @@ export function createVoidRootBallAtPosition(x: number, y: number, z: number) {
 // Vacuum Kelp - energy-draining tunnel obstacles
 export const vacuumKelps: THREE.Group[] = [];
 
+/** Kelp lengths and ice-needle angles are collision geometry — seeded. */
 function floraRandom(): number {
-    return Math.random();
+    return gameplayRandom('flora');
 }
 
 export function createVacuumKelpAtPosition(x: number, y: number, z: number) {
@@ -172,7 +174,7 @@ export function createIceNeedleClusterAtPosition(x: number, y: number, z: number
 export const liquidMetalBlobs: THREE.Object3D[] = [];
 
 export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
-    const blob = requireEnvSystems().liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
+    const blob = requireEnvSystems().liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + gameplayRandom('geology') * 3);
     blob.group.userData.speciesId = 'liquidMetalBlob';
     liquidMetalBlobs.push(blob.group);
     return blob;
@@ -182,7 +184,7 @@ export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number)
 export const gravityAnchors: THREE.Group[] = [];
 
 export function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
-    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
+    const anchor = createGravityAnchor({ size: 8 + gameplayRandom('geology') * 7, biome });
     anchor.position.set(x, y, z);
     anchor.userData.speciesId = 'gravityAnchor';
     scene.add(anchor);
@@ -425,7 +427,7 @@ export function updateGeologicalObjects(delta: number, time: number, cameraPos: 
                 }
 
                 // Visual damage effect (red tint pulse)
-                if (Math.random() < 0.05 * leechIntensity) {
+                if (Math.random() < 0.05 * leechIntensity) { // visual-only
                     const rocket = player.children[0];
                     if (rocket) {
                         rocket.traverse((child: any) => {
@@ -512,12 +514,12 @@ export function generateEnvironment() {
 
         // Draw stars
         for (let i = 0; i < 500; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const radius = Math.random() * 1.5;
+            const x = Math.random() * canvas.width; // visual-only
+            const y = Math.random() * canvas.height; // visual-only
+            const radius = Math.random() * 1.5; // visual-only
             context.beginPath();
             context.arc(x, y, radius, 0, Math.PI * 2);
-            context.fillStyle = `rgba(255, 255, 255, ${Math.random()})`;
+            context.fillStyle = `rgba(255, 255, 255, ${Math.random()})`; // visual-only
             context.fill();
         }
     }

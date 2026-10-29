@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gameplayRandom } from './run_seed';
 
 const AURORA_PALETTE = [0x66ffee, 0xff66cc, 0x9966ff, 0x66ccff];
 
@@ -55,25 +56,25 @@ export class AquaticLifeManager {
     spawnForLevel(startX: number, length: number) {
         const jellyCount = Math.max(4, Math.floor(length / 220));
         for (let i = 0; i < jellyCount; i++) {
-            const x = startX + 40 + Math.random() * length;
-            const y = (Math.random() - 0.5) * 18;
-            const z = (Math.random() - 0.5) * 12 - 4;
+            const x = startX + 40 + gameplayRandom('creatures') * length;
+            const y = (gameplayRandom('creatures') - 0.5) * 18;
+            const z = (gameplayRandom('creatures') - 0.5) * 12 - 4;
             this.spawnJellyfish(x, y, z);
         }
 
         const kelpCount = Math.max(3, Math.floor(length / 300));
         for (let i = 0; i < kelpCount; i++) {
-            const x = startX + 60 + Math.random() * length;
-            const y = -8 - Math.random() * 6;
-            const z = (Math.random() - 0.5) * 10 - 6;
+            const x = startX + 60 + gameplayRandom('creatures') * length;
+            const y = -8 - gameplayRandom('creatures') * 6;
+            const z = (gameplayRandom('creatures') - 0.5) * 10 - 6;
             this.spawnKelpForest(x, y, z);
         }
 
         const planktonCount = Math.max(5, Math.floor(length / 180));
         for (let i = 0; i < planktonCount; i++) {
-            const x = startX + 30 + Math.random() * length;
-            const y = (Math.random() - 0.5) * 22;
-            const z = (Math.random() - 0.5) * 14 - 8;
+            const x = startX + 30 + gameplayRandom('creatures') * length;
+            const y = (gameplayRandom('creatures') - 0.5) * 22;
+            const z = (gameplayRandom('creatures') - 0.5) * 14 - 8;
             this.spawnPlanktonSchool(x, y, z);
         }
     }
@@ -84,7 +85,7 @@ export class AquaticLifeManager {
     }
 
     spawnJellyfish(x: number, y: number, z: number) {
-        const colorHex = AURORA_PALETTE[Math.floor(Math.random() * AURORA_PALETTE.length)];
+        const colorHex = AURORA_PALETTE[Math.floor(Math.random() * AURORA_PALETTE.length)]; // visual-only
         const group = new THREE.Group();
         group.position.set(x, y, z);
 
@@ -127,7 +128,7 @@ export class AquaticLifeManager {
             bell,
             tentacles,
             baseY: y,
-            phase: Math.random() * Math.PI * 2,
+            phase: gameplayRandom('creatures') * Math.PI * 2,
             color: colorHex,
             radius: 2.6,
             touchCooldown: 0
@@ -139,9 +140,9 @@ export class AquaticLifeManager {
         group.position.set(x, y, z);
 
         const fronds: THREE.Mesh[] = [];
-        const frondCount = 4 + Math.floor(Math.random() * 3);
+        const frondCount = 4 + Math.floor(Math.random() * 3); // visual-only
         for (let i = 0; i < frondCount; i++) {
-            const height = 10 + Math.random() * 6;
+            const height = 10 + Math.random() * 6; // visual-only
             const geo = new THREE.PlaneGeometry(0.8, height, 1, 6);
             // Anchor the bottom edge at the group's local origin
             geo.translate(0, height / 2, 0);
@@ -155,10 +156,10 @@ export class AquaticLifeManager {
                 opacity: 0.85
             });
             const frond = new THREE.Mesh(geo, mat);
-            frond.position.set((Math.random() - 0.5) * 2.5, 0, (Math.random() - 0.5) * 2.5);
-            frond.rotation.y = Math.random() * Math.PI;
-            frond.userData.swayOffset = Math.random() * Math.PI * 2;
-            frond.userData.swaySpeed = 0.6 + Math.random() * 0.5;
+            frond.position.set((Math.random() - 0.5) * 2.5, 0, (Math.random() - 0.5) * 2.5); // visual-only
+            frond.rotation.y = Math.random() * Math.PI; // visual-only
+            frond.userData.swayOffset = Math.random() * Math.PI * 2; // visual-only
+            frond.userData.swaySpeed = 0.6 + Math.random() * 0.5; // visual-only
             group.add(frond);
             fronds.push(frond);
         }
@@ -171,9 +172,9 @@ export class AquaticLifeManager {
         const count = 40;
         const positions = new Float32Array(count * 3);
         for (let i = 0; i < count; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 6;
-            positions[i * 3 + 1] = (Math.random() - 0.5) * 6;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 6;
+            positions[i * 3] = (Math.random() - 0.5) * 6; // visual-only
+            positions[i * 3 + 1] = (Math.random() - 0.5) * 6; // visual-only
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 6; // visual-only
         }
         const geo = new THREE.BufferGeometry();
         geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -216,9 +217,9 @@ export class AquaticLifeManager {
         const bubbleCount = 12;
         const positions = new Float32Array(bubbleCount * 3);
         for (let i = 0; i < bubbleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 5;
-            positions[i * 3 + 1] = Math.random() * 3 - 2;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 5;
+            positions[i * 3] = (Math.random() - 0.5) * 5; // visual-only
+            positions[i * 3 + 1] = Math.random() * 3 - 2; // visual-only
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 5; // visual-only
         }
         const bGeo = new THREE.BufferGeometry();
         bGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));

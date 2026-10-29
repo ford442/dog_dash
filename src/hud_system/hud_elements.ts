@@ -717,6 +717,7 @@ export class HUDElementsBuilder {
         const total = LEVEL_DISTANCE_BOUNDARIES[LEVEL_DISTANCE_BOUNDARIES.length - 1];
         for (let i = 1; i < LEVEL_DISTANCE_BOUNDARIES.length - 1; i++) {
             const tick = document.createElement('div');
+            tick.className = 'hud-journey-tick';
             tick.style.cssText = `
                 position: absolute;
                 left: ${(LEVEL_DISTANCE_BOUNDARIES[i] / total) * 100}%;

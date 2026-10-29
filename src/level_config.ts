@@ -129,6 +129,16 @@ export type DataMonolithConfig = {
 };
 
 
+/** Bosses an Endless Dash boss gate can reuse (no new bosses — see src/endless/). */
+export type BossEncounterKind = 'zephyr' | 'starEater' | 'kraken';
+
+/** Scripted boss gate. Campaign bosses keep their level-index capstone triggers. */
+export type BossEncounterConfig = {
+    kind: BossEncounterKind;
+    /** Absolute world X past which the boss spawns (once per encounter). */
+    triggerX: number;
+};
+
 export type WindZoneConfig = {
     x: number;
     y: number;
@@ -341,6 +351,8 @@ export type LevelConfig = {
     derelictBuoys?: DerelictBuoyConfig[];
     /** Data Monolith artifacts (trace hack) — industrial zones L4–L5. */
     dataMonoliths?: DataMonolithConfig[];
+    /** Scripted boss gate (Endless Dash chapters only). */
+    bossEncounter?: BossEncounterConfig;
 };
 
 export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {

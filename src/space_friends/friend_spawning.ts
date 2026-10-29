@@ -12,6 +12,7 @@ import { LunarLemur, type LemurPerchType } from './LunarLemur';
 import type { TrappedFriendKind } from './types';
 import { decorationBudget } from '../decoration_budget';
 import type { LevelConfig } from '../level_config';
+import { gameplayRandom } from '../run_seed';
 
 export interface FriendSpawnerHost {
     scene: THREE.Scene;
@@ -64,7 +65,7 @@ export function maybeSpawnLemurOnPerch(
 ): LunarLemur | null {
     const rate = levelConfig?.lunarLemurRate ?? 0;
     if (rate <= 0 || host.lemursThisLevel >= host.MAX_LEMURS_PER_LEVEL) return null;
-    if (Math.random() > rate) return null;
+    if (gameplayRandom('friends') > rate) return null;
     if (!decorationBudget.canSpawn('lunar_lemur')) return null;
 
     const offsetY = perchOffsetY ?? (perchType === 'gravityAnchor' ? 3.2 : perchType === 'geode' ? 2.4 : 2.0);
@@ -86,11 +87,11 @@ export function spawnTrappedFriend(
 ): TrappedFriend {
     let chosen = kind;
     if (!chosen) {
-        const r = Math.random();
+        const r = gameplayRandom('friends');
         if (r < 0.08) {
             chosen = 'moonpup';
         } else {
-            chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin', 'sealpup', 'astrobunny', 'lemur'] as TrappedFriendKind[])[Math.floor(Math.random() * 8)];
+            chosen = (['kitty', 'bunny', 'tarsier', 'otter', 'penguin', 'sealpup', 'astrobunny', 'lemur'] as TrappedFriendKind[])[Math.floor(gameplayRandom('friends') * 8)];
         }
     }
     const friend = new TrappedFriend(host.scene, x, y, chosen);
@@ -126,7 +127,7 @@ export function spawnTrappedFriendsAlong(
     const spawned: TrappedFriend[] = [];
     for (let i = 0; i < count; i++) {
         const x = startX + (length / (count + 1)) * (i + 1);
-        const y = (Math.random() - 0.5) * 16;
+        const y = (gameplayRandom('friends') - 0.5) * 16;
         spawned.push(spawnTrappedFriend(host, x, y));
     }
     return spawned;
@@ -146,7 +147,7 @@ export function maybeSpawnFriends(
         host.lastSpawnX = playerX;
         host.astroBunniesThisSegment = 0;
 
-        const count = 1 + Math.floor(Math.random() * 3);
+        const count = 1 + Math.floor(gameplayRandom('friends') * 3);
         const otterWeight = levelConfig?.cosmicOtterRate ?? 0;
         const penguinWeight = levelConfig?.astroPenguinRate ?? 0;
         const sealWeight = levelConfig?.stellarSealPupRate ?? 0;
@@ -154,10 +155,10 @@ export function maybeSpawnFriends(
         const remaining = Math.max(0, 1 - otterWeight - penguinWeight - sealWeight - astroBunnyWeight);
 
         for (let i = 0; i < count; i++) {
-            const spawnX = playerX + 30 + Math.random() * 40;
-            const spawnY = (Math.random() - 0.5) * 15;
+            const spawnX = playerX + 30 + gameplayRandom('friends') * 40;
+            const spawnY = (gameplayRandom('friends') - 0.5) * 15;
 
-            const type = Math.random();
+            const type = gameplayRandom('friends');
             if (type < otterWeight) {
                 host.spawnOtter(spawnX, spawnY);
             } else if (type < otterWeight + penguinWeight) {
@@ -185,20 +186,20 @@ export function spawnNearInterestArea(
 ): void {
     switch (type) {
         case 'cluster':
-            if (Math.random() < 0.3) {
+            if (gameplayRandom('friends') < 0.3) {
                 host.spawnAstroBunny(x, y + 2);
-            } else if (Math.random() < 0.5) {
+            } else if (gameplayRandom('friends') < 0.5) {
                 host.spawnOtter(x, y + 2);
             } else {
                 host.spawnBunny(x, y + 3);
             }
             break;
         case 'gap':
-            if (Math.random() < 0.3) {
+            if (gameplayRandom('friends') < 0.3) {
                 host.spawnAstroBunny(x, y);
-            } else if (Math.random() < 0.45) {
+            } else if (gameplayRandom('friends') < 0.45) {
                 host.spawnPenguin(x, y);
-            } else if (Math.random() < 0.55) {
+            } else if (gameplayRandom('friends') < 0.55) {
                 host.spawnSealPup(x, y);
             } else {
                 host.spawnLantern(x, y);
@@ -208,7 +209,7 @@ export function spawnNearInterestArea(
             host.spawnKitty(x, y);
             break;
         case 'aquatic':
-            if (Math.random() < 0.55) {
+            if (gameplayRandom('friends') < 0.55) {
                 host.spawnSealPup(x, y);
             } else {
                 host.spawnOtter(x, y + 1);

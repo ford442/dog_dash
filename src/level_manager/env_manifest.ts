@@ -39,7 +39,8 @@ export const dayNightCycle = defineEnvSystem<'dayNightCycle'>({
     flag: 'dayNightCycle',
     label: 'Day/Night Cycle',
     role: 'backdrop',
-    biomes: ['candy'],
+    // Nebula too: its 900 star instances cannot fit under candy's campaign worst case (1012) next to any hazard.
+    biomes: ['candy', 'nebula'],
     paletteTags: ['warm', 'cool'],
     difficultyWeight: 1,
     budget: { category: 'background3d', instances: 900 }, // 3 star layers x starCountPerLayer=300 (day_night_cycle.ts)
@@ -629,10 +630,12 @@ export const cloudCastles = defineEnvSystem<'cloudCastles'>({
 export const grappleIsles = defineEnvSystem<'grappleIsles'>({
     flag: 'grappleIsles',
     label: 'Grapple Isles',
-    role: 'traversal',
+    // Four parallax layers of floating rocks with no grapple gameplay yet, so a
+    // backdrop: as a traversal it was a verb no chapter teaches.
+    role: 'backdrop',
     biomes: ['candy'],
     paletteTags: ['pastel', 'neon'],
-    difficultyWeight: 2,
+    difficultyWeight: 1,
     budget: { category: 'background3d', instances: 50 }, // matches `grapple_isles` decoration_budget registration
     load: () => import('../grapple_isles'),
     install: (ctx, mod) => {
@@ -844,7 +847,8 @@ export const fossilizedSpaceWhales = defineEnvSystem<'fossilizedSpaceWhales'>({
     install: (ctx, mod) => {
         const { FossilizedSpaceWhalesSystem } = mod as typeof import('../fossilized_space_whales');
         const system = new FossilizedSpaceWhalesSystem(ctx.scene);
-        system.setObstacleTracking((obs) => ctx.game.obstacleSystem.addObstacle(obs));
+        // Barnacles are not wired into ObstacleSystem: it has no addObstacle(), and the
+        // old hook threw as soon as the whales activated. Wire a real hook before enabling.
         ctx.installEnvPartial({ fossilizedSpaceWhalesSystem: system });
     },
     activate: (host, value) => host.fossilizedSpaceWhalesSystem.activate(objectConfig(value)),

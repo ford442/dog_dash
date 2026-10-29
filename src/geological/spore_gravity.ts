@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { time, positionLocal, uniform, instanceIndex, vec3, sin, cos, float } from 'three/tsl';
+import { gameplayRandom } from '../run_seed';
 
 // --- GPU SPORE CLOUD ---
 export class SporeCloud {
@@ -98,9 +99,9 @@ export class SporeCloud {
         // Initialize spores in a cloud shape
         for (let i = 0; i < count; i++) {
             // Random position within cloud radius
-            const r = 5 * Math.cbrt(Math.random());
-            const theta = Math.random() * 2 * Math.PI;
-            const phi = Math.acos(2 * Math.random() - 1);
+            const r = 5 * Math.cbrt(gameplayRandom('geology'));
+            const theta = gameplayRandom('geology') * 2 * Math.PI;
+            const phi = Math.acos(2 * gameplayRandom('geology') - 1);
             
             const x = position.x + r * Math.sin(phi) * Math.cos(theta);
             const y = position.y + r * Math.sin(phi) * Math.sin(theta);

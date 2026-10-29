@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { SporeCloud } from './geological/spore_gravity';
+import { gameplayRandom } from './run_seed';
 
 /** Top-level behavioral states from plan.md */
 export enum VoidRootBallState {
@@ -96,7 +97,7 @@ function createCrystalFlower(size: number): THREE.Mesh {
     const anchor = new THREE.Mesh(new THREE.SphereGeometry(0.01), new THREE.MeshBasicMaterial({ visible: false }));
     anchor.add(wrapper);
     anchor.userData.isCrystalFlower = true;
-    anchor.userData.pulsePhase = Math.random() * Math.PI * 2;
+    anchor.userData.pulsePhase = gameplayRandom('geology') * Math.PI * 2;
     return anchor;
 }
 
@@ -150,7 +151,7 @@ function darkenGroup(group: THREE.Object3D): void {
 }
 
 export function createVoidRootBall(config: VoidRootBallConfig = {}): THREE.Group {
-    const size = config.size ?? 2 + Math.random() * 2;
+    const size = config.size ?? 2 + gameplayRandom('geology') * 2;
     const group = new THREE.Group();
 
     const rootMat = new THREE.MeshStandardMaterial({ color: 0x3e2723, roughness: 1.0 });
@@ -158,7 +159,7 @@ export function createVoidRootBall(config: VoidRootBallConfig = {}): THREE.Group
     for (let i = 0; i < 5; i++) {
         const geo = new THREE.TorusKnotGeometry(size * 0.6, size * 0.1, 48, 6, 2, 3);
         const mesh = new THREE.Mesh(geo, rootMat);
-        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        mesh.rotation.set(gameplayRandom('geology') * Math.PI, gameplayRandom('geology') * Math.PI, gameplayRandom('geology') * Math.PI);
         group.add(mesh);
         rootMeshes.push(mesh);
     }
@@ -209,7 +210,7 @@ export function createVoidRootBall(config: VoidRootBallConfig = {}): THREE.Group
         severTimer: 0,
         recoverTimer: 0,
         bleedTimer: 0,
-        driftAngle: Math.random() * Math.PI * 2,
+        driftAngle: gameplayRandom('geology') * Math.PI * 2,
         isPermanentObstacle: false
     };
 
@@ -222,9 +223,9 @@ function spawnFlower(group: THREE.Group, data: Record<string, unknown>): void {
     if (flowers.length >= MAX_CRYSTAL_FLOWERS) return;
 
     const flower = createCrystalFlower(size);
-    const angle = Math.random() * Math.PI * 2;
-    const dist = size * (1.2 + Math.random() * 0.8);
-    flower.position.set(Math.cos(angle) * dist, (Math.random() - 0.5) * size * 0.5, Math.sin(angle) * dist);
+    const angle = gameplayRandom('geology') * Math.PI * 2;
+    const dist = size * (1.2 + gameplayRandom('geology') * 0.8);
+    flower.position.set(Math.cos(angle) * dist, (gameplayRandom('geology') - 0.5) * size * 0.5, Math.sin(angle) * dist);
     group.add(flower);
     flowers.push(flower);
 }

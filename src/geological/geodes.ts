@@ -34,6 +34,7 @@ import { ParticleSystem } from '../particles';
 import { disposeObject } from '../utils';
 import type { TSLNode } from '../tsl_types';
 import { jellyMossSoftBody } from '../jelly_moss_softbody';
+import { gameplayRandom } from '../run_seed';
 
 // --- TSL Noise Functions (3D) ---
 
@@ -119,8 +120,8 @@ export function createFracturedGeode(config: { size: number }) {
         // Position crystals around center
         const angle = (i / crystalCount) * Math.PI * 2;
         const radius = config.size * 0.4;
-        crystal.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * radius, Math.sin(angle) * radius);
-        crystal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+        crystal.position.set(Math.cos(angle) * radius, (Math.random() - 0.5) * radius, Math.sin(angle) * radius); // visual-only
+        crystal.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI); // visual-only
 
         coreGroup.add(crystal);
     }
@@ -141,7 +142,7 @@ export function createFracturedGeode(config: { size: number }) {
     group.userData.fieldRadius = config.size * 2.5;
     group.userData.health = 100;
     group.userData.maxHealth = 100;
-    group.userData.quality = 0.5 + Math.random() * 0.5; // Random initial quality between 0.5 and 1.0
+    group.userData.quality = 0.5 + gameplayRandom('geology') * 0.5; // Random initial quality between 0.5 and 1.0
     group.userData.isDischarged = false;
     group.userData.crystalCount = crystalCount;
 
@@ -282,7 +283,7 @@ export function createNebulaJellyMoss(config: { size: number }) {
     
     // Internal "Fractal Moss" Cores (Weak points)
     const coreGroup = new THREE.Group();
-    const coreCount = 5 + Math.floor(Math.random() * 5);
+    const coreCount = 5 + Math.floor(Math.random() * 5); // visual-only
     const coreGeo = new THREE.IcosahedronGeometry(config.size * 0.15, 0);
     const coreMat = new MeshStandardNodeMaterial({
         color: 0xff2266, // Pinkish red contrast
@@ -296,9 +297,9 @@ export function createNebulaJellyMoss(config: { size: number }) {
     for(let i=0; i<coreCount; i++) {
         const core = new THREE.Mesh(coreGeo, coreMat);
         // Distribute randomly inside
-        const r = config.size * 0.6 * Math.cbrt(Math.random());
-        const theta = Math.random() * Math.PI * 2;
-        const phi = Math.acos(2 * Math.random() - 1);
+        const r = config.size * 0.6 * Math.cbrt(Math.random()); // visual-only
+        const theta = Math.random() * Math.PI * 2; // visual-only
+        const phi = Math.acos(2 * Math.random() - 1); // visual-only
 
         core.position.set(
             r * Math.sin(phi) * Math.cos(theta),
@@ -361,9 +362,9 @@ export function destroyNebulaJellyMoss(mesh: THREE.Mesh, scene: THREE.Scene, par
 
             // Add slight velocity/drift
             core.userData.velocity = new THREE.Vector3(
-                (Math.random() - 0.5) * 5,
-                (Math.random() - 0.5) * 5,
-                (Math.random() - 0.5) * 5
+                (Math.random() - 0.5) * 5, // visual-only
+                (Math.random() - 0.5) * 5, // visual-only
+                (Math.random() - 0.5) * 5 // visual-only
             );
             core.userData.isCollectible = true; // Tag for main.ts loop
 

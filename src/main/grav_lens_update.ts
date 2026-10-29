@@ -12,6 +12,7 @@ import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { updateHealthDisplay } from '../ui_controls';
 import { handleGameOver } from './obstacle_setup';
+import { getSimTime, scheduleSim } from '../sim_clock';
 
 function slingQualityFromGrade(grade: SlingshotGrade): SlingQuality {
     if (grade === 'perfect') return 'perfect';
@@ -56,8 +57,8 @@ export function updateGravLensSystems(delta: number): void {
                 if (playerState.invincible || playerState.inSafeHarbor) return;
                 playerState.health = Math.max(0, playerState.health - amount);
                 playerState.invincible = true;
-                setTimeout(() => { playerState.invincible = false; }, 800);
-                game.lastPlayerDamageTime = performance.now() * 0.001;
+                scheduleSim(0.8, () => { playerState.invincible = false; });
+                game.lastPlayerDamageTime = getSimTime();
                 game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
                 updateHealthDisplay(playerState);
                 game.dogController.triggerAnimation(DogAnimationState.HIT, 0.8);

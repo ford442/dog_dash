@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { time, vec4, vec3, color, mix, sin, positionLocal, positionWorld, length, smoothstep, uniform, Loop, distance, float } from 'three/tsl';
 import { WeaponLightManager } from './lighting';
+import { gameplayRandom } from './run_seed';
 
 function createMeteorMaterial(opacityMultiplier: number = 1.0, weaponLights?: any, uPlayerPos?: any) {
     const mat = new MeshBasicNodeMaterial({
@@ -126,14 +127,14 @@ export class MeteorShowerSystem {
 
     resetMeteor(layer: MeteorLayer, index: number, cameraX: number, initial: boolean = false) {
         // Spawn ahead of the camera, or randomly around if initial
-        const xOffset = initial ? (Math.random() * 400 - 100) : (100 + Math.random() * 200);
+        const xOffset = initial ? (gameplayRandom('enemies') * 400 - 100) : (100 + gameplayRandom('enemies') * 200);
         layer.positions[index * 3] = cameraX + xOffset;
-        layer.positions[index * 3 + 1] = (Math.random() - 0.5) * 150; // Y range
-        layer.positions[index * 3 + 2] = layer.zMax + Math.random() * (layer.zMin - layer.zMax); // Deep background Z range
+        layer.positions[index * 3 + 1] = (gameplayRandom('enemies') - 0.5) * 150; // Y range
+        layer.positions[index * 3 + 2] = layer.zMax + gameplayRandom('enemies') * (layer.zMin - layer.zMax); // Deep background Z range
 
         // Fast speeds moving leftwards (negative X), downwards (negative Y)
-        layer.velocities[index * 3] = (-150 - Math.random() * 100) * layer.speedMult;     // X velocity
-        layer.velocities[index * 3 + 1] = (-50 - Math.random() * 50) * layer.speedMult;   // Y velocity
+        layer.velocities[index * 3] = (-150 - gameplayRandom('enemies') * 100) * layer.speedMult;     // X velocity
+        layer.velocities[index * 3 + 1] = (-50 - gameplayRandom('enemies') * 50) * layer.speedMult;   // Y velocity
         layer.velocities[index * 3 + 2] = 0;                          // Z velocity
 
         this.updateInstance(layer, index);

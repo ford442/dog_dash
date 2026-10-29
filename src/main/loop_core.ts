@@ -9,6 +9,7 @@ import { MagicalEffectType } from '../magical_effects';
 import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../candy_materials';
 import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
 import { getLevelSpan } from '../depth_layers';
+import { getJourneyLayout } from '../journey_layout';
 import {
     shouldSpawnStarlightKoi,
     shouldSpawnBubbleCoral,
@@ -32,6 +33,8 @@ import { updatePlayer } from './player_update';
 import { ghostRunRecorder, buildActionFlags } from '../ghost_run';
 import { rebuildGameplaySpatialHash } from '../spatial_fill';
 import { updateChapterMusicDynamics } from './music_update';
+import { captureSimInput, touchInputActive } from './sim_input';
+import { throwGrenade } from './grenade';
 
 /**
  * Gameplay-affecting portion of the "core" loop phase, run once per fixed
@@ -40,6 +43,14 @@ import { updateChapterMusicDynamics } from './music_update';
  * frame_housekeeping.ts and runs once per rendered frame instead.
  */
 export function updateLoopCore(delta: number, _time: number): void {
+        // Snapshot this step's input before anything consumes a latch — the
+        // mask is what a headless replay feeds back via applySimInput().
+        ghostRunRecorder.recordInput(captureSimInput(), touchInputActive());
+        if (game.wantsGrenade) {
+            game.wantsGrenade = false;
+            throwGrenade();
+        }
+
         // --- Sling Combo Manager ---
         game.slingComboManager.update(delta);
 
@@ -72,7 +83,7 @@ export function updateLoopCore(delta: number, _time: number): void {
                 player.position.y,
                 game.levelManager.config[game.levelManager.currentLevel],
                 game.weaponSystem.getActiveProjectiles(),
-                game.levelManager.currentLevel
+                getJourneyLayout().campaignTwin(game.levelManager.currentLevel)
             );
             for (const result of creatureResults) {
                 let cores = result.cores ?? 0;

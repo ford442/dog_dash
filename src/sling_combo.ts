@@ -223,8 +223,8 @@ export class SlingComboManager {
             setTimeout(() => {
                 particleSystem.emit(
                     position.clone().add(new THREE.Vector3(
-                        (Math.random() - 0.5) * 6,
-                        (Math.random() - 0.5) * 6,
+                        (Math.random() - 0.5) * 6, // visual-only
+                        (Math.random() - 0.5) * 6, // visual-only
                         0
                     )),
                     0xcc44ff,

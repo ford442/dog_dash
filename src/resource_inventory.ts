@@ -5,6 +5,8 @@
  * persist via SaveManager, and surface on the HUD as a "Resource Pop".
  */
 
+import { gameplayRandom } from './run_seed';
+
 /** Crafting material ids matching docs/plans/plan.md §VI economy. */
 export type MaterialId =
     | 'luminousDust'
@@ -207,7 +209,7 @@ export function normalizeInventory(raw: unknown): ResourceInventory {
 
 function rollAmount(min: number, max: number): number {
     if (max <= min) return min;
-    return min + Math.floor(Math.random() * (max - min + 1));
+    return min + Math.floor(gameplayRandom('harvest') * (max - min + 1));
 }
 
 /**
@@ -226,7 +228,7 @@ export function rollMaterialDrops(
 
     for (const entry of table) {
         const chance = entry.chance ?? 1;
-        if (Math.random() > chance) continue;
+        if (gameplayRandom('harvest') > chance) continue;
 
         let id = entry.id;
         // Jelly-Moss quality: precision core shot → Pure; sustained/overload → Tainted
