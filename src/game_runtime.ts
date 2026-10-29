@@ -133,6 +133,13 @@ export type NestedEnvRuntime = {
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
     aquaticLifeManager: AquaticLifeManager;
+    stardustVortexSystem: GameSystems['stardustVortexSystem'];
+    celestialClockworksSystem: GameSystems['celestialClockworksSystem'];
+    galacticLeylinesSystem: GameSystems['galacticLeylinesSystem'];
+    chronoTesseractsSystem: GameSystems['chronoTesseractsSystem'];
+    ascendantMonolithsSystem: GameSystems['ascendantMonolithsSystem'];
+    echoingVoidRipplesSystem: GameSystems['echoingVoidRipplesSystem'];
+    quantumFoamBubblesSystem: GameSystems['quantumFoamBubblesSystem'];
 };
 
 export type NestedRuntime = {
@@ -231,7 +238,14 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         weatherSystem: ctx.weatherSystem,
         ghostDebrisSystem: ctx.ghostDebrisSystem,
         voidJellyfishSystem: ctx.voidJellyfishSystem,
-        aquaticLifeManager: ctx.aquaticLifeManager
+        aquaticLifeManager: ctx.aquaticLifeManager,
+        stardustVortexSystem: ctx.stardustVortexSystem,
+        celestialClockworksSystem: ctx.celestialClockworksSystem,
+        galacticLeylinesSystem: ctx.galacticLeylinesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
+        ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
+        echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     };
 }
 
@@ -263,7 +277,14 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         weatherSystem: ctx.weatherSystem,
         ghostDebrisSystem: ctx.ghostDebrisSystem,
         voidJellyfishSystem: ctx.voidJellyfishSystem,
-        aquaticLifeManager: ctx.aquaticLifeManager
+        aquaticLifeManager: ctx.aquaticLifeManager,
+        stardustVortexSystem: ctx.stardustVortexSystem,
+        celestialClockworksSystem: ctx.celestialClockworksSystem,
+        galacticLeylinesSystem: ctx.galacticLeylinesSystem,
+        ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
+        echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
+        quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     });
 }
 

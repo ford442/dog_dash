@@ -62,7 +62,6 @@ import {
     WireframeDebugHelper
 } from '../render_debug_helpers';
 import { PixelGlowSystem } from '../pixel_glow';
-
 async function loadWasm(): Promise<void> {
     const handle = await loadWasmModule();
     if (handle) {
@@ -80,7 +79,6 @@ async function loadWasm(): Promise<void> {
     // Visual-only helper compute; ignored by WASM builds without chore exports.
     getGpuChores().attachWasm(handle?.exports);
 }
-
 import {
     sporeClouds, voidRootBalls, vacuumKelps, iceNeedleClusters,
     magmaHearts, gravityAnchors, geodes,
@@ -101,15 +99,12 @@ import { createObstacleSystem, handleGameOver } from './obstacle_setup';
 import { ensureSlingableSystems } from '../level_systems_loader';
 import type { GameSystems } from '../create_game_systems';
 import type { GameManagers } from '../game_managers';
-
 /** Prototype sling/geological content — deferred until first gameplay click. */
 export async function spawnDeferredPrototypeContent(): Promise<void> {
     await ensureSlingableSystems();
-
     createGravityAnchorWithTarsiers(80, 5, -25, 1);
     createGravityAnchorWithTarsiers(180, -6, -20, 1);
     createGravityAnchorWithTarsiers(280, 8, -22, 1);
-
     createSlingableObjectAtPosition(96, 3, -14, {
         radius: 1.1, mass: 1.6,
         velocity: new THREE.Vector3(-1.6, 0.8, 0.25),
@@ -145,13 +140,11 @@ export async function spawnDeferredPrototypeContent(): Promise<void> {
         radius: 1.8, mass: 4.5,
         velocity: new THREE.Vector3(-0.9, 0.2, 0), kind: 'wreckingBall'
     });
-
     // Hero Nebula Jelly-Moss (1–3). With VITE_CPP_WASM + game_cpp.wasm, cores use Verlet soft-body.
     createJellyMossAtPosition(120, 4, -22, 5.5);
     createJellyMossAtPosition(210, -3, -20, 4.2);
     createJellyMossAtPosition(340, 6, -24, 6.0);
 }
-
 export async function spawnDeferredVideoStars(): Promise<void> {
     const { VideoTumblingStar } = await import('../video_tumbling_star');
     game.videoTumblingStars = [
@@ -160,7 +153,6 @@ export async function spawnDeferredVideoStars(): Promise<void> {
         new VideoTumblingStar(scene, 1620, 8, -48)
     ];
 }
-
 function createLevelManager(
     industrialGeometryManager: IndustrialGeometryManager,
     systems: GameSystems,
@@ -226,7 +218,29 @@ function createLevelManager(
             hyperspaceTunnelSystem: systems.hyperspaceTunnelSystem,
             cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
             energyRiftsSystem: systems.energyRiftsSystem,
-
+            prismaticCrystalsSystem: systems.prismaticCrystalsSystem,
+            stardustVortexSystem: systems.stardustVortexSystem,
+            bioluminescentSporesSystem: systems.bioluminescentSporesSystem,
+            quantumMirrorsSystem: systems.quantumMirrorsSystem,
+            celestialClockworksSystem: systems.celestialClockworksSystem,
+        galacticLeylinesSystem: systems.galacticLeylinesSystem,
+            chronoTesseractsSystem: systems.chronoTesseractsSystem,
+            holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
+            cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
+            pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
+            voidLatticeNetworksSystem: systems.voidLatticeNetworksSystem,
+            orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
+            ascendantMonolithsSystem: systems.ascendantMonolithsSystem,
+            echoingVoidRipplesSystem: systems.echoingVoidRipplesSystem,
+            astralResonanceRingsSystem: systems.astralResonanceRingsSystem,
+            radiantHalosSystem: systems.radiantHalosSystem,
+            quantumFoamBubblesSystem: systems.quantumFoamBubblesSystem,
+            etherealSupernovaRemnantsSystem: systems.etherealSupernovaRemnantsSystem,
+            quantumSingularityCoreSystem: systems.quantumSingularityCoreSystem,
+            dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
+            cosmicStringHorizonsSystem: systems.cosmicStringHorizonsSystem,
+            etherealPrismaticRibbonsSystem: systems.etherealPrismaticRibbonsSystem,
+            magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
             flowerConstellationsSystem: systems.flowerConstellationsSystem,
             hideAndSeekStarsSystem: systems.hideAndSeekStarsSystem,
             bouncePadsSystem: systems.bouncePadsSystem,
@@ -308,11 +322,33 @@ function createLevelManager(
         hyperspaceTunnelSystem: systems.hyperspaceTunnelSystem,
         cosmicCyberGridSystem: systems.cosmicCyberGridSystem,
         energyRiftsSystem: systems.energyRiftsSystem,
+        prismaticCrystalsSystem: systems.prismaticCrystalsSystem,
+        stardustVortexSystem: systems.stardustVortexSystem,
+        bioluminescentSporesSystem: systems.bioluminescentSporesSystem,
+        quantumMirrorsSystem: systems.quantumMirrorsSystem,
+        celestialClockworksSystem: systems.celestialClockworksSystem,
+        galacticLeylinesSystem: systems.galacticLeylinesSystem,
+        chronoTesseractsSystem: systems.chronoTesseractsSystem,
+        holographicDataStreamsSystem: systems.holographicDataStreamsSystem,
+        cosmicWebFilamentsSystem: systems.cosmicWebFilamentsSystem,
+        pulsarLighthouseSystem: systems.pulsarLighthouseSystem,
+        voidLatticeNetworksSystem: systems.voidLatticeNetworksSystem,
+        orbitalMegastructuresSystem: systems.orbitalMegastructuresSystem,
+        ascendantMonolithsSystem: systems.ascendantMonolithsSystem,
+        echoingVoidRipplesSystem: systems.echoingVoidRipplesSystem,
+        astralResonanceRingsSystem: systems.astralResonanceRingsSystem,
+        radiantHalosSystem: systems.radiantHalosSystem,
+        quantumFoamBubblesSystem: systems.quantumFoamBubblesSystem,
+        etherealSupernovaRemnantsSystem: systems.etherealSupernovaRemnantsSystem,
+        quantumSingularityCoreSystem: systems.quantumSingularityCoreSystem,
+        dimensionalFracturesSystem: systems.dimensionalFracturesSystem,
+        cosmicStringHorizonsSystem: systems.cosmicStringHorizonsSystem,
+        etherealPrismaticRibbonsSystem: systems.etherealPrismaticRibbonsSystem,
+        magneticPlasmaArcsSystem: systems.magneticPlasmaArcsSystem,
         spaceGardenSystem: systems.spaceGardenSystem,
         comboCorridorSystem: systems.comboCorridorSystem
     });
 }
-
 /** Scene init, WASM, manager wiring, level manager, moon/galaxy, prototype spawns. */
 export async function initializeStartup(): Promise<void> {
     try {
@@ -322,7 +358,6 @@ export async function initializeStartup(): Promise<void> {
         // A failed WebGPU probe gets the dedicated boot-failure screen from
         // bootstrap — don't also raise the generic init dialog over it.
         if (err instanceof WebGpuBootError) throw err;
-
         const message = err instanceof Error ? err.message : 'Unknown error occurred during startup.';
         showError('Initialization Error', message);
         throw err;
@@ -345,13 +380,10 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
         weaponSystem: systems.weaponSystem,
         liquidMetalSystem: systems.liquidMetalSystem
     });
-
     playerState.maxHealth = systems.saveManager.applyToHealth(3);
     playerState.health = playerState.maxHealth + systems.saveManager.getStartingHealthBonus();
     playerState.autoScrollSpeed = systems.saveManager.applyToSpeed(8);
-
     const managers = createGameManagers(scene, systems.audioSystem, systems.particleSystem);
-
     const industrialGeometryManager = createIndustrialGeometryManagerStub() as IndustrialGeometryManager;
     const galaxy1 = createGalaxy(200, 30, -100, 0x8844ff);
     scene.add(galaxy1);
@@ -362,7 +394,6 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     const moon = createMoon();
     moon.position.set(500, 5, -50);
     scene.add(moon);
-
     const creatureManager = new CreatureManager({
         scene,
         particleSystem: systems.particleSystem,
@@ -396,14 +427,12 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
         },
         onCooldownEnd: () => {}
     });
-
     const debugSystem = new DebugSystem();
     registerDefaultDecorationBudgets();
     decorationBudget.attachToDebugSystem(debugSystem);
     new DecorationBudgetAuditor(scene).attachToDebugSystem(debugSystem);
     debugSystem.setRendererInfo(rendererBackend, requestedRendererBackend, rendererFallbackReason);
     creatureManager.setDebugSystem(debugSystem);
-
     const flags: Array<[string, string, boolean]> = [
         ['creature_tarsier_guardian', 'Crystal Tarsier', true],
         ['creature_geode_titan', 'Geode Titan', true],
@@ -466,7 +495,6 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
         game.currentPixelRatio = Math.min(2, window.devicePixelRatio * ratio);
         renderer.setPixelRatio(game.currentPixelRatio);
     });
-
     const ghostDebrisSystem = createGhostDebrisSystemStub();
     const voidJellyfishSystem = createVoidJellyfishSystemStub();
     const slingableObjectSystem = createSlingableObjectSystemStub();
@@ -474,14 +502,12 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     const aquaticLifeManager = createAquaticLifeManagerStub();
     const starlightKoiManager = createStarlightKoiManagerStub();
     const bubbleCoralManager = createBubbleCoralManagerStub();
-
     const levelManager = createLevelManager(industrialGeometryManager, systems, managers, {
         ghostDebrisSystem,
         voidJellyfishSystem,
         debugSystem
     });
     levelManager.cloudSystem.setCamera(camera);
-
     const obstacleSystem = createObstacleSystem({
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,
@@ -490,7 +516,6 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
         hudManager: systems.hudManager,
         juiceManager: systems.juiceManager,
     });
-
     const ctx: GameContext = {
         ...systems,
         ...managers,
@@ -526,11 +551,8 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
         env: undefined as unknown as GameContext['env'],
         combat: undefined as unknown as GameContext['combat']
     };
-
     installGameContext(ctx);
-
     applyCraftedLoadout(game, playerState);
-
     attachGpuLeakDetector(debugSystem, () => {
         const camX = camera.position.x;
         const playerX = player?.position.x ?? camX;
@@ -551,19 +573,17 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     const wasmReady = loadWasm();
     if (options.headless) await wasmReady;
 
+    void loadWasm();
     onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: unknown) => {
         game.effectManager.setTarget(loadedPlayer);
         const dogTarget = (rocketModelOrGroup as THREE.Group) || loadedPlayer;
         try { game.dogController.initialize(dogTarget); } catch { game.dogController.initialize(loadedPlayer); }
         console.log('🚀 Rocket loaded via player_loader onto canonical scene');
     });
-
     if (shouldShowTutorial(game.saveManager)) {
         game.tutorialSystem.onComplete(() => console.log('Tutorial complete! Starting game...'));
     }
-
     wireStartupCallbacks();
-
     // Dev / `?debug` only: a handle on the composition root so set-pieces that
     // sit deep in a run (Dream Portals, the Galactic Core approach) can be
     // driven from the console or a browser test without playing to them.

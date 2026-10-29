@@ -178,6 +178,19 @@ export type LevelEnvironments = {
     clouds?: boolean | CloudsEnvironmentConfig;
     biological?: boolean;
     nebula?: boolean;
+    echoingVoidRipples?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    astralResonanceRings?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    radiantHalos?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    voidLatticeNetworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    quantumFoamBubbles?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    etherealSupernovaRemnants?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    quantumSingularityCore?: { density?: number, color1?: number, color2?: number, speed?: number } | boolean;
+    dimensionalFractures?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    celestialClockworks?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    galacticLeylines?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    chronoTesseracts?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    cosmicStringHorizons?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
+    etherealPrismaticRibbons?: { density?: number, speed?: number, color1?: number, color2?: number } | boolean;
     /**
      * Parallax ribbon/veil sheets (one 8-instance layer); uses level skyColors.
      * Off on every level — the sheets are large, overdrawing and read as
@@ -188,6 +201,7 @@ export type LevelEnvironments = {
     moonPalace?: boolean;
     planetaryHorizon?: boolean;
     reEntry?: boolean;
+    holographicDataStreams?: boolean;
     aquaticLife?: boolean;
     godRays?: GodRaysEnvironmentConfig;
     aurora?: AuroraEnvironmentConfig;
@@ -226,6 +240,15 @@ export type LevelEnvironments = {
     hyperspaceTunnel?: boolean | import('./hyperspace_tunnel').HyperspaceTunnelConfig;
     cosmicCyberGrid?: boolean | CosmicCyberGridConfig;
     energyRifts?: boolean | import('./energy_rifts').EnergyRiftsConfig;
+    prismaticCrystals?: boolean | import('./prismatic_crystals').PrismaticCrystalsConfig;
+    stardustVortex?: boolean | import('./stardust_vortex').StardustVortexConfig;
+    bioluminescentSpores?: boolean | import('./bioluminescent_spores').BioluminescentSporesConfig;
+    quantumMirrors?: boolean | import('./quantum_mirrors').QuantumMirrorsConfig;
+    cosmicWebFilaments?: boolean | import('./cosmic_web_filaments').CosmicWebFilamentsConfig;
+    pulsarLighthouse?: boolean | import('./pulsar_lighthouse').PulsarLighthouseConfig;
+    magneticPlasmaArcs?: boolean | import('./magnetic_plasma_arcs').MagneticPlasmaArcsConfig;
+    orbitalMegastructures?: boolean | import('./orbital_megastructures').OrbitalMegastructuresConfig;
+    ascendantMonoliths?: boolean | import('./ascendant_monoliths').AscendantMonolithsConfig;
 };
 
 // Cumulative player-x thresholds for the journey toward the Moon.
@@ -323,7 +346,6 @@ export type LevelConfig = {
      * Systems not listed (or false) are deactivated.
      */
     environments?: LevelEnvironments;
-    /** Optional chained grav-lens slingshot corridors. */
     gravLensCorridors?: GravLensCorridorConfig[];
     /** Derelict Buoy artifacts (Morse hack) — industrial zones L4–L5. */
     derelictBuoys?: DerelictBuoyConfig[];
@@ -463,7 +485,8 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             flowerConstellations: true,
-            hideAndSeekStars: true
+            hideAndSeekStars: true,
+            magneticPlasmaArcs: { density: 1.5, speed: 1.2 }
         },
         vignettes: {
             geodeClearings: 0.5
@@ -543,6 +566,9 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             flowerConstellations: true,
+            orbitalMegastructures: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
+            ascendantMonoliths: { density: 1.0 },
+            astralResonanceRings: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff }
         },
         vignettes: {
             roseArches: 1.2
@@ -610,6 +636,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             asteroidField: { rate: 2.0 },
             industrial: { intensity: 1.0, tunnelSpeed: 1.2 },
             cosmicCyberGrid: { enabled: true, speedMultiplier: 1.5 },
+            holographicDataStreams: true,
             bubbleCoral: { density: 0.85 },
             skyRailTerminal: true,
             comboCorridor: true,
@@ -627,6 +654,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
                 ]
             },
             hyperspaceTunnel: { speed: 1.5, density: 1.0 },
+            stardustVortex: { enabled: true, density: 1.5 },
             timeShiftZones: {
                 zones: [
                     { x: 300, y: 0, width: 80, height: 25 },
@@ -697,6 +725,7 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
         koiSchoolDensity: 4,
         bubbleCoralDensity: 5,
         environments: {
+            celestialClockworks: { density: 1.0, speed: 1.0 },
             dynamicStarfield: true,
             asteroidField: { rate: 2.5 },
             godRays: { enabled: true, density: 0.5, baseIntensity: 0.4, color: 0xff00ff, speedMultiplier: 0.8 },
@@ -711,7 +740,13 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             singingGeodes: { density: 15 },
             comboCorridor: true,
             fossilizedSpaceWhales: true,
-            energyRifts: true
+            energyRifts: true,
+            prismaticCrystals: true,
+            bioluminescentSpores: true,
+            pulsarLighthouse: { density: 1.0, speed: 1.0, color1: 0xff8800, color2: 0xff0044 },
+            radiantHalos: { density: 1.0, speed: 1.0, color1: 0xffaa00, color2: 0xffffff },
+            chronoTesseracts: { density: 1.0, speed: 1.0 },
+            voidLatticeNetworks: { density: 1.0, speed: 1.0, color1: 0xff00ff, color2: 0x00ffff }
         },
         vignettes: {
             treeGroves: 0.8,
@@ -780,6 +815,15 @@ export const LEVEL_CONFIG: { [key: number]: LevelConfig } = {
             clouds: { density: 20 },
             weather: true,
             singingGeodes: { density: 20 },
+            quantumMirrors: true,
+            cosmicWebFilaments: true,
+            etherealPrismaticRibbons: true,
+            echoingVoidRipples: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0x0000ff },
+            quantumFoamBubbles: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
+            dimensionalFractures: { density: 1.0, speed: 1.0, color1: 0xff00ff, color2: 0x00ffff },
+            celestialClockworks: { density: 1.0, speed: 1.0, color1: 0xd4af37, color2: 0xc0c0c0 },
+            galacticLeylines: { density: 1.0, speed: 1.0, color1: 0x00ffff, color2: 0xff00ff },
+            chronoTesseracts: { density: 1.0, speed: 1.0, color1: 0x8a2be2, color2: 0x00ffff },
             // Finale beat: the Galactic Core swells across the last stretch of
             // the run (level 6 spans x 4200 → 5200, the Moon threshold).
             galacticCore: {
