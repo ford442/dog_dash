@@ -132,7 +132,6 @@ export type LevelEnvironmentPorts = {
     quantumSingularityCoreSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     dimensionalFracturesSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerSpeed?: number) => void; cleanup: () => void; };
     cosmicStringHorizonsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
-    astralResonanceRingsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, playerSpeed?: number) => void; cleanup: () => void; };
     etherealPrismaticRibbonsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed?: number) => void; cleanup: () => void; };
     magneticPlasmaArcsSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
     orbitalMegastructuresSystem: { activate: (config?: any) => void; deactivate: () => void; update: (delta: number, cameraX: number, speed: number) => void; cleanup: () => void; };
@@ -201,7 +200,6 @@ export type LevelManagerOptions = {
     quantumSingularityCoreSystem: LevelEnvironmentPorts['quantumSingularityCoreSystem'];
     dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
     cosmicStringHorizonsSystem: LevelEnvironmentPorts['cosmicStringHorizonsSystem'];
-    astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
     etherealPrismaticRibbonsSystem: LevelEnvironmentPorts['etherealPrismaticRibbonsSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];

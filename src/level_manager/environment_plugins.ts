@@ -90,7 +90,6 @@ const PLUGIN_ORDER = [
     'quantumSingularityCore',
     'dimensionalFractures',
     'cosmicStringHorizons',
-    'astralResonanceRings',
     'etherealPrismaticRibbons',
     'celestialClockworks'
 ] as const satisfies readonly (keyof LevelEnvironments)[];

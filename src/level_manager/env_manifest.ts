@@ -1232,22 +1232,6 @@ export const dimensionalFractures = defineEnvSystem<'dimensionalFractures'>({
     deactivate: (host) => host.dimensionalFracturesSystem.deactivate()
 });
 
-export const astralResonanceRings = defineEnvSystem<'astralResonanceRings'>({
-    flag: 'astralResonanceRings',
-    label: 'Astral Resonance Rings',
-    role: 'backdrop',
-    biomes: ['nebula', 'crystalline'],
-    paletteTags: ['neon'],
-    difficultyWeight: 1,
-    budget: { category: 'background3d', instances: 15 },
-    load: () => import('../astral_resonance_rings'),
-    install: (ctx, mod) => {
-        const { AstralResonanceRingsSystem } = mod as typeof import('../astral_resonance_rings');
-        ctx.installEnvPartial({ astralResonanceRingsSystem: new AstralResonanceRingsSystem(ctx.scene) });
-    },
-    activate: (host, value) => host.astralResonanceRingsSystem.activate(objectConfig(value)),
-    deactivate: (host) => host.astralResonanceRingsSystem.deactivate()
-});
 
 export const cosmicStringHorizons = defineEnvSystem<'cosmicStringHorizons'>({
     flag: 'cosmicStringHorizons',
@@ -1266,22 +1250,6 @@ export const cosmicStringHorizons = defineEnvSystem<'cosmicStringHorizons'>({
     deactivate: (host) => host.cosmicStringHorizonsSystem.deactivate()
 });
 
-export const astralResonanceRings = defineEnvSystem<'astralResonanceRings'>({
-    flag: 'astralResonanceRings',
-    label: 'Astral Resonance Rings',
-    role: 'backdrop',
-    biomes: ['nebula'],
-    paletteTags: ['neon'],
-    difficultyWeight: 2,
-    budget: { category: 'background3d', instances: 15 },
-    load: () => import('../astral_resonance_rings'),
-    install: (ctx, mod) => {
-        const { AstralResonanceRingsSystem } = mod as typeof import('../astral_resonance_rings');
-        ctx.installEnvPartial({ astralResonanceRingsSystem: new AstralResonanceRingsSystem(ctx.scene) });
-    },
-    activate: (host, value) => host.astralResonanceRingsSystem.activate(objectConfig(value)),
-    deactivate: (host) => host.astralResonanceRingsSystem.deactivate()
-});
 
 export const etherealPrismaticRibbons = defineEnvSystem<'etherealPrismaticRibbons'>({
     flag: 'etherealPrismaticRibbons',
@@ -1423,7 +1391,6 @@ export const ENV_SYSTEM_MANIFEST = [
     quantumSingularityCore,
     dimensionalFractures,
     cosmicStringHorizons,
-    astralResonanceRings,
     etherealPrismaticRibbons,
     quantumFoamBubbles,
 ] as const;

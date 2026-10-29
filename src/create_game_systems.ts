@@ -96,7 +96,6 @@ import {
     createQuantumSingularityCoreSystemStub,
     createDimensionalFracturesSystemStub,
     createCosmicStringHorizonsSystemStub,
-    createAstralResonanceRingsSystemStub,
     createEtherealPrismaticRibbonsSystemStub,
     createVoidLatticeNetworksSystemStub,
     createCelestialClockworksSystemStub,
@@ -238,7 +237,6 @@ export type GameSystems = {
     quantumSingularityCoreSystem: import('./quantum_singularity_core').QuantumSingularityCoreSystem;
     dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem;
     cosmicStringHorizonsSystem: import('./cosmic_string_horizons').CosmicStringHorizonsSystem;
-    astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem;
     etherealPrismaticRibbonsSystem: import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem;
     celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem;
     galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem;
@@ -514,7 +512,6 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const quantumSingularityCoreSystem: import('./quantum_singularity_core').QuantumSingularityCoreSystem = createQuantumSingularityCoreSystemStub() as any;
     const dimensionalFracturesSystem: import('./dimensional_fractures').DimensionalFracturesSystem = createDimensionalFracturesSystemStub() as any;
     const cosmicStringHorizonsSystem: import('./cosmic_string_horizons').CosmicStringHorizonsSystem = createCosmicStringHorizonsSystemStub() as any;
-    const astralResonanceRingsSystem: import('./astral_resonance_rings').AstralResonanceRingsSystem = createAstralResonanceRingsSystemStub() as any;
     const etherealPrismaticRibbonsSystem: import('./ethereal_prismatic_ribbons').EtherealPrismaticRibbonsSystem = createEtherealPrismaticRibbonsSystemStub() as any;
     const celestialClockworksSystem: import('./celestial_clockworks').CelestialClockworksSystem = createCelestialClockworksSystemStub();
     const galacticLeylinesSystem: import('./galactic_leylines').GalacticLeylinesSystem = createGalacticLeylinesSystemStub();
@@ -612,7 +609,6 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         quantumSingularityCoreSystem,
         dimensionalFracturesSystem,
         cosmicStringHorizonsSystem,
-        astralResonanceRingsSystem,
         etherealPrismaticRibbonsSystem,
         celestialClockworksSystem,
         galacticLeylinesSystem,
