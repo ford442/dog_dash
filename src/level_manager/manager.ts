@@ -129,7 +129,6 @@ export class LevelManager {
     quantumSingularityCoreSystem: LevelEnvironmentPorts['quantumSingularityCoreSystem'];
     dimensionalFracturesSystem: LevelEnvironmentPorts['dimensionalFracturesSystem'];
     cosmicStringHorizonsSystem: LevelEnvironmentPorts['cosmicStringHorizonsSystem'];
-    astralResonanceRingsSystem: LevelEnvironmentPorts['astralResonanceRingsSystem'];
     etherealPrismaticRibbonsSystem: LevelEnvironmentPorts['etherealPrismaticRibbonsSystem'];
     magneticPlasmaArcsSystem: LevelEnvironmentPorts['magneticPlasmaArcsSystem'];
     orbitalMegastructuresSystem: LevelEnvironmentPorts['orbitalMegastructuresSystem'];

@@ -84,7 +84,6 @@ export const DEFERRED_ENV_FLAGS = [
     'quantumSingularityCore',
     'dimensionalFractures',
     'cosmicStringHorizons',
-    'astralResonanceRings',
     'etherealPrismaticRibbons',
 ] as const satisfies readonly (keyof LevelEnvironments)[];
 
@@ -202,7 +201,6 @@ export const DEFERRED_ENV_FLAG_SYSTEM_KEY: Record<DeferredEnvSystemKey, SystemKe
     quantumSingularityCore: 'quantumSingularityCore',
     dimensionalFractures: 'dimensionalFractures',
     cosmicStringHorizons: 'cosmicStringHorizons',
-    astralResonanceRings: 'astralResonanceRings',
     etherealPrismaticRibbons: 'etherealPrismaticRibbons',
 };
 
