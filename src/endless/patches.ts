@@ -70,6 +70,30 @@ export const BOSS_TITLES: Record<BossEncounterKind, string> = {
 };
 
 export const RECIPE_PATCHES: Record<EnvDescriptorKey, Patch> = {
+    quantumMirrors: on('quantumMirrors'),
+    cosmicWebFilaments: on('cosmicWebFilaments'),
+    magneticPlasmaArcs: on('magneticPlasmaArcs'),
+    orbitalMegastructures: on('orbitalMegastructures'),
+    astralResonanceRings: on('astralResonanceRings'),
+    dimensionalFractures: on('dimensionalFractures'),
+    etherealPrismaticRibbons: on('etherealPrismaticRibbons'),
+    stardustVortex: on('stardustVortex'),
+    celestialClockworks: on('celestialClockworks'),
+    galacticLeylines: on('galacticLeylines'),
+    chronoTesseracts: on('chronoTesseracts'),
+    ascendantMonoliths: on('ascendantMonoliths'),
+    echoingVoidRipples: on('echoingVoidRipples'),
+    quantumFoamBubbles: on('quantumFoamBubbles'),
+    pulsarLighthouse: on('pulsarLighthouse'),
+    voidLatticeNetworks: on('voidLatticeNetworks'),
+    etherealSupernovaRemnants: on('etherealSupernovaRemnants'),
+    quantumSingularityCore: on('quantumSingularityCore'),
+    cosmicStringHorizons: on('cosmicStringHorizons'),
+    radiantHalos: on('radiantHalos'),
+    bioluminescentSpores: on('bioluminescentSpores'),
+    holographicDataStreams: on('holographicDataStreams'),
+    prismaticCrystals: on('prismaticCrystals'),
+
     // --- backdrops -------------------------------------------------------
     dynamicStarfield: on('dynamicStarfield'),
     dayNightCycle: on('dayNightCycle'),
