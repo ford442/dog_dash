@@ -371,6 +371,7 @@ export class LevelManager {
         }
 
         const environments = cfg.environments || {};
+        this.disposeLevelStreamingResources();
         applyEnvironmentPlugins(this, cfg, environments, levelLength);
 
         // Level 3 rescue objective friends spawn
@@ -401,7 +402,6 @@ export class LevelManager {
             );
         }
 
-        this.disposeLevelStreamingResources();
 
         if (cfg.pinwheelDensity && cfg.pinwheelDensity > 0) {
             this.pinwheelManager.spawnField(
