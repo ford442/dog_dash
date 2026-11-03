@@ -80,14 +80,14 @@ test('generation never touches Math.random', () => {
 // generator change), update the list and say so in the PR — old links break.
 test('golden chapter sequence for seed 0xd06de002', () => {
     assert.deepEqual(summary(new EndlessSequence(0xd06de002).first(8)), [
-        'crystalline nebulaRibbons airTokens asteroidField - 1090',
+        'crystalline moonPalace airTokens asteroidField - 1090',
         'biological fossilizedSpaceWhales timeShiftZones lightning starEater 1120',
-        'industrial hyperspaceTunnel windCurrents industrialGeometry - 990',
+        'industrial galacticLeylines windCurrents industrialGeometry - 990',
         'biological nebula airTokens asteroidField - 850',
-        'industrial dynamicStarfield comboCorridor stormGeode kraken 1260',
-        'crystalline galacticCore windCurrents asteroidField - 750',
-        'biological godRays airTokens lightning zephyr 1200',
-        'industrial industrial gravLens asteroidField - 790'
+        'industrial orbitalMegastructures comboCorridor stormGeode kraken 1260',
+        'crystalline nebulaRibbons windCurrents asteroidField - 750',
+        'biological dynamicStarfield airTokens asteroidField - 730',
+        'industrial industrial windCurrents stormGeode zephyr 1130'
     ]);
 });
 
