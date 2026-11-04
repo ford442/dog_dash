@@ -107,6 +107,10 @@ export class HolographicDataStreamsSystem {
         this.mesh.count = this.streamCount;
         this.mesh.visible = true;
 
+        if (this.mesh.parent !== this.scene) {
+            this.scene.add(this.mesh);
+        }
+
         if (config?.color1 !== undefined || config?.color2 !== undefined) {
             const mat = createHolographicMaterial(config.color1 ?? 0x00ffcc, config.color2 ?? 0x0044ff, this.uSpeed);
             if (this.mesh.material) {
