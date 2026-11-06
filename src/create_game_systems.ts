@@ -153,18 +153,21 @@ import { BoostSystem } from './boost_system';
 import { RollSystem } from './roll_system';
 import { BarkBlastSystem } from './bark_blast_system';
 import { updateHealthDisplay } from './ui_controls';
-import { player } from './player_loader';
 import { playerState as playerStateSingleton } from './game_config';
 import { game } from './game_runtime';
+import { createGeologicalWorld, type GeologicalWorld } from './geological/world';
+import type { SpatialIndex } from './spatial_index';
 
 export type CreateGameSystemsDeps = {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     playerState: typeof playerStateSingleton;
+    spatialIndex?: SpatialIndex;
 };
 
 /** Eager gameplay systems constructed once at bootstrap (stubs until level chunk loads). */
 export type GameSystems = {
+    geologicalWorld: GeologicalWorld;
     particleSystem: ParticleSystem;
     debrisSystem: DebrisSystem;
     weaponSystem: WeaponSystem;
@@ -297,7 +300,7 @@ export type LevelEnvironmentSystemExports = {
  * Construct all composition-root gameplay systems. Call once from bootstrap — never at import time.
  */
 export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
-    const { scene, camera, playerState } = deps;
+    const { scene, camera, playerState, spatialIndex } = deps;
 
     const particleSystem = new ParticleSystem(scene);
     const debrisSystem = new DebrisSystem(scene);
@@ -321,6 +324,11 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const biologicalSystem: BiologicalBackgroundSystem = createBiologicalSystemStub();
     const liquidMetalSystem: LiquidMetalSystem = createLiquidMetalSystemStub();
     const bossManager: BossManager = createBossManagerStub();
+    const geologicalWorld = createGeologicalWorld({
+        scene,
+        getLiquidMetalSystem: () => game?.liquidMetalSystem ?? liquidMetalSystem,
+        spatialIndex
+    });
 
     const audioSystem = getAudioSystem();
     initAudioOnInteraction();
@@ -377,7 +385,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
         dogController,
         juiceManager,
         powerUpManager: null as unknown as PowerUpManager,
-        getPlayerPosition: () => player?.position,
+        getPlayerPosition: () => game.player?.position,
         onHudHealthUpdate: () => {
             hudManager.updateHealth(playerState.health, playerState.maxHealth);
         },
@@ -414,9 +422,9 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
     orbManager.onPowerUpReady = () => {
         const triggered = powerUpManager.collectOrb();
-        if (triggered && player) {
+        if (triggered && game.player) {
             juiceManager.flashRainbow(0.5);
-            juiceManager.burstMagic(player.position.clone());
+            juiceManager.burstMagic(game.player.position.clone());
             syncMagicalEffectsFromActive(powerUpHookCtx);
         }
     };
@@ -540,6 +548,7 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
     const dataMonolithManager: DataMonolithManager = createDataMonolithManagerStub();
 
     return {
+        geologicalWorld,
         particleSystem,
         debrisSystem,
         weaponSystem,

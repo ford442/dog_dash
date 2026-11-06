@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import { createGameSystems } from '../create_game_systems';
 import { createGameManagers } from '../game_managers';
-import { generateEnvironment, bindEnvironmentSystems, cleanupGeologicalObjects } from '../environment';
+import { createStarEnvMap, bindEnvironmentSystems, cleanupGeologicalObjects } from '../environment';
 import {
-    scene, camera, renderer, rendererBackend, requestedRendererBackend, rendererFallbackReason,
-    initializeSceneAndRenderer, attachLightsAndEnv
+    scene, camera, mainLight, renderer, rendererBackend, requestedRendererBackend, rendererFallbackReason,
+    createSceneObjects, initializeSceneAndRenderer, attachLightsAndEnv
 } from '../scene_context';
-import { player, onPlayerLoaded } from '../player_loader';
+import { loadPlayer, onPlayerLoaded, playerLoadCallbacks } from '../player_loader';
 import { playerState, showError } from '../game_config';
 import { LevelManager } from '../level_manager';
 import { CreatureManager } from '../creature_manager';
@@ -80,12 +80,9 @@ async function loadWasm(): Promise<void> {
     getGpuChores().attachWasm(handle?.exports);
 }
 import {
-    sporeClouds, voidRootBalls, vacuumKelps, iceNeedleClusters,
-    magmaHearts, gravityAnchors, geodes,
     createSporeCloudAtPosition, createVoidRootBallAtPosition,
-    createVacuumKelpAtPosition, createIceNeedleClusterAtPosition,
+    createVacuumKelpAtPosition,
     createLiquidMetalBlobAtPosition, createMagmaHeartAtPosition,
-    createGravityAnchorAtPosition, createGeodeAtPosition,
     createJellyMossAtPosition
 } from '../environment';
 import {
@@ -96,15 +93,17 @@ import {
 } from './spawn_helpers';
 import { wireStartupCallbacks } from './startup_callbacks';
 import { createObstacleSystem, handleGameOver } from './obstacle_setup';
-import { ensureSlingableSystems } from '../level_systems_loader';
+import { ensureSlingableSystems, resetLevelSystemsLoader } from '../level_systems_loader';
+import { resetMetaUiLoader } from '../meta_ui_loader';
 import type { GameSystems } from '../create_game_systems';
 import type { GameManagers } from '../game_managers';
 /** Prototype sling/geological content — deferred until first gameplay click. */
 export async function spawnDeferredPrototypeContent(): Promise<void> {
     await ensureSlingableSystems();
-    createGravityAnchorWithTarsiers(80, 5, -25, 1);
-    createGravityAnchorWithTarsiers(180, -6, -20, 1);
-    createGravityAnchorWithTarsiers(280, 8, -22, 1);
+    const world = game.env.geologicalWorld;
+    createGravityAnchorWithTarsiers(world, 80, 5, -25, 1);
+    createGravityAnchorWithTarsiers(world, 180, -6, -20, 1);
+    createGravityAnchorWithTarsiers(world, 280, 8, -22, 1);
     createSlingableObjectAtPosition(96, 3, -14, {
         radius: 1.1, mass: 1.6,
         velocity: new THREE.Vector3(-1.6, 0.8, 0.25),
@@ -141,16 +140,16 @@ export async function spawnDeferredPrototypeContent(): Promise<void> {
         velocity: new THREE.Vector3(-0.9, 0.2, 0), kind: 'wreckingBall'
     });
     // Hero Nebula Jelly-Moss (1–3). With VITE_CPP_WASM + game_cpp.wasm, cores use Verlet soft-body.
-    createJellyMossAtPosition(120, 4, -22, 5.5);
-    createJellyMossAtPosition(210, -3, -20, 4.2);
-    createJellyMossAtPosition(340, 6, -24, 6.0);
+    createJellyMossAtPosition(world, 120, 4, -22, 5.5);
+    createJellyMossAtPosition(world, 210, -3, -20, 4.2);
+    createJellyMossAtPosition(world, 340, 6, -24, 6.0);
 }
 export async function spawnDeferredVideoStars(): Promise<void> {
     const { VideoTumblingStar } = await import('../video_tumbling_star');
     game.videoTumblingStars = [
-        new VideoTumblingStar(scene, 360, 12, -45),
-        new VideoTumblingStar(scene, 980, -6, -40),
-        new VideoTumblingStar(scene, 1620, 8, -48)
+        new VideoTumblingStar(game.scene, 360, 12, -45),
+        new VideoTumblingStar(game.scene, 980, -6, -40),
+        new VideoTumblingStar(game.scene, 1620, 8, -48)
     ];
 }
 function createLevelManager(
@@ -163,11 +162,12 @@ function createLevelManager(
         debugSystem: DebugSystem;
     }
 ): LevelManager {
+    const geologicalWorld = systems.geologicalWorld;
     return new LevelManager({
         weaponLightManager: systems.weaponLightManager,
         scene,
         camera,
-        getPlayer: () => player,
+        getPlayer: () => game.player,
         friendsManager: managers.friendsManager,
         industrialGeometryManager,
         ghostDebrisSystem: deferred.ghostDebrisSystem,
@@ -250,23 +250,23 @@ function createLevelManager(
             shootingStarsSystem: systems.shootingStarsSystem
         },
         spawners: {
-            createSporeCloudAtPosition,
-            createVoidRootBallAtPosition,
-            createVacuumKelpAtPosition,
-            createIceNeedleClusterAtPosition: createIceNeedleClusterAtPositionWithLemur,
-            createLiquidMetalBlobAtPosition,
-            createMagmaHeartAtPosition,
-            createGravityAnchorAtPosition: createGravityAnchorWithTarsiers,
-            createGeodeAtPosition: createGeodeAtPositionWithLemur
+            createSporeCloudAtPosition: (x, y, z) => createSporeCloudAtPosition(geologicalWorld, x, y, z),
+            createVoidRootBallAtPosition: (x, y, z) => createVoidRootBallAtPosition(geologicalWorld, x, y, z),
+            createVacuumKelpAtPosition: (x, y, z) => createVacuumKelpAtPosition(geologicalWorld, x, y, z),
+            createIceNeedleClusterAtPosition: (x, y, z) => createIceNeedleClusterAtPositionWithLemur(geologicalWorld, x, y, z),
+            createLiquidMetalBlobAtPosition: (x, y, z) => createLiquidMetalBlobAtPosition(geologicalWorld, x, y, z),
+            createMagmaHeartAtPosition: (x, y, z) => createMagmaHeartAtPosition(geologicalWorld, x, y, z),
+            createGravityAnchorAtPosition: (x, y, z, biome) => createGravityAnchorWithTarsiers(geologicalWorld, x, y, z, biome),
+            createGeodeAtPosition: (x, y, z) => createGeodeAtPositionWithLemur(geologicalWorld, x, y, z)
         },
         geologicalCounts: {
-            sporeClouds: () => sporeClouds.length,
-            voidRootBalls: () => voidRootBalls.length,
-            vacuumKelps: () => vacuumKelps.length,
-            iceNeedleClusters: () => iceNeedleClusters.length,
-            magmaHearts: () => magmaHearts.length,
-            gravityAnchors: () => gravityAnchors.length,
-            geodes: () => geodes.length
+            sporeClouds: () => geologicalWorld.sporeClouds.length,
+            voidRootBalls: () => geologicalWorld.voidRootBalls.length,
+            vacuumKelps: () => geologicalWorld.vacuumKelps.length,
+            iceNeedleClusters: () => geologicalWorld.iceNeedleClusters.length,
+            magmaHearts: () => geologicalWorld.magmaHearts.length,
+            gravityAnchors: () => geologicalWorld.gravityAnchors.length,
+            geodes: () => geologicalWorld.geodes.length
         },
         onLevelStart: (cfg) => {
             playerState.autoScrollSpeed = cfg.speed;
@@ -277,7 +277,7 @@ function createLevelManager(
             game.toyRocketSpawnManager.spawnForLevel(game.levelManager.currentLevel, cfg);
             spawnGravLensCorridorsForLevel(game.levelManager.currentLevel, cfg);
             spawnDreamPortalsForLevel(cfg);
-            spawnArtifactsForLevel(cfg, player?.position.x ?? 0);
+            spawnArtifactsForLevel(cfg, game.player?.position.x ?? 0);
             game.wrenchChargeAvailable = game.saveManager.hasMemory('mine_robot');
             game.slingObjectiveManager.reset(cfg.objective?.type === 'sling' ? cfg.objective.target : 0);
             if (cfg.objective?.type === 'scan') {
@@ -298,7 +298,7 @@ function createLevelManager(
                 game.hudManager.updateObjectiveProgress(0, 0);
             }
             if (cfg.objective?.type === 'rescue' && game.levelManager.currentLevel === 3) {
-                const px = player?.position.x ?? 0;
+                const px = game.player?.position.x ?? 0;
                 game.friendsManager.spawnTrappedLemurIsland(px + 240, 5 + gameplayRandom('friends') * 4, -16 - gameplayRandom('friends') * 8);
             }
         },
@@ -353,7 +353,7 @@ function createLevelManager(
 export async function initializeStartup(): Promise<void> {
     try {
         await initializeSceneAndRenderer();
-        attachLightsAndEnv(generateEnvironment());
+        attachLightsAndEnv(createStarEnvMap());
     } catch (err: unknown) {
         // A failed WebGPU probe gets the dedicated boot-failure screen from
         // bootstrap — don't also raise the generic init dialog over it.
@@ -374,8 +374,15 @@ export async function initializeStartup(): Promise<void> {
  * without a GPU — nothing below may touch `renderer` at construction time.
  */
 export async function composeGameContext(options: { headless?: boolean } = {}): Promise<void> {
-    const systems = createGameSystems({ scene, camera, playerState });
+    if (options.headless || !scene) {
+        createSceneObjects();
+    }
+    resetLevelSystemsLoader();
+    resetMetaUiLoader();
+    const frameState = createGameContextFrameState();
+    const systems = createGameSystems({ scene, camera, playerState, spatialIndex: frameState.spatialIndex });
     bindEnvironmentSystems({
+        scene,
         particleSystem: systems.particleSystem,
         weaponSystem: systems.weaponSystem,
         liquidMetalSystem: systems.liquidMetalSystem
@@ -509,6 +516,8 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     });
     levelManager.cloudSystem.setCamera(camera);
     const obstacleSystem = createObstacleSystem({
+        scene,
+        geologicalWorld: systems.geologicalWorld,
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,
         waterfallSystem: systems.waterfallSystem,
@@ -519,7 +528,11 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     const ctx: GameContext = {
         ...systems,
         ...managers,
-        ...createGameContextFrameState(),
+        ...frameState,
+        scene,
+        camera,
+        mainLight,
+        player: null,
         playerState,
         ghostDebrisSystem,
         voidJellyfishSystem,
@@ -554,14 +567,14 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     installGameContext(ctx);
     applyCraftedLoadout(game, playerState);
     attachGpuLeakDetector(debugSystem, () => {
-        const camX = camera.position.x;
-        const playerX = player?.position.x ?? camX;
+        const camX = game.camera.position.x;
+        const playerX = game.player?.position.x ?? camX;
         game.levelManager.cleanupBehind(camX + 500);
-        cleanupGeologicalObjects(camX + 500);
+        cleanupGeologicalObjects(game.env.geologicalWorld, camX + 500);
         for (let i = game.obstacleSystem.obstacles.length - 1; i >= 0; i--) {
             const obs = game.obstacleSystem.obstacles[i];
             if (obs.position.x < playerX - 5) {
-                scene.remove(obs);
+                game.scene.remove(obs);
                 disposeObject(obs);
                 game.obstacleSystem.obstacles.splice(i, 1);
             }
@@ -573,13 +586,22 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     const wasmReady = loadWasm();
     if (options.headless) await wasmReady;
 
-    void loadWasm();
+    playerLoadCallbacks.length = 0;
     onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: unknown) => {
+        ctx.player = loadedPlayer;
         game.effectManager.setTarget(loadedPlayer);
         const dogTarget = (rocketModelOrGroup as THREE.Group) || loadedPlayer;
         try { game.dogController.initialize(dogTarget); } catch { game.dogController.initialize(loadedPlayer); }
         console.log('🚀 Rocket loaded via player_loader onto canonical scene');
     });
+    const playerReady = loadPlayer(scene, {
+        stub: options.headless,
+        onReady: (loadedPlayer) => {
+            ctx.player = loadedPlayer;
+        }
+    });
+    if (options.headless) await playerReady;
+
     if (shouldShowTutorial(game.saveManager)) {
         game.tutorialSystem.onComplete(() => console.log('Tutorial complete! Starting game...'));
     }

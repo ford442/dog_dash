@@ -179,6 +179,7 @@ export class JellyMossSoftBodySystem {
     }
 
     clear(): void {
+        this.pendingMeshes = [];
         for (const slot of this.slots) {
             slot.mesh.userData.softBodyHero = false;
         }

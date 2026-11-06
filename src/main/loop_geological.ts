@@ -1,27 +1,11 @@
 import * as THREE from 'three';
-import { scene, camera, mainLight, renderer, touchControls } from '../scene_context';
-import { player } from '../player_loader';
-import { playerState, isGamePaused } from '../game_config';
+import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { keys, updateHealthDisplay } from '../ui_controls';
-import { PowerUpType } from '../powerup_manager';
-import { MagicalEffectType } from '../magical_effects';
+import { updateHealthDisplay } from '../ui_controls';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { getLevelSpan } from '../depth_layers';
 import { gameplayRandom } from '../run_seed';
-import {
-    shouldSpawnStarlightKoi,
-    shouldSpawnBubbleCoral,
-    getBubbleCoralPlacement,
-    resolveBubbleCoralClusterCount
-} from '../level_spawn_rules';
-import { animateFoliage, updateSolarSail } from '../foliage';
-import { moonPlants } from '../visuals';
-import {
-    sporeClouds, jellyMosses, solarSails, geodes, voidRootBalls, vacuumKelps,
-    iceNeedleClusters, magmaHearts, gravityAnchors, liquidMetalBlobs, cleanupGeologicalObjects
-} from '../environment';
+import { updateSolarSail } from '../foliage';
 import {
     damageGeode, updateGeode, updateNebulaJellyMoss, destroyNebulaJellyMoss,
     updateVoidRootBall, updateVacuumKelp, updateIceNeedleCluster, updateMagmaHeart,
@@ -41,6 +25,12 @@ import {
 import { scheduleSim } from '../sim_clock';
 
 export function updateLoopGeological(delta: number, time: number): void {
+        const { scene, camera, player } = game;
+        const {
+            sporeClouds, jellyMosses, solarSails, geodes, voidRootBalls, vacuumKelps,
+            iceNeedleClusters, magmaHearts, gravityAnchors
+        } = game.env.geologicalWorld;
+
         // --- NEW: Update Geological Objects ---
         if (game.debugSystem.isEnabled('geologicalObjects')) {
             game.geologicalUpdateFrame++;

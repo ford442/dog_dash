@@ -9,8 +9,6 @@
  */
 
 import * as THREE from 'three';
-import { camera } from '../scene_context';
-import { player } from '../player_loader';
 import { playerState, DREAM_ROOM_Y } from '../game_config';
 import { game } from '../game_runtime';
 import { ShakeType } from '../juice_effects';
@@ -39,16 +37,16 @@ export function createDreamPortalCallbacks(): DreamPortalCallbacks {
         },
         nudgePlayer: (dx, dy) => {
             playerState.currentSpeedY += dy;
-            if (player) player.position.x += dx * 0.08;
+            if (game.player) game.player.position.x += dx * 0.08;
         },
     };
 
     return {
-        getPlayer: () => player,
+        getPlayer: () => game.player,
         motion,
         snapCamera: (y) => {
             // Skip the follow lerp — otherwise the camera crawls across the gap.
-            camera.position.y = y + 2;
+            game.camera.position.y = y + 2;
         },
         spawnOrb: (x, y, z) => {
             game.orbManager.spawnStarOrb(x, y, z);
@@ -87,7 +85,7 @@ export function createDreamPortalCallbacks(): DreamPortalCallbacks {
             const label = reward.cleared
                 ? `Dream Cleared! +${reward.cores} Cores`
                 : `Sweet dreams! +${reward.cores} Cores`;
-            const anchor = player?.position.clone() ?? exitPosition;
+            const anchor = game.player?.position.clone() ?? exitPosition;
             game.juiceManager.showFloatingText(label, anchor, '#9fe8ff', 28);
             game.juiceManager.flashRainbow(0.8);
             game.juiceManager.burstMagic(anchor);
@@ -112,7 +110,7 @@ export function spawnDreamPortalsForLevel(cfg: LevelConfig): void {
  * so a bonus room can never interrupt a scripted sequence.
  */
 export function updateDreamPortals(delta: number, time: number): void {
-    if (!player) return;
+    if (!game.player) return;
     const system = game.dreamPortalSystem;
     if (!system) return;
 

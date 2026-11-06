@@ -1,5 +1,4 @@
-import { scene, camera, mainLight, renderer, touchControls, configureMainLightShadows } from '../scene_context';
-import { player } from '../player_loader';
+import { renderer, touchControls, configureMainLightShadows } from '../scene_context';
 import { isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { getCollisionDebugTargets, RESOLUTION_RATIOS } from './render_helpers';
@@ -18,6 +17,7 @@ import * as THREE from 'three';
  * fixed-step accumulator entirely when true).
  */
 export function updateFrameHousekeeping(rawDelta: number): boolean {
+    const { scene, camera, mainLight, player } = game;
     // --- Debug System ---
     game.debugSystem.update(rawDelta);
     updateGpuLeakDetector(rawDelta);

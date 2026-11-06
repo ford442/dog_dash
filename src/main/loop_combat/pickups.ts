@@ -1,4 +1,3 @@
-import { player } from '../../player_loader';
 import { playerState } from '../../game_config';
 import { game } from '../../game_runtime';
 import { updateHealthDisplay } from '../../ui_controls';
@@ -7,6 +6,7 @@ import { gameplayRandom } from '../../run_seed';
 
 /** Pickups → upgrades, heat, starfield, orb collection / random spawn. */
 export function updateCombatPickups(delta: number, time: number): void {
+    const player = game.player;
     if (!player) return;
 
     const collected = game.pickupManager.update(delta, time, player.position);
@@ -46,6 +46,7 @@ export function updateCombatPickups(delta: number, time: number): void {
 
 /** Random orb spawns (runs after victory/tutorial, matching prior loop order). */
 export function maybeSpawnRandomOrb(): void {
+    const player = game.player;
     if (!player) return;
     if (gameplayRandom('pickups') < 0.02) {
         const spawnX = player.position.x + 40 + gameplayRandom('pickups') * 20;

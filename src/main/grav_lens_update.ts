@@ -3,7 +3,6 @@
  */
 
 import * as THREE from 'three';
-import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
 import type { SlingshotGrade } from '../grav_lens';
@@ -21,6 +20,7 @@ function slingQualityFromGrade(grade: SlingshotGrade): SlingQuality {
 }
 
 export function updateGravLensSystems(delta: number): void {
+    const player = game.player;
     if (!player || game.gravLensManager.getLenses().length === 0) return;
 
     if (playerState.gravLensBoostTimer > 0) {

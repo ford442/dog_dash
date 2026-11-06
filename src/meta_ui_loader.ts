@@ -4,7 +4,6 @@
  * cold entry graph until first use or first gameplay click.
  */
 
-import { scene, camera } from './scene_context';
 import { game } from './game_runtime';
 import type { HubMode, HubTab } from './hub_screen';
 import type { SaveManager } from './save_manager';
@@ -17,6 +16,10 @@ let journeyMapMod: JourneyMapModule | null = null;
 let hubIntegrationMod: HubIntegrationModule | null = null;
 let bestiaryMod: BestiaryModule | null = null;
 let victoryTutorialReady = false;
+
+export function resetMetaUiLoader(): void {
+    victoryTutorialReady = false;
+}
 
 export async function ensureJourneyMap(): Promise<JourneyMapModule> {
     if (!journeyMapMod) {
@@ -55,14 +58,14 @@ export async function ensureVictoryAndTutorial(): Promise<void> {
     ]);
 
     const victorySystem = new VictorySystem(
-        scene,
-        camera,
+        game.scene,
+        game.camera,
         game.audioSystem,
         game.hudManager,
         game.juiceManager
     );
     const tutorialSystem = new TutorialSystem(
-        scene,
+        game.scene,
         game.hudManager,
         game.audioSystem,
         game.dogController

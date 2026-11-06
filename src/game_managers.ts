@@ -13,7 +13,6 @@ import type { WindChimeManager } from './wind_chimes';
 import type { ParticleSystem } from './particles';
 import type { AudioSystem } from './audio_system';
 import { game } from './game_runtime';
-import { scene } from './scene_context';
 
 export interface GameManagers {
     friendsManager: FriendsManager;
@@ -125,9 +124,8 @@ export function createGameManagers(
     _audioSystem: AudioSystem,
     _particleSystem: ParticleSystem
 ): GameManagers {
-    if (createdManagers) {
-        throw new Error('createGameManagers() must only be called once per runtime.');
-    }
+    managersReady = false;
+    managersInflight = null;
 
     createdManagers = {
         friendsManager: createFriendsManagerStub(),
@@ -149,7 +147,7 @@ export async function ensureGameManagers(): Promise<void> {
 
     managersInflight = (async () => {
         const { createRealGameManagers } = await import('./game_managers_impl');
-        const real = createRealGameManagers(scene, game.audioSystem, game.particleSystem);
+        const real = createRealGameManagers(game.scene, game.audioSystem, game.particleSystem);
 
         // Preserve callbacks wired on the stub during startup.
         const stubFriends = game.friendsManager;

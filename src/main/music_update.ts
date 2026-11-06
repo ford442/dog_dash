@@ -8,10 +8,8 @@
  * with `setTargetAtTime`, so a noisy frame never produces a noisy mix.
  */
 
-import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { geodes } from '../environment';
 
 /** Obstacles inside this window ahead of the player count toward danger. */
 const DANGER_WINDOW = 60;
@@ -48,6 +46,7 @@ function sampleDanger(playerX: number): number {
 function sampleQuiet(playerX: number): number {
     if (game.dreamPortalSystem?.isActive?.()) return 1;
 
+    const geodes = game.env?.geologicalWorld?.geodes ?? [];
     for (const geode of geodes) {
         if (Math.abs(geode.position.x - playerX) < HARBOR_RADIUS) return 0.7;
     }
@@ -59,6 +58,7 @@ function sampleQuiet(playerX: number): number {
  * Safe to call every frame, including before a chapter bed exists.
  */
 export function updateChapterMusicDynamics(): void {
+    const player = game.player;
     if (!player) return;
 
     const playerX = player.position.x;

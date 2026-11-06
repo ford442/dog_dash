@@ -3,10 +3,8 @@ import { CONFIG, playerState } from '../game_config';
 import { game } from '../game_runtime';
 import { keys } from '../ui_controls';
 import { touchControls } from '../scene_context';
-import { player } from '../player_loader';
 import { updateHealthDisplay } from '../ui_controls';
 import { getLevelSpan } from '../depth_layers';
-import { gravityAnchors } from '../environment';
 import { showRollPopup, updateBarkDisplay } from './hud_displays';
 import { BARK_RADIUS } from '../bark_blast_system';
 import { maybePrefetchNextLevel } from '../level_systems_loader';
@@ -15,8 +13,10 @@ import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects/shared';
 
 export function updatePlayer(delta: number) {
+    const player = game.player;
     // Don't update if player hasn't loaded yet
     if (!player) return;
+    const { gravityAnchors } = game.env.geologicalWorld;
 
     const modifiers = game.powerUpManager.getCombinedModifiers();
     const hasFairyWings = game.powerUpManager.hasPowerUp(PowerUpType.FAIRY_DOG_WINGS);

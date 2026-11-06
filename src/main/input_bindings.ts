@@ -1,9 +1,7 @@
 import * as THREE from 'three';
-import { canvas, camera, renderer } from '../scene_context';
-import { player } from '../player_loader';
+import { canvas, renderer } from '../scene_context';
 import { playerState, gameStarted, setGameStarted, setIsGamePaused, isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
-import { sporeClouds } from '../environment';
 import { PowerUpType } from '../powerup_manager';
 import { createUI, setupKeyboardControls } from '../ui_controls';
 import { createArchitectCodexUI } from '../architect_lore';
@@ -99,6 +97,9 @@ export async function startRun(
 
     await ensureGameplayReady();
     if (layout.mode !== 'campaign') await ensureLevelSystemsForLevel(layout.firstChapter);
+    // Reset geological world before seeding and spawning prototype set-pieces so
+    // replays / chapter swaps start from a clean world without leaked objects or WASM bodies.
+    game.env.geologicalWorld.reset();
     // Seed before the prototype set-pieces so their anchors, tarsiers and
     // slingables draw from the run streams. Awaited (not fire-and-forget) so
     // they exist before the first sim step on every machine.
@@ -126,8 +127,8 @@ export async function startRun(
     ghostRunRecorder.setStartChapter(startChapter);
     // The journey is one continuous run (player.x 0->5200), so launching a
     // later chapter means placing the rocket at that chapter's start X.
-    if (startChapter > 1 && player) {
-        player.position.x = getLevelSpan(startChapter).startX;
+    if (startChapter > 1 && game.player) {
+        game.player.position.x = getLevelSpan(startChapter).startX;
     }
     game.levelManager.startLevel(startChapter);
 }
@@ -141,6 +142,7 @@ export let tetherMouseHeld = false;
 let paintbrushMouseDown = false;
 
 function screenToWorldXY(clientX: number, clientY: number): THREE.Vector3 | null {
+    const { player, camera } = game;
     if (!player) return null;
     const rect = canvas.getBoundingClientRect();
     const mouse = new THREE.Vector2();
@@ -161,7 +163,7 @@ const instructions = document.getElementById('instructions');
 
 export function setupInputBindings(): void {
     setupKeyboardControls({
-        getPlayer: () => player,
+        getPlayer: () => game.player,
         requestFire: () => { game.wantsFire = true; },
         reEntrySystem: game.reEntrySystem
     });
@@ -170,7 +172,7 @@ export function setupInputBindings(): void {
         instructions.addEventListener('click', () => {
             instructions.style.display = 'none';
             createUI({
-                getPlayer: () => player,
+                getPlayer: () => game.player,
                 playerState,
                 startLevel: () => { void beginGameplay(); }
             });
@@ -299,9 +301,9 @@ export function setupInputBindings(): void {
         mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
         mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
         const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
+        raycaster.setFromCamera(mouse, game.camera);
 
-        sporeClouds.forEach(cloud => {
+        game.env.geologicalWorld.sporeClouds.forEach(cloud => {
             if (!cloud.active) return;
             const intersects = raycaster.intersectObject(cloud.spores, false);
             if (intersects.length > 0) {

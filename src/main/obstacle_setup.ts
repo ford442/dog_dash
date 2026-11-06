@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { scene } from '../scene_context';
-import { player } from '../player_loader';
 import { playerState } from '../game_config';
 import { game, type GameContext } from '../game_runtime';
 import { ObstacleSystem } from '../obstacle_system';
@@ -9,7 +7,6 @@ import type { AudioPort, HudPort, JuicePort } from '../ports';
 import { updateHealthDisplay } from '../ui_controls';
 import { CANDY_FLAVOR_COLORS } from '../candy_materials';
 import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
-import { sporeClouds } from '../environment';
 import { ShakeType } from '../juice_effects';
 import { DogAnimationState } from '../dog_cockpit';
 import { saveLastRunSummary } from '../run_seed/save_last_run';
@@ -18,6 +15,7 @@ import { restartRun } from './restart_run';
 
 export function handleGameOver(): void {
     saveLastRunSummary();
+    const player = game.player;
     if (player) {
         game.dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
         game.juiceManager.burstDamage(player.position.clone());
@@ -32,6 +30,8 @@ export function handleGameOver(): void {
 }
 
 export function createObstacleSystem(systems: {
+    scene: THREE.Scene;
+    geologicalWorld: GameContext['geologicalWorld'];
     particleSystem: GameContext['particleSystem'];
     debrisSystem: GameContext['debrisSystem'];
     waterfallSystem: GameContext['waterfallSystem'];
@@ -40,8 +40,8 @@ export function createObstacleSystem(systems: {
     juiceManager: JuicePort;
 }): ObstacleSystem {
     return new ObstacleSystem({
-        scene,
-        getPlayer: () => player,
+        scene: systems.scene,
+        getPlayer: () => game.player,
         getCurrentConfig: () => {
             const cfg = game.levelManager.config[game.levelManager.currentLevel];
             if (!cfg) return cfg;
@@ -61,7 +61,7 @@ export function createObstacleSystem(systems: {
         getWasm: () => ({ exports: game.wasmExports, memory: game.wasmMemory }),
         setWasmMemory: (memory) => { game.wasmMemory = memory; },
         getSpatialIndex: () => game.spatialIndex,
-        sporeClouds,
+        sporeClouds: systems.geologicalWorld.sporeClouds,
         particleSystem: systems.particleSystem,
         debrisSystem: systems.debrisSystem,
         waterfallSystem: systems.waterfallSystem,
@@ -70,6 +70,7 @@ export function createObstacleSystem(systems: {
         gameOver: handleGameOver,
         onPlayerHit: () => {
             game.lastPlayerDamageTime = getSimTime();
+            const player = game.player;
             if (player) {
                 game.dogController.triggerAnimation(DogAnimationState.HIT, 1.0);
                 game.juiceManager.shakeScreen(ShakeType.HEAVY);
@@ -92,7 +93,7 @@ export function createObstacleSystem(systems: {
                 hud: systems.hudManager,
                 juice: systems.juiceManager,
             },
-            getPlayerPosition: () => player?.position,
+            getPlayerPosition: () => game.player?.position,
             onFirstGraze: (position) => {
                 game.friendsManager.cheerFlotilla(position);
             },

@@ -36,8 +36,12 @@ import type { SeededRng } from './run_seed/rng';
 // See docs/GAME_CONTEXT.md
 // ---------------------------------------------------------------------------
 
-/** Clock, player snapshot, and WASM collision backends. */
+/** Clock, player snapshot, scene/camera/player anchors, and WASM collision backends. */
 export type CoreRuntime = {
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    mainLight: THREE.DirectionalLight;
+    player: THREE.Group | null;
     playerState: typeof playerState;
     wasmExports: WasmExports | null;
     wasmMemory: Float32Array | null;
@@ -120,6 +124,7 @@ export type NestedCombatRuntime = {
 
 /** Environment systems grouped on `game.env` (still mirrored on the flat bag). */
 export type NestedEnvRuntime = {
+    geologicalWorld: GameSystems['geologicalWorld'];
     nebulaSystem: GameSystems['nebulaSystem'];
     cosmicDustSystem: GameSystems['cosmicDustSystem'];
     industrialSystem: GameSystems['industrialSystem'];
@@ -226,6 +231,7 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         obstacleSystem: ctx.obstacleSystem
     };
     ctx.env = {
+        geologicalWorld: ctx.geologicalWorld,
         nebulaSystem: ctx.nebulaSystem,
         cosmicDustSystem: ctx.cosmicDustSystem,
         industrialSystem: ctx.industrialSystem,
@@ -265,6 +271,7 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         obstacleSystem: ctx.obstacleSystem
     });
     Object.assign(ctx.env, {
+        geologicalWorld: ctx.geologicalWorld,
         nebulaSystem: ctx.nebulaSystem,
         cosmicDustSystem: ctx.cosmicDustSystem,
         industrialSystem: ctx.industrialSystem,

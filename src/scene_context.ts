@@ -24,40 +24,87 @@ import {
 // =============================================================================
 // SINGLE SOURCE OF TRUTH: Scene / Camera / Core Objects
 // =============================================================================
-// This module creates the ONE THREE.Scene that main.ts renders.
-// No other module should do `new THREE.Scene()` or import a parallel scene.
-// Renderer + touch + light attachment are orchestrated from main.ts (after import).
+// Scene, fog, camera, and lights are constructed during initializeSceneAndRenderer()
+// (or createSceneObjects() in headless composition), never at module import time.
 // scene_setup.ts is gutted and re-exports from here for compat.
 
-export const canvas = document.querySelector('#glCanvas') as HTMLCanvasElement;
+export const canvas = (
+    typeof document !== 'undefined' ? document.querySelector('#glCanvas') : null
+) as HTMLCanvasElement;
 
-export const scene = new THREE.Scene();
-scene.background = new THREE.Color(CONFIG.colors.background);
-scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
+export const aspect =
+    typeof window !== 'undefined' && window.innerHeight > 0
+        ? window.innerWidth / window.innerHeight
+        : 16 / 9;
 
-export const aspect = window.innerWidth / window.innerHeight;
-export const camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 200);
+export let scene!: THREE.Scene;
+export let camera!: THREE.PerspectiveCamera;
 
-// Lights (creation here; .add() calls happen in main.ts setup)
-export const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
-export const rimLight = new THREE.DirectionalLight(0x6699ff, 0.4);
-export const accentLight1 = new THREE.PointLight(0xff8844, 0.6, 50);
-export const accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 50);
-export const ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+// Lights (created in createSceneObjects / initializeSceneAndRenderer; .add() calls happen in startup)
+export let mainLight!: THREE.DirectionalLight;
+export let rimLight!: THREE.DirectionalLight;
+export let accentLight1!: THREE.PointLight;
+export let accentLight2!: THREE.PointLight;
+export let ambientLight!: THREE.AmbientLight;
 
-// Renderer state (populated during main.ts init)
+// Renderer state (populated during bootstrap init)
 export let renderer: GameRenderer;
 export let rendererBackend: RendererBackend = 'webgpu';
 export let requestedRendererBackend: RendererBackend = 'webgpu';
 export let rendererFallbackReason = '';
 
-// Touch controls (populated during main.ts init)
+// Touch controls (populated during bootstrap init)
 export let touchControls: TouchControlsManager | null = null;
 export let touchSettingsBtn: HTMLElement | null = null;
 
-// One-time init of renderer, camera, touch, and lights attachment.
-// Called exactly once from main.ts. This prevents any duplicate renderer/scene.
+export type SceneObjects = {
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    mainLight: THREE.DirectionalLight;
+    rimLight: THREE.DirectionalLight;
+    accentLight1: THREE.PointLight;
+    accentLight2: THREE.PointLight;
+    ambientLight: THREE.AmbientLight;
+};
+
+/**
+ * Construct a fresh scene, fog, camera, and core light set.
+ * Called by initializeSceneAndRenderer() and headless composeGameContext().
+ */
+export function createSceneObjects(): SceneObjects {
+    const currentAspect =
+        typeof window !== 'undefined' && window.innerHeight > 0
+            ? window.innerWidth / window.innerHeight
+            : aspect;
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(CONFIG.colors.background);
+    scene.fog = new THREE.Fog(CONFIG.colors.background, 20, 80);
+
+    camera = new THREE.PerspectiveCamera(50, currentAspect, 0.1, 200);
+
+    mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    rimLight = new THREE.DirectionalLight(0x6699ff, 0.4);
+    accentLight1 = new THREE.PointLight(0xff8844, 0.6, 50);
+    accentLight2 = new THREE.PointLight(0x44ff88, 0.5, 50);
+    ambientLight = new THREE.AmbientLight(0x404060, 0.5);
+
+    return {
+        scene,
+        camera,
+        mainLight,
+        rimLight,
+        accentLight1,
+        accentLight2,
+        ambientLight
+    };
+}
+
+// One-time init of scene, renderer, camera, touch, and lights attachment.
+// Called from bootstrap after import. This prevents any import-time scene/renderer construction.
 export async function initializeSceneAndRenderer(options?: { basePixelRatio?: number }): Promise<void> {
+    createSceneObjects();
+
     // Camera (Side-view, follows player on X axis)
     camera.position.set(0, CONFIG.cameraHeight, CONFIG.cameraDistance);
     camera.lookAt(0, CONFIG.cameraHeight, 0);
@@ -97,7 +144,7 @@ export async function initializeSceneAndRenderer(options?: { basePixelRatio?: nu
 }
 
 // Attach core lights and environment map (envMap passed in).
-// Keeps attachment order/logic in main.ts but uses shared objects.
+// Keeps attachment order/logic in startup but uses shared objects.
 export function attachLightsAndEnv(envMap: THREE.Texture) {
     scene.add(ambientLight);
 
@@ -132,4 +179,4 @@ export function configureMainLightShadows(enabled: boolean): void {
     mainLight.shadow.bias = -0.0001;
 }
 
-// Resize is handled in main.ts (single handler). This module does not attach listeners.
+// Resize is handled in main/resize.ts (single handler). This module does not attach listeners.

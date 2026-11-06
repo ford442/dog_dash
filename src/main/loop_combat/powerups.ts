@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import { player } from '../../player_loader';
 import { playerState } from '../../game_config';
 import { game } from '../../game_runtime';
 import { PowerUpType } from '../../powerup_manager';
@@ -101,6 +100,7 @@ function applyCandyVortex(playerPos: THREE.Vector3, delta: number): void {
 
 /** Power-ups, modifier gameplay, magical effects. */
 export function updateCombatPowerups(delta: number): void {
+    const player = game.player;
     if (!player) return;
 
     game.powerUpManager.update(delta, player.position);

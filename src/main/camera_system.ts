@@ -1,12 +1,11 @@
 import { CONFIG } from '../game_config';
 import { game } from '../game_runtime';
-import { camera } from '../scene_context';
-import { player } from '../player_loader';
 
 // =============================================================================
 // CAMERA FOLLOW - Dynamic with screen shake and movement response
 // =============================================================================
 export function updateCamera(delta?: number) {
+    const { camera, player } = game;
     // Don't update if player hasn't loaded yet
     if (!player) return;
     

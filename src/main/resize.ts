@@ -1,9 +1,12 @@
-import { camera, renderer } from '../scene_context';
+import { renderer } from '../scene_context';
+import { game } from '../game_runtime';
 
 export function setupResizeHandler(): void {
     window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
+        if (game?.camera) {
+            game.camera.aspect = window.innerWidth / window.innerHeight;
+            game.camera.updateProjectionMatrix();
+        }
         renderer.setSize(window.innerWidth, window.innerHeight);
     });
 }

@@ -17,7 +17,6 @@ import {
     type DeferredLoaderContext,
     type DeferredGamePorts
 } from './level_env_registry';
-import { scene, camera } from './scene_context';
 import { ensureVictoryAndTutorial } from './meta_ui_loader';
 import { ensureGameManagers } from './game_managers';
 
@@ -27,6 +26,12 @@ export { systemsNeededForLevel };
 const loaded = new Set<SystemKey>();
 const inflight = new Map<SystemKey, Promise<void>>();
 const prefetchedLevels = new Set<number>();
+
+export function resetLevelSystemsLoader(): void {
+    loaded.clear();
+    inflight.clear();
+    prefetchedLevels.clear();
+}
 
 function installEnvPartial(partial: Partial<LevelEnvironmentPorts>): void {
     Object.assign(game, partial);
@@ -38,8 +43,8 @@ function installEnvPartial(partial: Partial<LevelEnvironmentPorts>): void {
 
 function createLoaderContext(): DeferredLoaderContext {
     return {
-        scene,
-        camera,
+        scene: game.scene,
+        camera: game.camera,
         game: game as unknown as DeferredGamePorts,
         installEnvPartial,
         assignGameSystem(key, value) {
@@ -88,7 +93,7 @@ async function ensureCloudSystem(): Promise<void> {
     if (!lm || (lm.cloudSystem as { __stub?: boolean }).__stub !== true) return;
     const { CloudSystem } = await import('./clouds');
     const real = new CloudSystem(lm.scene, game.weaponLightManager);
-    if (camera) real.setCamera(camera);
+    if (game.camera) real.setCamera(game.camera);
     lm.cloudSystem = real;
 }
 

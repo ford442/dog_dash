@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { camera } from '../../scene_context';
-import { player } from '../../player_loader';
 import { playerState } from '../../game_config';
 import { game } from '../../game_runtime';
 import { updateHealthDisplay } from '../../ui_controls';
@@ -16,6 +14,7 @@ import { StarEaterBoss } from '../../boss_system';
 
 /** Boss spawn/update, WASM projectile hits, health bar. Returns true on mouth-snap death. */
 export function updateCombatBoss(delta: number): boolean {
+    const player = game.player;
     if (!player) return false;
 
     if (!playerState.bossActive) {
@@ -157,7 +156,7 @@ export function updateCombatBoss(delta: number): boolean {
             const projectiles = game.weaponSystem.getActiveProjectiles();
             const hitboxes = boss.collectWasmHitboxes();
             if (hitboxes.length > 0) {
-                rebuildGameplaySpatialHash();
+                rebuildGameplaySpatialHash(game.env.geologicalWorld);
                 const applyBossHit = (hitIndex: number, proj: { active: boolean; mesh: THREE.Object3D; deactivate: () => void }) => {
                     const entry = boss.resolveHitboxEntry(hitIndex);
                     if (!entry?.dealsDamage) {
@@ -199,6 +198,7 @@ export function updateCombatBoss(delta: number): boolean {
 export function updateCombatBossKraken(
     projectiles: Array<{ active: boolean; mesh: THREE.Object3D; deactivate: () => void }>
 ): void {
+    const player = game.player;
     const squids = game.obstacleSystem.getSquids();
     for (const squid of squids) {
         if (squid.isDestroyed) continue;
@@ -245,6 +245,8 @@ export function updateCombatBossKraken(
 
 /** Moon gate camera pull → victory approach. */
 export function updateMoonGateSequence(delta: number): void {
+    const camera = game.camera;
+    const player = game.player;
     game.planetaryHorizonSystem.updateMoonGate(delta);
 
     if (game.moonGateSequenceActive) {

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { createGravityAnchorAtPosition, createGeodeAtPosition, createIceNeedleClusterAtPosition } from '../environment';
+import type { GeologicalWorld } from '../geological/world';
 import type { SlingableObjectConfig } from '../slingable_objects';
 import { game } from '../game_runtime';
 import { gameplayRandom } from '../run_seed';
@@ -18,21 +19,21 @@ function maybeSpawnLemurOnProp(anchor: THREE.Object3D | null | undefined, perchT
     game.friendsManager.maybeSpawnLemurOnPerch(anchor, perchType, cfg);
 }
 
-export function createGravityAnchorWithTarsiers(x: number, y: number, z: number, biome: number = 0) {
-    const anchor = createGravityAnchorAtPosition(x, y, z, biome);
+export function createGravityAnchorWithTarsiers(world: GeologicalWorld, x: number, y: number, z: number, biome: number = 0) {
+    const anchor = createGravityAnchorAtPosition(world, x, y, z, biome);
     spawnTarsiersForGravityAnchor(anchor);
     maybeSpawnLemurOnProp(anchor, 'gravityAnchor');
     return anchor;
 }
 
-export function createGeodeAtPositionWithLemur(x: number, y: number, z: number) {
-    const geode = createGeodeAtPosition(x, y, z);
+export function createGeodeAtPositionWithLemur(world: GeologicalWorld, x: number, y: number, z: number) {
+    const geode = createGeodeAtPosition(world, x, y, z);
     maybeSpawnLemurOnProp(geode, 'geode');
     return geode;
 }
 
-export function createIceNeedleClusterAtPositionWithLemur(x: number, y: number, z: number) {
-    const cluster = createIceNeedleClusterAtPosition(x, y, z);
+export function createIceNeedleClusterAtPositionWithLemur(world: GeologicalWorld, x: number, y: number, z: number) {
+    const cluster = createIceNeedleClusterAtPosition(world, x, y, z);
     maybeSpawnLemurOnProp(cluster, 'iceNeedle');
     return cluster;
 }

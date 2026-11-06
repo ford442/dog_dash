@@ -1,9 +1,7 @@
 import * as THREE from 'three';
-import { scene, camera, mainLight, renderer, rendererBackend } from '../scene_context';
-import { player } from '../player_loader';
+import { renderer, rendererBackend } from '../scene_context';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { sporeClouds, geodes, voidRootBalls, vacuumKelps, iceNeedleClusters, magmaHearts, gravityAnchors, jellyMosses } from '../environment';
 import { RESOLUTION_RATIOS, parsePixelRatioPreset, pixelRatioForPreset, indexForPixelRatio } from '../pixel_ratio';
 import { prefersReducedMotion } from '../audio_settings';
 import { optionalPostFx } from '../optional_post_fx';
@@ -23,11 +21,12 @@ export function initRenderHelpers(): void {
     game.currentPixelRatio = Math.min(2, window.devicePixelRatio * RESOLUTION_RATIOS[game.currentRatioIndex]);
     renderer.setPixelRatio(game.currentPixelRatio);
     game.wireframeDebugHelper = new WireframeDebugHelper();
-    game.collisionDebugOverlay = new CollisionDebugOverlay(scene);
+    game.collisionDebugOverlay = new CollisionDebugOverlay(game.scene);
     game.webglMaterialFallbackRenderer = new WebGLMaterialFallbackRenderer(rendererBackend);
 }
 
 export function renderGameFrame(): void {
+    const { scene, camera } = game;
     const isGlowActive = game.debugSystem.isEnabled('pixelGlow') || (game.pixelGlowSystem && game.pixelGlowSystem.active);
 
     if (game.pixelGlowSystem && isGlowActive && rendererBackend === 'webgpu') {
@@ -52,6 +51,8 @@ export function renderGameFrame(): void {
 }
 
 export function getCollisionDebugTargets(): CollisionDebugTarget[] {
+    const { player } = game;
+    const { sporeClouds, jellyMosses, gravityAnchors, voidRootBalls } = game.env.geologicalWorld;
     const targets: CollisionDebugTarget[] = [];
     const addTarget = (position: THREE.Vector3 | null | undefined, radius: number, color: number) => {
         if (!position) return;
@@ -111,6 +112,7 @@ export function getCollisionDebugTargets(): CollisionDebugTarget[] {
 
 export function updateShadowQuality(): void {
     if (!game.debugSystem.isEnabled('shadows')) return;
+    const { mainLight } = game;
     const targetSize = playerState.bossActive ? 2048 : 1024;
     if (mainLight.shadow.mapSize.width !== targetSize) {
         mainLight.shadow.mapSize.width = targetSize;
@@ -124,10 +126,13 @@ export function updateShadowQuality(): void {
 
 export function updateShadowCulling(): void {
     if (!game.debugSystem.isEnabled('shadows')) return;
+    const { player } = game;
     if (!player) return;
     game.shadowCullingFrame++;
     if (game.shadowCullingFrame % 15 !== 0) return;
 
+    const { geodes, voidRootBalls, vacuumKelps, iceNeedleClusters, magmaHearts, gravityAnchors } =
+        game.env.geologicalWorld;
     const playerX = player.position.x;
     const updateObj = (obj: THREE.Object3D | null | undefined) => {
         if (!obj || !obj.position || typeof obj.traverse !== 'function') return;

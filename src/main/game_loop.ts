@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { renderer } from '../scene_context';
-import { player } from '../player_loader';
 import { game } from '../game_runtime';
 import { renderGameFrame } from './render_helpers';
 import { updateFrameHousekeeping } from './frame_housekeeping';
@@ -41,7 +40,7 @@ function animate(): void {
         accumulator = remainder;
         for (let i = 0; i < steps; i++) {
             stepSimulation();
-            if (player) playerInterpolator.recordStep(player.position);
+            if (game.player) playerInterpolator.recordStep(game.player.position);
             recordInterpolatedObjects();
         }
     }
@@ -75,6 +74,7 @@ function recordInterpolatedObjects(): void {
  * sees the interpolated blend, and true positions are restored right after.
  */
 function renderInterpolated(): void {
+    const player = game.player;
     const alpha = interpolationAlpha(accumulator);
     const interpolated = player ? playerInterpolator.getInterpolated(alpha) : null;
     const truePosition = player && interpolated ? player.position.clone() : null;

@@ -1,33 +1,11 @@
-import { camera, touchControls } from '../scene_context';
-import { player } from '../player_loader';
+import { touchControls } from '../scene_context';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { PowerUpType } from '../powerup_manager';
-import { MagicalEffectType } from '../magical_effects';
-import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../candy_materials';
-import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
-import { getLevelSpan } from '../depth_layers';
+import { getCandySlingComboBonus } from '../candy_materials';
+import type { CandyAsteroidVariant } from '../candy_materials';
 import { getJourneyLayout } from '../journey_layout';
-import {
-    shouldSpawnStarlightKoi,
-    shouldSpawnBubbleCoral,
-    getBubbleCoralPlacement,
-    resolveBubbleCoralClusterCount
-} from '../level_spawn_rules';
-import { animateFoliage, updateSolarSail } from '../foliage';
-import { moonPlants } from '../visuals';
-import { keys, updateHealthDisplay } from '../ui_controls';
-import {
-    sporeClouds, jellyMosses, solarSails, geodes, voidRootBalls, vacuumKelps,
-    iceNeedleClusters, magmaHearts, gravityAnchors, liquidMetalBlobs, cleanupGeologicalObjects
-} from '../environment';
-import {
-    damageGeode, updateGeode, updateNebulaJellyMoss, destroyNebulaJellyMoss,
-    updateVoidRootBall, updateVacuumKelp, updateIceNeedleCluster, updateMagmaHeart,
-    updateGravityAnchor, GA_SLING_BONUS
-} from '../geological';
 
 import { updatePlayer } from './player_update';
 import { ghostRunRecorder, buildActionFlags } from '../ghost_run';
@@ -55,6 +33,8 @@ export function updateLoopCore(delta: number, _time: number): void {
         game.slingComboManager.update(delta);
 
         updatePlayer(delta);
+
+        const { camera, player } = game;
 
         if (player) {
             const touchInput = touchControls?.getInput();
@@ -159,7 +139,7 @@ export function updateLoopCore(delta: number, _time: number): void {
         // Feed speed / boost / danger / quiet into the chapter music mix.
         updateChapterMusicDynamics();
 
-        rebuildGameplaySpatialHash();
+        rebuildGameplaySpatialHash(game.env.geologicalWorld);
         game.obstacleSystem.resolveCollisions(delta);
         game.creatureManager.applyProjectileHits(
             game.weaponSystem.getActiveProjectiles(),

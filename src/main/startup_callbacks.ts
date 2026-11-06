@@ -1,12 +1,10 @@
 import * as THREE from 'three';
-import { player } from '../player_loader';
 import { playerState, CONFIG, setIsGamePaused, isGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { updateHealthDisplay } from '../ui_controls';
 import { syncMagicalEffectsFromActive } from '../powerup_manager';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { updateBoostDisplay, updateRollDisplay, updateTetherDisplay, showRollPopup } from './hud_displays';
 import { getMaterialDisplayName, getMaterialColor } from '../resource_inventory';
 import { recordChapterComplete } from '../journey_progress';
 import { openHubScreenLazy } from '../meta_ui_loader';
@@ -38,7 +36,7 @@ export function wireStartupCallbacks(): void {
         const name = getMaterialDisplayName(evt.id);
         const color = getMaterialColor(evt.id);
         game.hudManager.showResourcePop(name, evt.amount, color);
-        const pos = evt.position ?? player?.position?.clone();
+        const pos = evt.position ?? game.player?.position?.clone();
         if (pos) {
             game.juiceManager.showResourcePop(name, evt.amount, pos, color);
         }
@@ -47,6 +45,7 @@ export function wireStartupCallbacks(): void {
 
     game.orbManager.onPowerUpReady = () => {
         const triggered = game.powerUpManager.collectOrb();
+        const player = game.player;
         if (triggered && player) {
             game.juiceManager.flashRainbow(0.5);
             game.juiceManager.burstMagic(player.position.clone());
@@ -56,7 +55,7 @@ export function wireStartupCallbacks(): void {
                 dogController: game.dogController,
                 juiceManager: game.juiceManager,
                 powerUpManager: game.powerUpManager,
-                getPlayerPosition: () => player?.position,
+                getPlayerPosition: () => game.player?.position,
                 onHudHealthUpdate: () => {
                     game.hudManager.updateHealth(playerState.health, playerState.maxHealth);
                 },
@@ -85,6 +84,7 @@ export function wireStartupCallbacks(): void {
     };
 
     game.discoveryManager.onSpeciesDiscovered = (speciesId, name, totalThisRun, _isNewEver) => {
+        const player = game.player;
         if (player) {
             game.juiceManager.showFloatingText(`Scanned: ${name}!`, player.position.clone(), '#00ffcc', 22);
             game.juiceManager.burstMagic(player.position.clone());
@@ -100,6 +100,7 @@ export function wireStartupCallbacks(): void {
     };
 
     game.creatureCatalogManager.onCreatureCataloged = (_id, name, isNewEver) => {
+        const player = game.player;
         if (player) {
             const label = isNewEver ? `New! Cataloged: ${name}` : `Cataloged: ${name}`;
             game.juiceManager.showFloatingText(label, player.position.clone(), '#aaffee', isNewEver ? 26 : 20);
@@ -111,12 +112,14 @@ export function wireStartupCallbacks(): void {
 
     game.slingObjectiveManager.onProgress = (current, target) => {
         game.hudManager.updateObjectiveProgress(current, target);
+        const player = game.player;
         if (player) {
             game.juiceManager.showFloatingText(`Clean Sling! ${current}/${target}`, player.position.clone(), '#44aaff', 22);
         }
         game.audioSystem.playMagicSequence('star_collect');
     };
     game.slingObjectiveManager.onObjectiveComplete = () => {
+        const player = game.player;
         if (player) {
             game.juiceManager.showFloatingText('Slingshot Master!', player.position.clone(), '#ffcc00', 28);
             game.juiceManager.burstMagic(player.position.clone());
@@ -134,7 +137,7 @@ function wireFriendsCallbacks(): void {
     // Bind via game.friendsManager so callbacks survive ensureGameManagers() swap.
     game.friendsManager.onFriendRescued = (count, position, kind) => {
         const { levelManager, hudManager, dogController, juiceManager, audioSystem,
-            saveManager, creatureCatalogManager } = game;
+            saveManager, creatureCatalogManager, player } = game;
         const objective = levelManager.config[levelManager.currentLevel]?.objective;
         dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.2);
         juiceManager.burstMagic(position.clone());
@@ -165,7 +168,7 @@ function wireFriendsCallbacks(): void {
     };
 
     game.friendsManager.onOtterGift = (position, cores) => {
-        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController } = game;
+        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController, player } = game;
         const otterMemory = saveManager.hasMemory('cosmic_otter');
         const totalCores = cores + (otterMemory && gameplayRandom('pickups') < 0.35 ? 1 : 0);
         playerState.cores += totalCores;
@@ -179,7 +182,7 @@ function wireFriendsCallbacks(): void {
     };
 
     game.friendsManager.onPenguinSlide = (position, cores, slideAssistDuration) => {
-        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController } = game;
+        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController, player } = game;
         const penguinMemory = saveManager.hasMemory('astro_penguin');
         const assistDuration = slideAssistDuration + (penguinMemory ? 1.5 : 0);
         playerState.cores += cores;
@@ -194,7 +197,7 @@ function wireFriendsCallbacks(): void {
     };
 
     game.friendsManager.onSealClap = (position, healthRestore) => {
-        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController, orbManager } = game;
+        const { saveManager, creatureCatalogManager, playerState, juiceManager, dogController, orbManager, player } = game;
         const sealMemory = saveManager.hasMemory('stellar_seal_pup');
         const glowDuration = sealMemory ? 5.5 : 3.5;
         const glowMultiplier = sealMemory ? 2.2 : 1.7;
@@ -215,7 +218,7 @@ function wireFriendsCallbacks(): void {
     };
 
     game.friendsManager.onAstroBunnyLucky = (position, bonus) => {
-        const { saveManager, creatureCatalogManager, hudManager, juiceManager, dogController, slingComboManager } = game;
+        const { saveManager, creatureCatalogManager, hudManager, juiceManager, dogController, slingComboManager, player } = game;
         const bunnyMemory = saveManager.hasMemory('astro_bunny');
         const totalBonus = bonus + (bunnyMemory ? 4 : 0);
         hudManager.addScore(totalBonus);
@@ -229,7 +232,7 @@ function wireFriendsCallbacks(): void {
     };
 
     game.friendsManager.onLemurHeartGift = (position) => {
-        const { saveManager, creatureCatalogManager, juiceManager, dogController, orbManager } = game;
+        const { saveManager, creatureCatalogManager, juiceManager, dogController, orbManager, player } = game;
         const lemurMemory = saveManager.hasMemory('lunar_lemur');
         orbManager.spawnHeartOrb(position.x, position.y, position.z);
         creatureCatalogManager.catalog('lunar_lemur');
@@ -244,6 +247,7 @@ function wireFriendsCallbacks(): void {
 
 function wireObjectiveComplete(): void {
     game.hudManager.onObjectiveComplete = () => {
+        const player = game.player;
         if (!player) return;
         const level = game.levelManager.currentLevel;
         if (!game.completedChaptersThisRun.includes(level)) {
@@ -288,6 +292,7 @@ function wireSlingableCallbacks(): void {
     };
 
     game.slingableObjectSystem.onSpecialEffect = (effect) => {
+        const player = game.player;
         if (effect.type === 'puffballPop') {
             if (player) {
                 playerState.currentSpeedY = THREE.MathUtils.clamp(

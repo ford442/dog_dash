@@ -3,7 +3,6 @@
  * and Endless Dash bests for Endless runs.
  */
 
-import { player } from '../player_loader';
 import { game } from '../game_runtime';
 import { serializeRunSeed, tryGetRunSeed, type RunSeed } from '../run_seed';
 import { ghostRunRecorder, saveGhostRecording } from '../ghost_run';
@@ -16,6 +15,7 @@ let endlessRecordedFor: RunSeed | null = null;
 export function saveLastRunSummary(): void {
     const seed = tryGetRunSeed();
     if (!seed) return;
+    const player = game.player;
     const distance = player ? Math.floor(player.position.x) : 0;
     if (seed.campaignId === 'endless' && endlessRecordedFor !== seed) {
         endlessRecordedFor = seed;

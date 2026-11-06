@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { camera } from '../../scene_context';
-import { player } from '../../player_loader';
 import { game } from '../../game_runtime';
 import { CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../../candy_materials';
 import type { CandyFlavor } from '../../candy_materials';
@@ -58,6 +56,8 @@ export function blastObstacle(obs: THREE.Object3D): void {
 
 /** Weapons update, projectile↔obstacles/field/meteors, kraken + anchor panic. */
 export function updateCombatWeapons(delta: number): void {
+    const player = game.player;
+    const camera = game.camera;
     if (!player) return;
 
     game.weaponSystem.update(delta, camera.position.x);

@@ -6,7 +6,6 @@
  * pause/game-over screens already use).
  */
 
-import { player } from '../player_loader';
 import { playerState, setIsGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import {
@@ -22,6 +21,7 @@ let hubElement: HTMLDivElement | null = null;
 
 function buildRunSummary(): HubRunSummary {
     const seed = tryGetRunSeed();
+    const player = game.player;
     return {
         distance: player ? Math.floor(player.position.x) : 0,
         coresEarned: playerState.cores,

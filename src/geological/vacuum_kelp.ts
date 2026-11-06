@@ -166,6 +166,15 @@ export class VacuumKelpSoftBody {
         verletBodyPool.relayout();
     }
 
+    clear(): void {
+        this.pending = [];
+        for (const slot of this.slots) {
+            slot.group.userData.usingVerlet = false;
+        }
+        this.slots = [];
+        if (this.registered) verletBodyPool.relayout();
+    }
+
     applyForces(): void {
         if (!verletBodyPool.isReady || this.slots.length === 0) return;
         const exports = verletBodyPool.exports;
