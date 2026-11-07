@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import type { SlingableObjectSystem } from './slingable_objects';
 import { getLevelSpan } from './depth_layers';
+import { gameplayRandom } from './run_seed';
 import type { LevelConfig } from './level_config';
 import { markSharedMaterials, noteMaterialCreated } from './gpu_resources';
 
@@ -148,7 +149,7 @@ export function buildToyRocketGroup(
 }
 
 export function pickToyRocketVariant(): ToyRocketVariant {
-    return VARIANTS[Math.floor(Math.random() * VARIANTS.length)];
+    return VARIANTS[Math.floor(gameplayRandom('slingables') * VARIANTS.length)];
 }
 
 const MAX_ACTIVE_TOY_ROCKETS = 3;
@@ -183,22 +184,22 @@ export class ToyRocketSpawnManager {
         const usable = Math.max(80, length - padding * 2);
 
         for (let i = 0; i < count; i++) {
-            const t = (i + 0.5) / count + (Math.random() - 0.5) * 0.15;
+            const t = (i + 0.5) / count + (gameplayRandom('slingables') - 0.5) * 0.15;
             const x = startX + padding + t * usable;
-            const y = (Math.random() - 0.5) * 14;
-            const z = -12 - Math.random() * 8;
+            const y = (gameplayRandom('slingables') - 0.5) * 14;
+            const z = -12 - gameplayRandom('slingables') * 8;
             const pos = new THREE.Vector3(x, y, z);
             positions.push(pos);
 
             const variant = pickToyRocketVariant();
             const inst = this.slingables.createObject(pos, {
                 kind: 'toyRocket',
-                radius: 1.05 + Math.random() * 0.25,
-                mass: 1.35 + Math.random() * 0.4,
+                radius: 1.05 + gameplayRandom('slingables') * 0.25,
+                mass: 1.35 + gameplayRandom('slingables') * 0.4,
                 velocity: new THREE.Vector3(
-                    -0.4 - Math.random() * 0.5,
-                    (Math.random() - 0.5) * 0.35,
-                    (Math.random() - 0.5) * 0.25
+                    -0.4 - gameplayRandom('slingables') * 0.5,
+                    (gameplayRandom('slingables') - 0.5) * 0.35,
+                    (gameplayRandom('slingables') - 0.5) * 0.25
                 ),
                 toyVariant: variant
             });
