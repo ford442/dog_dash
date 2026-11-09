@@ -160,6 +160,7 @@ export class HolographicDataStreamsSystem {
     }
 
     cleanup() {
+        this.active = false;
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if (Array.isArray(this.mesh.material)) {
