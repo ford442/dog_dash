@@ -1,6 +1,6 @@
 {
   "_comment": "Legacy untagged Math.random() calls per file (visual systems not yet audited). Ratchet down only: node tools/check_math_random.cjs --update. See docs/DETERMINISM.md.",
-  "total": 841,
+  "total": 832,
   "files": {
     "src/ascendant_monoliths.ts": 11,
     "src/astral_resonance_rings.ts": 13,
@@ -75,7 +75,6 @@
     "src/reentry.ts": 8,
     "src/stardust_vortex.ts": 9,
     "src/stars.ts": 26,
-    "src/toy_rockets.ts": 9,
     "src/tutorial_system/tutorial_ui.ts": 2,
     "src/victory_system/helpers.ts": 30,
     "src/victory_system/victory_core.ts": 3,

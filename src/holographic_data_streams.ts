@@ -160,7 +160,9 @@ export class HolographicDataStreamsSystem {
     }
 
     cleanup() {
+        // Clear `active` so a later activate() isn't short-circuited and re-adds the mesh.
         this.active = false;
+        this.mesh.visible = false;
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if (Array.isArray(this.mesh.material)) {
