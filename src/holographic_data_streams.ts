@@ -111,6 +111,10 @@ export class HolographicDataStreamsSystem {
             this.scene.add(this.mesh);
         }
 
+        if (this.mesh.parent !== this.scene) {
+            this.scene.add(this.mesh);
+        }
+
         if (config?.color1 !== undefined || config?.color2 !== undefined) {
             const mat = createHolographicMaterial(config.color1 ?? 0x00ffcc, config.color2 ?? 0x0044ff, this.uSpeed);
             if (this.mesh.material) {
@@ -160,6 +164,7 @@ export class HolographicDataStreamsSystem {
     }
 
     cleanup() {
+        this.active = false;
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         if (Array.isArray(this.mesh.material)) {
