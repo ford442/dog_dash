@@ -60,34 +60,36 @@ WebGPU is unavailable headlessly, so runtime verification requires a browser wit
 ## Architecture
 
 ### Source layout
-All gameplay TypeScript lives in `src/` (~70 modules, flat — no further subdirectories). `assembly/index.ts` is AssemblyScript (separate from `src/`, excluded from `tsconfig.json`). `shaders/jelly-moss.ts` holds TSL node-based shader materials. `cpp/` contains an alternative/experimental C++ physics WASM build.
+All gameplay TypeScript lives in `src/` (~200 top-level modules plus feature subdirectories such as `main/`, `level_manager/`, `audio_system/`, `boss_system/`, `geological/`, `hud_system/`, `ports/`; many `foo.ts` files are thin re-exports of a `foo/` directory). `assembly/index.ts` is AssemblyScript (separate from `src/`, excluded from `tsconfig.json`). `shaders/` (`jelly-moss.ts`, `magical_edition.ts`) holds TSL node-based shader materials. `cpp/` contains an alternative/experimental C++ physics WASM build.
 
 ### Core loop
-`src/main.ts` is a thin entry that calls `bootstrap()` in `src/main/`. Startup (`src/main/startup.ts`) builds a typed `GameContext` via `createGameSystems` / `createGameManagers` (no import-time gameplay singletons). The game loop lives under `src/main/game_loop.ts` and `loop_*.ts`, driven by `LEVEL_CONFIG` (`src/level_config.ts`, levels 1–6). Most other modules export classes (constructed in the composition root and `update()`-ed from the loop) or `createX`/`updateX`/`destroyX` factories. See [docs/GAME_CONTEXT.md](docs/GAME_CONTEXT.md).
+`src/main.ts` is a thin entry that calls `bootstrap()` in `src/main/`. Startup (`src/main/startup.ts`) builds a typed `GameContext` via `createGameSystems` / `createGameManagers` (no import-time gameplay singletons). The game loop lives under `src/main/game_loop.ts` and `loop_*.ts`, driven by `LEVEL_CONFIG` (`src/level_config.ts`, levels 1–6). Gameplay runs on a **fixed timestep** (`src/main/fixed_timestep.ts`, `SIM_STEP` = 1/60 s) with render interpolation (`render_interpolation.ts`); gameplay systems must integrate against `SIM_STEP`, while purely visual systems keep wall-clock delta. Most other modules export classes (constructed in the composition root and `update()`-ed from the loop) or `createX`/`updateX`/`destroyX` factories. See [docs/GAME_CONTEXT.md](docs/GAME_CONTEXT.md).
 
 ### Determinism (seeded runs)
 Gameplay must be reproducible from a run seed + per-step input trace ([docs/DETERMINISM.md](docs/DETERMINISM.md)): spawn/drop/AI rolls use `gameplayRandom(stream)` from `src/run_seed`, gameplay timing uses `getSimTime()` / `scheduleSim()` from `src/sim_clock.ts` (never `Date.now()`, `performance.now()` or `setTimeout`), and key handlers only set latches that the sim step consumes. If `npm run test:replay` fails after an intentional gameplay change, re-record with `npm run replay:record -- --chapter N` and commit the `expect` diff.
 
 ### WASM physics
-`assembly/index.ts` exports buffer-allocation and collision-check functions consumed from `src/physics_utils.ts` and the main loop (`src/main/`):
-- `allocAsteroids(count)`, `allocSporeClouds(count)`, `allocBossHitboxes(count)` — allocate `Float32Array` views into WASM memory for circular/spherical hitboxes
-- `checkCollision`, `checkSporeCollision`, `checkBossCollision` — run collision checks against those buffers
+`assembly/index.ts` re-exports `noise.ts`, `physics.ts` and `spatial_hash.ts`:
+- **Spatial hash** (`assembly/spatial_hash.ts`) — the live gameplay collision path. `src/spatial_index.ts` does one `rebuildGrid` per fixed sim step, then `queryRadius` (layer-masked) for obstacles, collectibles, creatures, tether targets, boss hitboxes and projectiles; `src/spatial_fill.ts` writes entities via `allocEntities`.
+- Legacy linear scans (`allocAsteroids`/`allocSporeClouds`/`allocBossHitboxes` + `checkCollision`/`checkSporeCollision`/`checkBossCollision`) remain as thin buffers.
+- Verlet soft-body (`physics.ts`, pooled via `src/verlet_body_pool.ts`) and fractal noise (`noise.ts`).
 
-JS writes object positions directly into the `Float32Array` views, then calls the check functions. After editing `assembly/index.ts`, run `npm run build:wasm && npm run copy:wasm` (or `npm run watch:wasm` during dev) to regenerate `public/build/optimized.wasm`. If WASM is unavailable at runtime, obstacle checks fall back to JS circle/sphere tests (see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md)).
+After any `alloc*` call JS must call `refreshMemoryView()` (memory growth detaches old typed-array views). After editing `assembly/index.ts`, run `npm run build:wasm && npm run copy:wasm` (or `npm run watch:wasm` during dev) to regenerate `public/build/optimized.wasm`. If WASM is unavailable at runtime, `spatial_index.ts` falls back to JS brute-force queries (see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md)).
 
 ### Domain map (where to make changes)
 | Domain | Files |
 |--------|-------|
-| Core game loop, renderer, level progression | `src/main/` (incl. `main/loop_combat/`), `level_config.ts`, `level_manager/` |
+| Core game loop, renderer, level progression | `src/main/` (incl. `main/loop_combat/`, `fixed_timestep.ts`, `render_interpolation.ts`), `level_config.ts`, `level_manager/`, `pixel_ratio.ts` |
+| Env-system registration | `level_manager/env_manifest.ts` (`ENV_SYSTEM_MANIFEST`, one `defineEnvSystem` entry per deferred env feature), `level_env_registry.ts` (derived public entry), `level_deferred_registry.ts` |
 | Environment & backgrounds | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula/`, `biological_background.ts`, `industrial_background/`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts`, `aurora.ts`, `cosmic_dust.ts`, `meteor_shower.ts`, `ghost_debris.ts` |
 | Gameplay & obstacles | `obstacle_system/`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts`, `slingable_objects.ts`, `sling_combo.ts`, `tether_system.ts` |
 | Visual effects | `particles.ts`, `juice_effects/`, `magical_effects.ts`, `lighting.ts`, `flower_constellations/`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts`, `lightning_bolt.ts`, `godrays.ts`, `video_tumbling_star.ts` |
 | UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `docs/touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
-| Performance guardrails | `decoration_budget.ts`, `docs/PERFORMANCE_BUDGETS.md` |
+| Performance guardrails | `decoration_budget.ts`, `decoration_budget_auditor.ts` (dev-only declared-vs-observed drift check), `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
 | GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
-| Physics & WASM | `physics_utils.ts`, `wasm_loader.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `assembly/noise.ts` + `assembly/physics.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
+| Physics & WASM | `spatial_index.ts` + `spatial_fill.ts` (collision queries), `physics_utils.ts`, `wasm_loader.ts`, `verlet_body_pool.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `noise.ts` + `physics.ts` + `spatial_hash.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
 | Audio | `audio_system/` (incl. `chapter_music.ts` + `mixins/chapter_music.ts`), `audio_settings.ts`, `ui_audio_settings.ts`, `main/music_update.ts` — [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md). 100% procedural; never add audio files to `public/` |
 | Architect Lab (player-built sandbox courses) | `architect/` (brush table, zod seed schema, course builder, layout, run seed, manager, hub tab) — [docs/ARCHITECT_LAB.md](docs/ARCHITECT_LAB.md). New brushes go in `BRUSH_REGISTRY` with the `systems` they switch on |
 | Endless Dash (seeded generated chapters) | `endless/` (generator, recipe validator, patches, layout, seed codes, hub tab), `journey_layout.ts` (campaign vs Endless spans/configs) — [docs/ENDLESS_DASH.md](docs/ENDLESS_DASH.md). New env systems need a `RECIPE_PATCHES` entry |
@@ -98,7 +100,7 @@ JS writes object positions directly into the `Float32Array` views, then calls th
 
 - Three.js: always `import * as THREE from 'three'`
 - WebGPU/TSL: import specific nodes from `three/tsl` (e.g. `color`, `time`, `sin`, `vec3`) and classes from `three/webgpu` (e.g. `MeshStandardNodeMaterial`)
-- Prefer named exports; only a few modules (`dog_cockpit.ts`, `magical_effects.ts`, `powerup_manager.ts`, `space_friends.ts`, `cloud_castles.ts`) use `export default`
+- Prefer named exports; only a few modules (`cloud_castles/index.ts`, `magical_effects/factories.ts`, `powerup_manager/singleton.ts`, `space_friends/FriendsManager.ts`) use `export default`
 - Global config objects use `ALL_CAPS` (e.g. `LEVEL_CONFIG`, `UPGRADE_CONFIGS`)
 - 4-space indentation; no Prettier/ESLint configured — match surrounding file style
 
