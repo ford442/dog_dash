@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gameplayRandom } from './run_seed';
 
 const PISTON_SPAWN_CHANCE = 0.4;
 const BLAST_DOOR_SPAWN_CHANCE = 0.6;
@@ -49,7 +50,7 @@ export class IndustrialGeometryManager {
             group.add(seam);
         }
 
-        const obstacleChance = Math.random();
+        const obstacleChance = gameplayRandom('environment');
         if (obstacleChance < PISTON_SPAWN_CHANCE) {
             const piston = this.createPiston(0, tunnelHeight);
             group.add(piston);
@@ -105,13 +106,13 @@ export class IndustrialGeometryManager {
             group.add(rightRib);
         }
 
-        const barnacleCount = 8 + Math.floor(Math.random() * 8);
+        const barnacleCount = 8 + Math.floor(gameplayRandom('environment') * 8);
         for (let i = 0; i < barnacleCount; i++) {
             const barnacle = this.createBarnacle();
             barnacle.position.set(
-                (Math.random() - 0.5) * sectionLength,
-                (Math.random() - 0.5) * ribHeight * 0.8,
-                (Math.random() > 0.5 ? -7 : 7) + (Math.random() - 0.5) * 2
+                (gameplayRandom('environment') - 0.5) * sectionLength,
+                (gameplayRandom('environment') - 0.5) * ribHeight * 0.8,
+                (gameplayRandom('environment') > 0.5 ? -7 : 7) + (gameplayRandom('environment') - 0.5) * 2
             );
             group.add(barnacle);
             this.barnacles.push(barnacle);
@@ -174,7 +175,7 @@ export class IndustrialGeometryManager {
             baseY: tunnelHeight / 2 - 5,
             stroke: 3,
             cycleSpeed: Math.PI,
-            phase: Math.random() * Math.PI * 2,
+            phase: gameplayRandom('environment') * Math.PI * 2,
             head,
             shaft
         };
@@ -270,7 +271,7 @@ export class IndustrialGeometryManager {
     }
 
     private createBarnacle(): THREE.Mesh {
-        const size = 0.3 + Math.random() * 0.5;
+        const size = 0.3 + gameplayRandom('environment') * 0.5;
         const barnacleGeo = new THREE.DodecahedronGeometry(size, 0);
         const barnacleMat = new THREE.MeshStandardMaterial({
             color: 0x556677,
@@ -284,7 +285,7 @@ export class IndustrialGeometryManager {
         barnacle.castShadow = true;
         barnacle.userData = {
             type: 'barnacle',
-            hasMemoryFragment: Math.random() < 0.3,
+            hasMemoryFragment: gameplayRandom('pickups') < 0.3,
             collected: false
         };
 

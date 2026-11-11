@@ -23,7 +23,7 @@ export function updateGalacticCoreEffects(delta: number): void {
 
     // Deep in the approach, the ship trembles in the core's gravity well.
     const approach = core.getApproachIntensity();
-    if (approach > 0.7 && Math.random() < delta * (approach - 0.7) * 3) {
+    if (approach > 0.7 && Math.random() < delta * (approach - 0.7) * 3) { // visual-only
         game.juiceManager.shakeScreen(ShakeType.LIGHT, 0.1);
     }
 }

@@ -36,8 +36,11 @@ npm run typecheck                 # strict TypeScript check (see baseline ratche
 npm run typecheck:ci              # CI gate: fail only on new errors vs .github/typecheck-baseline.txt
 npm run typecheck:baseline:update # refresh baseline after fixing errors (ratchet down)
 npm run check                     # local gate: brace balance + typecheck:ci
-npm run test:unit                 # node --test unit suite (pretest:unit rebuilds WASM first)
-npm run test:smoke                # Playwright WebGPU hard-fail contract test on the production build
+npm run test:replay               # headless chapter replays (seed + input trace, real sim, no GPU)
+npm run replay:record -- --chapter N  # re-record a replay fixture after an intentional gameplay change
+npm run replay:record -- --endless    # re-record the Endless Dash fixture
+npm run check:math-random         # Math.random gate (gameplay paths must use the run RNG)
+npm run test:smoke                # Playwright smoke test (WebGL path, SwiftShader in CI)
 ```
 
 There is no ESLint config. The automated quality gates are:
@@ -45,10 +48,12 @@ There is no ESLint config. The automated quality gates are:
 - `tools/check_braces.cjs` — runs on `prebuild`, verifies brace balance in `.ts`/`.js`/`.cjs` files
 - `npm run typecheck:ci` — compares `tsc --noEmit` against a tracked baseline. The baseline is currently **0 errors**: strict mode is clean, so any new violation fails CI. After fixing errors locally, run `npm run typecheck:baseline:update` to ratchet the baseline down.
 - `npm run check:env-registry` — validates the level environment registry closed loop (flags, registry keys, plugin order, `LEVEL_CONFIG` references)
-- `npm run test:unit` — `node --import tsx --test` over `tests/unit/**/*.test.ts` + `tests/*.test.mjs` (no browser needed; `pretest:unit` rebuilds the AS WASM first). Includes coverage gates such as `decoration_budget_coverage` and `env_manifest_parity`
-- `npm run check` — local pre-PR gate: brace check + env-registry check + typecheck ratchet + unit tests
-- `npm run test:smoke` — Playwright WebGPU boot-probe test (headless has no adapter, so it asserts the hard-fail diagnostic screen and that no WebGL context is created). Needs a Chrome binary; point `PLAYWRIGHT_CHROME_PATH` at one if it is not on a standard path.
-- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, unit tests, production build, then a smoke job (currently `continue-on-error`) and an experimental C++ WASM job on PRs to `main`.
+- `npm run test:unit` — `node --test` suite under `tests/unit/` (no browser needed)
+- `npm run check:math-random` — `tools/check_math_random.cjs`: no untagged `Math.random()` on spawn/combat/harvest paths; elsewhere a legacy per-file baseline (`.github/math-random-baseline.json`) that only ratchets down. Purely visual calls carry `// visual-only` on the same line
+- `npm run test:replay` — boots the real composition root in Node and replays the committed chapter fixtures (`tests/fixtures/replays/`, chapters 1/4/6 + `endless`) through `stepSimulation`; asserts the end snapshot, `Math.random` independence and 30/60/144 Hz parity. Also flies the Endless coverage smoke (every env key + boss gate) and the Architect Lab course fixture (`tests/fixtures/architect/`: two imports must spawn identically). See [docs/DETERMINISM.md](docs/DETERMINISM.md)
+- `npm run check` — local pre-PR gate: brace check + env-registry check + Math.random gate + typecheck ratchet + unit tests + replays
+- `npm run test:smoke` — Playwright WebGPU boot-probe test. Needs a Chrome binary; point `PLAYWRIGHT_CHROME_PATH` at one if it is not on a standard path.
+- GitHub Actions (`.github/workflows/ci.yml`) — `npm ci`, typecheck ratchet, unit tests, Math.random gate, headless replays, production build, then a smoke job (currently `continue-on-error`) and an experimental C++ WASM job on PRs to `main`.
 
 WebGPU is unavailable headlessly, so runtime verification requires a browser with WebGPU enabled (Chrome/Edge 113+).
 
@@ -59,6 +64,9 @@ All gameplay TypeScript lives in `src/` (~200 top-level modules plus feature sub
 
 ### Core loop
 `src/main.ts` is a thin entry that calls `bootstrap()` in `src/main/`. Startup (`src/main/startup.ts`) builds a typed `GameContext` via `createGameSystems` / `createGameManagers` (no import-time gameplay singletons). The game loop lives under `src/main/game_loop.ts` and `loop_*.ts`, driven by `LEVEL_CONFIG` (`src/level_config.ts`, levels 1–6). Gameplay runs on a **fixed timestep** (`src/main/fixed_timestep.ts`, `SIM_STEP` = 1/60 s) with render interpolation (`render_interpolation.ts`); gameplay systems must integrate against `SIM_STEP`, while purely visual systems keep wall-clock delta. Most other modules export classes (constructed in the composition root and `update()`-ed from the loop) or `createX`/`updateX`/`destroyX` factories. See [docs/GAME_CONTEXT.md](docs/GAME_CONTEXT.md).
+
+### Determinism (seeded runs)
+Gameplay must be reproducible from a run seed + per-step input trace ([docs/DETERMINISM.md](docs/DETERMINISM.md)): spawn/drop/AI rolls use `gameplayRandom(stream)` from `src/run_seed`, gameplay timing uses `getSimTime()` / `scheduleSim()` from `src/sim_clock.ts` (never `Date.now()`, `performance.now()` or `setTimeout`), and key handlers only set latches that the sim step consumes. If `npm run test:replay` fails after an intentional gameplay change, re-record with `npm run replay:record -- --chapter N` and commit the `expect` diff.
 
 ### WASM physics
 `assembly/index.ts` re-exports `noise.ts`, `physics.ts` and `spatial_hash.ts`:
@@ -83,6 +91,8 @@ After any `alloc*` call JS must call `refreshMemoryView()` (memory growth detach
 | GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
 | Physics & WASM | `spatial_index.ts` + `spatial_fill.ts` (collision queries), `physics_utils.ts`, `wasm_loader.ts`, `verlet_body_pool.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `noise.ts` + `physics.ts` + `spatial_hash.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
 | Audio | `audio_system/` (incl. `chapter_music.ts` + `mixins/chapter_music.ts`), `audio_settings.ts`, `ui_audio_settings.ts`, `main/music_update.ts` — [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md). 100% procedural; never add audio files to `public/` |
+| Architect Lab (player-built sandbox courses) | `architect/` (brush table, zod seed schema, course builder, layout, run seed, manager, hub tab) — [docs/ARCHITECT_LAB.md](docs/ARCHITECT_LAB.md). New brushes go in `BRUSH_REGISTRY` with the `systems` they switch on |
+| Endless Dash (seeded generated chapters) | `endless/` (generator, recipe validator, patches, layout, seed codes, hub tab), `journey_layout.ts` (campaign vs Endless spans/configs) — [docs/ENDLESS_DASH.md](docs/ENDLESS_DASH.md). New env systems need a `RECIPE_PATCHES` entry |
 | Game-wide config / composition root | `game_config.ts`, `create_game_systems.ts`, `game_runtime.ts` (`GameContext`); see `docs/GAME_CONTEXT.md` |
 | Env system metadata (biome/role/palette/difficulty per system) | `env_system_descriptors.ts` — see `docs/ENV_SYSTEM_DESCRIPTORS.md` |
 

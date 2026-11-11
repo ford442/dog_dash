@@ -1,37 +1,30 @@
 import * as THREE from 'three';
-import { scene, camera, mainLight, renderer, touchControls } from '../scene_context';
-import { player } from '../player_loader';
-import { playerState, isGamePaused } from '../game_config';
+import { playerState } from '../game_config';
 import { game } from '../game_runtime';
-import { keys, updateHealthDisplay } from '../ui_controls';
-import { PowerUpType } from '../powerup_manager';
-import { MagicalEffectType } from '../magical_effects';
+import { keys } from '../ui_controls';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { VictoryState } from '../victory_system/victory_state';
-import { getLevelSpan } from '../depth_layers';
-import {
-    shouldSpawnStarlightKoi,
-    shouldSpawnBubbleCoral,
-    getBubbleCoralPlacement,
-    resolveBubbleCoralClusterCount
-} from '../level_spawn_rules';
 import { updateCandyMaterialGlobals } from '../candy_materials';
-import { animateFoliage, updateSolarSail } from '../foliage';
+import { animateFoliage } from '../foliage';
 import { moonPlants } from '../visuals';
-import {
-    sporeClouds, jellyMosses, solarSails, geodes, voidRootBalls, vacuumKelps,
-    iceNeedleClusters, magmaHearts, gravityAnchors, liquidMetalBlobs, cleanupGeologicalObjects
-} from '../environment';
+import { cleanupGeologicalObjects } from '../environment';
 import { updateCamera } from './camera_system';
 import { updateShadowQuality, updateShadowCulling } from './render_helpers';
 import { updateGravLensSystems } from './grav_lens_update';
 import { updateArtifacts } from './artifact_update';
 import { updateDreamPortals } from './dream_portal_update';
 import { updateGalacticCoreEffects } from './galactic_core_update';
-import { ghostRunReplayer } from '../ghost_run';
+import { ghostRunRecorder, ghostRunReplayer } from '../ghost_run';
+import { getSimTime } from '../sim_clock';
 
 export function updateLoopWorld(delta: number, time: number): void {
+        const { scene, camera, mainLight, player } = game;
+        const {
+            sporeClouds, jellyMosses, geodes, voidRootBalls, vacuumKelps,
+            iceNeedleClusters, magmaHearts, gravityAnchors, liquidMetalBlobs
+        } = game.env.geologicalWorld;
+
         // "Path to the Moon" gate animates independently of the planet horizon
         game.planetaryHorizonSystem.updateMoonGate(delta);
     
@@ -52,7 +45,7 @@ export function updateLoopWorld(delta: number, time: number): void {
 
         if (player && game.debugSystem.isEnabled('ghostReplay')) {
             ghostRunReplayer.setVisible(true);
-            ghostRunReplayer.update(game.clock.getElapsedTime(), scene);
+            ghostRunReplayer.update(ghostRunRecorder.getElapsed(), scene);
         } else {
             ghostRunReplayer.setVisible(false);
         }
@@ -142,7 +135,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                 ...game.dreamPortalSystem.getScannables()
             ]);
             if (game.debugSystem.isEnabled('butterflySwarm')) {
-                const nowSec = performance.now() * 0.001;
+                const nowSec = getSimTime();
                 game.butterflySwarmSystem.update(delta, camera.position.x, player.position, {
                     grazeCombo: game.obstacleSystem.getGrazeCombo(),
                     slingCombo: game.slingComboManager.getCombo(),
@@ -162,7 +155,7 @@ export function updateLoopWorld(delta: number, time: number): void {
                 console.warn('Shadow culling skipped because a tracked object was malformed.', error);
             }
         }
-        cleanupGeologicalObjects(camera.position.x);
+        cleanupGeologicalObjects(game.env.geologicalWorld, camera.position.x);
     
         // Keep directional light following player so shadows work throughout the level
         if (player) {

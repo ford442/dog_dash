@@ -68,18 +68,18 @@ export class DancingJellyMossSystem {
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.mossCount; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * this.width,
-                (Math.random() - 0.5) * this.height,
-                -10 - Math.random() * this.depth
+                (Math.random() - 0.5) * this.width, // visual-only
+                (Math.random() - 0.5) * this.height, // visual-only
+                -10 - Math.random() * this.depth // visual-only
             );
 
-            const s = 0.5 + Math.random() * 1.5;
-            dummy.scale.set(s, s * (0.8 + Math.random() * 0.4), s);
+            const s = 0.5 + Math.random() * 1.5; // visual-only
+            dummy.scale.set(s, s * (0.8 + Math.random() * 0.4), s); // visual-only
 
             dummy.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
+                Math.random() * Math.PI, // visual-only
+                Math.random() * Math.PI, // visual-only
+                Math.random() * Math.PI // visual-only
             );
 
             dummy.updateMatrix();
@@ -115,9 +115,9 @@ export class DancingJellyMossSystem {
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.mossCount * 3; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * this.width,
-                (Math.random() - 0.5) * this.height,
-                -5 - Math.random() * this.depth
+                (Math.random() - 0.5) * this.width, // visual-only
+                (Math.random() - 0.5) * this.height, // visual-only
+                -5 - Math.random() * this.depth // visual-only
             );
 
             dummy.updateMatrix();

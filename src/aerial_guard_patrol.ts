@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { time, vec3, vec4, color, positionLocal, length, uv, smoothstep, mix, sin, positionWorld, uniform, float } from 'three/tsl';
 import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
+import { getSimTime } from './sim_clock';
 
 export type AerialGuardPatrolConfig = {
     zones: { x: number; y: number; z: number; width: number; searchRadius: number }[];
@@ -141,7 +142,8 @@ export class AerialGuardPatrolSystem {
             this.uPlayerPos.value.copy(playerPos);
         }
 
-        const timeNow = Date.now() * 0.001;
+        // Drone sweep decides detection, so it runs on sim time.
+        const timeNow = getSimTime();
         let isPlayerDetected = false;
 
         for (let i = 0; i < this.zones.length; i++) {

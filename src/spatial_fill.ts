@@ -1,19 +1,20 @@
-import * as THREE from 'three';
 import { game } from './game_runtime';
-import { gravityAnchors, sporeClouds } from './environment';
 import { CollisionLayer, type SpatialIndex } from './spatial_index';
+import type { GeologicalWorldPort } from './ports/geological_world_port';
 
 /**
  * Rebuild the gameplay spatial hash from live world objects.
  * Call once per fixed sim step after motion, before radius queries.
  */
-export function rebuildGameplaySpatialHash(): void {
+export function rebuildGameplaySpatialHash(
+    geologicalPort: GeologicalWorldPort = game.env.geologicalWorld
+): void {
     const index: SpatialIndex = game.spatialIndex;
     index.begin();
 
     game.obstacleSystem.collectSpatial(index);
 
-    const clouds = game.obstacleSystem.options.sporeClouds ?? sporeClouds;
+    const clouds = game.obstacleSystem.options.sporeClouds ?? geologicalPort.sporeClouds;
     for (let i = 0; i < clouds.length; i++) {
         const c = clouds[i];
         if (!c.active) continue;
@@ -23,6 +24,7 @@ export function rebuildGameplaySpatialHash(): void {
     game.orbManager.collectSpatial(index);
     game.creatureManager.collectSpatial(index);
 
+    const gravityAnchors = geologicalPort.gravityAnchors;
     for (let i = 0; i < gravityAnchors.length; i++) {
         const a = gravityAnchors[i];
         if (!a.userData.tetherable) continue;

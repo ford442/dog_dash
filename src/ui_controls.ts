@@ -134,7 +134,12 @@ export function gameWin() {
 
 type ControlOptions = {
     getPlayer: () => THREE.Group | null;
-    weaponSystem: { fire: (position: THREE.Vector3, direction: THREE.Vector3) => void };
+    /**
+     * Fire request. Latched and consumed inside the next fixed sim step
+     * (never fired straight from the key event) so shots land on the same
+     * step in a live run and a replay.
+     */
+    requestFire: () => void;
     reEntrySystem: { active: boolean; activate: () => void; deactivate: () => void };
 };
 
@@ -160,10 +165,7 @@ export function setupKeyboardControls(options: ControlOptions) {
                 break;
             case 'Enter':
             case 'KeyK': {
-                const player = options.getPlayer();
-                if (player) {
-                    options.weaponSystem.fire(player.position, new THREE.Vector3(1, 0, 0));
-                }
+                if (options.getPlayer()) options.requestFire();
                 break;
             }
             case 'KeyH':

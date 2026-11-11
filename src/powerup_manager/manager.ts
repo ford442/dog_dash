@@ -20,6 +20,7 @@ import {
     removeEffectVisuals,
     cleanupAllVisuals,
 } from './manager_visuals';
+import { gameplayRandom } from '../run_seed';
 
 // =============================================================================
 // POWER-UP MANAGER CLASS
@@ -133,9 +134,9 @@ export class PowerUpManager {
         }
         
         const modifiers = this.getCombinedModifiers();
-        if (modifiers.sparkle && Math.random() < 0.3) {
+        if (modifiers.sparkle && Math.random() < 0.3) { // visual-only
             this.particleSystem.emit(
-                rocketPosition!.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, 0)),
+                rocketPosition!.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, (Math.random() - 0.5) * 3, 0)), // visual-only
                 0xffd700,
                 1,
                 0.5,
@@ -200,7 +201,7 @@ export class PowerUpManager {
         
         if (available.length === 0) return false;
         
-        const randomType = available[Math.floor(Math.random() * available.length)];
+        const randomType = available[Math.floor(gameplayRandom('powerups') * available.length)];
         return this.activatePowerUp(randomType);
     }
 

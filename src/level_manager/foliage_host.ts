@@ -11,7 +11,7 @@ import type { CrystalChimeManager } from '../crystal_chimes';
 /** Surface needed by foliage populate/stream helpers. */
 export interface LevelFoliageHost {
     scene: THREE.Scene;
-    config: { [key: number]: LevelConfig };
+    readonly config: { [key: number]: LevelConfig };
     currentLevel: number;
     levelObjects: THREE.Object3D[];
     lastPopulatedEndX: number;

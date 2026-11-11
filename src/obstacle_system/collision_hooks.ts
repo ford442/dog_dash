@@ -3,6 +3,8 @@ import { NebulaKraken } from '../space_robot_squid';
 import { getCandyScoreBonus, type CandyAsteroidVariant } from '../candy_materials';
 import { splitAsteroid, triggerCandySquash } from './spawn_pools';
 import type { ObstacleSystemHost } from './host';
+import { gameplayRandom } from '../run_seed';
+import { scheduleSim } from '../sim_clock';
 
 export function handleSquidCollision(host: ObstacleSystemHost, squid: NebulaKraken) {
         const player = host.options.getPlayer();
@@ -35,9 +37,9 @@ export function handleSquidCollision(host: ObstacleSystemHost, squid: NebulaKrak
             });
         }
 
-        setTimeout(() => {
+        scheduleSim(2.0, () => {
             host.options.playerState.invincible = false;
-        }, 2000);
+        });
 
         host.options.updateHealthDisplay();
         if (host.options.playerState.health <= 0) {
@@ -79,9 +81,9 @@ export function handleCollision(host: ObstacleSystemHost, obs: THREE.Mesh) {
             }
         }
 
-        setTimeout(() => {
+        scheduleSim(2.0, () => {
             host.options.playerState.invincible = false;
-        }, 2000);
+        });
 
         if (host.options.onPlayerHit) {
             host.options.onPlayerHit();
@@ -106,18 +108,18 @@ export function handleBounce(host: ObstacleSystemHost, asteroid: THREE.Mesh) {
         const dx = asteroid.position.x - player.position.x;
         const dy = asteroid.position.y - player.position.y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const bounceSpeed = 12 + Math.random() * 8;
+        const bounceSpeed = 12 + gameplayRandom('obstacles') * 8;
 
         asteroid.userData.velocity = new THREE.Vector3(
             (dx / dist) * bounceSpeed + 3,
             (dy / dist) * bounceSpeed,
-            (Math.random() - 0.5) * 6
+            (gameplayRandom('obstacles') - 0.5) * 6
         );
 
         // Spin it wildly
-        asteroid.userData.rotationSpeed = (Math.random() - 0.5) * 15;
-        asteroid.userData.rotationSpeedY = (Math.random() - 0.5) * 10;
-        asteroid.userData.rotationSpeedZ = (Math.random() - 0.5) * 10;
+        asteroid.userData.rotationSpeed = (gameplayRandom('obstacles') - 0.5) * 15;
+        asteroid.userData.rotationSpeedY = (gameplayRandom('obstacles') - 0.5) * 10;
+        asteroid.userData.rotationSpeedZ = (gameplayRandom('obstacles') - 0.5) * 10;
 
         // Pink sparkle burst at bounce point
         host.options.particleSystem.emit(

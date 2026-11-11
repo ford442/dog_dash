@@ -6,14 +6,14 @@
  * pause/game-over screens already use).
  */
 
-import { player } from '../player_loader';
 import { playerState, setIsGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import {
     createHubScreen,
     setPendingStartChapter,
     type HubMode,
-    type HubRunSummary
+    type HubRunSummary,
+    type HubTab
 } from '../hub_screen';
 import { serializeRunSeed, tryGetRunSeed } from '../run_seed';
 
@@ -21,6 +21,7 @@ let hubElement: HTMLDivElement | null = null;
 
 function buildRunSummary(): HubRunSummary {
     const seed = tryGetRunSeed();
+    const player = game.player;
     return {
         distance: player ? Math.floor(player.position.x) : 0,
         coresEarned: playerState.cores,
@@ -34,12 +35,13 @@ export function isHubOpen(): boolean {
     return hubElement !== null;
 }
 
-export function openHubScreen(mode: HubMode): void {
+export function openHubScreen(mode: HubMode, initialTab?: HubTab): void {
     if (hubElement) return;
     setIsGamePaused(true);
 
     hubElement = createHubScreen(game.saveManager, {
         mode,
+        initialTab,
         summary: buildRunSummary(),
         playSound: (name) => game.audioSystem.play(name, 0.6),
         onLaunchChapter: (chapter) => {

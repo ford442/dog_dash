@@ -9,6 +9,7 @@ import {
     type GhostRecording
 } from './types';
 import { fromStored, toStored } from './codec';
+import { InputTraceWriter } from './input_trace';
 import type { StoredGhostRecording } from './types';
 
 const STORAGE_KEY = 'dog_dash_ghost_v1';
@@ -20,13 +21,30 @@ export class GhostRunRecorder {
     private elapsed = 0;
     private seed: RunSeed | null = null;
     private recording = false;
+    private startChapter = 1;
+    private readonly inputs = new InputTraceWriter();
+    private touchUsed = false;
 
     begin(seed: RunSeed): void {
         this.seed = seed;
         this.frames = [];
         this.accumulator = 0;
         this.elapsed = 0;
+        this.startChapter = 1;
+        this.inputs.reset();
+        this.touchUsed = false;
         this.recording = true;
+    }
+
+    setStartChapter(chapter: number): void {
+        this.startChapter = chapter;
+    }
+
+    /** Call once per fixed sim step, before the step consumes its input latches. */
+    recordInput(mask: GhostActionFlags, touchUsed = false): void {
+        if (!this.recording) return;
+        this.inputs.push(mask);
+        if (touchUsed) this.touchUsed = true;
     }
 
     stop(): GhostRecording | null {
@@ -36,7 +54,10 @@ export class GhostRunRecorder {
             version: GHOST_SCHEMA_VERSION,
             seed: this.seed,
             frames: [...this.frames],
-            duration: this.elapsed
+            duration: this.elapsed,
+            startChapter: this.startChapter,
+            inputs: this.inputs.toArray(),
+            touchUsed: this.touchUsed
         };
     }
 
@@ -57,6 +78,11 @@ export class GhostRunRecorder {
                 actions
             });
         }
+    }
+
+    /** Sim seconds since begin() — the ghost overlay's playback clock. */
+    getElapsed(): number {
+        return this.elapsed;
     }
 
     getFrameCount(): number {
@@ -84,6 +110,13 @@ export function saveGhostRecording(recording: GhostRecording): boolean {
         frames = decimateFrames(frames, 2);
         stored = toStored({ ...recording, frames });
         console.warn('[ghost_run] Decimating frames to fit storage cap');
+    }
+
+    if (encode().length > MAX_STORAGE_BYTES && stored.inputs) {
+        // The overlay only needs frames; give up re-sim data before the ghost.
+        console.warn('[ghost_run] Dropping input trace to fit storage cap');
+        const { inputs: _inputs, ...rest } = stored;
+        stored = rest;
     }
 
     const json = encode();

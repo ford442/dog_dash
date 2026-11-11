@@ -123,18 +123,18 @@ class PastelNebulaLayer {
         this.positions = new Float32Array(this.count * 3);
 
         for(let i=0; i<this.count; i++) {
-            const x = (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * config.yRange;
-            const z = config.z + (Math.random() - 0.5) * config.zRange;
+            const x = (Math.random() - 0.5) * this.width; // visual-only
+            const y = (Math.random() - 0.5) * config.yRange; // visual-only
+            const z = config.z + (Math.random() - 0.5) * config.zRange; // visual-only
 
             this.positions[i*3] = x;
             this.positions[i*3+1] = y;
             this.positions[i*3+2] = z;
 
             this.dummy.position.set(x, y, z);
-            const s = config.scaleMin + Math.random() * (config.scaleMax - config.scaleMin);
+            const s = config.scaleMin + Math.random() * (config.scaleMax - config.scaleMin); // visual-only
             this.dummy.scale.setScalar(s);
-            this.dummy.rotation.z = Math.random() * Math.PI * 2;
+            this.dummy.rotation.z = Math.random() * Math.PI * 2; // visual-only
 
             this.dummy.updateMatrix();
             this.mesh.setMatrixAt(i, this.dummy.matrix);

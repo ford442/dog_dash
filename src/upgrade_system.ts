@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { gameplayRandom } from './run_seed';
 
 export type UpgradeType = 'cryo' | 'pyro' | 'rapid' | 'pierce' | 'none';
 
@@ -305,10 +306,10 @@ export class PickupManager {
     }
 
     trySpawn(position: THREE.Vector3): UpgradePickup | null {
-        if (Math.random() > this.spawnChance) return null;
+        if (gameplayRandom('pickups') > this.spawnChance) return null;
         
         const types: UpgradeType[] = ['cryo', 'pyro', 'rapid', 'pierce'];
-        const type = types[Math.floor(Math.random() * types.length)];
+        const type = types[Math.floor(gameplayRandom('pickups') * types.length)];
         
         const pickup = new UpgradePickup(this.scene, position, type);
         this.pickups.push(pickup);

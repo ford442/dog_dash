@@ -1,21 +1,11 @@
-import * as THREE from 'three';
 import { CONFIG } from '../game_config';
 import { game } from '../game_runtime';
-import { camera } from '../scene_context';
-import { player } from '../player_loader';
 
 // =============================================================================
 // CAMERA FOLLOW - Dynamic with screen shake and movement response
 // =============================================================================
-let cameraShake = 0;
-let cameraOffset = new THREE.Vector3();
-
-export function triggerScreenShake(intensity: number, duration: number) {
-    cameraShake = intensity;
-    setTimeout(() => { cameraShake = 0; }, duration * 1000);
-}
-
 export function updateCamera(delta?: number) {
+    const { camera, player } = game;
     // Don't update if player hasn't loaded yet
     if (!player) return;
     
@@ -49,14 +39,8 @@ export function updateCamera(delta?: number) {
         camera.rotation.z += (0 - camera.rotation.z) * 0.05;
     }
 
-    // Screen shake effect
-    if (cameraShake > 0) {
-        cameraOffset.x = (Math.random() - 0.5) * cameraShake;
-        cameraOffset.y = (Math.random() - 0.5) * cameraShake;
-        cameraOffset.z = (Math.random() - 0.5) * cameraShake * 0.5;
-        camera.position.add(cameraOffset);
-        cameraShake *= 0.9; // Decay
-    }
+    // Screen shake is applied around the draw call only (JuiceManager
+    // applyShakeToCamera) so this sim-owned position stays deterministic.
 
     // Look ahead with slight tilt based on vertical speed
     const tiltAmount = -game.playerState.currentSpeedY * 0.02;

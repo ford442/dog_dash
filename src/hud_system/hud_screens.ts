@@ -218,9 +218,47 @@ export class HUDScreens {
         }
     }
 
+    /** Short banner at the top of the screen (e.g. why a shared course could not start). UI timer, not gameplay. */
+    showNotice(text: string, seconds: number): void {
+        const notice = document.createElement('div');
+        notice.className = 'hud-element';
+        notice.setAttribute('role', 'status');
+        notice.style.cssText = `
+            position: fixed;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: min(560px, calc(100vw - 32px));
+            box-sizing: border-box;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, ${COLORS.lemon}, ${COLORS.pinkLight});
+            border: 3px solid ${COLORS.white};
+            border-radius: 18px;
+            box-shadow: 0 4px 15px ${COLORS.shadow};
+            color: ${COLORS.textDark};
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 1100;
+            animation: hud-fade-in 0.4s ease-out;
+        `;
+        notice.textContent = text;
+        document.body.appendChild(notice);
+        window.setTimeout(() => notice.remove(), seconds * 1000);
+    }
+
     showVictoryScreen(
         stats: GameStats,
-        extras?: { onOpenJourneyMap?: () => void; onOpenHub?: () => void }
+        extras?: {
+            onOpenJourneyMap?: () => void;
+            onOpenHub?: () => void;
+            /** Copy and buttons for finish lines that are not the Moon (Architect sandbox). */
+            title?: string;
+            message?: string;
+            hubLabel?: string;
+            playAgainLabel?: string;
+            onPlayAgain?: () => void;
+        }
     ): void {
         this.celebrateVictory();
 
@@ -255,10 +293,10 @@ export class HUDScreens {
         container.innerHTML = `
             <div style="font-size: 60px; margin-bottom: 10px;">🎉🏆🎉</div>
             <h1 style="color: ${COLORS.textDark}; font-size: 36px; margin: 0 0 20px 0; text-shadow: 2px 2px 0 rgba(255,255,255,0.5);">
-                You Did It! ✨
+                ${extras?.title ?? 'You Did It! ✨'}
             </h1>
             <p style="color: ${COLORS.textLight}; font-size: 18px; margin-bottom: 30px;">
-                The puppy reached the moon! 🌙🐕
+                ${extras?.message ?? 'The puppy reached the moon! 🌙🐕'}
             </p>
             <div style="background: rgba(255,255,255,0.6); padding: 20px; border-radius: 20px; margin-bottom: 30px;">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: left;">
@@ -277,17 +315,19 @@ export class HUDScreens {
         const btnRow = document.createElement('div');
         btnRow.style.cssText = 'display:flex; flex-direction:column; gap:12px; align-items:stretch;';
 
-        const mapBtn = this.createMenuButton('🗺️ Journey Map', COLORS.lemon, () => {
-            extras?.onOpenJourneyMap?.();
+        const playAgainBtn = this.createMenuButton(extras?.playAgainLabel ?? '🎮 Play Again', COLORS.mint, () => {
+            if (extras?.onPlayAgain) extras.onPlayAgain();
+            else location.reload();
         });
 
-        const playAgainBtn = this.createMenuButton('🎮 Play Again', COLORS.mint, () => {
-            location.reload();
-        });
-
-        btnRow.appendChild(mapBtn);
+        if (extras?.onOpenJourneyMap) {
+            const mapBtn = this.createMenuButton('🗺️ Journey Map', COLORS.lemon, () => {
+                extras.onOpenJourneyMap!();
+            });
+            btnRow.appendChild(mapBtn);
+        }
         if (extras?.onOpenHub) {
-            const hubBtn = this.createMenuButton('🏠 Space Base', COLORS.lavenderDark, () => {
+            const hubBtn = this.createMenuButton(extras.hubLabel ?? '🏠 Space Base', COLORS.lavenderDark, () => {
                 extras.onOpenHub!();
             });
             btnRow.appendChild(hubBtn);

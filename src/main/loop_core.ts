@@ -1,37 +1,18 @@
-import { camera, touchControls } from '../scene_context';
-import { player } from '../player_loader';
+import { touchControls } from '../scene_context';
 import { playerState } from '../game_config';
 import { game } from '../game_runtime';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
-import { PowerUpType } from '../powerup_manager';
-import { MagicalEffectType } from '../magical_effects';
-import { getCandySlingComboBonus, CANDY_FLAVOR_COLORS, updateCandyMaterialGlobals } from '../candy_materials';
-import type { CandyAsteroidVariant, CandyFlavor } from '../candy_materials';
-import { getLevelSpan } from '../depth_layers';
-import {
-    shouldSpawnStarlightKoi,
-    shouldSpawnBubbleCoral,
-    getBubbleCoralPlacement,
-    resolveBubbleCoralClusterCount
-} from '../level_spawn_rules';
-import { animateFoliage, updateSolarSail } from '../foliage';
-import { moonPlants } from '../visuals';
-import { keys, updateHealthDisplay } from '../ui_controls';
-import {
-    sporeClouds, jellyMosses, solarSails, geodes, voidRootBalls, vacuumKelps,
-    iceNeedleClusters, magmaHearts, gravityAnchors, liquidMetalBlobs, cleanupGeologicalObjects
-} from '../environment';
-import {
-    damageGeode, updateGeode, updateNebulaJellyMoss, destroyNebulaJellyMoss,
-    updateVoidRootBall, updateVacuumKelp, updateIceNeedleCluster, updateMagmaHeart,
-    updateGravityAnchor, GA_SLING_BONUS
-} from '../geological';
+import { getCandySlingComboBonus } from '../candy_materials';
+import type { CandyAsteroidVariant } from '../candy_materials';
+import { getJourneyLayout } from '../journey_layout';
 
 import { updatePlayer } from './player_update';
 import { ghostRunRecorder, buildActionFlags } from '../ghost_run';
 import { rebuildGameplaySpatialHash } from '../spatial_fill';
 import { updateChapterMusicDynamics } from './music_update';
+import { captureSimInput, touchInputActive } from './sim_input';
+import { throwGrenade } from './grenade';
 
 /**
  * Gameplay-affecting portion of the "core" loop phase, run once per fixed
@@ -40,10 +21,20 @@ import { updateChapterMusicDynamics } from './music_update';
  * frame_housekeeping.ts and runs once per rendered frame instead.
  */
 export function updateLoopCore(delta: number, _time: number): void {
+        // Snapshot this step's input before anything consumes a latch — the
+        // mask is what a headless replay feeds back via applySimInput().
+        ghostRunRecorder.recordInput(captureSimInput(), touchInputActive());
+        if (game.wantsGrenade) {
+            game.wantsGrenade = false;
+            throwGrenade();
+        }
+
         // --- Sling Combo Manager ---
         game.slingComboManager.update(delta);
 
         updatePlayer(delta);
+
+        const { camera, player } = game;
 
         if (player) {
             const touchInput = touchControls?.getInput();
@@ -72,7 +63,7 @@ export function updateLoopCore(delta: number, _time: number): void {
                 player.position.y,
                 game.levelManager.config[game.levelManager.currentLevel],
                 game.weaponSystem.getActiveProjectiles(),
-                game.levelManager.currentLevel
+                getJourneyLayout().campaignTwin(game.levelManager.currentLevel)
             );
             for (const result of creatureResults) {
                 let cores = result.cores ?? 0;
@@ -148,7 +139,7 @@ export function updateLoopCore(delta: number, _time: number): void {
         // Feed speed / boost / danger / quiet into the chapter music mix.
         updateChapterMusicDynamics();
 
-        rebuildGameplaySpatialHash();
+        rebuildGameplaySpatialHash(game.env.geologicalWorld);
         game.obstacleSystem.resolveCollisions(delta);
         game.creatureManager.applyProjectileHits(
             game.weaponSystem.getActiveProjectiles(),

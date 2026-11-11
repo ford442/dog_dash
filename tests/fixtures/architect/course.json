@@ -1,0 +1,13 @@
+{
+  "v": 1,
+  "rngSeed": "1R4C6QE",
+  "placements": [
+    { "brushId": "candy_belt_slice", "density": 0.6, "x": 40 },
+    { "brushId": "spore_field", "density": 0.5, "x": 60 },
+    { "brushId": "wind_corridor", "density": 0.5, "x": 160 },
+    { "brushId": "dream_room_door", "density": 0.4, "x": 260 },
+    { "brushId": "wind_corridor", "density": 0.8, "x": 340 },
+    { "brushId": "sky_rail_flourish", "density": 1, "x": 380 },
+    { "brushId": "boss_gate", "density": 0.1, "x": 430 }
+  ]
+}

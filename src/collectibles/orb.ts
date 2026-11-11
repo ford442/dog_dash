@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { ParticleSystem } from '../particles';
 import type { AudioPort } from '../ports';
 import { OrbType, ORB_CONFIG, PASTEL_COLORS, STAR_COLORS } from './types';
+import { gameplayRandom } from '../run_seed';
 
 /** Collectible orb with magical floating animation */
 export class CollectibleOrb {
@@ -36,7 +37,7 @@ export class CollectibleOrb {
         this.rotationSpeed = config.rotationSpeed;
         this.floatSpeed = config.floatSpeed;
         this.floatAmplitude = config.floatAmplitude;
-        this.floatPhase = Math.random() * Math.PI * 2;
+        this.floatPhase = gameplayRandom('pickups') * Math.PI * 2;
         this.points = config.points;
 
         // Create the mesh group
@@ -65,7 +66,7 @@ export class CollectibleOrb {
     private getGlowColor(): number {
         switch (this.type) {
             case OrbType.STAR:
-                return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+                return STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]; // visual-only
             case OrbType.MAGIC_BONE:
                 return PASTEL_COLORS.peach;
             case OrbType.HEART:
@@ -84,7 +85,7 @@ export class CollectibleOrb {
             case OrbType.STAR:
                 // Star shape using cone geometry
                 geometry = this.createStarGeometry();
-                color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)];
+                color = STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)]; // visual-only
                 break;
 
             case OrbType.MAGIC_BONE:
@@ -224,16 +225,16 @@ export class CollectibleOrb {
 
             // Position around the orb
             const angle = (i / this.sparkleCount) * Math.PI * 2;
-            const radius = 0.6 + Math.random() * 0.3;
+            const radius = 0.6 + Math.random() * 0.3; // visual-only
             sparkle.position.set(
                 Math.cos(angle) * radius,
-                (Math.random() - 0.5) * 0.5,
+                (Math.random() - 0.5) * 0.5, // visual-only
                 Math.sin(angle) * radius
             );
 
             // Store random phase for twinkling
-            (sparkle as any).twinklePhase = Math.random() * Math.PI * 2;
-            (sparkle as any).orbitSpeed = 0.5 + Math.random() * 0.5;
+            (sparkle as any).twinklePhase = Math.random() * Math.PI * 2; // visual-only
+            (sparkle as any).orbitSpeed = 0.5 + Math.random() * 0.5; // visual-only
             (sparkle as any).orbitAngle = angle;
 
             this.mesh.add(sparkle);

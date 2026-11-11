@@ -31,6 +31,16 @@ export interface LastRunSummary {
     endedAt: number;
 }
 
+/** Endless Dash personal bests (kept apart from the campaign's Moon-run stats). */
+export interface EndlessRecords {
+    runs: number;
+    /** Furthest Endless chapter reached (1-based). */
+    bestChapter: number;
+    bestDistance: number;
+    /** Seed code of the run that set `bestChapter`. */
+    bestSeedCode?: string;
+}
+
 /** Persisted audio preferences (accessibility + mixing). */
 export interface AudioSettings {
     /** 0..1 master output level. */
@@ -62,6 +72,8 @@ export interface SaveData {
     loadout: Record<string, number>;
     /** Last completed run seed + distance (Cosmic Architect foundation). */
     lastRun?: LastRunSummary;
+    /** Endless Dash bests; absent until the first Endless run ends. */
+    endless?: EndlessRecords;
     /** Master / music / SFX levels and the reduced-audio preference. */
     audio: AudioSettings;
     version: string;
@@ -118,6 +130,21 @@ function normalizeLoadout(raw: unknown): Record<string, number> {
         }
     }
     return out;
+}
+
+function normalizeEndlessRecords(raw: unknown): EndlessRecords | undefined {
+    if (!raw || typeof raw !== 'object') return undefined;
+    const r = raw as Record<string, unknown>;
+    const count = (value: unknown) => {
+        const n = Math.floor(Number(value));
+        return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    return {
+        runs: count(r.runs),
+        bestChapter: count(r.bestChapter),
+        bestDistance: count(r.bestDistance),
+        ...(typeof r.bestSeedCode === 'string' ? { bestSeedCode: r.bestSeedCode } : {})
+    };
 }
 
 function normalizeLastRun(raw: unknown): LastRunSummary | undefined {
@@ -191,6 +218,7 @@ export class SaveManager {
             resources: normalizeInventory(raw?.resources),
             loadout: normalizeLoadout(raw?.loadout),
             lastRun: normalizeLastRun(raw?.lastRun),
+            endless: normalizeEndlessRecords(raw?.endless),
             audio: normalizeAudioSettings(raw?.audio),
             version: CURRENT_VERSION
         };
@@ -317,6 +345,25 @@ export class SaveManager {
     saveLastRun(summary: LastRunSummary): void {
         this.data.lastRun = { ...summary };
         this.save();
+    }
+
+    getEndlessRecords(): EndlessRecords {
+        return this.data.endless ? { ...this.data.endless } : { runs: 0, bestChapter: 0, bestDistance: 0 };
+    }
+
+    /** Count an ended Endless run; returns true when it set a new best chapter. */
+    recordEndlessRun(chapter: number, distance: number, seedCode: string): boolean {
+        const records = this.getEndlessRecords();
+        records.runs++;
+        const newBest = chapter > records.bestChapter;
+        if (newBest) {
+            records.bestChapter = chapter;
+            records.bestSeedCode = seedCode;
+        }
+        records.bestDistance = Math.max(records.bestDistance, Math.floor(distance));
+        this.data.endless = records;
+        this.save();
+        return newBest;
     }
 
     // Flora discovery (Level 1 "Catalog" objective)
@@ -449,7 +496,10 @@ export class SaveManager {
 
     /** Architect Key recipe: every chapter becomes selectable forever. */
     unlockAllLevels(): void {
-        this.data.unlockedLevels = [1, 2, 3, 4, 5, 6];
+        // Union, not overwrite: keep the post-campaign marker (7) that unlocks Endless.
+        for (let level = 1; level <= 6; level++) {
+            if (!this.data.unlockedLevels.includes(level)) this.data.unlockedLevels.push(level);
+        }
         this.save();
     }
 

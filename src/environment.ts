@@ -1,39 +1,33 @@
 import * as THREE from 'three';
-import { scene } from './scene_context';
-import { player } from './player_loader';
-import { playerState } from './game_config';
 import { decorationBudget } from './decoration_budget';
 import {
     SporeCloud,
     createFracturedGeode,
-    updateGeode,
     createNebulaJellyMoss,
-    updateNebulaJellyMoss,
-    destroyNebulaJellyMoss,
     createVoidRootBall,
     disposeVoidRootBall,
     createVacuumKelp,
-    updateVacuumKelp,
     vacuumKelpSoftBody,
     kelpConfigFromRng,
     createIceNeedleCluster,
-    updateIceNeedleCluster,
     iceNeedleCountFromRng,
     createMagmaHeart,
-    updateMagmaHeart,
     createGravityAnchor,
-    updateGravityAnchor
+    getGeologicalWorldScene,
+    getGeologicalWorldLiquidMetal,
+    type GeologicalWorld
 } from './geological';
-import { createSolarSail, updateSolarSail } from './foliage';
-import { createSubwooferLotus, createFiberOpticWillow, createGlowingFlower } from './foliage';
+import { createSolarSail } from './foliage';
 import type { ParticleSystem } from './particles';
 import type { WeaponSystem } from './weapons';
 import type { LiquidMetalSystem } from './geological/liquid_metal';
 import { disposeObject } from './utils';
 import { jellyMossSoftBody } from './jelly_moss_softbody';
+import { gameplayRandom } from './run_seed';
 
 /** Injected by bootstrap — environment never imports composition-root singletons. */
 export type EnvironmentSystems = {
+    scene?: THREE.Scene;
     particleSystem: ParticleSystem;
     weaponSystem: WeaponSystem;
     liquidMetalSystem: LiquidMetalSystem;
@@ -58,444 +52,340 @@ function requireEnvSystems(): EnvironmentSystems {
     return envSystems;
 }
 
+function resolveWorldScene(world: GeologicalWorld): THREE.Scene {
+    const worldScene = getGeologicalWorldScene(world) ?? envSystems?.scene;
+    if (!worldScene) {
+        throw new Error('GeologicalWorld scene not bound');
+    }
+    return worldScene;
+}
+
 // =============================================================================
-// GEOLOGICAL OBJECTS & ANOMALIES (single copy — see scene_context + main.ts)
+// GEOLOGICAL OBJECTS & ANOMALIES (owned by GeologicalWorld on game.env)
 // Galaxies / moon visuals live in visuals.ts (main.ts wires + adds to canonical scene).
 // =============================================================================
 
-// Spore Clouds - floating clouds of glowing spores
-export const sporeClouds: SporeCloud[] = [];
-
-export function createSporeCloudAtPosition(x: number, y: number, z: number) {
-    const cloud = new SporeCloud(scene, new THREE.Vector3(x, y, z), 500 + Math.floor(Math.random() * 500));
+export function createSporeCloudAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
+    const targetScene = resolveWorldScene(world);
+    const cloud = new SporeCloud(
+        targetScene,
+        new THREE.Vector3(x, y, z),
+        500 + Math.floor(gameplayRandom('geology') * 500)
+    );
     cloud.spores.userData.speciesId = 'sporeCloud';
     cloud.spores.userData.scanPosition = cloud.position;
-    sporeClouds.push(cloud);
+    world.sporeClouds.push(cloud);
     return cloud;
 }
 
-
-
-// Fractured Geodes - safe harbors with EM fields
-export const geodes: THREE.Group[] = [];
-
-export function createGeodeAtPosition(x: number, y: number, z: number) {
-    const geode = createFracturedGeode({ size: 3 + Math.random() * 2 });
+export function createGeodeAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
+    const targetScene = resolveWorldScene(world);
+    const geode = createFracturedGeode({ size: 3 + gameplayRandom('geology') * 2 });
     geode.position.set(x, y, z);
     geode.userData.speciesId = 'fracturedGeode';
-    scene.add(geode);
-    geodes.push(geode);
+    targetScene.add(geode);
+    world.geodes.push(geode);
     return geode;
 }
 
-// Chroma-Shift Rocks - tracked for cleanup behind the camera
-export const chromaRocks: THREE.Group[] = [];
-
-// Nebula Jelly-Moss - floating gelatinous organisms with fractal moss
-export const jellyMosses: THREE.Mesh[] = [];
-
-export function createJellyMossAtPosition(x: number, y: number, z: number, size?: number) {
-    const jellyMoss = createNebulaJellyMoss({ size: size || 2 + Math.random() * 8 });
+export function createJellyMossAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number,
+    size?: number
+) {
+    const targetScene = resolveWorldScene(world);
+    const jellyMoss = createNebulaJellyMoss({ size: size || 2 + gameplayRandom('geology') * 8 });
     jellyMoss.position.set(x, y, z);
     jellyMoss.userData.speciesId = 'nebulaJellyMoss';
-    scene.add(jellyMoss);
-    jellyMosses.push(jellyMoss);
+    targetScene.add(jellyMoss);
+    world.jellyMosses.push(jellyMoss);
     // Verlet soft-body for up to 3 hero mosses. No-op unless the active level
     // opted in via environments.dancingJellyMoss (see applyEnvironmentPlugins).
     jellyMossSoftBody.tryAttach(jellyMoss);
     return jellyMoss;
 }
 
-// Solar Sails / Light Leaves - thin-film iridescent organisms catching solar wind
-export const solarSails: THREE.Group[] = [];
-
-export function createSolarSailAtPosition(x: number, y: number, z: number) {
-    const solarSail = createSolarSail({ 
-        leafCount: 6 + Math.floor(Math.random() * 6),
-        leafLength: 8 + Math.random() * 8
+export function createSolarSailAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
+    const targetScene = resolveWorldScene(world);
+    const solarSail = createSolarSail({
+        leafCount: 6 + Math.floor(gameplayRandom('flora') * 6),
+        leafLength: 8 + gameplayRandom('flora') * 8
     });
     solarSail.position.set(x, y, z);
-    scene.add(solarSail);
-    solarSails.push(solarSail);
+    targetScene.add(solarSail);
+    world.solarSails.push(solarSail);
     return solarSail;
 }
 
-// Void Root Balls - active threats with grapple mechanics
-export const voidRootBalls: THREE.Group[] = [];
-
-export function createVoidRootBallAtPosition(x: number, y: number, z: number) {
+export function createVoidRootBallAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
     if (!decorationBudget.canSpawn('void_root_ball')) return null;
     if (!decorationBudget.reportSpawn('void_root_ball')) return null;
-    const rootBall = createVoidRootBall({ size: 2 + Math.random() * 2 });
+    const targetScene = resolveWorldScene(world);
+    const rootBall = createVoidRootBall({ size: 2 + gameplayRandom('geology') * 2 });
     rootBall.position.set(x, y, z);
     rootBall.userData.speciesId = 'voidRootBall';
-    scene.add(rootBall);
-    voidRootBalls.push(rootBall);
+    targetScene.add(rootBall);
+    world.voidRootBalls.push(rootBall);
     return rootBall;
 }
 
-// Vacuum Kelp - energy-draining tunnel obstacles
-export const vacuumKelps: THREE.Group[] = [];
-
+/** Kelp lengths and ice-needle angles are collision geometry — seeded. */
 function floraRandom(): number {
-    return Math.random();
+    return gameplayRandom('flora');
 }
 
-export function createVacuumKelpAtPosition(x: number, y: number, z: number) {
+export function createVacuumKelpAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
     if (!decorationBudget.canSpawn('vacuum_kelp')) return null;
     if (!decorationBudget.reportSpawn('vacuum_kelp')) return null;
+    const targetScene = resolveWorldScene(world);
     const cfg = kelpConfigFromRng(floraRandom);
     const kelp = createVacuumKelp(cfg);
     kelp.position.set(x, y, z);
     kelp.userData.speciesId = 'vacuumKelp';
-    scene.add(kelp);
-    vacuumKelps.push(kelp);
+    targetScene.add(kelp);
+    world.vacuumKelps.push(kelp);
     vacuumKelpSoftBody.tryAttach(kelp);
     return kelp;
 }
 
-// Ice Needle Clusters - super-bleed and thermal dynamics
-export const iceNeedleClusters: THREE.Group[] = [];
-
-export function createIceNeedleClusterAtPosition(x: number, y: number, z: number) {
+export function createIceNeedleClusterAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
     if (!decorationBudget.canSpawn('ice_needle_cluster')) return null;
     if (!decorationBudget.reportSpawn('ice_needle_cluster')) return null;
-    const cluster = createIceNeedleCluster({ count: iceNeedleCountFromRng(floraRandom), random: floraRandom });
+    const targetScene = resolveWorldScene(world);
+    const cluster = createIceNeedleCluster({
+        count: iceNeedleCountFromRng(floraRandom),
+        random: floraRandom
+    });
     cluster.position.set(x, y, z);
     cluster.userData.speciesId = 'iceNeedleCluster';
-    scene.add(cluster);
-    iceNeedleClusters.push(cluster);
+    targetScene.add(cluster);
+    world.iceNeedleClusters.push(cluster);
     return cluster;
 }
 
-// Liquid Metal Blobs - splitting and recombination
-export const liquidMetalBlobs: THREE.Object3D[] = [];
-
-export function createLiquidMetalBlobAtPosition(x: number, y: number, z: number) {
-    const blob = requireEnvSystems().liquidMetalSystem.createBlob(new THREE.Vector3(x, y, z), 2 + Math.random() * 3);
+export function createLiquidMetalBlobAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
+    const liquidMetalSystem =
+        getGeologicalWorldLiquidMetal(world) ?? requireEnvSystems().liquidMetalSystem;
+    const blob = liquidMetalSystem.createBlob(
+        new THREE.Vector3(x, y, z),
+        2 + gameplayRandom('geology') * 3
+    );
     blob.group.userData.speciesId = 'liquidMetalBlob';
-    liquidMetalBlobs.push(blob.group);
+    world.liquidMetalBlobs.push(blob.group);
     return blob;
 }
 
-// Gravity Anchors — Stellar Cores with localized inverse-square force fields
-export const gravityAnchors: THREE.Group[] = [];
-
-export function createGravityAnchorAtPosition(x: number, y: number, z: number, biome: number = 0) {
-    const anchor = createGravityAnchor({ size: 8 + Math.random() * 7, biome });
+export function createGravityAnchorAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number,
+    biome: number = 0
+) {
+    const targetScene = resolveWorldScene(world);
+    const anchor = createGravityAnchor({ size: 8 + gameplayRandom('geology') * 7, biome });
     anchor.position.set(x, y, z);
     anchor.userData.speciesId = 'gravityAnchor';
-    scene.add(anchor);
-    gravityAnchors.push(anchor);
+    targetScene.add(anchor);
+    world.gravityAnchors.push(anchor);
     return anchor;
 }
 
-// Magma Hearts - eruption cycle mechanics
-export const magmaHearts: THREE.Mesh[] = [];
-
-export function createMagmaHeartAtPosition(x: number, y: number, z: number) {
+export function createMagmaHeartAtPosition(
+    world: GeologicalWorld,
+    x: number,
+    y: number,
+    z: number
+) {
     if (!decorationBudget.canSpawn('magma_heart')) return null;
     if (!decorationBudget.reportSpawn('magma_heart')) return null;
+    const targetScene = resolveWorldScene(world);
     const heart = createMagmaHeart({ size: 3 + floraRandom() * 2 });
     heart.position.set(x, y, z);
     heart.userData.speciesId = 'magmaHeart';
-    scene.add(heart);
-    magmaHearts.push(heart);
+    targetScene.add(heart);
+    world.magmaHearts.push(heart);
     return heart;
 }
 
 // Cleanup geological objects that have fallen behind the camera
-export function cleanupGeologicalObjects(cameraX: number) {
+export function cleanupGeologicalObjects(world: GeologicalWorld, cameraX: number) {
     const cutoff = cameraX - 100;
+    const targetScene = resolveWorldScene(world);
 
     // Spore clouds
-    for (let i = sporeClouds.length - 1; i >= 0; i--) {
-        const cloud = sporeClouds[i];
+    for (let i = world.sporeClouds.length - 1; i >= 0; i--) {
+        const cloud = world.sporeClouds[i];
         if (cloud.position.x < cutoff) {
-            scene.remove(cloud.spores);
+            targetScene.remove(cloud.spores);
             disposeObject(cloud.spores);
-            sporeClouds.splice(i, 1);
+            world.sporeClouds.splice(i, 1);
         }
     }
 
     // Chroma rocks
-    for (let i = chromaRocks.length - 1; i >= 0; i--) {
-        const rock = chromaRocks[i];
+    for (let i = world.chromaRocks.length - 1; i >= 0; i--) {
+        const rock = world.chromaRocks[i];
         if (rock.position.x < cutoff) {
-            scene.remove(rock);
+            targetScene.remove(rock);
             disposeObject(rock);
-            chromaRocks.splice(i, 1);
+            world.chromaRocks.splice(i, 1);
         }
     }
 
     // Geodes
-    for (let i = geodes.length - 1; i >= 0; i--) {
-        const geode = geodes[i];
+    for (let i = world.geodes.length - 1; i >= 0; i--) {
+        const geode = world.geodes[i];
         if (geode.position.x < cutoff) {
-            scene.remove(geode);
+            targetScene.remove(geode);
             disposeObject(geode);
-            geodes.splice(i, 1);
+            world.geodes.splice(i, 1);
         }
     }
 
     // Void root balls (withered roots remain as obstacles until they leave the stream)
-    for (let i = voidRootBalls.length - 1; i >= 0; i--) {
-        const rootBall = voidRootBalls[i];
+    for (let i = world.voidRootBalls.length - 1; i >= 0; i--) {
+        const rootBall = world.voidRootBalls[i];
         if (rootBall.position.x < cutoff) {
-            disposeVoidRootBall(rootBall, scene);
+            disposeVoidRootBall(rootBall, targetScene);
             decorationBudget.reportDestroy('void_root_ball');
-            voidRootBalls.splice(i, 1);
+            world.voidRootBalls.splice(i, 1);
         }
     }
 
     // Vacuum kelp
-    for (let i = vacuumKelps.length - 1; i >= 0; i--) {
-        const kelp = vacuumKelps[i];
+    for (let i = world.vacuumKelps.length - 1; i >= 0; i--) {
+        const kelp = world.vacuumKelps[i];
         if (kelp.position.x < cutoff) {
             vacuumKelpSoftBody.detach(kelp);
-            scene.remove(kelp);
+            targetScene.remove(kelp);
             disposeObject(kelp);
             decorationBudget.reportDestroy('vacuum_kelp');
-            vacuumKelps.splice(i, 1);
+            world.vacuumKelps.splice(i, 1);
         }
     }
 
     // Ice needle clusters
-    for (let i = iceNeedleClusters.length - 1; i >= 0; i--) {
-        const cluster = iceNeedleClusters[i];
+    for (let i = world.iceNeedleClusters.length - 1; i >= 0; i--) {
+        const cluster = world.iceNeedleClusters[i];
         if (cluster.position.x < cutoff) {
-            scene.remove(cluster);
+            targetScene.remove(cluster);
             disposeObject(cluster);
             decorationBudget.reportDestroy('ice_needle_cluster');
-            iceNeedleClusters.splice(i, 1);
+            world.iceNeedleClusters.splice(i, 1);
         }
     }
 
     // Magma hearts
-    for (let i = magmaHearts.length - 1; i >= 0; i--) {
-        const heart = magmaHearts[i];
+    for (let i = world.magmaHearts.length - 1; i >= 0; i--) {
+        const heart = world.magmaHearts[i];
         if (heart.position.x < cutoff) {
-            scene.remove(heart);
+            targetScene.remove(heart);
             disposeObject(heart);
             decorationBudget.reportDestroy('magma_heart');
-            magmaHearts.splice(i, 1);
+            world.magmaHearts.splice(i, 1);
         }
     }
 
     // Gravity anchors
-    for (let i = gravityAnchors.length - 1; i >= 0; i--) {
-        const anchor = gravityAnchors[i];
+    for (let i = world.gravityAnchors.length - 1; i >= 0; i--) {
+        const anchor = world.gravityAnchors[i];
         if (anchor.position.x < cutoff) {
-            scene.remove(anchor);
+            targetScene.remove(anchor);
             disposeObject(anchor);
-            gravityAnchors.splice(i, 1);
+            world.gravityAnchors.splice(i, 1);
         }
     }
 
     // Nebula jelly moss
-    for (let i = jellyMosses.length - 1; i >= 0; i--) {
-        const jellyMoss = jellyMosses[i];
+    for (let i = world.jellyMosses.length - 1; i >= 0; i--) {
+        const jellyMoss = world.jellyMosses[i];
         if (jellyMoss.position.x < cutoff) {
             jellyMossSoftBody.detach(jellyMoss);
-            scene.remove(jellyMoss);
+            targetScene.remove(jellyMoss);
             disposeObject(jellyMoss);
-            jellyMosses.splice(i, 1);
+            world.jellyMosses.splice(i, 1);
         }
     }
 
     // Solar sails
-    for (let i = solarSails.length - 1; i >= 0; i--) {
-        const sail = solarSails[i];
+    for (let i = world.solarSails.length - 1; i >= 0; i--) {
+        const sail = world.solarSails[i];
         if (sail.position.x < cutoff) {
-            scene.remove(sail);
+            targetScene.remove(sail);
             disposeObject(sail);
-            solarSails.splice(i, 1);
+            world.solarSails.splice(i, 1);
         }
     }
 
     // Liquid metal blobs
-    for (let i = liquidMetalBlobs.length - 1; i >= 0; i--) {
-        const blobGroup = liquidMetalBlobs[i];
+    const liquidMetalSystem =
+        getGeologicalWorldLiquidMetal(world) ?? envSystems?.liquidMetalSystem;
+    for (let i = world.liquidMetalBlobs.length - 1; i >= 0; i--) {
+        const blobGroup = world.liquidMetalBlobs[i];
         if (blobGroup.position.x < cutoff) {
-            const parent = blobGroup.userData.parent as {
-                active?: boolean;
-                recombine?: () => void;
-            } | undefined;
+            const parent = blobGroup.userData.parent as
+                | {
+                      active?: boolean;
+                      recombine?: () => void;
+                  }
+                | undefined;
             if (parent) {
                 parent.recombine?.();
                 parent.active = false;
             }
-            const { liquidMetalSystem } = requireEnvSystems();
-            const blobIdx = liquidMetalSystem.blobs.findIndex((b) => b.group === blobGroup);
-            if (blobIdx >= 0) liquidMetalSystem.blobs.splice(blobIdx, 1);
-            scene.remove(blobGroup);
-            disposeObject(blobGroup);
-            liquidMetalBlobs.splice(i, 1);
-        }
-    }
-}
-
-// (createMoon + moon auto-add removed — canonical impl + add lives in visuals.ts + main.ts
-//  to guarantee single scene and no duplicate objects.)
-
-// =============================================================================
-// GEOLOGICAL OBJECT UPDATES (extracted from animate loop)
-// =============================================================================
-export function updateGeologicalObjects(delta: number, time: number, cameraPos: THREE.Vector3) {
-    // Update spore clouds (brownian motion)
-    sporeClouds.forEach(cloud => cloud.update(delta));
-
-
-
-    // Update geodes (EM field pulse)
-    geodes.forEach(geode => updateGeode(geode, delta, time));
-
-    // Update nebula jelly-moss (pulsing and drifting)
-    // Use reverse loop so we can remove items safely
-    for (let i = jellyMosses.length - 1; i >= 0; i--) {
-        const jellyMoss = jellyMosses[i];
-        updateNebulaJellyMoss(jellyMoss, delta, time);
-
-        // --- NEW: Jelly Moss Interaction (Stealth, Shield & Overload) ---
-        if (player && jellyMoss.visible && jellyMoss.userData.radius) {
-            const dist = player.position.distanceTo(jellyMoss.position);
-            const radius = jellyMoss.userData.radius;
-
-            // Player inside membrane?
-            if (dist < radius) {
-                // 1. Viscosity
-                playerState.velocity.multiplyScalar(Math.pow(0.05, delta));
-
-                // 2. Stealth Effect
-                if (!jellyMoss.userData.isHiding) {
-                    jellyMoss.userData.isHiding = true;
-                    const rocket = player.children[0];
-                    if (rocket) {
-                         rocket.traverse((child: any) => {
-                             if (child.isMesh && child.material) {
-                                 if (child.userData.originalOpacity === undefined) {
-                                     child.userData.originalOpacity = child.material.opacity;
-                                     child.userData.originalTransparent = child.material.transparent;
-                                 }
-                                 child.material.transparent = true;
-                                 child.material.opacity = 0.4;
-                             }
-                         });
-                    }
-                }
-
-                // 3. Shield Leech & Overload
-                const normDist = dist / radius;
-                const leechIntensity = THREE.MathUtils.lerp(1.0, 0.0, normDist);
-
-                // Build Overload! (Destruction Mechanic)
-                // Rate: 0.5 per second (takes ~2 seconds to explode)
-                jellyMoss.userData.overloadValue = (jellyMoss.userData.overloadValue || 0) + delta * 0.5;
-
-                // Update Shader Uniform
-                const mat = jellyMoss.material as any;
-                if (mat.userData && mat.userData.uOverload) {
-                    mat.userData.uOverload.value = Math.min(1.0, jellyMoss.userData.overloadValue);
-                }
-
-                // Check for Explosion
-                if (jellyMoss.userData.overloadValue >= 1.0) {
-                    // BOOM
-                    destroyNebulaJellyMoss(jellyMoss, scene, requireEnvSystems().particleSystem);
-
-                    // Remove from list
-                    jellyMosses.splice(i, 1);
-
-                    // Restore player state immediately (exit stealth)
-                    const rocket = player.children[0];
-                    if (rocket) {
-                         rocket.traverse((child: any) => {
-                             if (child.isMesh && child.material) {
-                                 if (child.userData.originalOpacity !== undefined) {
-                                     child.material.opacity = child.userData.originalOpacity;
-                                     child.material.transparent = child.userData.originalTransparent;
-                                 } else {
-                                     child.material.opacity = 1.0;
-                                     child.material.transparent = false;
-                                 }
-                             }
-                         });
-                    }
-                    continue; // Skip next logic
-                }
-
-                // Visual damage effect (red tint pulse)
-                if (Math.random() < 0.05 * leechIntensity) {
-                    const rocket = player.children[0];
-                    if (rocket) {
-                        rocket.traverse((child: any) => {
-                            if (child.isMesh && child.material) {
-                                const childMat = child.material as any;
-                                if (childMat.emissive) {
-                                    const oldEmissive = childMat.emissive.getHex();
-                                    childMat.emissive.setHex(0xff0000);
-                                    setTimeout(() => {
-                                        if(childMat) childMat.emissive.setHex(oldEmissive);
-                                    }, 100);
-                                }
-                            }
-                        });
-                    }
-                }
-
-            } else {
-                // Exit Stealth / Decay Overload
-                if (jellyMoss.userData.isHiding) {
-                    jellyMoss.userData.isHiding = false;
-                    const rocket = player.children[0];
-                    if (rocket) {
-                         rocket.traverse((child: any) => {
-                             if (child.isMesh && child.material) {
-                                 if (child.userData.originalOpacity !== undefined) {
-                                     child.material.opacity = child.userData.originalOpacity;
-                                     child.material.transparent = child.userData.originalTransparent;
-                                 } else {
-                                     child.material.opacity = 1.0;
-                                     child.material.transparent = false;
-                                 }
-                             }
-                         });
-                    }
-                }
-
-                // Decay overload if player leaves
-                if (jellyMoss.userData.overloadValue > 0) {
-                    jellyMoss.userData.overloadValue = Math.max(0, jellyMoss.userData.overloadValue - delta * 0.5);
-                    const mat = jellyMoss.material as any;
-                    if (mat.userData && mat.userData.uOverload) {
-                        mat.userData.uOverload.value = jellyMoss.userData.overloadValue;
-                    }
-                }
+            if (liquidMetalSystem) {
+                const blobIdx = liquidMetalSystem.blobs.findIndex((b) => b.group === blobGroup);
+                if (blobIdx >= 0) liquidMetalSystem.blobs.splice(blobIdx, 1);
             }
+            targetScene.remove(blobGroup);
+            disposeObject(blobGroup);
+            world.liquidMetalBlobs.splice(i, 1);
         }
     }
-
-    // Update solar sails (iridescent rippling, unfold near player)
-    solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, player ? player.position : undefined));
-
-    // Void root ball updates run in loop_geological.ts
-    vacuumKelps.forEach(kelp => updateVacuumKelp(kelp, delta, time));
-    iceNeedleClusters.forEach(cluster => updateIceNeedleCluster(cluster, delta, time));
-
-    // Update Liquid Metal System (Physics & Collisions)
-    const { liquidMetalSystem, weaponSystem } = requireEnvSystems();
-    liquidMetalSystem.update(delta);
-    if (player && weaponSystem) {
-        liquidMetalSystem.checkCollisions(weaponSystem.getActiveProjectiles());
-    }
-
-    magmaHearts.forEach(heart => updateMagmaHeart(heart, delta, time));
 }
 
 // =============================================================================
 // ENVIRONMENT MAP GENERATION
 // =============================================================================
-export function generateEnvironment() {
+export function createStarEnvMap() {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 512;
@@ -512,12 +402,12 @@ export function generateEnvironment() {
 
         // Draw stars
         for (let i = 0; i < 500; i++) {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const radius = Math.random() * 1.5;
+            const x = Math.random() * canvas.width; // visual-only
+            const y = Math.random() * canvas.height; // visual-only
+            const radius = Math.random() * 1.5; // visual-only
             context.beginPath();
             context.arc(x, y, radius, 0, Math.PI * 2);
-            context.fillStyle = `rgba(255, 255, 255, ${Math.random()})`;
+            context.fillStyle = `rgba(255, 255, 255, ${Math.random()})`; // visual-only
             context.fill();
         }
     }

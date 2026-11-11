@@ -15,6 +15,7 @@ import {
 } from 'three/tsl';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import type { ParticleSystem } from './particles';
+import { gameplayRandom } from './run_seed';
 
 export type StarlightKoiEvent =
     | { type: 'breach'; position: THREE.Vector3; color: number };
@@ -176,16 +177,16 @@ class StarlightKoiSchool {
         const colors = new Float32Array(count * 3);
 
         for (let i = 0; i < count; i++) {
-            const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-            const radius = 0.6 + Math.random() * 1.8;
+            const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.5; // visual-only
+            const radius = 0.6 + Math.random() * 1.8; // visual-only
             formationOffsets[i * 3] = Math.cos(angle) * radius;
-            formationOffsets[i * 3 + 1] = (Math.random() - 0.5) * 1.2;
+            formationOffsets[i * 3 + 1] = (Math.random() - 0.5) * 1.2; // visual-only
             formationOffsets[i * 3 + 2] = Math.sin(angle) * radius * 0.6;
 
-            phases[i] = Math.random() * Math.PI * 2;
-            scales[i] = 0.55 + Math.random() * 0.45;
+            phases[i] = Math.random() * Math.PI * 2; // visual-only
+            scales[i] = 0.55 + Math.random() * 0.45; // visual-only
 
-            const colorHex = KOI_PALETTE[Math.floor(Math.random() * KOI_PALETTE.length)];
+            const colorHex = KOI_PALETTE[Math.floor(Math.random() * KOI_PALETTE.length)]; // visual-only
             const c = new THREE.Color(colorHex);
             colors[i * 3] = c.r;
             colors[i * 3 + 1] = c.g;
@@ -201,13 +202,13 @@ class StarlightKoiSchool {
             anchorX,
             centerY: y,
             centerZ: z,
-            loopRadiusX: 5 + Math.random() * 8,
-            loopRadiusY: 2.5 + Math.random() * 5,
-            loopSpeed: 0.35 + Math.random() * 0.35,
-            loopPhase: Math.random() * Math.PI * 2,
-            heading: Math.random() < 0.5 ? 1 : -1,
-            turnTimer: 6 + Math.random() * 8,
-            breachCooldown: 4 + Math.random() * 6,
+            loopRadiusX: 5 + gameplayRandom('creatures') * 8,
+            loopRadiusY: 2.5 + gameplayRandom('creatures') * 5,
+            loopSpeed: 0.35 + gameplayRandom('creatures') * 0.35,
+            loopPhase: gameplayRandom('creatures') * Math.PI * 2,
+            heading: gameplayRandom('creatures') < 0.5 ? 1 : -1,
+            turnTimer: 6 + gameplayRandom('creatures') * 8,
+            breachCooldown: 4 + Math.random() * 6, // visual-only
             formationOffsets,
             phases,
             scales,
@@ -273,8 +274,8 @@ class StarlightKoiSchool {
 
         s.turnTimer -= delta;
         if (s.turnTimer <= 0) {
-            s.turnTimer = 8 + Math.random() * 10;
-            if (Math.random() < 0.55) {
+            s.turnTimer = 8 + gameplayRandom('creatures') * 10;
+            if (gameplayRandom('creatures') < 0.55) {
                 s.heading *= -1;
             } else {
                 s.loopPhase += Math.PI * 0.5;
@@ -282,10 +283,10 @@ class StarlightKoiSchool {
         }
 
         s.breachCooldown -= delta;
-        if (s.breachCooldown <= 0 && cy > 4 && Math.random() < delta * 0.35) {
-            s.breachCooldown = 5 + Math.random() * 8;
+        if (s.breachCooldown <= 0 && cy > 4 && Math.random() < delta * 0.35) { // visual-only
+            s.breachCooldown = 5 + Math.random() * 8; // visual-only
             const breachPos = new THREE.Vector3(cx, cy + 1.2, s.centerZ);
-            const colorIdx = Math.floor(Math.random() * KOI_PALETTE.length);
+            const colorIdx = Math.floor(Math.random() * KOI_PALETTE.length); // visual-only
             events.push({ type: 'breach', position: breachPos, color: KOI_PALETTE[colorIdx] });
         }
 
@@ -383,8 +384,8 @@ export class StarlightKoiManager {
 
         for (let i = 0; i < schoolCount && fishBudget >= MIN_FISH_PER_SCHOOL; i++) {
             const t = (i + 0.5) / schoolCount;
-            const anchorX = startX + t * length + (Math.random() - 0.5) * (length / schoolCount) * 0.4;
-            const y = (Math.random() - 0.5) * 20;
+            const anchorX = startX + t * length + (gameplayRandom('creatures') - 0.5) * (length / schoolCount) * 0.4;
+            const y = (gameplayRandom('creatures') - 0.5) * 20;
             const z = randomZInRange(zRange);
 
             const remainingSchools = schoolCount - i;
@@ -394,7 +395,7 @@ export class StarlightKoiManager {
             );
             const fishCount = Math.min(
                 maxForSchool,
-                MIN_FISH_PER_SCHOOL + Math.floor(Math.random() * (MAX_FISH_PER_SCHOOL - MIN_FISH_PER_SCHOOL + 1))
+                MIN_FISH_PER_SCHOOL + Math.floor(gameplayRandom('creatures') * (MAX_FISH_PER_SCHOOL - MIN_FISH_PER_SCHOOL + 1))
             );
 
             this.schools.push(new StarlightKoiSchool(this.scene, anchorX, y, z, fishCount));

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { time, vec3, color, positionLocal, positionWorld } from 'three/tsl';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 
 export class SpaceGardenSystem {
     scene: THREE.Scene;
@@ -39,11 +40,11 @@ export class SpaceGardenSystem {
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.count; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * this.width,
-                Math.random() * 20 + 5,
-                (Math.random() - 0.5) * 50 - 40
+                (gameplayRandom('environment') - 0.5) * this.width,
+                gameplayRandom('environment') * 20 + 5,
+                (gameplayRandom('environment') - 0.5) * 50 - 40
             );
-            const scale = 0.5 + Math.random() * 1.5;
+            const scale = 0.5 + gameplayRandom('environment') * 1.5;
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
@@ -86,11 +87,11 @@ export class SpaceGardenSystem {
 
             if (pos.x < limitBack) {
                 pos.x += this.width + margin * 2;
-                pos.y = Math.random() * 20 + 5;
+                pos.y = gameplayRandom('environment') * 20 + 5;
             }
             if (pos.x > limitFront) {
                 pos.x -= this.width + margin * 2;
-                pos.y = Math.random() * 20 + 5;
+                pos.y = gameplayRandom('environment') * 20 + 5;
             }
 
             matrix.setPosition(pos);

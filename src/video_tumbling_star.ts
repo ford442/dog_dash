@@ -25,7 +25,7 @@ export class VideoTumblingStar {
         this.video.playsInline = true;
 
         const playPromise = this.video.play();
-        if (playPromise !== undefined) {
+        if (playPromise !== undefined && typeof playPromise.then === 'function') {
             playPromise.then(() => {
                 this.isPlaying = true;
                 console.log('✅ VideoTumblingStar: video active!');

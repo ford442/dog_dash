@@ -36,8 +36,12 @@ import type { SeededRng } from './run_seed/rng';
 // See docs/GAME_CONTEXT.md
 // ---------------------------------------------------------------------------
 
-/** Clock, player snapshot, and WASM collision backends. */
+/** Clock, player snapshot, scene/camera/player anchors, and WASM collision backends. */
 export type CoreRuntime = {
+    scene: THREE.Scene;
+    camera: THREE.PerspectiveCamera;
+    mainLight: THREE.DirectionalLight;
+    player: THREE.Group | null;
     playerState: typeof playerState;
     wasmExports: WasmExports | null;
     wasmMemory: Float32Array | null;
@@ -100,6 +104,10 @@ export type RunState = {
     wasTouchBarking: boolean;
     wantsTether: boolean;
     wantsReleaseTether: boolean;
+    /** Keyboard fire, latched until the next sim step (see sim_input.ts). */
+    wantsFire: boolean;
+    /** Grenade key / HUD tap, latched until the next sim step. */
+    wantsGrenade: boolean;
 };
 
 /** Combat systems grouped on `game.combat` (still mirrored on the flat bag). */
@@ -116,6 +124,7 @@ export type NestedCombatRuntime = {
 
 /** Environment systems grouped on `game.env` (still mirrored on the flat bag). */
 export type NestedEnvRuntime = {
+    geologicalWorld: GameSystems['geologicalWorld'];
     nebulaSystem: GameSystems['nebulaSystem'];
     cosmicDustSystem: GameSystems['cosmicDustSystem'];
     industrialSystem: GameSystems['industrialSystem'];
@@ -129,6 +138,13 @@ export type NestedEnvRuntime = {
     ghostDebrisSystem: GhostDebrisSystem;
     voidJellyfishSystem: VoidJellyfishSystem;
     aquaticLifeManager: AquaticLifeManager;
+    stardustVortexSystem: GameSystems['stardustVortexSystem'];
+    celestialClockworksSystem: GameSystems['celestialClockworksSystem'];
+    galacticLeylinesSystem: GameSystems['galacticLeylinesSystem'];
+    chronoTesseractsSystem: GameSystems['chronoTesseractsSystem'];
+    ascendantMonolithsSystem: GameSystems['ascendantMonolithsSystem'];
+    echoingVoidRipplesSystem: GameSystems['echoingVoidRipplesSystem'];
+    quantumFoamBubblesSystem: GameSystems['quantumFoamBubblesSystem'];
 };
 
 export type NestedRuntime = {
@@ -215,6 +231,7 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         obstacleSystem: ctx.obstacleSystem
     };
     ctx.env = {
+        geologicalWorld: ctx.geologicalWorld,
         nebulaSystem: ctx.nebulaSystem,
         cosmicDustSystem: ctx.cosmicDustSystem,
         industrialSystem: ctx.industrialSystem,
@@ -227,7 +244,14 @@ export function bindNestedGameSlices(ctx: GameContext): void {
         weatherSystem: ctx.weatherSystem,
         ghostDebrisSystem: ctx.ghostDebrisSystem,
         voidJellyfishSystem: ctx.voidJellyfishSystem,
-        aquaticLifeManager: ctx.aquaticLifeManager
+        aquaticLifeManager: ctx.aquaticLifeManager,
+        stardustVortexSystem: ctx.stardustVortexSystem,
+        celestialClockworksSystem: ctx.celestialClockworksSystem,
+        galacticLeylinesSystem: ctx.galacticLeylinesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
+        ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
+        echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     };
 }
 
@@ -247,6 +271,7 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         obstacleSystem: ctx.obstacleSystem
     });
     Object.assign(ctx.env, {
+        geologicalWorld: ctx.geologicalWorld,
         nebulaSystem: ctx.nebulaSystem,
         cosmicDustSystem: ctx.cosmicDustSystem,
         industrialSystem: ctx.industrialSystem,
@@ -259,7 +284,14 @@ export function syncNestedGameSlices(ctx: GameContext): void {
         weatherSystem: ctx.weatherSystem,
         ghostDebrisSystem: ctx.ghostDebrisSystem,
         voidJellyfishSystem: ctx.voidJellyfishSystem,
-        aquaticLifeManager: ctx.aquaticLifeManager
+        aquaticLifeManager: ctx.aquaticLifeManager,
+        stardustVortexSystem: ctx.stardustVortexSystem,
+        celestialClockworksSystem: ctx.celestialClockworksSystem,
+        galacticLeylinesSystem: ctx.galacticLeylinesSystem,
+        ascendantMonolithsSystem: ctx.ascendantMonolithsSystem,
+        echoingVoidRipplesSystem: ctx.echoingVoidRipplesSystem,
+        chronoTesseractsSystem: ctx.chronoTesseractsSystem,
+        quantumFoamBubblesSystem: ctx.quantumFoamBubblesSystem,
     });
 }
 
@@ -315,6 +347,8 @@ export function createGameContextFrameState(): Pick<
     | 'wasTouchBarking'
     | 'wantsTether'
     | 'wantsReleaseTether'
+    | 'wantsFire'
+    | 'wantsGrenade'
     | 'reportComboObjectiveProgress'
     | 'handleGameOver'
     | 'rewireSlingableCallbacks'
@@ -365,6 +399,8 @@ export function createGameContextFrameState(): Pick<
         wasTouchBarking: false,
         wantsTether: false,
         wantsReleaseTether: false,
+        wantsFire: false,
+        wantsGrenade: false,
         reportComboObjectiveProgress: () => {},
         handleGameOver: () => {},
         rewireSlingableCallbacks: () => {},

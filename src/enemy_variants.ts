@@ -27,7 +27,7 @@ function noisyGeometry(ctor: () => THREE.BufferGeometry, noiseAmount: number): T
     const geo = ctor();
     const positions = geo.attributes.position;
     for (let i = 0; i < positions.count; i++) {
-        const noise = (Math.random() - 0.5) * noiseAmount;
+        const noise = (Math.random() - 0.5) * noiseAmount; // visual-only
         positions.setXYZ(
             i,
             positions.getX(i) * (1 + noise),
@@ -59,7 +59,7 @@ function pollenPodVariant(size: number): LevelVariant {
                 emissiveIntensity: 0.8,
                 roughness: 0.4
             });
-            const count = 3 + Math.floor(Math.random() * 2);
+            const count = 3 + Math.floor(Math.random() * 2); // visual-only
             for (let i = 0; i < count; i++) {
                 const petal = new THREE.Mesh(new THREE.ConeGeometry(size * 0.25, size * 0.7, 5), petalMat);
                 const angle = (i / count) * Math.PI * 2;
@@ -74,7 +74,7 @@ function pollenPodVariant(size: number): LevelVariant {
 
 // --- L2 Asteroid Belt: jagged chroma crystal shard ---
 function chromaShardVariant(size: number): LevelVariant {
-    const glowHex = Math.random() < 0.5 ? 0x00ffff : 0xff00ff;
+    const glowHex = Math.random() < 0.5 ? 0x00ffff : 0xff00ff; // visual-only
     return {
         geometry: noisyGeometry(() => new THREE.OctahedronGeometry(size, 0), 0.35),
         createMaterial: (baseColorHex) => new THREE.MeshPhysicalMaterial({
@@ -98,13 +98,13 @@ function chromaShardVariant(size: number): LevelVariant {
                 clearcoat: 1.0,
                 flatShading: true
             });
-            const count = 2 + Math.floor(Math.random() * 3);
+            const count = 2 + Math.floor(Math.random() * 3); // visual-only
             for (let i = 0; i < count; i++) {
-                const shard = new THREE.Mesh(new THREE.OctahedronGeometry(size * (0.25 + Math.random() * 0.2), 0), shardMat);
+                const shard = new THREE.Mesh(new THREE.OctahedronGeometry(size * (0.25 + Math.random() * 0.2), 0), shardMat); // visual-only
                 shard.position.set(
-                    (Math.random() - 0.5) * size * 1.4,
-                    (Math.random() - 0.5) * size * 1.4,
-                    (Math.random() - 0.5) * size * 1.4
+                    (Math.random() - 0.5) * size * 1.4, // visual-only
+                    (Math.random() - 0.5) * size * 1.4, // visual-only
+                    (Math.random() - 0.5) * size * 1.4 // visual-only
                 );
                 shards.push(shard);
             }
@@ -138,7 +138,7 @@ function reentryScrapVariant(size: number): LevelVariant {
             });
             const panel = new THREE.Mesh(new THREE.BoxGeometry(size * 0.9, size * 0.08, size * 0.5), panelMat);
             panel.position.set(size * 0.2, size * 0.4, 0);
-            panel.rotation.z = (Math.random() - 0.5) * 0.6;
+            panel.rotation.z = (Math.random() - 0.5) * 0.6; // visual-only
             return [panel];
         }
     };
@@ -195,13 +195,13 @@ function krillPodVariant(size: number): LevelVariant {
                 opacity: 0.85
             });
             const pods: THREE.Object3D[] = [];
-            const count = 2 + Math.floor(Math.random() * 2);
+            const count = 2 + Math.floor(Math.random() * 2); // visual-only
             for (let i = 0; i < count; i++) {
-                const pod = new THREE.Mesh(new THREE.SphereGeometry(size * (0.3 + Math.random() * 0.2), 8, 8), podMat);
+                const pod = new THREE.Mesh(new THREE.SphereGeometry(size * (0.3 + Math.random() * 0.2), 8, 8), podMat); // visual-only
                 pod.position.set(
-                    (Math.random() - 0.5) * size * 1.8,
-                    (Math.random() - 0.5) * size * 1.8,
-                    (Math.random() - 0.5) * size * 1.8
+                    (Math.random() - 0.5) * size * 1.8, // visual-only
+                    (Math.random() - 0.5) * size * 1.8, // visual-only
+                    (Math.random() - 0.5) * size * 1.8 // visual-only
                 );
                 pods.push(pod);
             }
@@ -236,12 +236,12 @@ function jellyDrifterVariant(size: number): LevelVariant {
                 opacity: 0.5
             });
             const tentacles: THREE.Object3D[] = [];
-            const count = 4 + Math.floor(Math.random() * 3);
+            const count = 4 + Math.floor(Math.random() * 3); // visual-only
             for (let i = 0; i < count; i++) {
                 const tentacle = new THREE.Mesh(new THREE.CylinderGeometry(size * 0.05, size * 0.02, size * 1.4, 5), tentacleMat);
                 const angle = (i / count) * Math.PI * 2;
                 tentacle.position.set(Math.cos(angle) * size * 0.5, -size * 0.9, Math.sin(angle) * size * 0.5);
-                tentacle.rotation.z = (Math.random() - 0.5) * 0.3;
+                tentacle.rotation.z = (Math.random() - 0.5) * 0.3; // visual-only
                 tentacles.push(tentacle);
             }
             return tentacles;

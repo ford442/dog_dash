@@ -24,6 +24,7 @@ import {
 import type { AudioPort } from './ports';
 import type { ParticleSystem } from './particles';
 import { decorationBudget } from './decoration_budget';
+import { gameplayRandom } from './run_seed';
 
 /**
  * Creates a TSL material for Singing Crystal Geodes.
@@ -143,19 +144,19 @@ export class SingingGeodeSystem {
     }
 
     resetGeode(index: number, cameraX: number, initial: boolean = false) {
-        const xOffset = initial ? (Math.random() * 500 - 100) : (300 + Math.random() * 200);
+        const xOffset = initial ? (gameplayRandom('geology') * 500 - 100) : (300 + gameplayRandom('geology') * 200);
         this.positions[index * 3] = cameraX + xOffset;
 
         // Spread them around vertically and in depth to give an organic feel
-        this.positions[index * 3 + 1] = (Math.random() - 0.5) * 60;
-        this.positions[index * 3 + 2] = -50 + Math.random() * 90;
+        this.positions[index * 3 + 1] = (gameplayRandom('geology') - 0.5) * 60;
+        this.positions[index * 3 + 2] = -50 + gameplayRandom('geology') * 90;
 
         // Sizes vary from somewhat small to quite large
-        this.scales[index] = 1.8 + Math.random() * 3.5;
+        this.scales[index] = 1.8 + gameplayRandom('geology') * 3.5;
 
-        this.rotations[index * 3] = Math.random() * Math.PI;
-        this.rotations[index * 3 + 1] = Math.random() * Math.PI;
-        this.rotations[index * 3 + 2] = Math.random() * Math.PI;
+        this.rotations[index * 3] = Math.random() * Math.PI; // visual-only
+        this.rotations[index * 3 + 1] = Math.random() * Math.PI; // visual-only
+        this.rotations[index * 3 + 2] = Math.random() * Math.PI; // visual-only
 
         this.triggered[index] = false;
 

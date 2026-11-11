@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { decorationBudget } from '../decoration_budget';
+import { gameplayRandom } from '../run_seed';
 
 /** Smaller orbiting pitcher minion — destroying one shaves 10% off the main boss. */
 export class PitcherMinion {
@@ -12,8 +13,8 @@ export class PitcherMinion {
 
     constructor(parent: THREE.Group, index: number, total: number) {
         this.orbitAngle = (index / total) * Math.PI * 2;
-        this.orbitRadius = 28 + Math.random() * 12;
-        this.orbitSpeed = 0.25 + Math.random() * 0.15;
+        this.orbitRadius = 28 + gameplayRandom('boss') * 12;
+        this.orbitSpeed = 0.25 + gameplayRandom('boss') * 0.15;
 
         this.group = new THREE.Group();
         const body = new THREE.Mesh(

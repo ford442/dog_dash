@@ -21,6 +21,7 @@ import {
     dot
 } from 'three/tsl';
 import { playerState } from './game_config';
+import { gameplayRandom } from './run_seed';
 
 export type StormGeodeFxDeps = {
     playHit?: () => void;
@@ -120,18 +121,18 @@ export class StormGeodeSystem {
     }
 
     resetGeode(index: number, cameraX: number, initial: boolean = false) {
-        const xOffset = initial ? (Math.random() * 400 - 100) : (100 + Math.random() * 200);
+        const xOffset = initial ? (gameplayRandom('geology') * 400 - 100) : (100 + gameplayRandom('geology') * 200);
         this.positions[index * 3] = cameraX + xOffset;
-        this.positions[index * 3 + 1] = (Math.random() - 0.5) * 80;
-        this.positions[index * 3 + 2] = -40 + Math.random() * 80;
+        this.positions[index * 3 + 1] = (gameplayRandom('geology') - 0.5) * 80;
+        this.positions[index * 3 + 2] = -40 + gameplayRandom('geology') * 80;
 
-        this.scales[index] = 2.0 + Math.random() * 3.0;
+        this.scales[index] = 2.0 + gameplayRandom('geology') * 3.0;
 
-        this.rotations[index * 3] = Math.random() * Math.PI;
-        this.rotations[index * 3 + 1] = Math.random() * Math.PI;
-        this.rotations[index * 3 + 2] = Math.random() * Math.PI;
+        this.rotations[index * 3] = Math.random() * Math.PI; // visual-only
+        this.rotations[index * 3 + 1] = Math.random() * Math.PI; // visual-only
+        this.rotations[index * 3 + 2] = Math.random() * Math.PI; // visual-only
 
-        this.timers[index] = Math.random() * 3.0; // Randomize start phase
+        this.timers[index] = gameplayRandom('geology') * 3.0; // Randomize start phase
 
         this.updateInstance(index);
     }
@@ -184,7 +185,7 @@ export class StormGeodeSystem {
             // Lightning timer
             this.timers[i] -= delta;
             if (this.timers[i] <= 0) {
-                this.timers[i] = 2.5 + Math.random() * 1.0; // Arc roughly every 3s
+                this.timers[i] = 2.5 + gameplayRandom('geology') * 1.0; // Arc roughly every 3s
 
                 const pos = new THREE.Vector3(
                     this.positions[i * 3],
@@ -202,9 +203,9 @@ export class StormGeodeSystem {
                     } else {
                         // Random arc to nearby space
                         strikePos.add(new THREE.Vector3(
-                            (Math.random() - 0.5) * 30,
-                            (Math.random() - 0.5) * 30,
-                            (Math.random() - 0.5) * 30
+                            (Math.random() - 0.5) * 30, // visual-only
+                            (Math.random() - 0.5) * 30, // visual-only
+                            (Math.random() - 0.5) * 30 // visual-only
                         ));
                     }
 

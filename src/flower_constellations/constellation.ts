@@ -35,7 +35,7 @@ export class FlowerConstellation {
         
         // Random scale within range
         const [minScale, maxScale] = this.config.scaleRange;
-        this.scale = minScale + Math.random() * (maxScale - minScale);
+        this.scale = minScale + Math.random() * (maxScale - minScale); // visual-only
 
         // Create group
         this.group = new THREE.Group();
@@ -114,9 +114,9 @@ export class FlowerConstellation {
             const orb = new THREE.Mesh(geometry, material);
             
             orb.position.set(
-                (Math.random() - 0.5) * 1.5,
-                (Math.random() - 0.5) * 0.5,
-                0.5 + Math.random() * 0.5
+                (Math.random() - 0.5) * 1.5, // visual-only
+                (Math.random() - 0.5) * 0.5, // visual-only
+                0.5 + Math.random() * 0.5 // visual-only
             );
             
             this.group.add(orb);
@@ -135,7 +135,7 @@ export class FlowerConstellation {
     /** Release heart-shaped pollen particles */
     releasePollen(heartSystem: HeartPollenSystem): void {
         const colors = [0xff69b4, 0xff1493, 0xffa0c9, 0xffd700];
-        const color = colors[Math.floor(Math.random() * colors.length)];
+        const color = colors[Math.floor(Math.random() * colors.length)]; // visual-only
         heartSystem.emit(
             this.position.clone().add(new THREE.Vector3(0, 0, 2)),
             8,

@@ -7,6 +7,8 @@ import type { EffectManager } from '../magical_effects/effect_manager';
 import type { AudioPort, JuicePort } from '../ports';
 import type { DogCockpitController } from '../dog_cockpit';
 import type { PowerUpManager } from './manager';
+import { scheduleSim } from '../sim_clock';
+import { gameplayRandom } from '../run_seed';
 
 export interface PowerUpHookContext {
     effectManager: EffectManager;
@@ -64,21 +66,21 @@ function activateMagicalEffect(ctx: PowerUpHookContext, type: PowerUpType, durat
 
 function grantFairyGodmotherBonus(ctx: PowerUpHookContext): void {
     const tiers: (1 | 2)[] = [1, 2];
-    const tier = tiers[Math.floor(Math.random() * tiers.length)];
+    const tier = tiers[Math.floor(gameplayRandom('powerups') * tiers.length)];
     const available = Object.values(POWER_UP_CONFIGS)
         .filter((c) => c.tier === tier && c.type !== PowerUpType.FAIRY_GODMOTHER_SPARKLE)
         .map((c) => c.type);
 
     if (available.length === 0) return;
 
-    const grant = available[Math.floor(Math.random() * available.length)];
-    window.setTimeout(() => {
+    const grant = available[Math.floor(gameplayRandom('powerups') * available.length)];
+    scheduleSim(0.5, () => {
         ctx.powerUpManager.activatePowerUp(grant);
         const pos = ctx.getPlayerPosition();
         if (pos) {
             ctx.juiceManager.showFloatingText('A gift!', pos, '#ffd700', 22);
         }
-    }, 500);
+    });
 }
 
 export function handlePowerUpStart(ctx: PowerUpHookContext, type: PowerUpType, config: PowerUpConfig): void {

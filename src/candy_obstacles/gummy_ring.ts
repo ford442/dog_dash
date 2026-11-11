@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CandyFlavor, CANDY_COLORS } from './shared';
 import { disposeObject } from '../utils';
+import { gameplayRandom } from '../run_seed';
 
 function createGummyStripeTexture(primary: number, secondary: number): THREE.CanvasTexture {
     const canvas = document.createElement('canvas');
@@ -54,8 +55,8 @@ export class GummyRing {
         this.position = new THREE.Vector3(x, y, z);
         this.baseY = y;
 
-        this.tubeRadius = 0.55 + Math.random() * 0.15;
-        const torusRadius = 1.65 + Math.random() * 0.35;
+        this.tubeRadius = 0.55 + gameplayRandom('candy') * 0.15;
+        const torusRadius = 1.65 + gameplayRandom('candy') * 0.35;
         this.innerRadius = torusRadius - this.tubeRadius;
         this.outerRadius = torusRadius + this.tubeRadius;
 
@@ -108,8 +109,8 @@ export class GummyRing {
             this.group.add(speckle);
         }
 
-        this.rotSpeedY = 0.25 + Math.random() * 0.2;
-        this.rotSpeedZ = 0.15 + Math.random() * 0.1;
+        this.rotSpeedY = 0.25 + gameplayRandom('candy') * 0.2;
+        this.rotSpeedZ = 0.15 + gameplayRandom('candy') * 0.1;
         scene.add(this.group);
     }
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { time, vec3, vec4, color, uniform, sin, float, mix, length, positionWorld, smoothstep, positionLocal, distance } from 'three/tsl';
 import { MeshBasicNodeMaterial, MeshStandardNodeMaterial } from 'three/webgpu';
+import { gameplayRandom } from './run_seed';
 
 const RIB_COUNT = 150;
 const FOG_PARTICLE_COUNT = 100;
@@ -112,9 +113,9 @@ export class FossilizedSpaceWhalesSystem {
         this.ribMesh.instanceMatrix.needsUpdate = true;
 
         for(let i=0; i<FOG_PARTICLE_COUNT; i++) {
-             this.dummy.position.set(cameraX + Math.random() * 2000 - 500, (Math.random() - 0.5) * 40, -15 - Math.random() * 20);
-             this.dummy.scale.setScalar(1 + Math.random() * 2);
-             this.dummy.rotation.z = Math.random() * Math.PI;
+             this.dummy.position.set(cameraX + Math.random() * 2000 - 500, (Math.random() - 0.5) * 40, -15 - Math.random() * 20); // visual-only
+             this.dummy.scale.setScalar(1 + Math.random() * 2); // visual-only
+             this.dummy.rotation.z = Math.random() * Math.PI; // visual-only
              this.dummy.updateMatrix();
              this.fogMesh.setMatrixAt(i, this.dummy.matrix);
         }
@@ -126,8 +127,8 @@ export class FossilizedSpaceWhalesSystem {
     spawnBarnacles(cameraX: number) {
         this.barnacles = [];
         for (let i = 0; i < BARNACLE_COUNT; i++) {
-            const bx = cameraX + Math.random() * 2000 - 500;
-            const by = (Math.random() - 0.5) * 30;
+            const bx = cameraX + gameplayRandom('creatures') * 2000 - 500;
+            const by = (gameplayRandom('creatures') - 0.5) * 30;
 
             this.dummy.position.set(bx, by, -5);
             this.dummy.updateMatrix();
@@ -196,7 +197,7 @@ export class FossilizedSpaceWhalesSystem {
             this.dummy.matrix.decompose(this.dummy.position, this.dummy.quaternion, this.dummy.scale);
             if (this.dummy.position.x < limitBack) {
                 this.dummy.position.x += width;
-                this.dummy.position.y = (Math.random() - 0.5) * 40;
+                this.dummy.position.y = (Math.random() - 0.5) * 40; // visual-only
                 this.dummy.updateMatrix();
                 this.fogMesh.setMatrixAt(i, this.dummy.matrix);
                 needFogUpdate = true;
@@ -208,7 +209,7 @@ export class FossilizedSpaceWhalesSystem {
             this.dummy.matrix.decompose(this.dummy.position, this.dummy.quaternion, this.dummy.scale);
             if (this.dummy.position.x < limitBack) {
                 this.dummy.position.x += width;
-                this.dummy.position.y = (Math.random() - 0.5) * 30;
+                this.dummy.position.y = (gameplayRandom('creatures') - 0.5) * 30;
                 this.dummy.updateMatrix();
                 this.barnacleMesh.setMatrixAt(i, this.dummy.matrix);
 

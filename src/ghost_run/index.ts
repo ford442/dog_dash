@@ -5,9 +5,11 @@ export {
     GhostAction,
     type GhostActionFlags,
     type GhostFrame,
-    type GhostRecording
+    type GhostRecording,
+    type StoredGhostRecording
 } from './types';
 export { compressFrames, decompressFrames, toStored, fromStored } from './codec';
+export { encodeInputTrace, decodeInputTrace, inputTraceLength, InputTraceWriter } from './input_trace';
 export {
     GhostRunRecorder,
     ghostRunRecorder,

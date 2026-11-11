@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CandyType, CandyFlavor, CANDY_COLORS, LOLLIPOP_SWIRLS } from './shared';
 import { disposeObject } from '../utils';
 import { markShared } from '../gpu_resources';
+import { gameplayRandom } from '../run_seed';
 
 // ---------------------------------------------------------------------------
 // Shared lollipop resources
@@ -108,20 +109,20 @@ export class CandyAsteroid {
         this.position = position.clone();
         this.velocity = new THREE.Vector3(0, 0, 0);
         this.rotation = new THREE.Vector3(
-            Math.random() * Math.PI * 2,
-            Math.random() * Math.PI * 2,
-            Math.random() * Math.PI * 2
+            Math.random() * Math.PI * 2, // visual-only
+            Math.random() * Math.PI * 2, // visual-only
+            Math.random() * Math.PI * 2 // visual-only
         );
         this.rotationSpeed = new THREE.Vector3(
-            (Math.random() - 0.5) * 0.5,
-            (Math.random() - 0.5) * 0.5,
-            (Math.random() - 0.5) * 0.5
+            (Math.random() - 0.5) * 0.5, // visual-only
+            (Math.random() - 0.5) * 0.5, // visual-only
+            (Math.random() - 0.5) * 0.5 // visual-only
         );
         this.scene = scene || null as any;
         this.wobbleDirection = new THREE.Vector3(
-            Math.random() - 0.5,
-            Math.random() - 0.5,
-            Math.random() - 0.5
+            Math.random() - 0.5, // visual-only
+            Math.random() - 0.5, // visual-only
+            Math.random() - 0.5 // visual-only
         ).normalize();
         
         this.createMesh();
@@ -156,7 +157,7 @@ export class CandyAsteroid {
         // Add some noise to vertices for organic gummy look
         const positions = geometry.attributes.position;
         for (let i = 0; i < positions.count; i++) {
-            const noise = (Math.random() - 0.5) * 0.2;
+            const noise = (Math.random() - 0.5) * 0.2; // visual-only
             positions.setXYZ(
                 i,
                 positions.getX(i) * (1 + noise),
@@ -183,7 +184,7 @@ export class CandyAsteroid {
         });
 
         const mesh = new THREE.Mesh(geometry, material);
-        this.scale = 0.8 + Math.random() * 0.6;
+        this.scale = 0.8 + gameplayRandom('candy') * 0.6;
         mesh.scale.setScalar(this.scale);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -202,7 +203,7 @@ export class CandyAsteroid {
 
         // Lollipop candy head — shared swirl material, one per colourway.
         const headGeo = new THREE.SphereGeometry(1, 16, 16);
-        const swirlIndex = Math.floor(Math.random() * LOLLIPOP_SWIRLS.length);
+        const swirlIndex = Math.floor(Math.random() * LOLLIPOP_SWIRLS.length); // visual-only
 
         const head = new THREE.Mesh(headGeo, getLollipopHeadMaterial(swirlIndex));
         head.position.y = 0.5;
@@ -218,7 +219,7 @@ export class CandyAsteroid {
         (wrapper as any).visualGroup = group;
         (wrapper as any).headMesh = head;
         
-        this.scale = 0.6 + Math.random() * 0.4;
+        this.scale = 0.6 + gameplayRandom('candy') * 0.4;
         wrapper.scale.setScalar(this.scale);
         wrapper.castShadow = true;
         wrapper.receiveShadow = true;
@@ -250,7 +251,7 @@ export class CandyAsteroid {
             z *= Math.max(0.6, taper);
             
             // Add bumpy surface
-            const noise = (Math.random() - 0.5) * 0.1;
+            const noise = (Math.random() - 0.5) * 0.1; // visual-only
             x += noise;
             y += noise;
             z += noise;
@@ -272,7 +273,7 @@ export class CandyAsteroid {
         });
 
         const mesh = new THREE.Mesh(geometry, material);
-        this.scale = 0.5 + Math.random() * 0.4;
+        this.scale = 0.5 + gameplayRandom('candy') * 0.4;
         mesh.scale.setScalar(this.scale);
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -285,11 +286,11 @@ export class CandyAsteroid {
         const group = new THREE.Group();
         
         const colors = CANDY_COLORS[this.flavor];
-        const puffCount = 8 + Math.floor(Math.random() * 6);
+        const puffCount = 8 + Math.floor(Math.random() * 6); // visual-only
         
         for (let i = 0; i < puffCount; i++) {
             const puffGeo = new THREE.SphereGeometry(
-                0.3 + Math.random() * 0.4,
+                0.3 + Math.random() * 0.4, // visual-only
                 8,
                 8
             );
@@ -297,7 +298,7 @@ export class CandyAsteroid {
             // Add fluff noise
             const positions = puffGeo.attributes.position;
             for (let j = 0; j < positions.count; j++) {
-                const noise = (Math.random() - 0.5) * 0.2;
+                const noise = (Math.random() - 0.5) * 0.2; // visual-only
                 positions.setXYZ(
                     j,
                     positions.getX(j) + noise,
@@ -314,15 +315,15 @@ export class CandyAsteroid {
                 roughness: 0.9,
                 metalness: 0,
                 transparent: true,
-                opacity: 0.7 + Math.random() * 0.2
+                opacity: 0.7 + Math.random() * 0.2 // visual-only
             });
             
             const puff = new THREE.Mesh(puffGeo, puffMat);
             
             // Random position within cloud
-            const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 0.8;
-            const height = (Math.random() - 0.5) * 0.6;
+            const angle = Math.random() * Math.PI * 2; // visual-only
+            const radius = Math.random() * 0.8; // visual-only
+            const height = (Math.random() - 0.5) * 0.6; // visual-only
             
             puff.position.set(
                 Math.cos(angle) * radius,
@@ -342,7 +343,7 @@ export class CandyAsteroid {
         (wrapper as any).visualGroup = group;
         (wrapper as any).puffs = group.children;
         
-        this.scale = 0.8 + Math.random() * 0.6;
+        this.scale = 0.8 + gameplayRandom('candy') * 0.6;
         wrapper.scale.setScalar(this.scale);
         
         return wrapper;
@@ -359,7 +360,7 @@ export class CandyAsteroid {
                 this.isBouncy = false;
                 this.health = 1;
                 this.radius = 1.0 * this.scale;
-                this.spinSpeed = 0.5 + Math.random() * 0.5;
+                this.spinSpeed = 0.5 + Math.random() * 0.5; // visual-only
                 break;
             case CandyType.JELLYBEAN:
                 this.isBouncy = true;
@@ -389,9 +390,9 @@ export class CandyAsteroid {
         
         // Random wobble direction
         this.wobbleDirection.set(
-            Math.random() - 0.5,
-            Math.random() - 0.5,
-            Math.random() - 0.5
+            Math.random() - 0.5, // visual-only
+            Math.random() - 0.5, // visual-only
+            Math.random() - 0.5 // visual-only
         ).normalize();
     }
 
@@ -400,12 +401,12 @@ export class CandyAsteroid {
         const shardCount = this.getShardCount();
         
         for (let i = 0; i < shardCount; i++) {
-            const angle = (Math.PI * 2 * i) / shardCount + Math.random() * 0.5;
-            const speed = 2 + Math.random() * 4;
+            const angle = (Math.PI * 2 * i) / shardCount + Math.random() * 0.5; // visual-only
+            const speed = 2 + Math.random() * 4; // visual-only
             const velocity = new THREE.Vector3(
                 Math.cos(angle) * speed,
                 Math.sin(angle) * speed,
-                (Math.random() - 0.5) * speed
+                (Math.random() - 0.5) * speed // visual-only
             );
             shardPositions.push(velocity);
         }
@@ -416,10 +417,10 @@ export class CandyAsteroid {
 
     private getShardCount(): number {
         switch (this.candyType) {
-            case CandyType.GUMMY: return 4 + Math.floor(Math.random() * 3);
-            case CandyType.LOLLIPOP: return 6 + Math.floor(Math.random() * 4);
-            case CandyType.JELLYBEAN: return 3 + Math.floor(Math.random() * 3);
-            case CandyType.COTTON_CANDY: return 8 + Math.floor(Math.random() * 5);
+            case CandyType.GUMMY: return 4 + Math.floor(Math.random() * 3); // visual-only
+            case CandyType.LOLLIPOP: return 6 + Math.floor(Math.random() * 4); // visual-only
+            case CandyType.JELLYBEAN: return 3 + Math.floor(Math.random() * 3); // visual-only
+            case CandyType.COTTON_CANDY: return 8 + Math.floor(Math.random() * 5); // visual-only
             default: return 4;
         }
     }
@@ -527,9 +528,9 @@ export class CandyAsteroid {
                 (puff.material as THREE.MeshStandardMaterial).opacity = opacity;
                 
                 // Drift apart
-                puff.position.x += (Math.random() - 0.5) * dt;
+                puff.position.x += (Math.random() - 0.5) * dt; // visual-only
                 puff.position.y += dt * 0.5;
-                puff.position.z += (Math.random() - 0.5) * dt;
+                puff.position.z += (Math.random() - 0.5) * dt; // visual-only
             });
         }
 

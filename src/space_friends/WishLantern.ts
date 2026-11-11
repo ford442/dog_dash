@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { InteractionResult } from './types';
 import type { ParticleSystem } from '../particles';
+import { gameplayRandom } from '../run_seed';
 
 export class WishLantern {
     group: THREE.Group;
@@ -11,7 +12,7 @@ export class WishLantern {
     time: number = 0;
     isPopped: boolean = false;
     popTimer: number = 0;
-    floatOffset: number = Math.random() * 100;
+    floatOffset: number = gameplayRandom('friends') * 100;
     
     // Parts
     private lanternMesh: THREE.Mesh | null = null;
@@ -199,12 +200,12 @@ export class WishLantern {
         for (let i = 0; i < 5; i++) {
             setTimeout(() => {
                 const offset = new THREE.Vector3(
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 2,
-                    (Math.random() - 0.5) * 1
+                    (Math.random() - 0.5) * 2, // visual-only
+                    (Math.random() - 0.5) * 2, // visual-only
+                    (Math.random() - 0.5) * 1 // visual-only
                 );
                 const burstPos = this.position.clone().add(offset);
-                const color = colors[Math.floor(Math.random() * colors.length)];
+                const color = colors[Math.floor(Math.random() * colors.length)]; // visual-only
                 
                 particleSystem.emit(burstPos, color, 15, 6.0, 0.8, 2.0);
             }, i * 100);

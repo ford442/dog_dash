@@ -4,7 +4,6 @@
  * kid-friendly blast a short distance ahead of the rocket.
  */
 
-import { player } from '../player_loader';
 import { game } from '../game_runtime';
 import { ShakeType } from '../juice_effects';
 import { blastObstacle } from './loop_combat/weapons';
@@ -16,6 +15,7 @@ const BLAST_FORWARD = 12;
 const BLAST_RADIUS = 15;
 
 export function throwGrenade(): void {
+    const player = game.player;
     if (!player || game.grenadeAmmo <= 0) return;
 
     game.grenadeAmmo--;

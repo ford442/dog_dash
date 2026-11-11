@@ -337,7 +337,7 @@ export class SpaceBunny {
                 // Reset if too high
                 if (positions[i * 3 + 1] > 2) {
                     positions[i * 3 + 1] = 0;
-                    positions[i * 3] = (Math.random() - 0.5) * 0.3;
+                    positions[i * 3] = (Math.random() - 0.5) * 0.3; // visual-only
                 }
             }
             this.heartParticles.geometry.attributes.position.needsUpdate = true;
@@ -370,7 +370,7 @@ export class SpaceBunny {
         const dist = this.position.distanceTo(playerPos);
         
         // Trigger boop when player gets close
-        if (dist < this.INTERACTION_DISTANCE && !this.isBooping && Math.random() < 0.02) {
+        if (dist < this.INTERACTION_DISTANCE && !this.isBooping && Math.random() < 0.02) { // visual-only
             this.isBooping = true;
         }
         

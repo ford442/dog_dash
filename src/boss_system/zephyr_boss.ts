@@ -118,8 +118,8 @@ export class ZephyrBoss {
             ringMat.colorNode = color(0x88ffff).mul(sin(t).mul(0.5).add(0.5));
 
             const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.random() * Math.PI;
-            ring.rotation.y = Math.random() * Math.PI;
+            ring.rotation.x = Math.random() * Math.PI; // visual-only
+            ring.rotation.y = Math.random() * Math.PI; // visual-only
             this.windRings.push(ring);
             this.group.add(ring);
         }

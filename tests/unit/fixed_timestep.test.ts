@@ -65,3 +65,36 @@ test('interpolationAlpha clamps out-of-range remainders', () => {
     assert.equal(interpolationAlpha(-1), 0);
     assert.equal(interpolationAlpha(SIM_STEP * 5), 1);
 });
+
+// Same seed + same per-step input trace -> identical end pose, whatever the
+// display rate. The headless chapter replays (tests/replay/) check this on
+// the real sim; this pins the contract on the accumulator alone with a toy
+// momentum sim that has a seeded random gust each step.
+test('same seed + same input trace gives an identical end pose at 30 / 60 / 144 Hz', async () => {
+    const { SeededRng } = await import('../../src/run_seed/rng.ts');
+    const { decodeInputTrace, encodeInputTrace } = await import('../../src/ghost_run/input_trace.ts');
+
+    const traceRng = new SeededRng(99);
+    const trace = encodeInputTrace(Array.from({ length: 600 }, () => (traceRng.random() < 0.4 ? 1 : 0)));
+
+    function run(displayHz: number) {
+        const inputs = decodeInputTrace(trace);
+        const rng = new SeededRng(1234);
+        let x = 0, y = 0, vy = 0, step = 0, acc = 0;
+        while (step < inputs.length) {
+            const { steps, remainder } = advanceAccumulator(acc, 1 / displayHz);
+            acc = remainder;
+            for (let i = 0; i < steps && step < inputs.length; i++, step++) {
+                const thrust = inputs[step] ? 30 : -18;
+                vy += (thrust - vy) * 0.1 + (rng.random() - 0.5);
+                y += vy * SIM_STEP;
+                x += 8 * SIM_STEP;
+            }
+        }
+        return { x, y, vy };
+    }
+
+    const at60 = run(60);
+    assert.deepEqual(run(30), at60);
+    assert.deepEqual(run(144), at60);
+});

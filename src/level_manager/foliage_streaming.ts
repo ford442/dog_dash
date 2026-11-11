@@ -15,7 +15,7 @@ import { DEPTH_LAYERS, randomZInLayer, randomZInRange } from '../depth_layers';
 import { moonPlants } from '../visuals';
 import { decorationBudget } from '../decoration_budget';
 import { biomeNoise } from '../biome_noise';
-import { getRunRngFork } from '../run_seed';
+import { gameplayRandom, getRunRngFork } from '../run_seed';
 import { FOLIAGE_DENSITY_UNIT, MIN_FOLIAGE_STREAM_WIDTH, STREAM_AHEAD_END, STREAM_AHEAD_START } from './constants';
 import type { LevelFoliageHost } from './foliage_host';
 
@@ -118,25 +118,32 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
                     count * (width / FOLIAGE_DENSITY_UNIT) * lm.objectDensityMultiplier * foliageDensityMul
                 )
             );
+        // Hazards and harvestables ignore the adaptive (FPS-driven) density
+        // multiplier: a slow GPU must not get an easier world from the same
+        // seed. Only decorative scatter thins under load.
+        const hazardCount = (count: number) =>
+            Math.max(0, Math.floor(count * (width / FOLIAGE_DENSITY_UNIT) * foliageDensityMul));
         const foliageZ: [number, number] = [DEPTH_LAYERS.MIDGROUND.min, DEPTH_LAYERS.MIDGROUND.max];
         const geoZ: [number, number] = [DEPTH_LAYERS.BACKGROUND.min + 5, DEPTH_LAYERS.MIDGROUND.max];
         const vignettes = levelConfig.vignettes || {};
         const vignetteCount = (base: number | undefined) =>
             base ? Math.max(0, Math.floor(scaledCount(base * (width / 100)))) : 0;
+        const geodeClearingCount = (base: number | undefined) =>
+            base ? Math.max(0, Math.floor(hazardCount(base * (width / 100)))) : 0;
         // Geode clearings: plan centers first so base fern scatter thins near safe harbors
         type ClearingCenter = { x: number; y: number; radius: number };
         const geodeClearings: ClearingCenter[] = [];
         if ((vignettes.geodeClearings || 0) > 0) {
-            const nClearings = vignetteCount(vignettes.geodeClearings);
+            const nClearings = geodeClearingCount(vignettes.geodeClearings);
             const geodeCap = Math.max(
                 0,
                 lm.GEOLOGICAL_SPAWN_CAPS.geode - lm.geologicalCounts.geodes()
             );
             for (let c = 0; c < Math.min(nClearings, geodeCap); c++) {
                 geodeClearings.push({
-                    x: startX + Math.random() * width,
-                    y: yRange[0] + Math.random() * (yRange[1] - yRange[0]),
-                    radius: 12 + Math.random() * 5
+                    x: startX + gameplayRandom('flora') * width,
+                    y: yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]),
+                    radius: 12 + gameplayRandom('flora') * 5
                 });
             }
         }
@@ -161,8 +168,8 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
                 let y = 0;
                 let placed = false;
                 for (let attempt = 0; attempt < 5; attempt++) {
-                    x = startX + Math.random() * width;
-                    y = customYRange[0] + Math.random() * (customYRange[1] - customYRange[0]);
+                    x = startX + gameplayRandom('environment') * width;
+                    y = customYRange[0] + gameplayRandom('environment') * (customYRange[1] - customYRange[0]);
                     if (!rejectPosition || !rejectPosition(x, y)) {
                         placed = true;
                         break;
@@ -172,7 +179,7 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
                 const z = randomZInRange(zRange);
                 const obj = creatorFn();
                 obj.position.set(x, y, z);
-                const s = 0.8 + Math.random() * 0.5;
+                const s = 0.8 + gameplayRandom('environment') * 0.5;
                 obj.scale.set(s, s, s);
                 if (speciesId) obj.userData.speciesId = speciesId;
                 if (!trackFoliageSpawn(lm, obj)) continue;
@@ -211,79 +218,79 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
         spawnFoliageVignettes(lm, startX, width, density, yRange, treeYRange, foliageZ, geoZ, vignettes, vignetteCount, geodeClearings);
         if (density.voidRootBall) {
             const targetCount = Math.min(
-                scaledCount(density.voidRootBall),
+                hazardCount(density.voidRootBall),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.voidRootBall - lm.geologicalCounts.voidRootBalls())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = randomZInRange(geoZ);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
+                const z = randomZInRange(geoZ, 'flora');
                 lm.spawners.createVoidRootBallAtPosition(x, y, z);
             }
         }
         if (density.vacuumKelp) {
             const targetCount = Math.min(
-                scaledCount(density.vacuumKelp),
+                hazardCount(density.vacuumKelp),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.vacuumKelp - lm.geologicalCounts.vacuumKelps())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * 15;
-                const z = randomZInRange(geoZ);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = yRange[0] + gameplayRandom('flora') * 15;
+                const z = randomZInRange(geoZ, 'flora');
                 lm.spawners.createVacuumKelpAtPosition(x, y, z);
             }
         }
         if (density.iceNeedle) {
             const targetCount = Math.min(
-                scaledCount(density.iceNeedle),
+                hazardCount(density.iceNeedle),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.iceNeedle - lm.geologicalCounts.iceNeedleClusters())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = randomZInRange(geoZ);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
+                const z = randomZInRange(geoZ, 'flora');
                 lm.spawners.createIceNeedleClusterAtPosition(x, y, z);
             }
         }
         if (levelConfig.chromaShiftDensity && levelConfig.chromaShiftDensity > 0) {
-            const count = Math.min(scaledCount(levelConfig.chromaShiftDensity), 200);
+            const count = Math.min(hazardCount(levelConfig.chromaShiftDensity), 200);
             for (let i = 0; i < count; i++) {
-                const x = startX + Math.random() * width;
-                const y = Math.random() * (yRange[1] - yRange[0]) + yRange[0];
-                const z = randomZInLayer('NEAR');
-                lm.chromaShiftSystem.addRock(new THREE.Vector3(x, y, z), 2 + Math.random() * 2);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = gameplayRandom('flora') * (yRange[1] - yRange[0]) + yRange[0];
+                const z = randomZInLayer('NEAR', 'flora');
+                lm.chromaShiftSystem.addRock(new THREE.Vector3(x, y, z), 2 + gameplayRandom('flora') * 2);
             }
         }
         if (density.liquidMetal) {
-            const targetCount = Math.min(scaledCount(density.liquidMetal), lm.GEOLOGICAL_SPAWN_CAPS.liquidMetal);
+            const targetCount = Math.min(hazardCount(density.liquidMetal), lm.GEOLOGICAL_SPAWN_CAPS.liquidMetal);
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = randomZInRange(geoZ);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
+                const z = randomZInRange(geoZ, 'flora');
                 lm.spawners.createLiquidMetalBlobAtPosition(x, y, z);
             }
         }
         if (density.magmaHeart) {
             const targetCount = Math.min(
-                scaledCount(density.magmaHeart),
+                hazardCount(density.magmaHeart),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.magmaHeart - lm.geologicalCounts.magmaHearts())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = randomZInRange(geoZ);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
+                const z = randomZInRange(geoZ, 'flora');
                 lm.spawners.createMagmaHeartAtPosition(x, y, z);
             }
         }
         if (density.gravityAnchor) {
             const targetCount = Math.min(
-                scaledCount(density.gravityAnchor),
+                hazardCount(density.gravityAnchor),
                 Math.max(0, lm.GEOLOGICAL_SPAWN_CAPS.gravityAnchor - lm.geologicalCounts.gravityAnchors())
             );
             for (let i = 0; i < targetCount; i++) {
-                const x = startX + Math.random() * width;
-                const y = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const z = randomZInRange(geoZ);
+                const x = startX + gameplayRandom('flora') * width;
+                const y = yRange[0] + gameplayRandom('flora') * (yRange[1] - yRange[0]);
+                const z = randomZInRange(geoZ, 'flora');
                 lm.spawners.createGravityAnchorAtPosition(x, y, z, lm.currentLevel);
             }
         }
@@ -304,21 +311,21 @@ export function spawnFoliageVignettes(lm: LevelFoliageHost,
         if ((vignettes.treeGroves || 0) > 0 && (density.tree || density.floweringTree)) {
             const nGroves = vignetteCount(vignettes.treeGroves);
             for (let g = 0; g < nGroves; g++) {
-                const gx = startX + Math.random() * width;
-                const gY = treeYRange[0] + Math.random() * (treeYRange[1] - treeYRange[0]);
-                const gSize = 3 + Math.floor(Math.random() * 4);
+                const gx = startX + gameplayRandom('environment') * width;
+                const gY = treeYRange[0] + gameplayRandom('environment') * (treeYRange[1] - treeYRange[0]);
+                const gSize = 3 + Math.floor(gameplayRandom('environment') * 4);
                 const gZ = randomZInRange(foliageZ);
-                const isFlowering = density.floweringTree && (Math.random() < 0.5 || !density.tree);
+                const isFlowering = density.floweringTree && (gameplayRandom('environment') < 0.5 || !density.tree);
                 for (let t = 0; t < gSize; t++) {
-                    const tx = gx + (Math.random() - 0.5) * 14;
-                    const ty = gY + (Math.random() - 0.5) * 2.5;
-                    const tz = gZ + (Math.random() - 0.5) * 2;
+                    const tx = gx + (gameplayRandom('environment') - 0.5) * 14;
+                    const ty = gY + (gameplayRandom('environment') - 0.5) * 2.5;
+                    const tz = gZ + (gameplayRandom('environment') - 0.5) * 2;
                     const creator = isFlowering
                         ? () => createFloweringTree({ color: 0xffaa44 })
                         : () => createFloweringTree({ color: 0x44ffaa });
                     const obj = creator();
                     obj.position.set(tx, ty, tz);
-                    const s = 0.75 + Math.random() * 0.35;
+                    const s = 0.75 + gameplayRandom('environment') * 0.35;
                     obj.scale.set(s, s, s);
                     obj.userData.speciesId = isFlowering ? 'floweringTree' : 'tree';
                     trackFoliageSpawn(lm, obj);
@@ -329,19 +336,19 @@ export function spawnFoliageVignettes(lm: LevelFoliageHost,
         if ((vignettes.roseArches || 0) > 0 && density.rose) {
             const nArches = vignetteCount(vignettes.roseArches);
             for (let a = 0; a < nArches; a++) {
-                const ax = startX + Math.random() * width;
+                const ax = startX + gameplayRandom('environment') * width;
                 const az = randomZInRange(foliageZ);
-                const gapY = yRange[0] + Math.random() * (yRange[1] - yRange[0]);
-                const sep = 5.5 + Math.random() * 3.5;
+                const gapY = yRange[0] + gameplayRandom('environment') * (yRange[1] - yRange[0]);
+                const sep = 5.5 + gameplayRandom('environment') * 3.5;
                 const obj1 = createNebulaRose({ color: 0xFF1493 });
                 obj1.position.set(ax - 1.5, gapY - sep * 0.5, az - 0.8);
-                let s = 0.65 + Math.random() * 0.25;
+                let s = 0.65 + gameplayRandom('environment') * 0.25;
                 obj1.scale.set(s, s, s);
                 obj1.userData.speciesId = 'rose';
                 trackFoliageSpawn(lm, obj1);
                 const obj2 = createNebulaRose({ color: 0xFF1493 });
                 obj2.position.set(ax + 1.5, gapY + sep * 0.5, az + 0.8);
-                s = 0.65 + Math.random() * 0.25;
+                s = 0.65 + gameplayRandom('environment') * 0.25;
                 obj2.scale.set(s, s, s);
                 obj2.userData.speciesId = 'rose';
                 trackFoliageSpawn(lm, obj2);
@@ -349,7 +356,7 @@ export function spawnFoliageVignettes(lm: LevelFoliageHost,
         }
         // Geode clearings: spawn FracturedGeode safe harbors at pre-planned centers
         for (const clearing of geodeClearings) {
-            const z = randomZInRange(geoZ);
+            const z = randomZInRange(geoZ, 'flora');
             lm.spawners.createGeodeAtPosition(clearing.x, clearing.y, z);
         }
     }

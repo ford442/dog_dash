@@ -1,4 +1,3 @@
-import { player } from '../../player_loader';
 import { playerState } from '../../game_config';
 import { game } from '../../game_runtime';
 import { updateCombatBoss, updateMoonGateSequence } from './boss';
@@ -14,6 +13,7 @@ import { updateCombatWeapons } from './weapons';
 export function updateLoopCombat(delta: number, time: number): boolean {
     if (updateCombatBoss(delta)) return true;
 
+    const player = game.player;
     let timeScale = game.powerUpManager.getCombinedModifiers().timeScale;
     if (player && game.levelManager.timeShiftZonesSystem) {
         timeScale *= game.levelManager.timeShiftZonesSystem.getTimeScaleModifier(player.position);

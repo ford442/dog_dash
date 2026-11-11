@@ -196,9 +196,9 @@ export class ChromaShiftSystem {
             const vy = posAttr.getY(i);
             const vz = posAttr.getZ(i);
 
-            const scaleX = 1 + (Math.random() - 0.5) * 0.4;
-            const scaleY = 1 + (Math.random() - 0.5) * 0.4;
-            const scaleZ = 1 + (Math.random() - 0.5) * 0.4;
+            const scaleX = 1 + (Math.random() - 0.5) * 0.4; // visual-only
+            const scaleY = 1 + (Math.random() - 0.5) * 0.4; // visual-only
+            const scaleZ = 1 + (Math.random() - 0.5) * 0.4; // visual-only
 
             posAttr.setXYZ(i, vx * scaleX, vy * scaleY, vz * scaleZ);
         }
@@ -242,9 +242,9 @@ export class ChromaShiftSystem {
 
         this.scales[idx] = size;
 
-        this.rotations[idx * 3] = Math.random() * Math.PI * 2;
-        this.rotations[idx * 3 + 1] = Math.random() * Math.PI * 2;
-        this.rotations[idx * 3 + 2] = Math.random() * Math.PI * 2;
+        this.rotations[idx * 3] = Math.random() * Math.PI * 2; // visual-only
+        this.rotations[idx * 3 + 1] = Math.random() * Math.PI * 2; // visual-only
+        this.rotations[idx * 3 + 2] = Math.random() * Math.PI * 2; // visual-only
 
         this._updateInstance(idx);
         this.count++;

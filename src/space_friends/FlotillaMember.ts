@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TrappedFriendKind } from './types';
+import { gameplayRandom } from '../run_seed';
 
 export class FlotillaMember {
     group: THREE.Group;
@@ -13,7 +14,7 @@ export class FlotillaMember {
     constructor(scene: THREE.Scene, color: number, index: number, kind: TrappedFriendKind = 'kitty') {
         this.index = index;
         this.kind = kind;
-        this.time = Math.random() * Math.PI * 2;
+        this.time = gameplayRandom('friends') * Math.PI * 2;
         this.group = new THREE.Group();
         this.group.userData.speciesId = kind === 'moonpup'
             ? 'rescuedMoonPup'

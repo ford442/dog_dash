@@ -23,6 +23,7 @@ import {
     distanceXY,
     makeGlowMaterial
 } from './types';
+import { gameplayRandom } from '../run_seed';
 
 export abstract class DreamPortalRoomOps {
     protected abstract scene: THREE.Scene;
@@ -93,8 +94,8 @@ export abstract class DreamPortalRoomOps {
             this.hazards.push({
                 mesh,
                 base: new THREE.Vector3(),
-                phase: Math.random() * Math.PI * 2,
-                amplitude: 3 + Math.random() * 3,
+                phase: gameplayRandom('creatures') * Math.PI * 2,
+                amplitude: 3 + gameplayRandom('creatures') * 3,
                 cooldown: 0
             });
         }
@@ -149,18 +150,18 @@ export abstract class DreamPortalRoomOps {
             for (let i = 0; i < toyCount; i++) {
                 const t = i / Math.max(1, toyCount - 1);
                 const base = new THREE.Vector3(
-                    14 + t * (span - 28) + (Math.random() - 0.5) * 6,
-                    (Math.random() - 0.5) * 17,
-                    (Math.random() - 0.5) * 4
+                    14 + t * (span - 28) + (gameplayRandom('pickups') - 0.5) * 6,
+                    (gameplayRandom('pickups') - 0.5) * 17,
+                    (gameplayRandom('pickups') - 0.5) * 4
                 );
                 this.toys.push({
                     base,
-                    phase: Math.random() * Math.PI * 2,
-                    spin: 0.4 + Math.random() * 0.8,
-                    scale: 0.8 + Math.random() * 0.5,
+                    phase: gameplayRandom('pickups') * Math.PI * 2,
+                    spin: 0.4 + Math.random() * 0.8, // visual-only
+                    scale: 0.8 + Math.random() * 0.5, // visual-only
                     collected: false
                 });
-                toyColor.setHSL((t * 0.8 + Math.random() * 0.1) % 1, 0.75, 0.65);
+                toyColor.setHSL((t * 0.8 + Math.random() * 0.1) % 1, 0.75, 0.65); // visual-only
                 this.toyMesh.setColorAt(i, toyColor);
             }
             if (this.toyMesh.instanceColor) this.toyMesh.instanceColor.needsUpdate = true;
@@ -173,10 +174,10 @@ export abstract class DreamPortalRoomOps {
             if (!enabled) return;
             hazard.base.set(
                 30 + ((i + 0.5) / Math.max(1, hazardCount)) * (span - 60),
-                (Math.random() - 0.5) * 12,
-                (Math.random() - 0.5) * 3
+                (gameplayRandom('creatures') - 0.5) * 12,
+                (gameplayRandom('creatures') - 0.5) * 3
             );
-            hazard.phase = Math.random() * Math.PI * 2;
+            hazard.phase = gameplayRandom('creatures') * Math.PI * 2;
             hazard.cooldown = 0;
             (hazard.mesh.material as THREE.MeshBasicMaterial).color.setHex(colors.accent);
         });

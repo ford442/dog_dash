@@ -1,10 +1,8 @@
 import * as THREE from 'three';
-import { canvas, camera } from './scene_context';
-import { player } from './player_loader';
+import { canvas } from './scene_context';
 import { playerState } from './game_config';
-import { createUI, setupKeyboardControls, updateHealthDisplay } from './ui_controls';
-import { createHeatBar, createBoostDisplay, createRollDisplay, createCoresDisplay } from './ui_factory';
-import { sporeClouds } from './environment';
+import { game } from './game_runtime';
+import type { GeologicalWorld } from './geological/world';
 
 // =============================================================================
 // INPUT SYSTEM
@@ -59,7 +57,8 @@ window.addEventListener('keydown', (e) => {
 export function setupCanvasClickHandler(
     particleSystem: any,
     friendsManager: any,
-    onGameStart: () => void
+    onGameStart: () => void,
+    world: GeologicalWorld = game.env.geologicalWorld
 ) {
     canvas.addEventListener('click', (event) => {
         if (!onGameStart) return;
@@ -72,10 +71,10 @@ export function setupCanvasClickHandler(
 
         // Create raycaster
         const raycaster = new THREE.Raycaster();
-        raycaster.setFromCamera(mouse, camera);
+        raycaster.setFromCamera(mouse, game.camera);
 
         // Check intersection with spore clouds
-        sporeClouds.forEach(cloud => {
+        world.sporeClouds.forEach(cloud => {
             if (!cloud.active) return;
 
             const intersects = raycaster.intersectObject(cloud.spores, false);

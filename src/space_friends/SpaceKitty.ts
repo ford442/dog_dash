@@ -208,9 +208,9 @@ export class SpaceKitty {
         const positions = new Float32Array(sparkleCount * 3);
         
         for (let i = 0; i < sparkleCount; i++) {
-            const theta = Math.random() * Math.PI * 2;
-            const phi = Math.random() * Math.PI;
-            const r = 0.8 + Math.random() * 0.3;
+            const theta = Math.random() * Math.PI * 2; // visual-only
+            const phi = Math.random() * Math.PI; // visual-only
+            const r = 0.8 + Math.random() * 0.3; // visual-only
             
             positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
             positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) + 0.3;

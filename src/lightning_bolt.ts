@@ -403,12 +403,12 @@ export class LightningBoltSystem {
                 }
             } else {
                 const speedBoost = Math.max(0, (playerSpeed - 10) * 0.1);
-                if (Math.random() < 0.005 * this.currentDensity * (1.0 + speedBoost)) {
-                    this.timers[i] = 0.2 + Math.random() * 0.3; // Visible for 0.2-0.5s
+                if (Math.random() < 0.005 * this.currentDensity * (1.0 + speedBoost)) { // visual-only
+                    this.timers[i] = 0.2 + Math.random() * 0.3; // Visible for 0.2-0.5s // visual-only
 
-                    const x = cameraX + (Math.random() - 0.5) * 200;
-                    const y = (Math.random() - 0.5) * 20 + 10; // High up
-                    const z = -30 + (Math.random() - 0.5) * 20; // Background
+                    const x = cameraX + (Math.random() - 0.5) * 200; // visual-only
+                    const y = (Math.random() - 0.5) * 20 + 10; // High up // visual-only
+                    const z = -30 + (Math.random() - 0.5) * 20; // Background // visual-only
 
                     if (this.onBoltStrike) {
                         const mat = this.mesh.material as any;
@@ -417,7 +417,7 @@ export class LightningBoltSystem {
 
                         // Trigger expanding shockwave at base level
                         if (this.shockwaveLayer) {
-                            this.shockwaveLayer.trigger(new THREE.Vector3(x, y - 20, z), strikeColor.getHex(), 1.0 + Math.random() * 1.5);
+                            this.shockwaveLayer.trigger(new THREE.Vector3(x, y - 20, z), strikeColor.getHex(), 1.0 + Math.random() * 1.5); // visual-only
                         }
                     }
 
@@ -427,13 +427,13 @@ export class LightningBoltSystem {
 
                     this.dummy.position.set(x, y, z);
 
-                    const scaleX = 1.0 + Math.random() * 2.5;
-                    const scaleY = 1.0 + Math.random() * 2.0;
+                    const scaleX = 1.0 + Math.random() * 2.5; // visual-only
+                    const scaleY = 1.0 + Math.random() * 2.0; // visual-only
                     this.baseScaleX[i] = scaleX;
                     this.baseScaleY[i] = scaleY;
                     this.dummy.scale.set(scaleX, scaleY, 1.0);
 
-                    this.dummy.rotation.set(0, 0, (Math.random() - 0.5) * 0.5);
+                    this.dummy.rotation.set(0, 0, (Math.random() - 0.5) * 0.5); // visual-only
 
                     this.dummy.updateMatrix();
                     this.mesh.setMatrixAt(i, this.dummy.matrix);

@@ -38,7 +38,7 @@ export class SpaceAstroBunny {
     constructor(scene: THREE.Scene, x: number, y: number) {
         this.position = new THREE.Vector3(x, y, 0);
         this.baseY = y;
-        this.hopPhase = Math.random() * Math.PI * 2;
+        this.hopPhase = Math.random() * Math.PI * 2; // visual-only
         this.group = new THREE.Group();
         this.group.position.copy(this.position);
         this.group.userData.speciesId = 'astroBunny';

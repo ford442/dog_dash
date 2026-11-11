@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { uniform } from 'three/tsl';
 import { WeaponLightManager } from './lighting';
 import { createAsteroidFieldMaterial } from './candy_materials';
+import { gameplayRandom } from './run_seed';
 
 /**
  * Manages a single layer of parallax asteroids using InstancedMesh.
@@ -83,29 +84,29 @@ export class AsteroidLayer {
         for (let i = 0; i < this.maxCount; i++) {
             this._rollCandyVariant(i);
             // Random Position
-            const x = (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * 40; // Vertical spread
-            const z = this.baseZ + (Math.random() - 0.5) * this.depth;
+            const x = (gameplayRandom('environment') - 0.5) * this.width;
+            const y = (gameplayRandom('environment') - 0.5) * 40; // Vertical spread
+            const z = this.baseZ + (gameplayRandom('environment') - 0.5) * this.depth;
 
             this.positions[i * 3] = x;
             this.positions[i * 3 + 1] = y;
             this.positions[i * 3 + 2] = z;
 
             // Random Rotation
-            const rx = Math.random() * Math.PI * 2;
-            const ry = Math.random() * Math.PI * 2;
-            const rz = Math.random() * Math.PI * 2;
+            const rx = Math.random() * Math.PI * 2; // visual-only
+            const ry = Math.random() * Math.PI * 2; // visual-only
+            const rz = Math.random() * Math.PI * 2; // visual-only
 
             this.rotations[i * 3] = rx;
             this.rotations[i * 3 + 1] = ry;
             this.rotations[i * 3 + 2] = rz;
 
             // Random Rotation Speed
-            this.rotationSpeeds[i * 3] = (Math.random() - 0.5) * 1.0;
-            this.rotationSpeeds[i * 3 + 1] = (Math.random() - 0.5) * 1.0;
-            this.rotationSpeeds[i * 3 + 2] = (Math.random() - 0.5) * 1.0;
+            this.rotationSpeeds[i * 3] = (Math.random() - 0.5) * 1.0; // visual-only
+            this.rotationSpeeds[i * 3 + 1] = (Math.random() - 0.5) * 1.0; // visual-only
+            this.rotationSpeeds[i * 3 + 2] = (Math.random() - 0.5) * 1.0; // visual-only
 
-            const scale = config.sizeMin + Math.random() * (config.sizeMax - config.sizeMin);
+            const scale = config.sizeMin + gameplayRandom('environment') * (config.sizeMax - config.sizeMin);
             this.scales[i * 3] = scale;
             this.scales[i * 3 + 1] = scale;
             this.scales[i * 3 + 2] = scale;
@@ -130,9 +131,9 @@ export class AsteroidLayer {
     }
 
     private _rollCandyVariant(index: number) {
-        const isCandy = this.candyChance > 0 && Math.random() < this.candyChance;
+        const isCandy = this.candyChance > 0 && Math.random() < this.candyChance; // visual-only
         this.candyMix[index] = isCandy ? 1 : 0;
-        this.candyHue[index] = Math.random();
+        this.candyHue[index] = Math.random(); // visual-only
     }
 
     setCandyChance(chance: number) {
@@ -156,9 +157,9 @@ export class AsteroidLayer {
         for (let i = 0; i < this.maxCount; i++) {
             const idx = i * 3;
 
-            const x = cameraX + (Math.random() - 0.5) * this.width;
-            const y = (Math.random() - 0.5) * 40;
-            const z = this.baseZ + (Math.random() - 0.5) * this.depth;
+            const x = cameraX + (gameplayRandom('environment') - 0.5) * this.width;
+            const y = (gameplayRandom('environment') - 0.5) * 40;
+            const z = this.baseZ + (gameplayRandom('environment') - 0.5) * this.depth;
 
             this.positions[idx] = x;
             this.positions[idx + 1] = y;
@@ -202,7 +203,7 @@ export class AsteroidLayer {
         const limitBack = cameraPos.x - (this.width / 2) - margin;
         const limitFront = cameraPos.x + (this.width / 2) + margin;
 
-        const numFragments = Math.floor(Math.random() * 3) + 2; // 2 to 4
+        const numFragments = Math.floor(gameplayRandom('environment') * 3) + 2; // 2 to 4
         let fragmentsFound = 0;
 
         for (let i = 0; i < this.mesh.count; i++) {
@@ -217,21 +218,21 @@ export class AsteroidLayer {
                 fragmentsFound++;
 
                 // Repurpose as fragment
-                this.positions[i3] = hitPos.x + (Math.random() - 0.5) * originalScale;
-                this.positions[i3+1] = hitPos.y + (Math.random() - 0.5) * originalScale;
-                this.positions[i3+2] = hitPos.z + (Math.random() - 0.5) * originalScale;
+                this.positions[i3] = hitPos.x + (gameplayRandom('environment') - 0.5) * originalScale;
+                this.positions[i3+1] = hitPos.y + (gameplayRandom('environment') - 0.5) * originalScale;
+                this.positions[i3+2] = hitPos.z + (gameplayRandom('environment') - 0.5) * originalScale;
 
-                const fragmentScale = originalScale * (0.3 + Math.random() * 0.3);
+                const fragmentScale = originalScale * (0.3 + gameplayRandom('environment') * 0.3);
                 this.scales[i3] = fragmentScale;
                 this.scales[i3+1] = fragmentScale;
                 this.scales[i3+2] = fragmentScale;
 
                 // Set burst velocity outward
                 const outVel = new THREE.Vector3(
-                    (Math.random() - 0.5) * 2.0,
-                    (Math.random() - 0.5) * 2.0,
-                    (Math.random() - 0.5) * 2.0
-                ).normalize().multiplyScalar(5.0 + Math.random() * 10.0);
+                    (gameplayRandom('environment') - 0.5) * 2.0,
+                    (gameplayRandom('environment') - 0.5) * 2.0,
+                    (gameplayRandom('environment') - 0.5) * 2.0
+                ).normalize().multiplyScalar(5.0 + gameplayRandom('environment') * 10.0);
 
                 // Add some inherited shot velocity
                 outVel.add(shotDirection.clone().multiplyScalar(3.0));
@@ -241,9 +242,9 @@ export class AsteroidLayer {
                 this.velocities[i3+2] = outVel.z;
 
                 // Set random rotation speeds for fragments
-                this.rotationSpeeds[i3] = (Math.random() - 0.5) * 5.0;
-                this.rotationSpeeds[i3+1] = (Math.random() - 0.5) * 5.0;
-                this.rotationSpeeds[i3+2] = (Math.random() - 0.5) * 5.0;
+                this.rotationSpeeds[i3] = (Math.random() - 0.5) * 5.0; // visual-only
+                this.rotationSpeeds[i3+1] = (Math.random() - 0.5) * 5.0; // visual-only
+                this.rotationSpeeds[i3+2] = (Math.random() - 0.5) * 5.0; // visual-only
 
                 // Update matrix immediately
                 this.dummy.position.set(this.positions[i3], this.positions[i3+1], this.positions[i3+2]);
@@ -353,13 +354,13 @@ export class AsteroidLayer {
                 this.positions[idx] = x;
 
                 // Reset Y and Z to original random distribution
-                y = (Math.random() - 0.5) * 40; // Vertical spread
-                z = this.baseZ + (Math.random() - 0.5) * this.depth;
+                y = (gameplayRandom('environment') - 0.5) * 40; // Vertical spread
+                z = this.baseZ + (gameplayRandom('environment') - 0.5) * this.depth;
                 this.positions[idx+1] = y;
                 this.positions[idx+2] = z;
 
                 // Reset scale to original
-                const scale = this.sizeMin + Math.random() * (this.sizeMax - this.sizeMin);
+                const scale = this.sizeMin + gameplayRandom('environment') * (this.sizeMax - this.sizeMin);
                 this.scales[idx] = scale;
                 this.scales[idx+1] = scale;
                 this.scales[idx+2] = scale;
@@ -370,9 +371,9 @@ export class AsteroidLayer {
                 this.velocities[idx+2] = 0;
 
                 // Reset rotation speeds
-                this.rotationSpeeds[idx] = (Math.random() - 0.5) * 1.0;
-                this.rotationSpeeds[idx+1] = (Math.random() - 0.5) * 1.0;
-                this.rotationSpeeds[idx+2] = (Math.random() - 0.5) * 1.0;
+                this.rotationSpeeds[idx] = (Math.random() - 0.5) * 1.0; // visual-only
+                this.rotationSpeeds[idx+1] = (Math.random() - 0.5) * 1.0; // visual-only
+                this.rotationSpeeds[idx+2] = (Math.random() - 0.5) * 1.0; // visual-only
 
                 this._rollCandyVariant(i);
 

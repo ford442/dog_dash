@@ -7,7 +7,6 @@
  */
 
 import * as THREE from 'three';
-import { player } from '../player_loader';
 import { playerState, setIsGamePaused } from '../game_config';
 import { game } from '../game_runtime';
 import { ShakeType } from '../juice_effects';
@@ -94,12 +93,12 @@ async function beginBuoyHack(buoy: DerelictBuoyInstance): Promise<void> {
             );
             if (fragments === LOST_SECTOR_FRAGMENTS) {
                 game.juiceManager.showFloatingText(
-                    'Lost Sector revealed!', player!.position.clone(), '#ffd76a', 24
+                    'Lost Sector revealed!', game.player!.position.clone(), '#ffd76a', 24
                 );
             }
             if (fragments >= QUANTUM_COMPASS_FRAGMENTS && game.saveManager.unlockQuantumCompass()) {
                 game.juiceManager.showFloatingText(
-                    '\u{1F9ED} Quantum Compass online!', player!.position.clone(), '#33e0ff', 24
+                    '\u{1F9ED} Quantum Compass online!', game.player!.position.clone(), '#33e0ff', 24
                 );
             }
         },
@@ -185,7 +184,7 @@ function awardMonolithReward(monolith: DataMonolithInstance): void {
     const modal = createLoreRevealUI(entry, nowUnlocked.length, hasKey, () => {
         setIsGamePaused(false);
         if (hasKey) {
-            game.juiceManager.showFloatingText('\u{1F511} Architect’s Key assembled!', player!.position.clone(), '#ffd76a', 26);
+            game.juiceManager.showFloatingText('\u{1F511} Architect’s Key assembled!', game.player!.position.clone(), '#ffd76a', 26);
         }
     });
     document.body.appendChild(modal);
@@ -206,6 +205,7 @@ export function spawnArtifactsForLevel(cfg: LevelConfig, baseX: number): void {
 
 /** Per-frame update: idle animation + proximity-triggered hacks. */
 export function updateArtifacts(delta: number): void {
+    const player = game.player;
     // While a hack overlay is up the world is paused, so this won't be reached;
     // the local rAF ticker drives the overlay instead.
     if (activeHack || !player) return;

@@ -11,10 +11,11 @@ budget). `ENV_SYSTEM_DESCRIPTORS` is the query table Endless Dash reads:
 deferred env rows are copied from the manifest; deferred-level and eager
 systems still declare metadata here with `defineEnvDescriptor`.
 
-This is prerequisite groundwork for **Endless Dash** (procedural
-post-campaign chapters composed from the existing environment systems):
-a generator needs to ask "give me a traversal system for the `industrial`
-biome" instead of hand-maintaining a table per feature.
+**Endless Dash** (procedural post-campaign chapters composed from the
+existing environment systems, [ENDLESS_DASH.md](ENDLESS_DASH.md)) is built
+on it. The generator asks "give me a traversal system for the `industrial`
+biome" instead of hand-maintaining a table per feature, and reads each
+system's decoration cost from the manifest `budget.instances`.
 
 ## Shape
 
@@ -26,7 +27,7 @@ interface EnvSystemDescriptor {
     biomes: Biome[];             // 'nebula' | 'industrial' | 'biological' | 'crystalline' | 'candy'
     paletteTags: PaletteTag[];   // coarse visual-coherence hint, not literal colors
     difficultyWeight: 1 | 2 | 3 | 4 | 5;
-    tutorialId?: string;         // unset until a generator actually gates on it
+    tutorialId?: string;         // makes a traversal no campaign chapter runs eligible for Endless
 }
 ```
 
@@ -44,6 +45,11 @@ level/eager leftovers.
    `src/env_system_descriptors.ts`.
 4. `tests/unit/env_system_descriptors.test.ts` and `check:env-registry`
    fail if the flag or metadata is missing.
+5. Add the system's patch to `RECIPE_PATCHES` in `src/endless/patches.ts`
+   (`tsc` fails until you do), so Endless chapters can switch it on.
+   `tests/unit/endless_generator.test.ts` fails if the generator can never
+   pick it. Check the role and biomes: an over-budget or untaught system
+   is never generated.
 
 ## Query API
 
@@ -77,10 +83,16 @@ the whole point of Endless Dash is combinations the 6 hand-authored
 levels never tried. Treat these as a first pass to refine once generated
 chapters are actually played, not as ground truth.
 
+Retagged when the generator landed: `grappleIsles` is a `backdrop` (no
+grapple gameplay yet, and no chapter teaches it as a traversal), and
+`dayNightCycle` also lists `nebula` (its 900 instances never fit candy's
+campaign worst case next to a hazard).
+
 ## Not yet included
 
-- `tutorialId` gating (needs `tutorial_system` step ids wired through).
-- The `ChapterRecipe` / constraint solver itself (Endless Dash Phase 1+).
+- A per-step "has the save seen tutorial X" API. `endlessUnlockState`
+  takes the check as a parameter, and no traversal needs one yet (every
+  verb is taught by a campaign chapter).
 - Literal color values for palette coherence — `paletteTags` is a coarse
   heuristic (`warm`/`cool`/`pastel`/`neon`/`iridescent`/`monochrome`), not
   a color system.

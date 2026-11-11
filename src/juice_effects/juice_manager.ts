@@ -39,8 +39,13 @@ export class JuiceManager {
         this.shake.shakeScreen(type, duration);
     }
 
-    updateCameraBasePosition(position: THREE.Vector3): void {
-        this.shake.updateCameraBasePosition(position);
+    /** Render-only shake: add the current offset to the camera for this draw. */
+    applyShakeToCamera(): void {
+        this.shake.applyToCamera();
+    }
+
+    removeShakeFromCamera(): void {
+        this.shake.removeFromCamera();
     }
 
     hitPause(duration: number): void {

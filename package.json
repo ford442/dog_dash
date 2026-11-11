@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "build:wasm": "asc assembly/index.ts -o build/optimized.wasm -t build/optimized.wat --sourceMap --initialMemory 8 --maximumMemory 256 --optimize --enable simd",
     "pretest:unit": "npm run build:wasm && npm run copy:wasm",
+    "pretest:replay": "npm run build:wasm && npm run copy:wasm",
     "copy:wasm": "node -e \"const fs=require('fs'); fs.mkdirSync('public/build', { recursive: true }); ['optimized.wasm','optimized.wasm.map'].forEach(f => { const src = 'build/' + f; const dest = 'public/build/' + f; if (fs.existsSync(src)) fs.copyFileSync(src, dest); });\"",
     "build:cpp-wasm": "bash cpp/build.sh --release",
     "build:cpp-wasm:debug": "bash cpp/build.sh",
@@ -25,10 +26,14 @@
     "typecheck:ci": "node tools/typecheck_baseline.cjs",
     "typecheck:baseline:update": "node tools/typecheck_baseline.cjs --update",
     "check:env-registry": "node tools/check_level_env_registry.cjs",
-    "check": "node tools/check_braces.cjs && node tools/check_level_env_registry.cjs && npm run typecheck:ci && npm run test:unit",
+    "check:math-random": "node tools/check_math_random.cjs",
+    "check:math-random:update": "node tools/check_math_random.cjs --update",
+    "check": "node tools/check_braces.cjs && node tools/check_level_env_registry.cjs && node tools/check_math_random.cjs && npm run typecheck:ci && npm run test:unit && npm run test:replay",
     "test:unit": "node --import tsx --test tests/unit/**/*.test.ts tests/*.test.mjs",
+    "test:replay": "node --import tsx --test --test-concurrency=1 tests/replay/replay.test.ts tests/replay/endless.test.ts tests/replay/architect.test.ts",
+    "replay:record": "node --import tsx tests/replay/record_fixture.ts",
     "test:smoke": "playwright test",
-    "test": "npm run test:unit && npm run test:smoke"
+    "test": "npm run test:unit && npm run test:replay && npm run test:smoke"
   },
   "keywords": [],
   "author": "",
@@ -37,7 +42,8 @@
     "node": ">=20"
   },
   "dependencies": {
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

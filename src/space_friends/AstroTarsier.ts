@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { InteractionResult } from './types';
+import { gameplayRandom } from '../run_seed';
 
 type TarsierState = 'idle' | 'alarmed' | 'panicking' | 'cheering';
 
@@ -40,10 +41,10 @@ export class AstroTarsier {
         this.anchorPos = anchorPos.clone();
 
         // Spread tarsiers around the anchor at varying angles/radii
-        this.orbitAngle = (index / 5) * Math.PI * 2 + Math.random() * 0.4;
-        this.orbitRadius = 6 + Math.random() * 4;
-        this.orbitZ = (Math.random() - 0.5) * 8 - 10; // behind the anchor in Z
-        this.phaseOffset = Math.random() * Math.PI * 2;
+        this.orbitAngle = (index / 5) * Math.PI * 2 + gameplayRandom('friends') * 0.4;
+        this.orbitRadius = 6 + gameplayRandom('friends') * 4;
+        this.orbitZ = (gameplayRandom('friends') - 0.5) * 8 - 10; // behind the anchor in Z
+        this.phaseOffset = gameplayRandom('friends') * Math.PI * 2;
 
         this.position = new THREE.Vector3(
             anchorPos.x + Math.cos(this.orbitAngle) * this.orbitRadius,

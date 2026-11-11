@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { InteractionResult } from './types';
+import { gameplayRandom } from '../run_seed';
 
 export type LemurPerchType = 'geode' | 'gravityAnchor' | 'iceNeedle' | 'industrial';
 
@@ -42,14 +43,14 @@ export class LunarLemur {
     ) {
         this.perchPos = perchPos.clone();
         this.perchType = perchType;
-        this.phaseOffset = Math.random() * Math.PI * 2;
+        this.phaseOffset = Math.random() * Math.PI * 2; // visual-only
 
-        const side = Math.random() < 0.5 ? -1 : 1;
+        const side = gameplayRandom('friends') < 0.5 ? -1 : 1;
         const perchRadius = perchType === 'geode' ? 1.6 : perchType === 'gravityAnchor' ? 2.4 : 1.2;
         this.position = new THREE.Vector3(
             perchPos.x + side * perchRadius * 0.55,
             perchPos.y + perchOffsetY,
-            perchPos.z + (Math.random() - 0.5) * 1.2
+            perchPos.z + (gameplayRandom('friends') - 0.5) * 1.2
         );
 
         this.group = new THREE.Group();

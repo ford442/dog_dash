@@ -77,7 +77,7 @@ export class MagicPaintbrushSystem {
         const mesh = new THREE.Mesh(getSegmentGeometry(), material);
         mesh.position.copy(worldPos);
         mesh.rotation.z = Math.PI / 2;
-        mesh.rotation.y = Math.random() * Math.PI;
+        mesh.rotation.y = Math.random() * Math.PI; // visual-only
         this.scene.add(mesh);
 
         if (!decorationBudget.reportSpawn(BUDGET_ID)) {

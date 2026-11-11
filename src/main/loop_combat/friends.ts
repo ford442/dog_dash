@@ -1,6 +1,4 @@
 import * as THREE from 'three';
-import { scene, camera } from '../../scene_context';
-import { player } from '../../player_loader';
 import { playerState } from '../../game_config';
 import { game } from '../../game_runtime';
 import { DogAnimationState } from '../../dog_cockpit';
@@ -11,9 +9,11 @@ import {
     getBubbleCoralPlacement,
     resolveBubbleCoralClusterCount
 } from '../../level_spawn_rules';
-import { gravityAnchors } from '../../environment';
+import { gameplayRandom } from '../../run_seed';
 /** Space friends, aquatic life, starlight koi, bubble coral. */
 export function updateCombatFriends(delta: number): void {
+    const player = game.player;
+    const camera = game.camera;
     if (!player) return;
 
     if (game.debugSystem.isEnabled('spaceFriends')) {
@@ -50,8 +50,8 @@ export function updateCombatFriends(delta: number): void {
             }
 
             for (let s = 0; s < 5; s++) {
-                const sx = player.position.x + 100 + Math.random() * (cfgA.distance - 300);
-                const sy = (Math.random() - 0.5) * 16;
+                const sx = player.position.x + 100 + gameplayRandom('friends') * (cfgA.distance - 300);
+                const sy = (gameplayRandom('friends') - 0.5) * 16;
                 game.friendsManager.spawnSealPup(sx, sy);
             }
         }
@@ -76,7 +76,7 @@ export function updateCombatFriends(delta: number): void {
 
         game.whaleSongTimer -= delta;
         if (game.whaleSongTimer <= 0) {
-            game.whaleSongTimer = 25 + Math.random() * 15;
+            game.whaleSongTimer = 25 + Math.random() * 15; // visual-only
             game.audioSystem.playWhaleSong();
         }
     } else if (game.aquaticLifeSpawnedLevel !== null) {
@@ -142,7 +142,7 @@ export function onBarnacleOpened(obs: THREE.Object3D): void {
     }
     if (obs.userData.hasWhaleLice) {
         void import('../../space_friends').then(({ FlotillaMember }) => {
-            const member = new FlotillaMember(scene, 0x88ffaa, game.friendsManager.flotilla.length);
+            const member = new FlotillaMember(game.scene, 0x88ffaa, game.friendsManager.flotilla.length);
             game.friendsManager.flotilla.push(member);
             game.juiceManager.showFloatingText('Whale Lice joined!', obs.position.clone(), '#88ffaa', 22);
             game.dogController.triggerAnimation(DogAnimationState.DELIGHTED, 1.5);
@@ -154,6 +154,7 @@ export function onBarnacleOpened(obs: THREE.Object3D): void {
 export function updateProjectileAnchorPanic(
     projectiles: Array<{ active: boolean; mesh: THREE.Object3D }>
 ): void {
+    const gravityAnchors = game.env.geologicalWorld.gravityAnchors;
     if (!game.debugSystem.isEnabled('spaceFriends') || gravityAnchors.length === 0) return;
 
     for (const proj of projectiles) {

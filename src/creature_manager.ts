@@ -33,6 +33,7 @@ import type { DebugSystem } from './debug_system';
 import { PuffPuffer } from './puff_puffer';
 import { MoonSnail } from './moon_snail';
 import { CollisionLayer, type SpatialIndex } from './spatial_index';
+import { gameplayRandom } from './run_seed';
 
 interface ProjectileLike {
     mesh: THREE.Object3D;
@@ -104,8 +105,8 @@ export class CreatureManager {
             maxActive: 1,
             legacy: true,
             factory: (scene: THREE.Scene, baseX: number) => {
-                const sy = (Math.random() - 0.5) * 14;
-                const sz = -8 - Math.random() * 6;
+                const sy = (gameplayRandom('creatures') - 0.5) * 14;
+                const sz = -8 - gameplayRandom('creatures') * 6;
                 const g = new CrystalTarsierGuardian(scene, baseX, sy, sz);
                 this.tarsierGuardians.push(g);
                 return g;
@@ -119,8 +120,8 @@ export class CreatureManager {
             maxActive: 1,
             legacy: true,
             factory: (scene: THREE.Scene, baseX: number) => {
-                const sy = (Math.random() - 0.5) * 10;
-                const sz = -15 - Math.random() * 10;
+                const sy = (gameplayRandom('creatures') - 0.5) * 10;
+                const sz = -15 - gameplayRandom('creatures') * 10;
                 const t = new LivingGeodeTitan(scene, baseX, sy, sz);
                 this.geodeTitans.push(t);
                 return t;
@@ -332,7 +333,7 @@ export class CreatureManager {
 
             if (def.spawnMode === 'probabilistic') {
                 if (this.getActiveCount(def) >= (def.maxActive || 1)) continue;
-                if (Math.random() < rate) {
+                if (gameplayRandom('creatures') < rate) {
                     this.spawnCreatureCluster(def, playerX + (def.spawnAhead || 60), levelConfig);
                 }
             } else if (def.spawnMode === 'streaming') {
@@ -340,7 +341,7 @@ export class CreatureManager {
                 const interval = def.streamInterval ?? 120;
                 if (playerX - lastX < interval) continue;
                 if (this.getActiveCount(def) >= (def.maxActive || 1)) continue;
-                if (Math.random() < rate) {
+                if (gameplayRandom('creatures') < rate) {
                     this.lastStreamingSpawnX.set(def.id, playerX);
                     this.spawnCreatureCluster(def, playerX + (def.spawnAhead || 60), levelConfig);
                 }
@@ -389,9 +390,9 @@ export class CreatureManager {
         const tint = levelConfig?.enemyTintColor;
 
         for (let k = 0; k < clusterCount; k++) {
-            const cx = spawnX + (k === 0 ? 0 : (Math.random() - 0.5) * 10);
-            const cy = spawnY + (k === 0 ? 0 : (Math.random() - 0.5) * 4);
-            const cz = spawnZ + (k === 0 ? 0 : (Math.random() - 0.5) * 2);
+            const cx = spawnX + (k === 0 ? 0 : (gameplayRandom('creatures') - 0.5) * 10);
+            const cy = spawnY + (k === 0 ? 0 : (gameplayRandom('creatures') - 0.5) * 4);
+            const cz = spawnZ + (k === 0 ? 0 : (gameplayRandom('creatures') - 0.5) * 2);
             const creature = def.factory(this.scene, cx, cy, cz, tint);
             if (!def.legacy && actives) {
                 actives.push(creature);
@@ -402,16 +403,16 @@ export class CreatureManager {
     private randomSpawnY(def: AmbientCreatureDef): number {
         if (def.spawnYRange) {
             const [lo, hi] = def.spawnYRange;
-            return lo + Math.random() * (hi - lo);
+            return lo + gameplayRandom('creatures') * (hi - lo);
         }
-        return (Math.random() - 0.5) * 14;
+        return (gameplayRandom('creatures') - 0.5) * 14;
     }
 
     private randomSpawnZ(def: AmbientCreatureDef): number {
         if (def.depthLayer) {
-            return randomZInLayer(def.depthLayer);
+            return randomZInLayer(def.depthLayer, 'creatures');
         }
-        return -10 - Math.random() * 6;
+        return -10 - gameplayRandom('creatures') * 6;
     }
 
     /** Remove all active creatures (e.g. on level reset/game restart). */

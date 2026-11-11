@@ -15,6 +15,7 @@ import {
 } from 'three/tsl';
 import { DEPTH_LAYERS, randomZInRange } from './depth_layers';
 import type { VoidJellyfishEnvironmentConfig } from './level_config';
+import { gameplayRandom } from './run_seed';
 
 export type { VoidJellyfishEnvironmentConfig };
 
@@ -128,22 +129,22 @@ export class VoidJellyfishSystem {
         const zRange: [number, number] = [DEPTH_LAYERS.BACKGROUND.min, DEPTH_LAYERS.MIDGROUND.max];
 
         for (let i = 0; i < MAX_INSTANCES; i++) {
-            const x = (Math.random() - 0.5) * 120;
-            const y = (Math.random() - 0.5) * 28;
+            const x = (gameplayRandom('environment') - 0.5) * 120;
+            const y = (gameplayRandom('environment') - 0.5) * 28;
             const z = randomZInRange(zRange);
 
             this.positions[i * 3] = x;
             this.positions[i * 3 + 1] = y;
             this.positions[i * 3 + 2] = z;
 
-            this.velocities[i * 3] = 1.2 + Math.random() * 1.8;
-            this.velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.4;
-            this.velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.35;
+            this.velocities[i * 3] = 1.2 + gameplayRandom('environment') * 1.8;
+            this.velocities[i * 3 + 1] = (gameplayRandom('environment') - 0.5) * 0.4;
+            this.velocities[i * 3 + 2] = (gameplayRandom('environment') - 0.5) * 0.35;
 
-            this.phases[i] = Math.random() * Math.PI * 2;
-            this.baseScales[i] = 0.35 + Math.random() * 0.45;
+            this.phases[i] = gameplayRandom('environment') * Math.PI * 2;
+            this.baseScales[i] = 0.35 + Math.random() * 0.45; // visual-only
 
-            const colorHex = PASTEL_PALETTE[Math.floor(Math.random() * PASTEL_PALETTE.length)];
+            const colorHex = PASTEL_PALETTE[Math.floor(Math.random() * PASTEL_PALETTE.length)]; // visual-only
             const c = new THREE.Color(colorHex);
             colors[i * 3] = c.r;
             colors[i * 3 + 1] = c.g;
@@ -233,8 +234,8 @@ export class VoidJellyfishSystem {
             }
 
             if (x < limitBack) {
-                x = cameraX + margin * 0.6 + Math.random() * 40;
-                y = (Math.random() - 0.5) * 28;
+                x = cameraX + margin * 0.6 + gameplayRandom('environment') * 40;
+                y = (gameplayRandom('environment') - 0.5) * 28;
                 z = randomZInRange(zRange);
             } else if (x > limitFront) {
                 x = cameraX - margin * 0.4;

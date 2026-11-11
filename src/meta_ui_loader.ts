@@ -4,9 +4,8 @@
  * cold entry graph until first use or first gameplay click.
  */
 
-import { scene, camera } from './scene_context';
 import { game } from './game_runtime';
-import type { HubMode } from './hub_screen';
+import type { HubMode, HubTab } from './hub_screen';
 import type { SaveManager } from './save_manager';
 
 type JourneyMapModule = typeof import('./journey_map');
@@ -17,6 +16,10 @@ let journeyMapMod: JourneyMapModule | null = null;
 let hubIntegrationMod: HubIntegrationModule | null = null;
 let bestiaryMod: BestiaryModule | null = null;
 let victoryTutorialReady = false;
+
+export function resetMetaUiLoader(): void {
+    victoryTutorialReady = false;
+}
 
 export async function ensureJourneyMap(): Promise<JourneyMapModule> {
     if (!journeyMapMod) {
@@ -40,9 +43,9 @@ export async function ensureBestiaryUi(): Promise<BestiaryModule> {
 }
 
 /** Open the Space Base hub (loads hub + crafting + bestiary UI chunk). */
-export async function openHubScreenLazy(mode: HubMode): Promise<void> {
+export async function openHubScreenLazy(mode: HubMode, initialTab?: HubTab): Promise<void> {
     const { openHubScreen } = await ensureHubIntegration();
-    openHubScreen(mode);
+    openHubScreen(mode, initialTab);
 }
 
 /** Construct real VictorySystem + TutorialSystem before first gameplay frame. */
@@ -55,14 +58,14 @@ export async function ensureVictoryAndTutorial(): Promise<void> {
     ]);
 
     const victorySystem = new VictorySystem(
-        scene,
-        camera,
+        game.scene,
+        game.camera,
         game.audioSystem,
         game.hudManager,
         game.juiceManager
     );
     const tutorialSystem = new TutorialSystem(
-        scene,
+        game.scene,
         game.hudManager,
         game.audioSystem,
         game.dogController
