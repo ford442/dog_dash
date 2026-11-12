@@ -5,7 +5,6 @@ import { updateHealthDisplay } from '../ui_controls';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects';
 import { gameplayRandom } from '../run_seed';
-import { updateSolarSail } from '../foliage';
 import {
     damageGeode, updateGeode, updateNebulaJellyMoss, destroyNebulaJellyMoss,
     updateVoidRootBall, updateVacuumKelp, updateIceNeedleCluster, updateMagmaHeart,
@@ -27,7 +26,7 @@ import { scheduleSim } from '../sim_clock';
 export function updateLoopGeological(delta: number, time: number): void {
         const { scene, camera, player } = game;
         const {
-            sporeClouds, jellyMosses, solarSails, geodes, voidRootBalls, vacuumKelps,
+            sporeClouds, jellyMosses, geodes, voidRootBalls, vacuumKelps,
             iceNeedleClusters, magmaHearts, gravityAnchors
         } = game.env.geologicalWorld;
 
@@ -285,11 +284,9 @@ export function updateLoopGeological(delta: number, time: number): void {
             jellyMossSoftBody.syncVisuals();
             vacuumKelpSoftBody.syncVisuals();
     
-            // Update solar sails (iridescent rippling, unfold near player)
             if (player) {
                 const activePlayer = player;
-                solarSails.forEach(solarSail => updateSolarSail(solarSail, delta, time, activePlayer.position));
-    
+
                 // Update void root balls (harpoon AI, tether, crystal flowers)
                 const playerStealthed = jellyMosses.some(
                     (m) => m.userData.isHiding && m.visible

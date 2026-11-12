@@ -17,7 +17,6 @@ import {
     getGeologicalWorldLiquidMetal,
     type GeologicalWorld
 } from './geological';
-import { createSolarSail } from './foliage';
 import type { ParticleSystem } from './particles';
 import type { WeaponSystem } from './weapons';
 import type { LiquidMetalSystem } from './geological/liquid_metal';
@@ -115,23 +114,6 @@ export function createJellyMossAtPosition(
     // opted in via environments.dancingJellyMoss (see applyEnvironmentPlugins).
     jellyMossSoftBody.tryAttach(jellyMoss);
     return jellyMoss;
-}
-
-export function createSolarSailAtPosition(
-    world: GeologicalWorld,
-    x: number,
-    y: number,
-    z: number
-) {
-    const targetScene = resolveWorldScene(world);
-    const solarSail = createSolarSail({
-        leafCount: 6 + Math.floor(gameplayRandom('flora') * 6),
-        leafLength: 8 + gameplayRandom('flora') * 8
-    });
-    solarSail.position.set(x, y, z);
-    targetScene.add(solarSail);
-    world.solarSails.push(solarSail);
-    return solarSail;
 }
 
 export function createVoidRootBallAtPosition(
@@ -342,16 +324,6 @@ export function cleanupGeologicalObjects(world: GeologicalWorld, cameraX: number
             targetScene.remove(jellyMoss);
             disposeObject(jellyMoss);
             world.jellyMosses.splice(i, 1);
-        }
-    }
-
-    // Solar sails
-    for (let i = world.solarSails.length - 1; i >= 0; i--) {
-        const sail = world.solarSails[i];
-        if (sail.position.x < cutoff) {
-            targetScene.remove(sail);
-            disposeObject(sail);
-            world.solarSails.splice(i, 1);
         }
     }
 

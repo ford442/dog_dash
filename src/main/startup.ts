@@ -139,7 +139,7 @@ export async function spawnDeferredPrototypeContent(): Promise<void> {
         radius: 1.8, mass: 4.5,
         velocity: new THREE.Vector3(-0.9, 0.2, 0), kind: 'wreckingBall'
     });
-    // Hero Nebula Jelly-Moss (1–3). With VITE_CPP_WASM + game_cpp.wasm, cores use Verlet soft-body.
+    // Hero Nebula Jelly-Moss (1–3). Cores use the AssemblyScript Verlet soft-body (jelly_moss_softbody.ts).
     createJellyMossAtPosition(world, 120, 4, -22, 5.5);
     createJellyMossAtPosition(world, 210, -3, -20, 4.2);
     createJellyMossAtPosition(world, 340, 6, -24, 6.0);

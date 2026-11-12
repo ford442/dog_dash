@@ -108,7 +108,7 @@ export function spawnOpenFoliage(lm: LevelFoliageHost,
         levelConfig: LevelConfig,
         yRange: [number, number] = [-20, 20]
     ) {
-        // Chunk-cached biome noise (C++ fractalNoise2D under VITE_CPP_WASM=true, JS fallback otherwise)
+        // Chunk-cached biome noise (AssemblyScript fractalNoise2D, JS fallback when WASM is unavailable)
         // varies foliage/void-root scatter density per world X instead of a flat multiplier.
         const foliageDensityMul = biomeNoise.densityMultiplier(startX + width / 2, 'foliage');
         const scaledCount = (count: number) =>

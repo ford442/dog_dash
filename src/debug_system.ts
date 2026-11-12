@@ -4,6 +4,26 @@
  * to enable/disable individual visual systems.
  */
 
+/** Campaign chapters `?level=N` may start in (1-based, matches `LEVEL_CONFIG`). */
+export const DEBUG_LEVEL_MIN = 1;
+export const DEBUG_LEVEL_MAX = 6;
+
+/**
+ * Parses the `?level=N` debug flag: start the campaign at chapter N without
+ * having unlocked it (replaces the old paste-in `startLevel(n)` snippets).
+ * Returns null unless the value is a whole number in
+ * [`DEBUG_LEVEL_MIN`, `DEBUG_LEVEL_MAX`] — a bad value falls back to the normal
+ * start rather than guessing. Endless / Architect runs ignore it.
+ */
+export function parseDebugLevel(
+    search = typeof window !== 'undefined' ? window.location.search : ''
+): number | null {
+    const raw = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get('level');
+    if (raw === null || !/^\d+$/.test(raw.trim())) return null;
+    const level = parseInt(raw, 10);
+    return level >= DEBUG_LEVEL_MIN && level <= DEBUG_LEVEL_MAX ? level : null;
+}
+
 export class DebugSystem {
     // FPS tracking
     private frameTimes: number[] = [];

@@ -12,7 +12,6 @@ import { vacuumKelpSoftBody } from './vacuum_kelp';
 export type GeologicalWorld = {
     sporeClouds: SporeCloud[];
     jellyMosses: THREE.Mesh[];
-    solarSails: THREE.Group[];
     chromaRocks: THREE.Group[];
     geodes: THREE.Group[];
     voidRootBalls: THREE.Group[];
@@ -82,7 +81,6 @@ export function createGeologicalWorld(
     const world: GeologicalWorld = {
         sporeClouds: [],
         jellyMosses: [],
-        solarSails: [],
         chromaRocks: [],
         geodes: [],
         voidRootBalls: [],
@@ -161,13 +159,6 @@ export function createGeologicalWorld(
                 disposeObject(jellyMoss);
             }
             world.jellyMosses.length = 0;
-
-            for (let i = world.solarSails.length - 1; i >= 0; i--) {
-                const sail = world.solarSails[i];
-                removeFromParentOrScene(sail, targetScene);
-                disposeObject(sail);
-            }
-            world.solarSails.length = 0;
 
             const liquidMetalSystem = options.getLiquidMetalSystem?.();
             for (let i = world.liquidMetalBlobs.length - 1; i >= 0; i--) {

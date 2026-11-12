@@ -1,6 +1,6 @@
 {
   "_comment": "Legacy untagged Math.random() calls per file (visual systems not yet audited). Ratchet down only: node tools/check_math_random.cjs --update. See docs/DETERMINISM.md.",
-  "total": 832,
+  "total": 824,
   "files": {
     "src/ascendant_monoliths.ts": 11,
     "src/astral_resonance_rings.ts": 13,
@@ -39,7 +39,7 @@
     "src/flower_constellations/pollen.ts": 10,
     "src/flower_constellations/sparkle.ts": 11,
     "src/foliage/grass_system.ts": 12,
-    "src/foliage/plants_advanced.ts": 13,
+    "src/foliage/plants_advanced.ts": 5,
     "src/foliage/plants_basic.ts": 70,
     "src/galactic_leylines.ts": 8,
     "src/ghost_debris.ts": 20,
