@@ -90,15 +90,17 @@ renderer info.
 5. Keep it cosmetic. If an op's result would change a collision, a spawn
    decision, or anything a save file records, it does not belong here.
 
-## Future: GPU integrate
+## Device loss
 
-A GPU particle/spore integrate step (positions and velocities advanced in a
-compute pass) is deliberately **out of scope** for this layer. Before any of it
-lands it needs:
+If the adopted device is lost (`onWebGpuDeviceLost` in `src/webgpu_probe.ts`),
+the adapter disposes its WebGPU tier and reports `backend: 'wasm' | 'js'` with
+a `lost` reason on `window.gpuChores`. `attachRenderer` refuses to adopt after
+a loss. Sync `compact` / `reduce` never ran on the GPU, so they are unaffected.
 
-- golden-fixture parity tests against `assembly/index.ts` for the same seeds,
-- a decision on who owns the SoA on a frame where readback is late,
-- and a fallback story for browsers where the device is lost mid-run.
+## GPU integrate lives elsewhere
 
-Until those exist, gameplay authority stays on AS/WASM. Track that work in its
-own issue; do not grow it out of `src/gpu_chores/`.
+A particle/debris integrate step now exists, deliberately **outside** this
+layer: see [GPU_INTEGRATE.md](GPU_INTEGRATE.md) (`src/gpu_integrate/`). It has
+golden-fixture parity tests, a last-good readback policy, and falls back to the
+JS integrate on device loss. Do not grow integrate work out of
+`src/gpu_chores/`; chores stay compact/reduce only.

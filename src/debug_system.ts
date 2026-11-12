@@ -109,6 +109,11 @@ export class DebugSystem {
         if (chores) {
             this.rendererInfo += `\nchores: ${chores.backend} (sync ${chores.syncBackend}) — ${chores.reason}`;
         }
+        const integrate = typeof window !== 'undefined' ? window.gpuIntegrate : undefined;
+        if (integrate) {
+            const systems = Object.entries(integrate.systems).map(([k, v]) => `${k}=${v}`).join(' ');
+            this.rendererInfo += `\nintegrate: ${systems || 'none'} — ${integrate.reason}`;
+        }
 
         this.updateRendererInfoElement();
         this.updateOverlayText();

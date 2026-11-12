@@ -157,6 +157,13 @@ export class AudioSystem {
         }
     }
 
+    /** Silences all output (e.g. behind the GPU device-lost screen). */
+    suspend() {
+        if (this.ctx && this.ctx.state === 'running') {
+            void this.ctx.suspend();
+        }
+    }
+
     play(type: SoundType, volumeMultiplier: number = 1, priority: number = 5) {
         this.init();
         if (!this.ctx || !this.sfxGain) return;

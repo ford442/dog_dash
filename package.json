@@ -33,6 +33,8 @@
     "test:replay": "node --import tsx --test --test-concurrency=1 tests/replay/replay.test.ts tests/replay/endless.test.ts tests/replay/architect.test.ts",
     "replay:record": "node --import tsx tests/replay/record_fixture.ts",
     "test:smoke": "playwright test",
+    "test:gpu-parity": "playwright test --config playwright.gpu.config.ts",
+    "gpu-integrate:record": "node --import tsx tests/gpu_integrate/record_fixture.ts",
     "test": "npm run test:unit && npm run test:replay && npm run test:smoke"
   },
   "keywords": [],

@@ -35,9 +35,12 @@ struct Params {
 
 var<workgroup> scratch: array<f32, ${WORKGROUP_SIZE}>;
 
+// ±FLT_MAX as exact bit patterns. The decimal literal 3.4028235e38 rounds
+// above FLT_MAX, and Tint rejects it ("cannot be represented as 'f32'"),
+// which used to invalidate this whole module on every WebGPU boot.
 fn identity(op: u32) -> f32 {
-    if (op == 1u) { return -3.4028235e38; }
-    if (op == 2u) { return 3.4028235e38; }
+    if (op == 1u) { return bitcast<f32>(0xff7fffffu); }
+    if (op == 2u) { return bitcast<f32>(0x7f7fffffu); }
     return 0.0;
 }
 

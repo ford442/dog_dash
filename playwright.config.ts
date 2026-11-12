@@ -30,6 +30,8 @@ const browserLaunch = chromePath
 
 export default defineConfig({
     testDir: './tests',
+    // GPU compute parity needs a WebGPU adapter; it has its own config.
+    testIgnore: ['**/gpu/**'],
     timeout: 60_000,
     retries: process.env.CI ? 1 : 0,
     use: {

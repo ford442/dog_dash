@@ -1,5 +1,11 @@
 import * as THREE from 'three';
 import { getGpuChores } from './gpu_chores';
+import {
+    getGpuIntegrate,
+    IntegrateBinding,
+    type IntegrableSystem,
+    type IntegrateKernel
+} from './gpu_integrate';
 
 const _dummy = new THREE.Object3D();
 const _color = new THREE.Color();
@@ -13,8 +19,25 @@ const DRAW_SCALE_EPSILON = 0.01;
 
 /** Shared tumble phase for particle instances (cosmetic only). */
 let _particleSpin = 0;
+const TWO_PI = Math.PI * 2;
 
-export class ParticleSystem {
+/**
+ * Keeps the tumble phase small. It grows by 2·delta per live particle per
+ * step, so unwrapped it reaches millions of radians in a long session — past
+ * where f32 (the instance attribute, and the GPU integrate's sin/cos) can
+ * resolve a rotation. The matrix is 2π-periodic, so wrapping is invisible.
+ */
+function wrapParticleSpin(): void {
+    if (_particleSpin >= TWO_PI) _particleSpin %= TWO_PI;
+}
+
+/** Test seam: golden fixtures start from a known tumble phase. */
+export function resetParticleSpinForTests(): void {
+    _particleSpin = 0;
+}
+
+export class ParticleSystem implements IntegrableSystem {
+    readonly integrateKind = 'particles' as const;
     maxParticles: number;
     count: number;
 
@@ -46,6 +69,9 @@ export class ParticleSystem {
     drawIndices: Uint32Array;
     /** Instances actually submitted last frame (`<= count`). */
     drawCount: number = 0;
+
+    /** GPU-mode integrate, when a kernel has been handed over (see gpu_integrate/). */
+    private integrate: IntegrateBinding | null = null;
 
     constructor(scene: THREE.Scene, maxParticles: number = 2000) {
         this.maxParticles = maxParticles;
@@ -141,7 +167,113 @@ export class ParticleSystem {
         }
     }
 
+    get integrateBackend(): string {
+        return this.integrate ? this.integrate.kernel.id : 'js';
+    }
+
+    /**
+     * Moves the integrate onto `kernel`, or back to JS with `null`.
+     * JS → kernel uploads every live particle (the CPU SoA is current).
+     * kernel → JS drops in-flight particles: their kinematics lived on the GPU
+     * and a lost device cannot be read back. At most ~1 s of sparks vanish.
+     */
+    setIntegrateKernel(kernel: IntegrateKernel | null): void {
+        if (this.integrate) {
+            this.integrate.dispose();
+            this.integrate = null;
+            this.count = 0;
+            this.drawCount = 0;
+            this.mesh.count = 0;
+        }
+        if (kernel) {
+            this.integrate = new IntegrateBinding(kernel, true);
+            // Until the first readback lands, keep showing what JS last drew —
+            // and never the mesh's initial `count = max` identity instances.
+            this.mesh.count = this.drawCount;
+        }
+    }
+
+    /** Applies a GPU readback that landed after the last step (test seam / idle frames). */
+    syncIntegrateDraw(): void {
+        this.integrate?.applyLatest(this.mesh);
+    }
+
     update(delta: number) {
+        const gpu = this.integrate;
+        if (gpu) {
+            if (!gpu.failed) {
+                this.updateOnKernel(delta, gpu);
+                return;
+            }
+            this.setIntegrateKernel(null);
+            getGpuIntegrate().publish();
+        }
+        this.updateJs(delta);
+    }
+
+    /**
+     * GPU-mode step: the CPU runs the same lifecycle as {@link updateJs}
+     * (life, swap-remove order, spin, scale, compaction); the kernel advances
+     * position/velocity and builds the matrices. Draws the last finished
+     * readback — never blocks on the GPU.
+     */
+    private updateOnKernel(delta: number, gpu: IntegrateBinding): void {
+        gpu.applyLatest(this.mesh);
+        gpu.uploadEmitted(this.count, (i, out, o) => {
+            out[o] = this.positionX[i]!;
+            out[o + 1] = this.positionY[i]!;
+            out[o + 2] = this.positionZ[i]!;
+            out[o + 3] = 0;
+            out[o + 4] = this.velocityX[i]!;
+            out[o + 5] = this.velocityY[i]!;
+            out[o + 6] = this.velocityZ[i]!;
+            out[o + 7] = 0;
+        });
+        gpu.resetPerm(this.count);
+
+        for (let i = 0; i < this.count; i++) {
+            this.life[i] -= delta;
+
+            if (this.life[i] <= 0) {
+                const last = this.count - 1;
+                if (i < last) {
+                    this.life[i] = this.life[last];
+                    this.maxLife[i] = this.maxLife[last];
+                    this.size[i] = this.size[last];
+                    this.colorR[i] = this.colorR[last];
+                    this.colorG[i] = this.colorG[last];
+                    this.colorB[i] = this.colorB[last];
+                    gpu.swap(i, last);
+                }
+                this.count--;
+                i--;
+                continue;
+            }
+
+            _particleSpin += delta * 2;
+            this.drawRotation[i] = _particleSpin;
+            this.drawScale[i] = this.size[i] * (this.life[i] / this.maxLife[i]);
+        }
+        wrapParticleSpin();
+
+        const kept = getGpuChores().compact(this.drawScale, this.count, this.drawIndices, DRAW_SCALE_EPSILON);
+        this.drawCount = kept;
+
+        const colors = gpu.slotColors!;
+        for (let slot = 0; slot < kept; slot++) {
+            const i = this.drawIndices[slot]!;
+            gpu.setSlot(slot, i, this.drawScale[i]!, this.drawRotation[i]!);
+            colors[slot * 3] = this.colorR[i]!;
+            colors[slot * 3 + 1] = this.colorG[i]!;
+            colors[slot * 3 + 2] = this.colorB[i]!;
+        }
+
+        gpu.submit(this.count, delta, kept);
+        gpu.applyLatest(this.mesh);
+    }
+
+    /** The JS integrate: CPU reference and the default path. */
+    private updateJs(delta: number) {
         const matrix = _dummy.matrix;
 
         // Iterate forward. If dead, swap with last and decrement count.
@@ -188,6 +320,7 @@ export class ParticleSystem {
             this.drawRotation[i] = _particleSpin;
             this.drawScale[i] = this.size[i] * (this.life[i] / this.maxLife[i]);
         }
+        wrapParticleSpin();
 
         // ── Chore: compact the draw list ────────────────────────────────────
         // Non-authoritative. The SoA above is already final for this frame;
@@ -205,7 +338,9 @@ export class ParticleSystem {
 
             _dummy.position.set(this.positionX[i], this.positionY[i], this.positionZ[i]);
             _dummy.scale.setScalar(this.drawScale[i]);
-            _dummy.rotation.set(this.drawRotation[i], _dummy.rotation.y, this.drawRotation[i]);
+            // Y stays 0. (It used to inherit whatever the shared _dummy last
+            // held from DebrisSystem — an accidental cross-system coupling.)
+            _dummy.rotation.set(this.drawRotation[i], 0, this.drawRotation[i]);
 
             _dummy.updateMatrix();
             this.mesh.setMatrixAt(slot, matrix);
@@ -238,7 +373,8 @@ export class ParticleSystem {
  * DebrisSystem: Manages rocky debris from destroyed asteroids.
  * Features tumbling physics, no gravity (drift), and rocky visual style.
  */
-export class DebrisSystem {
+export class DebrisSystem implements IntegrableSystem {
+    readonly integrateKind = 'debris' as const;
     maxParticles: number;
     count: number;
 
@@ -269,6 +405,9 @@ export class DebrisSystem {
     drawIndices: Uint32Array;
     /** Instances actually submitted last frame (`<= count`). */
     drawCount: number = 0;
+
+    /** GPU-mode integrate, when a kernel has been handed over (see gpu_integrate/). */
+    private integrate: IntegrateBinding | null = null;
 
     constructor(scene: THREE.Scene, maxParticles: number = 500) {
         this.maxParticles = maxParticles;
@@ -350,7 +489,104 @@ export class DebrisSystem {
         }
     }
 
+    get integrateBackend(): string {
+        return this.integrate ? this.integrate.kernel.id : 'js';
+    }
+
+    /** See {@link ParticleSystem.setIntegrateKernel}. Debris lives ≤ 4 s. */
+    setIntegrateKernel(kernel: IntegrateKernel | null): void {
+        if (this.integrate) {
+            this.integrate.dispose();
+            this.integrate = null;
+            this.count = 0;
+            this.drawCount = 0;
+            this.mesh.count = 0;
+        }
+        if (kernel) {
+            this.integrate = new IntegrateBinding(kernel, false);
+            // Until the first readback lands, keep showing what JS last drew —
+            // and never the mesh's initial `count = max` identity instances.
+            this.mesh.count = this.drawCount;
+        }
+    }
+
+    /** See {@link ParticleSystem.syncIntegrateDraw}. */
+    syncIntegrateDraw(): void {
+        this.integrate?.applyLatest(this.mesh);
+    }
+
     update(delta: number) {
+        const gpu = this.integrate;
+        if (gpu) {
+            if (!gpu.failed) {
+                this.updateOnKernel(delta, gpu);
+                return;
+            }
+            this.setIntegrateKernel(null);
+            getGpuIntegrate().publish();
+        }
+        this.updateJs(delta);
+    }
+
+    /** GPU-mode step; CPU keeps life/order/scale, the kernel keeps kinematics. */
+    private updateOnKernel(delta: number, gpu: IntegrateBinding): void {
+        gpu.applyLatest(this.mesh);
+        gpu.uploadEmitted(this.count, (i, out, o) => {
+            out[o] = this.positionX[i]!;
+            out[o + 1] = this.positionY[i]!;
+            out[o + 2] = this.positionZ[i]!;
+            out[o + 3] = 0;
+            out[o + 4] = this.velocityX[i]!;
+            out[o + 5] = this.velocityY[i]!;
+            out[o + 6] = this.velocityZ[i]!;
+            out[o + 7] = 0;
+            out[o + 8] = this.rotationX[i]!;
+            out[o + 9] = this.rotationY[i]!;
+            out[o + 10] = this.rotationZ[i]!;
+            out[o + 11] = 0;
+            out[o + 12] = this.rotSpeedX[i]!;
+            out[o + 13] = this.rotSpeedY[i]!;
+            out[o + 14] = 0;
+            out[o + 15] = 0;
+        });
+        gpu.resetPerm(this.count);
+
+        for (let i = 0; i < this.count; i++) {
+            this.life[i] -= delta;
+
+            if (this.life[i] <= 0) {
+                const last = this.count - 1;
+                if (i < last) {
+                    this.life[i] = this.life[last];
+                    this.maxLife[i] = this.maxLife[last];
+                    this.size[i] = this.size[last];
+                    gpu.swap(i, last);
+                }
+                this.count--;
+                i--;
+                continue;
+            }
+
+            let s = this.size[i];
+            if (this.life[i] < 0.5) {
+                s *= (this.life[i] / 0.5);
+            }
+            this.drawScale[i] = s;
+        }
+
+        const kept = getGpuChores().compact(this.drawScale, this.count, this.drawIndices, DRAW_SCALE_EPSILON);
+        this.drawCount = kept;
+        for (let slot = 0; slot < kept; slot++) {
+            const i = this.drawIndices[slot]!;
+            gpu.setSlot(slot, i, this.drawScale[i]!);
+        }
+
+        gpu.submit(this.count, delta, kept);
+        gpu.applyLatest(this.mesh);
+    }
+
+    /** The JS integrate: CPU reference and the default path. */
+    private updateJs(delta: number) {
         const matrix = _dummy.matrix;
 
         for (let i = 0; i < this.count; i++) {
