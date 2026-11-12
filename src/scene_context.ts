@@ -2,6 +2,7 @@ import * as THREE from 'three';
 
 import { CONFIG } from './game_config';
 import { getGpuChores } from './gpu_chores';
+import { getGpuIntegrate } from './gpu_integrate';
 import {
     createGameRenderer,
     type GameRenderer,
@@ -129,6 +130,8 @@ export async function initializeSceneAndRenderer(options?: { basePixelRatio?: nu
     // Never requests a device of its own — if renderer boot produced no WebGPU
     // device, chores stay on the AssemblyScript/JS tiers.
     getGpuChores().attachRenderer(renderer);
+    // Visual particle integrate (opt-in). Same rule: adopt, never request.
+    getGpuIntegrate().attachRenderer(renderer);
 
     // Touch Controls
     touchControls = new TouchControlsManager();
