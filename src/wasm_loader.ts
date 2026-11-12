@@ -10,7 +10,11 @@
  * Experimental research tree (not a shipping target; not required for
  * onboarding; see docs/WASM_BACKENDS.md):
  *   - C++ / Emscripten          — public/build/game_cpp.wasm
- *     Opt-in via VITE_CPP_WASM=true; falls back to AssemblyScript if missing.
+ *     Opt-in via VITE_CPP_WASM=true (researcher flag). Mirrors the AS
+ *     spatial-hash ABI; the loader FAILS CLOSED on a C++ binary that lacks
+ *     SPATIAL_HASH_EXPORTS (console.error + window.wasmBackendRejected) and
+ *     loads AssemblyScript instead, so a stale research binary can never
+ *     silently push collision onto the JS brute-force path.
  *
  * Usage
  * ─────
@@ -29,7 +33,12 @@ export const enum WasmBackend {
     Cpp            = 'cpp',
 }
 
-/** The subset of WASM exports that both backends provide. */
+/**
+ * Collision exports. Legacy linear scans and the spatial hash exist on both
+ * binaries (C++ mirrors assembly/spatial_hash.ts; the loader rejects a C++
+ * binary without it). `allocObjects` / `freeObjects` / `getObjectPtr` are
+ * AssemblyScript-only and unused by gameplay.
+ */
 export interface CoreWasmExports {
     memory: WebAssembly.Memory;
     allocAsteroids(count: number): number;
@@ -41,7 +50,11 @@ export interface CoreWasmExports {
     allocObjects(count: number): number;
     freeObjects(): void;
     getObjectPtr(): number;
-    /** Uniform-grid spatial hash (AssemblyScript shipping path). Optional on C++ research binaries. */
+    /**
+     * Uniform-grid spatial hash (AssemblyScript shipping path; mirrored by the C++
+     * research tree). Typed optional so hand-built test handles stay valid; loadWasm()
+     * only returns a C++ handle that has all of SPATIAL_HASH_EXPORTS.
+     */
     allocEntities?(count: number): number;
     getEntityPtr?(): number;
     getEntityCount?(): number;
@@ -83,6 +96,30 @@ export interface PhysicsNoiseExports {
 }
 
 export type WasmExports = CoreWasmExports & Partial<PhysicsNoiseExports>;
+
+/**
+ * Spatial-hash ABI `SpatialIndex` drives. A C++ research binary missing any of
+ * these is rejected at load (see loadCpp). Keep in sync with cpp/build.sh
+ * EXPORTED_FUNCTIONS and scripts/spatial_hash_fixture.mjs.
+ */
+export const SPATIAL_HASH_EXPORTS = [
+    'allocEntities',
+    'getEntityPtr',
+    'getEntityCount',
+    'rebuildGrid',
+    'queryRadius',
+    'queryRadiusSimd',
+    'queryRadiusFirst',
+    'getQueryResultPtr',
+    'getQueryCount',
+    'simdSupported',
+] as const;
+
+/** Names from SPATIAL_HASH_EXPORTS that `exports` does not provide as functions. */
+export function missingSpatialHashExports(exports: object): string[] {
+    const record = exports as Record<string, unknown>;
+    return SPATIAL_HASH_EXPORTS.filter((name) => typeof record[name] !== 'function');
+}
 
 export interface WasmHandle {
     /** Raw WASM export object. */
@@ -131,9 +168,16 @@ function publishWasmBackendBreadcrumb(backend: WasmBackend | null): void {
     window.wasmBackend = backend;
 }
 
+function publishWasmRejectedBreadcrumb(reason: string | null): void {
+    if (typeof window === 'undefined') return;
+    window.wasmBackendRejected = reason;
+}
+
 declare global {
     interface Window {
         wasmBackend?: string | null;
+        /** Why a requested backend was refused (e.g. stale C++ binary without the spatial hash); null when none was. */
+        wasmBackendRejected?: string | null;
     }
 }
 
@@ -144,7 +188,11 @@ function wrapInstance(exports: WasmExports, backend: WasmBackend): WasmHandle {
         memory: new Float32Array(buffer),
         i32Memory: new Int32Array(buffer),
         backend,
-        simd: detectWasmSimd() && typeof exports.queryRadiusSimd === 'function',
+        // simdSupported() is 0 on C++ debug builds (no -msimd128): queryRadiusSimd is scalar there.
+        simd:
+            detectWasmSimd() &&
+            typeof exports.queryRadiusSimd === 'function' &&
+            (typeof exports.simdSupported !== 'function' || exports.simdSupported() !== 0),
     };
 }
 
@@ -162,8 +210,20 @@ async function loadAssemblyScript(): Promise<WasmHandle> {
 
 async function loadCpp(): Promise<WasmHandle> {
     const { instance } = await fetchAndInstantiate('./build/game_cpp.wasm', cppImports());
-    const exports = instance.exports as unknown as WasmExports;
-    console.log('✅ C++ WASM loaded (experimental)');
+    const raw = instance.exports as Record<string, unknown>;
+    const missing = missingSpatialHashExports(raw);
+    if (missing.length > 0) {
+        // Fail closed: a binary that cannot drive SpatialIndex would silently
+        // move collision to the JS brute-force path and look like parity.
+        const reason = `cpp: game_cpp.wasm is missing spatial-hash exports (${missing.join(', ')}); rebuild with npm run build:cpp-wasm`;
+        console.error(`❌ Rejected experimental C++ WASM — ${reason}`);
+        publishWasmRejectedBreadcrumb(reason);
+        throw new Error(reason);
+    }
+    // Emscripten standalone reactor: run static init before the first call.
+    if (typeof raw._initialize === 'function') (raw._initialize as () => void)();
+    const exports = raw as unknown as WasmExports;
+    console.log('✅ C++ WASM loaded (experimental research binary, spatial hash present)');
     return wrapInstance(exports, WasmBackend.Cpp);
 }
 
@@ -178,8 +238,9 @@ async function loadCpp(): Promise<WasmHandle> {
  *                 - C++ (experimental) if `import.meta.env.VITE_CPP_WASM === 'true'`
  *                 - AssemblyScript otherwise (supported product path)
  *
- * If the requested C++ backend fails to load, the loader falls back to
- * AssemblyScript. Returns `null` if AssemblyScript also fails (callers must
+ * If the requested C++ backend fails to load — or is rejected for missing
+ * SPATIAL_HASH_EXPORTS (`window.wasmBackendRejected` says why) — the loader
+ * falls back to AssemblyScript. Returns `null` if AssemblyScript also fails (callers must
  * tolerate null exports — obstacle checks use a JS fallback).
  */
 export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null> {
@@ -189,6 +250,7 @@ export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null
             typeof import.meta !== 'undefined' &&
             (import.meta as Record<string, any>).env?.VITE_CPP_WASM === 'true');
 
+    publishWasmRejectedBreadcrumb(null);
     if (useCpp) {
         try {
             const handle = await loadCpp();
@@ -196,6 +258,9 @@ export async function loadWasm(backend?: WasmBackend): Promise<WasmHandle | null
             return handle;
         } catch (err) {
             console.warn('⚠️ Experimental C++ WASM unavailable, falling back to AssemblyScript:', err);
+            if (typeof window !== 'undefined' && !window.wasmBackendRejected) {
+                publishWasmRejectedBreadcrumb(`cpp: ${err instanceof Error ? err.message : String(err)}`);
+            }
         }
     }
 

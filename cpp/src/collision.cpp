@@ -1,6 +1,7 @@
 // collision.cpp
 // C++ WASM collision detection for Dog Dash.
-// Mirrors the AssemblyScript assembly/index.ts API exactly so both backends
+// Mirrors the legacy linear-scan subset of assembly/index.ts (the live
+// gameplay collision path is the spatial hash — see spatial_hash.cpp) so both
 // expose the same JS-callable interface.
 //
 // Memory layout (matches AS version):

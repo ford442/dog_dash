@@ -134,3 +134,15 @@ test('shipping WASM exports spatial hash + SIMD query (no Rapier, no second back
     assert.equal(handle.exports.simdSupported?.(), 1);
     assert.equal(handle.backend, WasmBackend.AssemblyScript);
 });
+
+test('shipping AS spatial hash reproduces the committed golden fixture (C++ mirror parity reference)', async () => {
+    // Fixture is consumed by scripts/verify-cpp-wasm.mjs and cpp/tests/test_spatial_hash.cpp.
+    // If this fails after an intentional assembly/spatial_hash.ts change, run
+    // `node scripts/gen-spatial-hash-golden.mjs` and port the change to cpp/src/spatial_hash.cpp.
+    const { GOLDEN_PATH, parseGolden, runFixture, diffAgainstGolden } = await import('../../scripts/spatial_hash_fixture.mjs');
+    const handle = await loadSpatialWasm();
+    const text = await readFile(new URL(`../../${GOLDEN_PATH}`, import.meta.url), 'utf8');
+    const golden = parseGolden(text);
+    const problems = diffAgainstGolden(runFixture(handle.exports, golden.scene), golden.expected);
+    assert.deepEqual(problems.slice(0, 5), [], `AS diverges from ${GOLDEN_PATH}`);
+});

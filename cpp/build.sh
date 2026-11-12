@@ -133,7 +133,11 @@ mkdir -p "$OUT_DIR"
 # ---------------------------------------------------------------------------
 # Exported symbols
 # ---------------------------------------------------------------------------
-EXPORTS='["_allocAsteroids","_checkCollision","_allocSporeClouds","_checkSporeCollision","_allocBossHitboxes","_checkBossCollision","_allocPhysicsBodies","_stepPhysics","_getBodyPositionX","_getBodyPositionY","_setBodyPosition","_addBodyAcceleration","_getBodyRadius","_simplexNoise2D","_simplexNoise3D","_fractalNoise2D","_fractalNoise3D"]'
+# Spatial-hash names must match assembly/spatial_hash.ts exactly — that is the
+# API src/wasm_loader.ts requires (it rejects a C++ binary missing them).
+# Not mirrored: allocObjects/freeObjects/getObjectPtr and GPU-chore buffers.
+SPATIAL_EXPORTS='"_allocEntities","_getEntityPtr","_getEntityCount","_rebuildGrid","_queryRadius","_queryRadiusSimd","_queryRadiusFirst","_getQueryResultPtr","_getQueryCount","_simdSupported"'
+EXPORTS='["_allocAsteroids","_checkCollision","_allocSporeClouds","_checkSporeCollision","_allocBossHitboxes","_checkBossCollision","_allocPhysicsBodies","_stepPhysics","_getBodyPositionX","_getBodyPositionY","_setBodyPosition","_addBodyAcceleration","_getBodyRadius","_simplexNoise2D","_simplexNoise3D","_fractalNoise2D","_fractalNoise3D",'"$SPATIAL_EXPORTS"']'
 
 # ---------------------------------------------------------------------------
 # Build flags
@@ -143,7 +147,9 @@ COMMON_FLAGS=(
     -s STANDALONE_WASM=1
     -s "EXPORTED_FUNCTIONS=$EXPORTS"
     -s ALLOW_MEMORY_GROWTH=1
-    -s INITIAL_MEMORY=1048576    # 1 MiB — enough for game buffers
+    # 1 MiB floor, grows to Emscripten's default cap. NOT comparable to the AS
+    # heap (512 KiB floor / 16 MiB max) — see docs/WASM_BACKENDS.md § Memory.
+    -s INITIAL_MEMORY=1048576
     -std=c++17
     -I"$SCRIPT_DIR/src"
 )

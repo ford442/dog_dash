@@ -7,6 +7,7 @@ emsdk
 
 # C++ WASM build artifacts
 cpp/build/
+cpp/build_native/
 build/game_cpp.wasm
 public/build/game_cpp.wasm
 # Logs

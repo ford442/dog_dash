@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Renderer**: Three.js + WebGPU (`three/webgpu` renderer, `three/tsl` for node-based shader materials)
 - **Language**: TypeScript, ES2022, ES modules, strict mode
 - **Build Tool**: Vite v7
-- **Physics**: AssemblyScript WASM for collision detection, Verlet soft-body physics, and fractal noise — the single supported, always-built backend. Experimental C++/Emscripten tree under `cpp/` is research-only (SIMD prototyping, native profiling), not a shipping target — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
+- **Physics**: AssemblyScript WASM for collision detection, Verlet soft-body physics, and fractal noise — the single supported, always-built backend. Experimental C++/Emscripten tree under `cpp/` is research-only (SIMD prototyping, native profiling; mirrors the AS spatial-hash ABI, golden-checked), not a shipping target — see [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md).
 - **Audio**: 100% procedural synthesis via Web Audio API (`audio_system.ts`) — no external audio files
 - **Entry point**: `index.html` → `src/main.ts`
 
@@ -30,7 +30,9 @@ npm run watch:wasm               # watch assembly/ and rebuild WASM on change
 npm run build:cpp-wasm           # release build of cpp/ via cpp/build.sh --release
 npm run build:cpp-wasm:docker    # Docker build when emsdk is unavailable locally
 npm run copy:cpp-wasm             # copy build/game_cpp.wasm into public/build/ (if present)
-npm run verify:cpp-wasm          # Node instantiate check for game_cpp.wasm
+npm run verify:cpp-wasm          # exports + spatial-hash golden parity vs AS for game_cpp.wasm
+npm run test:cpp-native           # host CMake build: noise + spatial-hash golden tests (no emsdk)
+npm run gen:spatial-hash-golden   # regenerate tests/fixtures/spatial_hash/golden.txt after an AS spatial-hash change
 
 npm run typecheck                 # strict TypeScript check (see baseline ratchet below)
 npm run typecheck:ci              # CI gate: fail only on new errors vs .github/typecheck-baseline.txt
