@@ -2,12 +2,19 @@
 
 > **Product status:** AssemblyScript is the single supported, always-built backend for collision, Verlet soft-body physics, *and* fractal noise (all ported into [`assembly/`](../assembly/)). This tree is kept only for SIMD prototyping, native profiling, and portable-build experiments — it is **not a shipping target**, is optional, and is not required for `npm run dev` / `npm run build`. See [docs/WASM_BACKENDS.md](../docs/WASM_BACKENDS.md).
 
-Optional WebAssembly backend compiled with [Emscripten](https://emscripten.org/). It mirrors the AssemblyScript collision API and also exports **Verlet physics** (`stepPhysics`, body accessors) and **fractal noise** (`fractalNoise2D`, `fractalNoise3D`) — the same algorithms that now live in `assembly/physics.ts` and `assembly/noise.ts`.
+Optional WebAssembly module compiled with [Emscripten](https://emscripten.org/). It mirrors the **shipping AssemblyScript ABI** for:
 
-**Gameplay consumer (Option A):** Verlet drives soft-body nets for up to 3 hero Nebula Jelly-Moss cores via [`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts). Fractal noise drives streaming spawn density via [`src/biome_noise.ts`](../src/biome_noise.ts) (Option B) — but only under `VITE_CPP_WASM=true`; the default AssemblyScript build uses the JS value-noise fallback.
-**No gameplay feature depends on this tree anymore.** Soft-body Jelly-Moss ([`src/jelly_moss_softbody.ts`](../src/jelly_moss_softbody.ts)) and streaming biome density ([`src/biome_noise.ts`](../src/biome_noise.ts)) both run on the default AssemblyScript build's `stepPhysics` / `fractalNoise2D` exports, with no `VITE_CPP_WASM` flag required. `cpp/` stays useful as a reference implementation and for native/SIMD experiments that AssemblyScript can't do.
+- **Spatial hash** (`allocEntities`, `rebuildGrid`, `queryRadius`, `queryRadiusSimd`, `queryRadiusFirst`, …) — [`src/spatial_hash.cpp`](src/spatial_hash.cpp), a line-for-line port of [`assembly/spatial_hash.ts`](../assembly/spatial_hash.ts). Results are golden-checked against AS ([`tests/fixtures/spatial_hash/golden.txt`](../tests/fixtures/spatial_hash/golden.txt)), hit order included.
+- **Legacy linear scans** (`allocAsteroids` / `checkCollision`, spore, boss).
+- **Verlet physics** (`stepPhysics`, body accessors) and **fractal noise** (`fractalNoise2D/3D`).
 
-The default game build uses AssemblyScript only. `VITE_CPP_WASM=true` still loads `game_cpp.wasm` for research/comparison purposes if you build it (falls back to AS if the binary is missing — no crash) — but it changes nothing observable in gameplay, since both binaries expose the same soft-body and noise API.
+**Not mirrored** (AssemblyScript only): `allocObjects` / `freeObjects` / `getObjectPtr` and the GPU-chore buffers.
+
+**What this tree is for:** trying wider SIMD, SoA layouts and cell sizes on large entity counts, and native profiling of large Verlet nets. Winners get **ported back to AssemblyScript**; then regenerate the golden (`npm run gen:spatial-hash-golden`) and re-sync the C++ mirror. No gameplay feature depends on this tree.
+
+`VITE_CPP_WASM=true` is a researcher flag. The loader **fails closed**: a `game_cpp.wasm` that is missing or lacks the spatial-hash exports is rejected (`console.error` + `window.wasmBackendRejected`) and AssemblyScript loads instead, so a stale binary can never quietly put collision on the JS brute-force path.
+
+The C++ heap (1 MiB floor, grows freely) is **not comparable** to the AS heap (512 KiB floor, 16 MiB cap). See [docs/WASM_BACKENDS.md § Memory](../docs/WASM_BACKENDS.md).
 
 ## Quick start
 
@@ -25,7 +32,7 @@ From the repo root:
 
 ```bash
 npm run build:cpp-wasm          # release build → build/ + public/build/
-npm run verify:cpp-wasm         # instantiate + light Verlet call check
+npm run verify:cpp-wasm         # exports + spatial-hash golden vs AS (scalar + SIMD) + Verlet/noise smoke
 npm run verify:cpp-softbody     # soft-body consumer path (alloc/impulse/step/read)
 ```
 
@@ -55,7 +62,10 @@ npm run build:cpp-wasm:docker
 | `npm run build:cpp-wasm:debug` | Debug/unoptimised build |
 | `npm run build:cpp-wasm:docker` | Docker build (no local emsdk) |
 | `npm run copy:cpp-wasm` | Copy `build/game_cpp.wasm` → `public/build/` |
-| `npm run verify:cpp-wasm` | Node smoke-check of `public/build/game_cpp.wasm` |
+| `npm run verify:cpp-wasm` | Exports + spatial-hash golden parity vs AS + Verlet/noise smoke |
+| `npm run test:cpp-native` | Host build (CMake, no emsdk): `test_noise` + `test_spatial_hash` golden |
+| `npm run bench:cpp-spatial-hash` | Native `rebuildGrid` / `queryRadius` microbench (`-- [entities] [queries] [cell]`) |
+| `npm run gen:spatial-hash-golden` | Regenerate the golden from the AS binary after an intentional AS change |
 | `npm run verify:cpp-softbody` | Node check of Verlet soft-body consumer exports |
 | `npm run build:all-wasm` | AS always; C++ only if emsdk/docker available |
 
@@ -65,15 +75,16 @@ npm run build:cpp-wasm:docker
 VITE_CPP_WASM=true npm run dev
 ```
 
-If `game_cpp.wasm` is missing or fails to load, `wasm_loader.ts` falls back to AssemblyScript automatically — which, since the AssemblyScript port, drives the same soft-body and noise consumers. There is no more "AS-only, features idle" fallback tier; the only idle case left is a total WASM load failure (see docs/WASM_BACKENDS.md § Null WASM).
+Accepted: `window.wasmBackend === 'cpp'` and collision runs through the C++ `queryRadius`. Rejected (missing binary or missing spatial-hash exports): `window.wasmBackend === 'assemblyscript'` and `window.wasmBackendRejected` says why. Debug builds (no `-msimd128`) report `simdSupported() === 0`, so the loader does not mark the handle as SIMD.
 
-Breadcrumbs: `window.wasmBackend`, `window.jellyMossSoftBodyActive`, `window.jellyMossSoftBodyHeroCount`.
+Breadcrumbs: `window.wasmBackend`, `window.wasmBackendRejected`, `window.jellyMossSoftBodyActive`, `window.jellyMossSoftBodyHeroCount`.
 
 ## Troubleshooting
 
 | Symptom | Fix |
 |---------|-----|
-| `loadWasm(Cpp)` falls back to AS | Run `npm run build:cpp-wasm` and confirm `public/build/game_cpp.wasm` exists |
+| `loadWasm(Cpp)` falls back to AS | Read `window.wasmBackendRejected`; usually a stale binary — run `npm run build:cpp-wasm` |
+| `verify:cpp-wasm` golden mismatch | `cpp/src/spatial_hash.cpp` drifted from `assembly/spatial_hash.ts` (or the golden was regenerated after an AS change) — re-sync the port |
 | emsdk not found | `source emsdk_env.sh` or use `build:cpp-wasm:docker` |
 | Soft-body inactive with C++ loaded | Confirm hero mosses spawned (deferred prototype content) and `jellyMossSoftBodyHeroCount > 0` |
 

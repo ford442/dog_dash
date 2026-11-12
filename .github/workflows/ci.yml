@@ -86,8 +86,13 @@ jobs:
       - name: Build C++ WASM
         run: npm run build:cpp-wasm
 
-      - name: Verify C++ WASM instantiates
+      - name: Verify C++ WASM (exports + spatial-hash golden vs AS)
         run: npm run verify:cpp-wasm
 
-      - name: Verify soft-body Verlet consumer (Option A)
+      - name: Verify soft-body Verlet consumer
         run: npm run verify:cpp-softbody
+
+      # Native host build of cpp/: spatial-hash golden parity vs the AS fixture
+      # + noise smoke. Still inside this continue-on-error job.
+      - name: Native C++ tests (spatial-hash golden)
+        run: npm run test:cpp-native
