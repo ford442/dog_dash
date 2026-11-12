@@ -60,7 +60,7 @@ export class JellyMossSoftBodySystem {
     private pendingMeshes: THREE.Mesh[] = [];
     private registered = false;
 
-    /** True when C++ Verlet is bound and at least one hero moss is attached. */
+    /** True when WASM Verlet is bound and at least one hero moss is attached. */
     get isActive(): boolean {
         return this.active && this.slots.length > 0;
     }
@@ -69,7 +69,7 @@ export class JellyMossSoftBodySystem {
         return this.handle?.backend ?? null;
     }
 
-    /** Bind a loaded WASM handle. No-op / disables when not Cpp or missing physics exports. */
+    /** Bind a loaded WASM handle (AssemblyScript by default). Stays idle when the handle is null or lacks the Verlet exports. */
     bindWasm(handle: WasmHandle | null): void {
         this.clear();
         this.handle = null;

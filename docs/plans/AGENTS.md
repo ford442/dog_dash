@@ -21,71 +21,47 @@ This file is intended for AI coding agents working on the Dog Dash project. It d
 | **Renderer** | Three.js + WebGPU only | No WebGL fallback. `?skip_gpu_boot` skips the probe for bundle-health checks. Breadcrumbs: `window.webgpuProbe`, `window.rendererType`, `window.usingWebGPU`, `window.usingWebGL` (always false) |
 | **Language** | TypeScript | ES2022, ES modules, strict mode enabled |
 | **Build Tool** | Vite v7 | Zero-config; handles bundling, dev server, and production builds |
-| **WASM** | AssemblyScript (`asc`) | Collision-detection physics compiled to `.wasm` |
+| **WASM** | AssemblyScript (`asc`) | Spatial-hash collision, Verlet soft-body physics and fractal noise, compiled to `.wasm`. The only supported backend; `cpp/` is a research-only tree ([docs/WASM_BACKENDS.md](../WASM_BACKENDS.md)) |
 | **Audio** | Web Audio API | 100% procedural synthesis — no external audio files |
-| **Testing** | Playwright | Smoke suite in `tests/smoke.spec.ts` (`npm run test:smoke`); config in `playwright.config.ts`; CI in `.github/workflows/ci.yml` |
-| **Deployment** | Python + Paramiko | SFTP upload script (`deploy.py`) |
+| **Testing** | `node --test` + Playwright | Unit tests in `tests/unit/` (`npm run test:unit`), headless seeded replays in `tests/replay/` (`npm run test:replay`), Playwright smoke in `tests/smoke.spec.ts` (`npm run test:smoke`); CI in `.github/workflows/ci.yml` |
+| **Deployment** | Python | `deploy.py` (Contabo bundle API) or `scripts/deploy.py` (SFTP); credentials come from environment variables only — see [docs/DEPLOY.md](../DEPLOY.md) |
 
 ---
 
 ## Project Structure
 
-The project uses a mostly flat `src/` module structure. Most TypeScript source files live directly under `src/`, with a few shader helpers in `shaders/`.
+All gameplay TypeScript lives in `src/`: about 200 top-level modules plus feature subdirectories (`main/`, `level_manager/`, `audio_system/`, `boss_system/`, `geological/`, `hud_system/`, `ports/`, …). Many `foo.ts` files are thin re-exports of a `foo/` directory, so a file's line count says little — open the directory.
 
 ```
 /
-├── src/*.ts                      # TypeScript modules (see Key Module Divisions)
-├── index.html                    # Main HTML entry point
+├── src/                          # all gameplay TypeScript
+│   ├── main.ts                   # thin entry: calls bootstrap() in src/main/
+│   └── vite-env.d.ts             # Vite client types + Three.js WebGPU type stubs
+├── index.html                    # HTML entry point
 ├── package.json                  # npm scripts and dependencies
-├── tsconfig.json                 # TypeScript config (strict, ESNext, bundler mode)
-├── src/vite-env.d.ts             # Vite client types + Three.js WebGPU type stubs
-├── assembly/
-│   └── index.ts                  # AssemblyScript source for WASM physics
-├── shaders/
-│   └── jelly-moss.ts             # TSL node-based shader materials
-├── scripts/
-│   └── watch-wasm.cjs            # Dev utility: auto-rebuild WASM on changes
-├── tools/
-│   └── check_braces.cjs          # Build-time brace-balance checker
-├── public/
-│   ├── build/                    # WASM artifacts copied here for Vite to serve
-│   ├── rocket.glb                # 3D rocket model
-│   └── rocket.jpg                # Rocket texture/preview
-├── build/
-│   ├── optimized.wasm            # Compiled WASM output
-│   ├── optimized.wat             # WAT text output
-│   └── optimized.wasm.map        # Source map
+├── tsconfig.json                 # TypeScript config (strict, ESNext, bundler mode, no emit)
+├── assembly/                     # AssemblyScript; index.ts re-exports noise.ts, physics.ts, spatial_hash.ts
+├── cpp/                          # experimental C++/Emscripten research tree (not a shipping target)
+├── shaders/                      # TSL node materials (jelly-moss.ts, magical_edition.ts)
+├── scripts/                      # watch-wasm.cjs, C++ verify/golden scripts, deploy.py (SFTP)
+├── tools/                        # quality gates: check_braces, check_level_env_registry, check_math_random, typecheck_baseline
+├── public/build/                 # WASM artifacts copied here for Vite to serve
+├── build/                        # asc output (optimized.wasm, .wat, .wasm.map)
+├── tests/                        # unit/ (node --test), replay/ + fixtures/ (headless seeded replays), smoke.spec.ts (Playwright)
+├── docs/                         # architecture notes; docs/plans/ is historical planning
 ├── playwright.config.ts          # Playwright smoke-test config (hard-fail contract, system Chrome)
-├── tests/
-│   └── smoke.spec.ts             # Production-build smoke tests (`npm run test:smoke`)
-├── dist/                         # Vite production build output
-└── test-results/                 # Playwright run artifacts
+├── dist/                         # Vite production build output (generated)
+└── test-results/                 # Playwright run artifacts (generated)
 ```
 
-### Notable files by size and importance
+### Where to start
 
-- `src/main/` — Bootstrap, game loop phases, input/HUD wiring (entry: thin `main.ts`)
-- `create_game_systems.ts` / `game_runtime.ts` — Composition root (`GameContext`); see `docs/GAME_CONTEXT.md`
-- `renderer_mode.ts` — WebGPU/WebGL2 renderer selection and runtime backend breadcrumbs
-- `render_debug_helpers.ts` — Wireframe, collision bounds, and WebGL node-material fallback helpers
-- `audio_system.ts` (~2,500 lines) — Procedural music and sound synthesis
-- `magical_effects.ts` (~2,300 lines) — Visual effect systems
-- `powerup_manager.ts` (~1,700 lines) — Power-up logic and UI
-- `victory_system.ts` (~1,500 lines) — End-of-level and win sequences
-- `foliage.ts` (~1,500 lines) — Alien plant generation and animation
-- `candy_obstacles.ts` (~1,400 lines) — Candy-themed obstacle system
-- `dog_cockpit.ts` (~1,400 lines) — Dog astronaut animations and accessories
-- `space_friends.ts` (~1,300 lines) — Companion character system
-- `hud_system.ts` (~1,300 lines) — In-game heads-up display
-- `tutorial_system.ts` (~1,200 lines) — Interactive tutorial flow
-- `cloud_castles.ts` (~1,100 lines) — Cloud castle background environments
-- `geological.ts` (~1,100 lines) — Rock and geological object generation
-- `touch_controls.ts` (~1,000 lines) — Touch input handling and control modes
-- `juice_effects.ts` (~1,000 lines) — Screen shake, bursts, and game-feel effects
-- `flower_constellations.ts` (~900 lines) — Constellation pattern system
-- `industrial_background.ts` (~700 lines) — Industrial tunnel backgrounds
-- `space_robot_squid.ts` (~700 lines) — Nebula Kraken boss implementation
-- `touch_settings.ts` (~700 lines) — Touch control settings UI
+The domain map (which file owns what) lives in the root [`CLAUDE.md`](../../CLAUDE.md) under *Architecture → Domain map*; it is not copied here so it cannot drift. Entry points:
+
+- `src/main/` — bootstrap, fixed-timestep game loop phases, input/HUD wiring
+- `create_game_systems.ts` / `game_runtime.ts` — composition root (`GameContext`); see [docs/GAME_CONTEXT.md](../GAME_CONTEXT.md)
+- `renderer_mode.ts` / `webgpu_probe.ts` — WebGPU-only boot and the hard-fail diagnostic path
+- `level_config.ts` / `level_manager/` — the six chapters and their environment systems
 
 ---
 
@@ -120,10 +96,10 @@ npm run watch:wasm
 
 1. **`npm run build:wasm`** compiles `assembly/index.ts` with:
    ```bash
-   asc assembly/index.ts -o build/optimized.wasm -t build/optimized.wat --sourceMap --initialMemory 2 --optimize
+   asc assembly/index.ts -o build/optimized.wasm -t build/optimized.wat --sourceMap --initialMemory 8 --maximumMemory 256 --optimize --enable simd
    ```
 2. **`npm run copy:wasm`** copies `optimized.wasm` and `optimized.wasm.map` into `public/build/` so Vite serves them in both dev and production.
-3. **`npm run prebuild`** (automatic before `npm run build`) runs `tools/check_braces.cjs`, a custom syntax checker that walks all `.ts`/`.js`/`.cjs` files and verifies brace balance.
+3. **`npm run prebuild`** (automatic before `npm run build`) runs `tools/check_braces.cjs` (a custom checker that walks all `.ts`/`.js`/`.cjs` files and verifies brace balance), then `build:wasm` and `copy:wasm`.
 4. **`npm run predev`** (automatic before `npm run dev`) runs `build:wasm` and `copy:wasm`.
 
 ---
@@ -142,7 +118,7 @@ Follow the patterns already established in the codebase:
   import { color, time, sin, vec3 } from 'three/tsl';
   import { MeshStandardNodeMaterial } from 'three/webgpu';
   ```
-- **Exports**: Prefer **named exports**. Only a handful of modules use `export default` (`dog_cockpit.ts`, `magical_effects.ts`, `powerup_manager.ts`, `space_friends.ts`, `cloud_castles.ts`, `vite-env.d.ts`).
+- **Exports**: Prefer **named exports**. Only a handful of modules use `export default` (`cloud_castles/index.ts`, `magical_effects/factories.ts`, `powerup_manager/singleton.ts`, `space_friends/FriendsManager.ts`).
 - **Types**: TypeScript `strict` mode is on. Define shared types in the same file as the primary consumer, or in dedicated config modules such as `level_config.ts`.
 - **Comments**: Use JSDoc block comments for major classes/systems and inline comments for tricky logic.
 - **Constants**: Global configuration objects typically use `ALL_CAPS` (e.g., `LEVEL_CONFIG`, `CONFIG`, `UPGRADE_CONFIGS`).
@@ -152,21 +128,7 @@ Follow the patterns already established in the codebase:
 
 ## Key Module Divisions
 
-When you need to find or add functionality, start in the module that matches the domain:
-
-| Domain | Files |
-|--------|-------|
-| **Core Game Loop** | `src/main/`, `create_game_systems.ts`, `game_runtime.ts` |
-| **Environment & Backgrounds** | `foliage.ts`, `foliage_shared.ts`, `geological.ts`, `stars.ts`, `clouds.ts`, `nebula.ts`, `biological_background.ts`, `industrial_background.ts`, `planetary_horizon.ts`, `sky.ts`, `waterfall.ts`, `reentry.ts`, `asteroid_field.ts`, `environment.ts` |
-| **Gameplay & Obstacles** | `obstacle_system.ts`, `enemy_patterns.ts`, `weapons.ts`, `boss_system.ts`, `industrial_geometry.ts`, `space_robot_squid.ts` |
-| **Visual Effects** | `particles.ts`, `juice_effects.ts`, `magical_effects.ts`, `lighting.ts`, `flower_constellations.ts`, `cloud_castles.ts`, `candy_obstacles.ts`, `butterfly_swarm.ts` |
-| **UI / UX** | `ui_controls.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `docs/touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts` |
-| **Progression & Economy** | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `level_config.ts` |
-| **Characters** | `dog_cockpit.ts`, `space_friends.ts` |
-| **Movement & Abilities** | `boost_system.ts`, `roll_system.ts` |
-| **Shaders (TSL)** | `shaders/jelly-moss.ts` |
-| **Physics & WASM** | `physics_utils.ts`, `assembly/index.ts` |
-| **Audio** | `audio_system.ts` |
+See the domain map in the root [`CLAUDE.md`](../../CLAUDE.md) (*Architecture → Domain map*). It is the single maintained list of which module owns which feature.
 
 ### Level configuration
 Level data is centralized in `level_config.ts`. There are 6 levels defined in `LEVEL_CONFIG` (keys `1`–`6`), each specifying distance, speed, background color, sky colors, foliage density, asteroid rate, tunnel parameters, and squid spawn rate.
@@ -180,54 +142,49 @@ Boot is centralized in `renderer_mode.ts` / `webgpu_probe.ts`.
 - See `docs/RENDERER_FALLBACK.md` and the root `AGENTS.md`.
 
 ### WASM physics
-`assembly/index.ts` exports the following functions used by the TypeScript side:
-- `allocAsteroids(count)` — allocates a float buffer for 2D circular objects
-- `allocSporeClouds(count)` — allocates a float buffer for 3D spherical objects
-- `allocBossHitboxes(count)` — allocates a float buffer for boss hitbox circles
-- `checkCollision(...)` — 2D circle collision against the asteroid buffer
-- `checkSporeCollision(...)` — 3D sphere collision against the spore-cloud buffer
-- `checkBossCollision(...)` — 2D circle collision against boss hitboxes
+`assembly/index.ts` re-exports `noise.ts`, `physics.ts` and `spatial_hash.ts`:
 
-The JavaScript side writes object positions into `Float32Array` views backed by WASM memory, then calls the exported check functions.
+- **Spatial hash** (`assembly/spatial_hash.ts`) — the live gameplay collision path. `src/spatial_index.ts` does one `rebuildGrid` per fixed sim step, then layer-masked `queryRadius` calls; `src/spatial_fill.ts` writes entities via `allocEntities`.
+- **Verlet soft-body** (`physics.ts`, pooled via `src/verlet_body_pool.ts`) and **fractal noise** (`noise.ts`) ship by default.
+- Legacy linear scans (`allocAsteroids` / `allocSporeClouds` / `allocBossHitboxes` + `checkCollision` / `checkSporeCollision` / `checkBossCollision`) remain as thin buffers.
+
+The JavaScript side writes into `Float32Array` / `Int32Array` views backed by WASM memory. After any `alloc*` call it must call `refreshMemoryView()` (memory growth detaches old views). If WASM is unavailable, `spatial_index.ts` falls back to JS brute-force queries. Full contract and the C++ research tree: [docs/WASM_BACKENDS.md](../WASM_BACKENDS.md).
 
 ---
 
 ## Testing Instructions
 
 - **Playwright smoke suite is active**: `npm run test:smoke` runs `tests/smoke.spec.ts` against the production build and asserts the WebGPU hard-fail contract (probe breadcrumb, blocking screen, no WebGL context, one adapter request) — see `playwright.config.ts` and the root `AGENTS.md`.
-- **Quality gates**: `npm run check` (brace balance + env-registry + typecheck ratchet + unit tests), `npm run build`, and the smoke suite. CI (`.github/workflows/ci.yml`) runs `npm run typecheck:ci`, `npm run test:unit`, then `npm run build` on PRs/pushes to `main`.
+- **Quality gates**: `npm run check` is the local pre-PR gate — brace balance, env-registry, `Math.random` gate, typecheck ratchet (`typecheck:ci`, baseline 0), unit tests and headless replays. CI (`.github/workflows/ci.yml`) runs `typecheck:ci`, `test:unit`, `check:math-random`, `test:replay` and `build` on PRs/pushes to `main`, then the smoke suite (currently `continue-on-error`).
 - **WebGPU is unavailable in headless/automated environments.** That is expected: the smoke suite asserts the diagnostic screen, not a GL fallback. Verify visuals in a real WebGPU-enabled browser.
 - **Manual testing workflow**:
   1. `npm run dev`
   2. Open `http://localhost:5173` in Chrome/Edge 113+ with a working GPU
   3. Open `http://localhost:5173/?skip_gpu_boot` only to confirm the bundle parses without touching the GPU
   4. Verify the title screen appears and the game loop starts on click/tap
-  5. Smoke-test level transitions, touch controls (if on a touch device), audio, wireframe, and collision debug
+  5. Use `?level=N` (1–6) to start straight at a chapter without unlocking it; `?debug` or the backquote key opens the debug panel
+  6. Smoke-test level transitions, touch controls (if on a touch device), audio, wireframe, and collision debug
 
 ---
 
 ## Deployment
 
-The project is deployed via `deploy.py`:
+Both helpers upload the production bundle in `dist/`; neither stores credentials in the repo.
 
 ```bash
-# 1. Build the production bundle
 npm run build
-
-# 2. Upload dist/ to the remote server
+export DEPLOY_TOKEN="…"      # deploy.py (Contabo bundle API)
 python deploy.py
 ```
 
-- **Local source**: `dist/`
-- **Remote target**: `test.1ink.us/dog-dash` (SFTP via Paramiko)
-- The script recursively creates directories and uploads files.
+`scripts/deploy.py` is the direct-SFTP alternative (needs `paramiko`). Variables and usage: [docs/DEPLOY.md](../DEPLOY.md).
 
 ---
 
 ## Security Considerations
 
-1. **Hardcoded credentials**: `deploy.py` contains a hardcoded SFTP password. Do **not** commit modified versions of this file with credentials in plaintext. If you refactor deployment, move secrets to environment variables or a separate ignored config file.
-2. **No `.env` handling**: The project currently has no dotenv or secrets-management setup.
+1. **Credentials are environment variables only.** Never commit tokens, passwords or host-specific secrets; see [docs/DEPLOY.md](../DEPLOY.md).
+2. **No `.env` handling in the app.** The game itself reads no secrets; only the deploy helpers do.
 3. **No CSP headers**: There are no Content-Security-Policy meta tags or headers configured in `index.html`.
 4. **WASM source maps**: `optimized.wasm.map` is copied to `public/build/` and served in production builds. This is usually harmless but increases bundle size.
 
@@ -245,6 +202,6 @@ python deploy.py
 | Add a new gameplay system | `docs/GAME_CONTEXT.md` — construct in `createGameSystems`, put on `GameContext` |
 | Add a new shader material | `shaders/*.ts` and import into the relevant background module |
 | Change renderer selection | `renderer_mode.ts`, `render_debug_helpers.ts`, `src/main/`, `scene_setup.ts`, and `docs/RENDERER_FALLBACK.md` |
-| Change collision logic | `assembly/index.ts` → `npm run build:wasm` |
+| Change collision logic | `assembly/spatial_hash.ts` (+ `src/spatial_index.ts`, `src/spatial_fill.ts`) → `npm run build:wasm && npm run copy:wasm` |
 | Update UI / HUD | `hud_system.ts` or `ui_controls.ts` |
 | Build for release | `npm run build` |

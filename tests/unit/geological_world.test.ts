@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import * as THREE from 'three';
@@ -8,7 +8,6 @@ import { createGeologicalWorld } from '../../src/geological/world.ts';
 import {
     createSporeCloudAtPosition,
     createJellyMossAtPosition,
-    createSolarSailAtPosition,
     createGeodeAtPosition,
     createVoidRootBallAtPosition,
     createVacuumKelpAtPosition,
@@ -32,7 +31,6 @@ const ROOT = resolve(import.meta.dirname, '../..');
 const GEOLOGICAL_ARRAY_NAMES = [
     'sporeClouds',
     'jellyMosses',
-    'solarSails',
     'geodes',
     'voidRootBalls',
     'vacuumKelps',
@@ -80,6 +78,21 @@ test('grep gate: environment.ts exports no geological arrays and no dead updateG
         'generateEnvironment must be renamed to createStarEnvMap'
     );
     assert.equal(typeof createStarEnvMap, 'function');
+});
+
+test('grep gate: solar sails have one implementation (solar_sail_ferns, streamed by foliage_streaming)', () => {
+    // The pre-streaming sail (foliage/plants_advanced createSolarSail +
+    // GeologicalWorld.solarSails + createSolarSailAtPosition) was removed. A
+    // second sail path would be picked up by new flora/Endless brushes by mistake.
+    const srcDir = resolve(ROOT, 'src');
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+        .filter((f) => f.endsWith('.ts'));
+    const deadSailApi = /\b(solarSails|createSolarSail|createSolarSailAtPosition|updateSolarSail)\b/;
+    const offenders = files.filter((f) => deadSailApi.test(readFileSync(resolve(srcDir, f), 'utf8')));
+    assert.deepEqual(offenders, [], 'dead solar-sail twin referenced; use solar_sail_ferns.ts');
+
+    const world = createGeologicalWorld({ scene: new THREE.Scene() });
+    assert.equal('solarSails' in world, false, 'GeologicalWorld must not carry a solarSails array');
 });
 
 test('grep gate: loop and gameplay modules do not import geological arrays or scene/player singletons', () => {
@@ -193,7 +206,6 @@ test('GeologicalWorld.reset(): spawn -> reset -> spawn does not grow array, Spat
         beginRun(createDefaultRunSeed(424242));
         createSporeCloudAtPosition(world, 10, 0, 0);
         createJellyMossAtPosition(world, 20, 0, 0);
-        createSolarSailAtPosition(world, 30, 0, 0);
         createGeodeAtPosition(world, 50, 0, 0);
         createVoidRootBallAtPosition(world, 60, 0, 0);
         createVacuumKelpAtPosition(world, 70, 0, 0);

@@ -28,6 +28,7 @@ Useful URL flags:
 - `?no_gpu_compute`
 - `?wireframe`
 - `?collisionDebug`
+- `?level=N` (1–6) — start the campaign at chapter N without unlocking it; ignored by Endless/Architect runs
 
 See `docs/RENDERER_FALLBACK.md` for the implementation details.
 

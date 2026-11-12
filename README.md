@@ -6,7 +6,7 @@ Dog Dash - A 3D world exploration game.
 
 - **WebGPU rendering (hard-fail, no WebGL fallback)** - One adapter/device per page load; a failed probe shows the diagnostic screen instead of quietly switching backends
 - **Smooth, glossy graphics** - Rounded organic shapes with specular highlights
-- **First-person controls** - Explore the world with keyboard and mouse
+- **Side-scrolling flight** - Pilot the rocket along a follow camera with keyboard, mouse, or touch controls
 - **Animated elements** - Dynamic environment with clouds and effects
 - **3D perspective** - Proper depth rendering with WebGPU
 - **npm buildable** - Modern build system with Vite
@@ -140,6 +140,7 @@ URL flags:
 http://localhost:5173/?skip_gpu_boot   # skip the probe entirely (headless CI)
 http://localhost:5173/?wireframe
 http://localhost:5173/?collisionDebug
+http://localhost:5173/?level=3        # start the campaign at chapter 1-6, skipping the unlock check (debug)
 ```
 
 The debug panel includes `Wireframe` and `Collision Debug` toggles, opened with the backquote key.

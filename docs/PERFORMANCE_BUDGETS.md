@@ -279,8 +279,8 @@ Slingable prototype props load in the background after first click via `ensureSl
 
 | Tool | Setting | Notes |
 |------|---------|-------|
-| AssemblyScript | `asc … --initialMemory 2 --optimize` | Supported collision product path |
-| C++ WASM | emsdk/docker, `VITE_CPP_WASM` | Experimental only — not in default entry |
+| AssemblyScript | `asc … --initialMemory 8 --maximumMemory 256 --optimize --enable simd` (the `build:wasm` script) | Only supported WASM backend: collision, Verlet soft-body, fractal noise. Flags and memory floor: [WASM_BACKENDS.md](WASM_BACKENDS.md) |
+| C++ WASM | emsdk/docker, `VITE_CPP_WASM` | Research-only (SIMD prototyping, native profiling); never in the default entry or required by `dev`/`build` |
 | Vite | `target: 'es2022'` | Keep |
 | tsc | `strict: true`, `moduleResolution: bundler` | Keep; no emit |
 | Node CI | 24 | Keep |

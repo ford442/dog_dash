@@ -17,8 +17,8 @@ import { getRunRngFork } from '../run_seed';
 import type { SeededRng } from '../run_seed/rng';
 
 // Below this chunk-noise sample, a candidate spawn is skipped — carves organic
-// gaps into the belt instead of a flat Poisson scatter (C++ fractalNoise2D
-// under VITE_CPP_WASM=true, JS value-noise fallback otherwise).
+// gaps into the belt instead of a flat Poisson scatter (AssemblyScript
+// fractalNoise2D, JS value-noise fallback when WASM is unavailable).
 const CANDY_GAP_THRESHOLD = 0.32;
 
 export class CandyBeltManager {

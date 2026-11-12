@@ -29,6 +29,7 @@ import { getLevelSpan } from '../depth_layers';
 import { spawnDeferredPrototypeContent, spawnDeferredVideoStars } from './startup';
 import { ensureBestiaryUi, prefetchMetaUi } from '../meta_ui_loader';
 import { restartRun } from './restart_run';
+import { parseDebugLevel } from '../debug_system';
 
 async function beginGameplay(): Promise<void> {
     const endlessSeed = consumeEndlessSeedFromHash();
@@ -59,8 +60,17 @@ async function beginGameplay(): Promise<void> {
     }
 
     // A hub "Go to chapter" request survives the reload via localStorage.
+    // `?level=N` (debug) wins over it and skips the unlock check.
     const pending = consumePendingStartChapter();
-    await startRun(seed, pending, { loadGhost: true });
+    const isCampaignSeed = seed.campaignId !== 'endless' && seed.campaignId !== 'architect';
+    const debugLevel = isCampaignSeed ? parseDebugLevel() : null;
+    // startRun only preloads chapter 1's deferred systems; chapter N's must be in
+    // before startLevel(N) (the old paste-in snippets skipped this).
+    if (debugLevel !== null) await ensureLevelSystemsForLevel(debugLevel);
+    await startRun(seed, debugLevel ?? pending, {
+        loadGhost: true,
+        skipUnlockCheck: debugLevel !== null
+    });
 }
 
 /**
@@ -74,6 +84,8 @@ export async function startRun(
     requestedChapter: number | null,
     options: {
         loadGhost: boolean;
+        /** Start `requestedChapter` even if the save has not unlocked it (`?level=N`). */
+        skipUnlockCheck?: boolean;
         /** Journey to fly instead of the one the seed implies (headless coverage runs). */
         layout?: JourneyLayout;
     }
@@ -123,7 +135,9 @@ export async function startRun(
 
     const startChapter = layout.mode !== 'campaign'
         ? layout.firstChapter
-        : requestedChapter && game.saveManager.isLevelUnlocked(requestedChapter) ? requestedChapter : 1;
+        : requestedChapter && (options.skipUnlockCheck || game.saveManager.isLevelUnlocked(requestedChapter))
+            ? requestedChapter
+            : 1;
     ghostRunRecorder.setStartChapter(startChapter);
     // The journey is one continuous run (player.x 0->5200), so launching a
     // later chapter means placing the rocket at that chapter's start X.
