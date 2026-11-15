@@ -17,7 +17,13 @@
  *     and no caller may create one on failure.
  *  3. **Legible failure.** `window.webgpuProbe` always ends up populated, with
  *     the stage that failed and the browser that failed it.
+ *  4. **Legible loss.** A device that boots and is later lost (driver reset,
+ *     GPU process crash, tab evicted on a laptop) records `lost` on the same
+ *     breadcrumb and notifies {@link onWebGpuDeviceLost} subscribers. Loss is
+ *     terminal for the page: nothing re-probes, the only recovery is a reload.
  */
+
+import { parsePixelRatioPreset } from './pixel_ratio';
 
 /** Where the probe stopped. `ok` only on full success. */
 export type WebGpuProbeStage =
@@ -41,6 +47,15 @@ export interface WebGpuAdapterInfo {
     maxBufferSize: number | null;
 }
 
+/** Recorded when a successfully probed device is later lost. */
+export interface WebGpuDeviceLostInfo {
+    /** `GPUDeviceLostReason`: `'unknown'` (driver/GPU-process loss) or `'destroyed'`. */
+    reason: string;
+    message: string;
+    /** Milliseconds since the probe finished — "lost after 40 min" is a real symptom. */
+    afterMs: number;
+}
+
 /** Serialisable probe result, published on `window.webgpuProbe`. */
 export interface WebGpuProbeResult {
     ok: boolean;
@@ -60,6 +75,10 @@ export interface WebGpuProbeResult {
     enabledFeatures?: string[];
     /** `uncapturederror` messages recorded after device creation. */
     uncapturedErrors?: string[];
+    /** The `powerPreference` passed to the single `requestAdapter`. */
+    powerPreference?: GPUPowerPreference;
+    /** Set once if the probed device is lost after a successful boot. */
+    lost?: WebGpuDeviceLostInfo;
 }
 
 declare global {
@@ -157,6 +176,17 @@ export function shouldSkipGpuBoot(): boolean {
     return new URLSearchParams(window.location.search).has('skip_gpu_boot');
 }
 
+/**
+ * Adapter power preference for the single `requestAdapter`. `?quality=battery`
+ * (the same flag that selects the 0.5 pixel-ratio preset) asks for the
+ * low-power adapter; everything else keeps `high-performance`.
+ */
+export function resolvePowerPreference(
+    search = typeof window !== 'undefined' ? window.location.search : ''
+): GPUPowerPreference {
+    return parsePixelRatioPreset(search, 'default') === 'battery' ? 'low-power' : 'high-performance';
+}
+
 /** Optional WebGPU features we enable when the adapter has them. Never required. */
 export const OPTIONAL_WEBGPU_FEATURES = ['timestamp-query'] as const;
 
@@ -207,6 +237,66 @@ function attachUncapturedErrorListener(device: GPUDevice, result: WebGpuProbeRes
     });
 }
 
+type DeviceLostListener = (lost: WebGpuDeviceLostInfo, result: WebGpuProbeResult) => void;
+
+let lostListeners: DeviceLostListener[] = [];
+let lostState: { info: WebGpuDeviceLostInfo; result: WebGpuProbeResult } | null = null;
+
+/**
+ * Subscribes to loss of the probed device. If the device is already lost the
+ * listener is called on the next microtask, so late subscribers (e.g. chores
+ * attached after a loss) still hear about it. Returns an unsubscribe function.
+ *
+ * Listeners must not request a new adapter or device — loss is terminal.
+ */
+export function onWebGpuDeviceLost(listener: DeviceLostListener): () => void {
+    if (lostState) {
+        const { info, result } = lostState;
+        queueMicrotask(() => listener(info, result));
+        return () => {};
+    }
+    lostListeners.push(listener);
+    return () => {
+        lostListeners = lostListeners.filter(l => l !== listener);
+    };
+}
+
+/** True once the probed device has been lost. */
+export function isWebGpuDeviceLost(): boolean {
+    return lostState !== null;
+}
+
+function attachDeviceLostListener(device: GPUDevice, result: WebGpuProbeResult, bootedAt: number): void {
+    // `device.lost` may be absent on test doubles; real devices always have it.
+    const lost = (device as GPUDevice & { lost?: Promise<GPUDeviceLostInfo> }).lost;
+    if (!lost || typeof lost.then !== 'function') return;
+
+    void lost.then((info) => {
+        if (lostState) return;
+        const record: WebGpuDeviceLostInfo = {
+            reason: String(info?.reason ?? 'unknown'),
+            message: info?.message || 'no message',
+            afterMs: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - bootedAt)
+        };
+        result.lost = record;
+        if (typeof window !== 'undefined' && window.webgpuProbe) {
+            window.webgpuProbe.lost = record;
+        }
+        lostState = { info: record, result };
+        console.error(`[webgpu-probe] device lost (${record.reason}): ${record.message}`, result);
+
+        const listeners = lostListeners;
+        lostListeners = [];
+        for (const listener of listeners) {
+            try {
+                listener(record, result);
+            } catch (error) {
+                console.error('[webgpu-probe] device-lost listener threw', error);
+            }
+        }
+    });
+}
+
 let pending: Promise<WebGpuProbeOutcome> | null = null;
 
 /**
@@ -230,6 +320,7 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
     const startedAt = typeof performance !== 'undefined' ? performance.now() : 0;
     const browser = detectBrowser();
     const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+    const powerPreference = resolvePowerPreference();
 
     const fail = (stage: WebGpuProbeStage, reason: string, adapter: WebGpuAdapterInfo | null = null) => ({
         ok: false as const,
@@ -240,7 +331,8 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
             adapter,
             stage,
             userAgent,
-            durationMs: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - startedAt)
+            durationMs: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - startedAt),
+            powerPreference
         })
     });
 
@@ -265,7 +357,7 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
     // ---- One and only adapter request -------------------------------------
     let adapter: GPUAdapter | null = null;
     try {
-        adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+        adapter = await navigator.gpu.requestAdapter({ powerPreference });
     } catch (error) {
         return fail('adapter', `requestAdapter() threw: ${(error as Error)?.message ?? error}`);
     }
@@ -295,6 +387,15 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
         return fail('canvas-context', 'canvas.getContext("webgpu") returned null.', adapterInfo);
     }
 
+    // Canvas configuration, set once here and nowhere else:
+    //  - `format`: the platform's preferred swap-chain format (bgra8unorm on
+    //    most desktop GPUs, rgba8unorm on some Android) — Three renders into it.
+    //  - `alphaMode: 'opaque'`: the canvas never composites with the page.
+    //  - `usage` left at the WebGPU default (RENDER_ATTACHMENT). Three r182
+    //    only renders into the swap-chain texture, so no extra bits are needed;
+    //    if that ever changes, add them here, never in chores or integrate.
+    //  - no `colorSpace` / `toneMapping` (defaults: srgb / standard). Tone
+    //    mapping is applied by WebGPURenderer (ACES, exposure 1.3).
     const format = navigator.gpu.getPreferredCanvasFormat();
     try {
         context.configure({ device, format, alphaMode: 'opaque' });
@@ -306,6 +407,7 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
         );
     }
 
+    const bootedAt = typeof performance !== 'undefined' ? performance.now() : 0;
     const result = publish({
         ok: true,
         browser,
@@ -316,9 +418,11 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
         durationMs: Math.round((typeof performance !== 'undefined' ? performance.now() : 0) - startedAt),
         requestedFeatures,
         enabledFeatures,
-        uncapturedErrors: []
+        uncapturedErrors: [],
+        powerPreference
     });
     attachUncapturedErrorListener(device, result);
+    attachDeviceLostListener(device, result, bootedAt);
 
     return { ok: true, result, adapter, device, context, format };
 }
@@ -326,6 +430,8 @@ async function runProbe(canvas: HTMLCanvasElement): Promise<WebGpuProbeOutcome> 
 /** Test seam: forget the memoised probe so a fresh one can run. */
 export function resetWebGpuProbeForTests(): void {
     pending = null;
+    lostListeners = [];
+    lostState = null;
     if (typeof window !== 'undefined') {
         delete window.webgpuProbe;
     }

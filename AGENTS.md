@@ -10,6 +10,7 @@ Rules when touching renderer boot:
 
 - **Never create a `webgl` or `webgl2` context on the default path.** Not to keep the level on screen, not to keep CI green, not as a "temporary" measure. Restoring a WebGL renderer is its own later issue wave.
 - **One adapter, one device, per page load.** `src/webgpu_probe.ts` owns both calls and memoises the outcome; the probed `GPUDevice` is handed to `WebGPURenderer` rather than letting it request its own. Nothing may re-request a device after a failed probe — the GPU chores layer explicitly checks the probe result before adopting anything.
+- **Device loss is terminal for the page.** `device.lost` freezes the loop and shows the diagnostic screen (`window.webgpuProbe.lost`); it never re-probes. Subscribe via `onWebGpuDeviceLost()` rather than adding your own `device.lost` handler.
 - **A failed probe must stay legible.** `window.webgpuProbe` always carries `{ ok, browser, reason, adapter, stage, userAgent, durationMs }`, and the browser field must distinguish Chrome from Edge (an Edge UA contains `Chrome/` before `Edg/` — order your matching accordingly).
 - Headless CI has no WebGPU adapter, so it cannot run gameplay. Use `?skip_gpu_boot` for bundle-health checks; do not add GL to make the suite pass.
 - The `window.usingWebGL` guards in the visual systems and `WebGLMaterialFallbackRenderer` are kept but inert — they are the seam a future WebGL wave re-activates. Leave them.
@@ -25,7 +26,8 @@ Open the debug panel with the backquote key. The panel includes:
 Useful URL flags:
 
 - `?skip_gpu_boot`
-- `?no_gpu_compute`
+- `?no_gpu_compute` (also keeps the particle integrate on JS)
+- `?gpu_integrate` — opt into the WebGPU particle/debris integrate (`docs/GPU_INTEGRATE.md`)
 - `?wireframe`
 - `?collisionDebug`
 - `?level=N` (1–6) — start the campaign at chapter N without unlocking it; ignored by Endless/Architect runs

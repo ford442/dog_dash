@@ -12,12 +12,16 @@ declare module 'three/webgpu' {
         device?: GPUDevice;
         context?: GPUCanvasContext | WebGLRenderingContext;
         forceWebGL?: boolean;
+        /** Track GPU pass times; needs `timestamp-query` on the device. */
+        trackTimestamp?: boolean;
     }
 
     export class WebGPURenderer extends WebGLRenderer {
         constructor(parameters?: WebGPURendererParameters);
         /** Resolves once the backend has finished initialising. */
         init(): Promise<void>;
+        /** Resolves tracked pass durations (ms) since the last call. */
+        resolveTimestampsAsync(type?: 'render' | 'compute'): Promise<number | undefined>;
         /** Active backend; `backend.device` is the live GPUDevice. */
         readonly backend?: { device?: GPUDevice | null };
     }

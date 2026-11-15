@@ -2,9 +2,11 @@ import { initializeStartup } from './startup';
 import { setupInputBindings } from './input_bindings';
 import { initRenderHelpers } from './render_helpers';
 import { setupResizeHandler } from './resize';
-import { startGameLoop } from './game_loop';
-import { showBootFailure } from '../boot_failure';
+import { startGameLoop, stopGameLoop } from './game_loop';
+import { showBootFailure, showDeviceLost } from '../boot_failure';
 import { WebGpuBootError } from '../renderer_mode';
+import { onWebGpuDeviceLost } from '../webgpu_probe';
+import { game } from '../game_runtime';
 
 /**
  * Wire all subsystems and start the animation loop.
@@ -28,8 +30,26 @@ export async function bootstrap(): Promise<void> {
     setupInputBindings();
     setupResizeHandler();
     startGameLoop();
+    watchForDeviceLoss();
 
     console.log('🚀 Space Dash - Journey to the Moon!');
     console.log('Controls: SPACE to thrust up, A to dive down');
     console.log('Objective: Reach the moon while surviving asteroid impacts (3 lives)');
+}
+
+/**
+ * A device lost after boot freezes the sim, silences audio and shows the
+ * diagnostic screen. It never re-probes: one adapter, one device per page
+ * load (AGENTS.md). GPU chores detach themselves via their own subscription.
+ */
+function watchForDeviceLoss(): void {
+    onWebGpuDeviceLost((_lost, result) => {
+        stopGameLoop();
+        try {
+            game.audioSystem?.suspend();
+        } catch {
+            // Audio is best-effort; the diagnostic screen matters more.
+        }
+        showDeviceLost(result);
+    });
 }

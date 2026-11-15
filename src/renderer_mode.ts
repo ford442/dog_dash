@@ -5,6 +5,7 @@ import {
     probeWebGpu,
     type WebGpuProbeResult
 } from './webgpu_probe';
+import { setGpuTimingEnabled } from './gpu_timing';
 
 /**
  * Dog Dash renders through WebGPU only.
@@ -91,6 +92,10 @@ export async function createGameRenderer(
         throw new WebGpuBootError(outcome.result);
     }
 
+    // `timestamp-query` is only on the device when `?debug` asked for it and
+    // the adapter had it; only then does the renderer track GPU pass times.
+    const trackTimestamp = (outcome.result.enabledFeatures ?? []).includes('timestamp-query');
+
     let renderer: WebGPURenderer;
     try {
         // `device` + `context` come from the probe, so the renderer adopts them
@@ -99,7 +104,8 @@ export async function createGameRenderer(
             canvas,
             antialias,
             device: outcome.device,
-            context: outcome.context
+            context: outcome.context,
+            trackTimestamp
         });
         await renderer.init();
     } catch (error) {
@@ -117,6 +123,7 @@ export async function createGameRenderer(
     renderer.shadowMap.enabled = false;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
+    setGpuTimingEnabled(trackTimestamp);
     setRendererGlobals('webgpu');
     console.info('[renderer] active=webgpu (WebGL path deferred)');
 

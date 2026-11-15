@@ -43,6 +43,8 @@ npm run replay:record -- --chapter N  # re-record a replay fixture after an inte
 npm run replay:record -- --endless    # re-record the Endless Dash fixture
 npm run check:math-random         # Math.random gate (gameplay paths must use the run RNG)
 npm run test:smoke                # Playwright smoke test (WebGL path, SwiftShader in CI)
+npm run test:gpu-parity           # real WGSL particle integrate vs JS golden (headless Chrome, SwiftShader WebGPU)
+npm run gpu-integrate:record      # re-record tests/fixtures/gpu_integrate/golden.json after a JS integrate change
 ```
 
 There is no ESLint config. The automated quality gates are:
@@ -91,6 +93,7 @@ After any `alloc*` call JS must call `refreshMemoryView()` (memory growth detach
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
 | Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
 | GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
+| GPU integrate (visual particles/debris, opt-in `?gpu_integrate`) | `gpu_integrate/` (WGSL `kernels.ts`, `f32_reference.ts` mirror, `binding.ts`), `particles.ts` — [docs/GPU_INTEGRATE.md](docs/GPU_INTEGRATE.md). Change kernels + reference together and re-record with `npm run gpu-integrate:record` |
 | Physics & WASM | `spatial_index.ts` + `spatial_fill.ts` (collision queries), `physics_utils.ts`, `wasm_loader.ts`, `verlet_body_pool.ts`, `jelly_moss_softbody.ts` (Verlet soft-body, ships by default), `biome_noise.ts` (fractal noise, ships by default), `assembly/index.ts` + `noise.ts` + `physics.ts` + `spatial_hash.ts` (supported, always built); `cpp/` experimental research tree only — [docs/WASM_BACKENDS.md](docs/WASM_BACKENDS.md) |
 | Audio | `audio_system/` (incl. `chapter_music.ts` + `mixins/chapter_music.ts`), `audio_settings.ts`, `ui_audio_settings.ts`, `main/music_update.ts` — [docs/CHAPTER_MUSIC.md](docs/CHAPTER_MUSIC.md). 100% procedural; never add audio files to `public/` |
 | Architect Lab (player-built sandbox courses) | `architect/` (brush table, zod seed schema, course builder, layout, run seed, manager, hub tab) — [docs/ARCHITECT_LAB.md](docs/ARCHITECT_LAB.md). New brushes go in `BRUSH_REGISTRY` with the `systems` they switch on |

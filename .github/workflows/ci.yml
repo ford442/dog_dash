@@ -63,6 +63,9 @@ jobs:
       - name: Run WebGPU boot-probe smoke test
         run: npm run test:smoke
 
+      - name: Run GPU integrate WGSL parity test (SwiftShader WebGPU)
+        run: npm run test:gpu-parity
+
   cpp-wasm:
     runs-on: ubuntu-latest
     # Experimental backend — failures must not block the AS default path.

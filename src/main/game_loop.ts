@@ -7,6 +7,8 @@ import { advanceAccumulator, interpolationAlpha, MAX_FRAME_DELTA } from './fixed
 import { ObjectInterpolator, PositionInterpolator } from './render_interpolation';
 import { stepSimulation } from './sim_step';
 import { resetSimClock } from '../sim_clock';
+import { isWebGpuDeviceLost } from '../webgpu_probe';
+import { sampleGpuTiming } from '../gpu_timing';
 
 let accumulator = 0;
 const playerInterpolator = new PositionInterpolator();
@@ -21,7 +23,20 @@ export function startGameLoop(): void {
     renderer.setAnimationLoop(animate);
 }
 
+/**
+ * Freezes the sim and stops drawing. Used when the WebGPU device is lost:
+ * nothing advances behind the diagnostic screen, so the frozen state is what
+ * the player last saw. There is no restart — recovery is a page reload.
+ */
+export function stopGameLoop(): void {
+    renderer.setAnimationLoop(null);
+    accumulator = 0;
+}
+
 function animate(): void {
+    // Belt and braces for the frame already queued when the device died.
+    if (isWebGpuDeviceLost()) return;
+
     const rawDelta = Math.min(game.clock.getDelta(), MAX_FRAME_DELTA);
     // Visual-only systems (screen shake, flashes, floating text) stay on
     // wall-clock delta; hit-pause freezes gameplay by shrinking it below.
@@ -46,6 +61,7 @@ function animate(): void {
     }
 
     renderInterpolated();
+    sampleGpuTiming(renderer);
 }
 
 /**

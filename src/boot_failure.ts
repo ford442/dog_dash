@@ -1,6 +1,7 @@
 /**
  * boot_failure.ts
- * Blocking fatal screen shown when the WebGPU boot probe fails.
+ * Blocking fatal screen shown when the WebGPU boot probe fails, or when the
+ * probed device is lost mid-session (same layout, different copy).
  *
  * This is deliberately a dead end. There is no "continue anyway" button and no
  * degraded renderer behind it — a WebGL path is deferred to a later issue
@@ -26,18 +27,66 @@ export function hideBootFailure(): void {
     document.getElementById(OVERLAY_ID)?.remove();
 }
 
+const LOST_REASON_EXPLANATIONS: Record<string, string> = {
+    'unknown': 'The GPU driver reset or the browser\'s GPU process restarted — common after sleep, a driver update, '
+        + 'or when a backgrounded tab is evicted to free GPU memory.',
+    'destroyed': 'The GPU device was destroyed while the game was running.'
+};
+
 /**
  * Renders the blocking failure screen. Safe to call more than once — it
  * replaces any screen already showing.
  */
 export function showBootFailure(result: WebGpuProbeResult): void {
+    renderOverlay(result, {
+        ariaLabel: 'WebGPU unavailable',
+        heading: '🐕 Space Dash needs WebGPU',
+        subtitle: `${result.browser} could not start WebGPU, so the game did not launch.`,
+        reason: result.reason,
+        advice: STAGE_EXPLANATIONS[result.stage] ?? '',
+        note: 'There is no WebGL fallback: a WebGL renderer is deferred to a later release, '
+            + 'so that WebGPU failures stay visible instead of being hidden behind a different renderer.',
+        retryLabel: 'Try again'
+    });
+}
+
+/**
+ * Renders the blocking screen for a device lost *after* a successful boot.
+ * The game is already frozen when this shows; the only way on is a reload,
+ * because the page never requests a second adapter or device.
+ */
+export function showDeviceLost(result: WebGpuProbeResult): void {
+    const lost = result.lost;
+    const minutes = lost ? Math.round(lost.afterMs / 6000) / 10 : 0;
+    renderOverlay(result, {
+        ariaLabel: 'GPU device lost',
+        heading: '🐕 Space Dash lost the GPU',
+        subtitle: `${result.browser} lost its WebGPU device after ${minutes} min, so the game was paused.`,
+        reason: lost ? `${lost.reason}: ${lost.message}` : 'device lost',
+        advice: LOST_REASON_EXPLANATIONS[lost?.reason ?? 'unknown'] ?? LOST_REASON_EXPLANATIONS.unknown!,
+        note: 'Reloading starts a fresh GPU device. Your saved progress is kept; the current run is not.',
+        retryLabel: 'Reload'
+    });
+}
+
+type OverlayCopy = {
+    ariaLabel: string;
+    heading: string;
+    subtitle: string;
+    reason: string;
+    advice: string;
+    note: string;
+    retryLabel: string;
+};
+
+function renderOverlay(result: WebGpuProbeResult, copy: OverlayCopy): void {
     hideBootFailure();
 
     const overlay = document.createElement('div');
     overlay.id = OVERLAY_ID;
     overlay.setAttribute('role', 'alertdialog');
     overlay.setAttribute('aria-modal', 'true');
-    overlay.setAttribute('aria-label', 'WebGPU unavailable');
+    overlay.setAttribute('aria-label', copy.ariaLabel);
     overlay.style.cssText = `
         position: fixed;
         inset: 0;
@@ -64,15 +113,15 @@ export function showBootFailure(result: WebGpuProbeResult): void {
     `;
 
     const heading = document.createElement('h1');
-    heading.textContent = '🐕 Space Dash needs WebGPU';
+    heading.textContent = copy.heading;
     heading.style.cssText = 'margin: 0 0 6px; font-size: 26px;';
 
     const subtitle = document.createElement('p');
-    subtitle.textContent = `${result.browser} could not start WebGPU, so the game did not launch.`;
+    subtitle.textContent = copy.subtitle;
     subtitle.style.cssText = 'margin: 0 0 18px; color: #b9b9d4; font-size: 15px;';
 
     const reason = document.createElement('p');
-    reason.textContent = result.reason;
+    reason.textContent = copy.reason;
     reason.style.cssText = `
         margin: 0 0 12px;
         padding: 12px 14px;
@@ -84,12 +133,11 @@ export function showBootFailure(result: WebGpuProbeResult): void {
     `;
 
     const advice = document.createElement('p');
-    advice.textContent = STAGE_EXPLANATIONS[result.stage] ?? '';
+    advice.textContent = copy.advice;
     advice.style.cssText = 'margin: 0 0 20px; color: #b9b9d4; font-size: 14px; line-height: 1.55;';
 
     const note = document.createElement('p');
-    note.textContent = 'There is no WebGL fallback: a WebGL renderer is deferred to a later release, '
-        + 'so that WebGPU failures stay visible instead of being hidden behind a different renderer.';
+    note.textContent = copy.note;
     note.style.cssText = 'margin: 0 0 20px; color: #8b8ba7; font-size: 13px; line-height: 1.55;';
 
     const detailsLabel = document.createElement('p');
@@ -128,7 +176,7 @@ export function showBootFailure(result: WebGpuProbeResult): void {
     });
 
     const retryBtn = document.createElement('button');
-    retryBtn.textContent = 'Try again';
+    retryBtn.textContent = copy.retryLabel;
     retryBtn.style.cssText = buttonStyle('#3d3d5c');
     // A reload is the only honest retry: the probe is memoised for the page's
     // lifetime precisely so nothing re-requests a device after a failure.

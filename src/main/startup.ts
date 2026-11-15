@@ -38,6 +38,7 @@ import { attachRunSeedDebugSection } from '../run_seed/debug_ui';
 import { gameplayRandom } from '../run_seed';
 import { getJourneyLayout } from '../journey_layout';
 import { attachPixelRatioDebugSection } from '../pixel_ratio_debug';
+import { attachGpuTimingDebugSection } from '../gpu_timing';
 import { indexForPixelRatio, pixelRatioForPreset } from '../pixel_ratio';
 import {
     createGameContextFrameState,
@@ -502,6 +503,7 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
         game.currentPixelRatio = Math.min(2, window.devicePixelRatio * ratio);
         renderer.setPixelRatio(game.currentPixelRatio);
     });
+    attachGpuTimingDebugSection(debugSystem.getCustomSectionContainer());
     const ghostDebrisSystem = createGhostDebrisSystemStub();
     const voidJellyfishSystem = createVoidJellyfishSystemStub();
     const slingableObjectSystem = createSlingableObjectSystemStub();

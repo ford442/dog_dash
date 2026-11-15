@@ -1,4 +1,5 @@
 import type { FossilizedSpaceWhalesSystem } from './fossilized_space_whales';
+import { getGpuIntegrate } from './gpu_integrate';
 import type { HyperspaceTunnelSystem } from './hyperspace_tunnel';
 import type { CosmicCyberGridSystem } from './cosmic_cyber_grid';
 import type { PulsarLighthouseSystem } from './pulsar_lighthouse';
@@ -304,6 +305,10 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
     const particleSystem = new ParticleSystem(scene);
     const debrisSystem = new DebrisSystem(scene);
+    // Visual-only: hands the systems a GPU integrate kernel when one is
+    // available and opted into (?gpu_integrate). Headless runs stay on JS.
+    getGpuIntegrate().register(particleSystem);
+    getGpuIntegrate().register(debrisSystem);
     const weaponSystem = new WeaponSystem(scene);
     const weaponLightManager = new WeaponLightManager();
 

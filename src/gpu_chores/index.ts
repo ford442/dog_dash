@@ -36,7 +36,7 @@ import type {
 import { createJsChoresBackend } from './js_backend';
 import { createWasmChoresBackend, supportsChores, type ChoresWasmExports } from './wasm_backend';
 import { adoptRendererDevice, createWebGpuChoresBackend } from './webgpu_backend';
-import { getWebGpuProbeResult } from '../webgpu_probe';
+import { getWebGpuProbeResult, isWebGpuDeviceLost, onWebGpuDeviceLost } from '../webgpu_probe';
 
 export type {
     AsyncChoresBackend,
@@ -128,6 +128,13 @@ class ChoresAdapter implements GpuChores {
             return;
         }
 
+        // A lost device is gone for the page; chores never ask for another.
+        if (isWebGpuDeviceLost()) {
+            this.reason = 'WebGPU device lost; chores stay on CPU tiers';
+            this.publish();
+            return;
+        }
+
         const device = adoptRendererDevice(renderer);
         if (!device) {
             this.reason = 'renderer exposes no WebGPU device (WebGL or failed boot)';
@@ -138,6 +145,7 @@ class ChoresAdapter implements GpuChores {
         try {
             this.async = createWebGpuChoresBackend(device);
             this.reason = 'adopted renderer WebGPU device';
+            onWebGpuDeviceLost((lost) => this.detachDevice(`WebGPU device lost (${lost.reason}); chores fell back to CPU tiers`));
         } catch (error) {
             this.async = null;
             this.reason = `WebGPU chores pipeline failed: ${(error as Error)?.message ?? error}`;
@@ -170,6 +178,22 @@ class ChoresAdapter implements GpuChores {
         }
     }
 
+    /**
+     * Drops the WebGPU tier after device loss. Sync ops were never on the GPU,
+     * so they carry on unchanged; async reductions fall through to the sync
+     * tier. Never re-adopts or re-requests a device.
+     */
+    detachDevice(reason: string): void {
+        try {
+            this.async?.dispose();
+        } catch {
+            // Buffers on a lost device may already be invalid; nothing to free.
+        }
+        this.async = null;
+        this.reason = reason;
+        this.publish();
+    }
+
     dispose(): void {
         this.async?.dispose();
         this.async = null;
@@ -194,6 +218,7 @@ let adapter: ChoresAdapter | null = null;
 export function getGpuChores(): GpuChores & {
     attachWasm(exports: unknown): void;
     attachRenderer(renderer: unknown): void;
+    detachDevice(reason: string): void;
     dispose(): void;
 } {
     if (!adapter) {
