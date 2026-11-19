@@ -7,7 +7,7 @@
  * silhouettes, fronts, tells and hitboxes.
  *
  * Toolbar / URL parameters (all optional, so a review link can pin a view):
- * - `only=hazard,enemy,boss`  category filter (also pickup, powerup, projectile, slingable, player)
+ * - `only=hazard,enemy,boss`  category filter (also pickup, powerup, projectile, slingable, player, scenery)
  * - `mode=idle|telegraph|hit` gameplay state to preview
  * - `phase=entering|phase1|phase2|phase3|defeated` boss phase
  * - `chapter=1..6`            palette / tint chapter
@@ -221,6 +221,7 @@ export async function startAssetGallery(): Promise<void> {
     // Entry modules register on import; keep this lazy so the game bundle never pulls them in.
     await import('./hazard_entries');
     await import('./pickup_entries');
+    await import('./scenery_entries');
 
     const state = readState();
     let cells: Cell[] = [];
