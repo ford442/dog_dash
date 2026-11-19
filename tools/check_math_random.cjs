@@ -42,6 +42,7 @@ const GAMEPLAY_PATHS = [
     'src/obstacle_system/',
     'src/enemy_patterns.ts',
     'src/hazard_art/',
+    'src/pickup_art/',
     'src/space_robot_squid.ts',
     'src/weapons.ts',
     'src/boss_system/',

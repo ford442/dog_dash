@@ -1,65 +1,74 @@
 import * as THREE from 'three';
-import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { color, time, sin, float, vec4, mix, uniform } from 'three/tsl';
 import { getSimTime } from './sim_clock';
+import {
+    getProjectileBoltGeometry,
+    getProjectileBoltMaterial,
+    getProjectileTrailGeometry,
+    getProjectileTrailMaterial,
+    PROJECTILE_COLORS,
+    type ProjectileKind
+} from './pickup_art/upgrade_art';
+
+export type { ProjectileKind } from './pickup_art/upgrade_art';
+
+const _forward = new THREE.Vector3(1, 0, 0);
+const _dir = new THREE.Vector3();
 
 /**
- * Creates a TSL material for the plasma bolt.
- * Visuals: Glowing core, pulsing intensity.
+ * One pooled player shot. `mesh` is the bolt (its position is what every
+ * collision query reads; the 0.5 hitbox radius is the same for every kind).
+ * The bolt shape, trail and light colour follow the loadout it was fired
+ * with (see `pickup_art/upgrade_art.ts`), so a cryo shot already in flight
+ * stays an ice shard after the upgrade ends.
  */
-function createPlasmaBoltMaterial(uColor: any) {
-    const mat = new MeshBasicNodeMaterial({
-        transparent: true,
-        blending: THREE.AdditiveBlending,
-        depthWrite: false
-    });
-
-    const uTime = time;
-
-    // Simple pulse
-    const pulse = sin(uTime.mul(20.0)).add(1.0).mul(0.5); // 0..1 fast pulse
-
-    const baseColor = uColor;
-    const white = color(0xffffff);
-
-    // Mix white core with colored edge based on pulse?
-    // Or just boost intensity.
-    const intensity = float(1.0).add(pulse.mul(0.5));
-
-    mat.colorNode = vec4(baseColor.mul(intensity), 1.0);
-
-    return mat;
-}
-
 export class Projectile {
     mesh: THREE.Mesh;
+    trail: THREE.Mesh;
     light: THREE.PointLight;
     active: boolean = false;
     velocity: THREE.Vector3 = new THREE.Vector3();
     radius: number = 0.5;
+    kind: ProjectileKind = 'plasma';
+    /** Seconds since spawn (visual: muzzle pop-in, trail growth, flicker). */
+    age: number = 0;
 
-    constructor(scene: THREE.Scene, material: THREE.Material) {
-        // Geometry: Capsule for a bolt shape
-        const geometry = new THREE.CapsuleGeometry(0.1, 0.6, 4, 8);
-        // Rotate so it points forward (along X)
-        geometry.rotateZ(Math.PI / 2);
-
-        this.mesh = new THREE.Mesh(geometry, material);
+    constructor(scene: THREE.Scene) {
+        this.mesh = new THREE.Mesh(getProjectileBoltGeometry('plasma'), getProjectileBoltMaterial('plasma'));
         this.mesh.visible = false;
 
+        this.trail = new THREE.Mesh(getProjectileTrailGeometry('plasma'), getProjectileTrailMaterial('plasma'));
+        this.trail.renderOrder = 2;
+        this.mesh.add(this.trail);
+
         // Dynamic Point Light
-        this.light = new THREE.PointLight(0x00ffff, 2.0, 50.0); // Cyan, Intensity 2, Range 50
+        this.light = new THREE.PointLight(PROJECTILE_COLORS.plasma, 2.0, 50.0);
         this.mesh.add(this.light);
 
         scene.add(this.mesh);
     }
 
-    spawn(position: THREE.Vector3, velocity: THREE.Vector3) {
+    setKind(kind: ProjectileKind) {
+        if (kind === this.kind) return;
+        this.kind = kind;
+        this.mesh.geometry = getProjectileBoltGeometry(kind);
+        this.mesh.material = getProjectileBoltMaterial(kind);
+        this.trail.geometry = getProjectileTrailGeometry(kind);
+        this.trail.material = getProjectileTrailMaterial(kind);
+        this.light.color.setHex(PROJECTILE_COLORS[kind]);
+    }
+
+    spawn(position: THREE.Vector3, velocity: THREE.Vector3, kind: ProjectileKind = this.kind) {
+        this.setKind(kind);
         this.active = true;
+        this.age = 0;
         this.mesh.position.copy(position);
         this.velocity.copy(velocity);
+        // Point the bolt along its flight (aimed shots are not always +X).
+        _dir.copy(velocity);
+        if (_dir.lengthSq() > 1e-8) this.mesh.quaternion.setFromUnitVectors(_forward, _dir.normalize());
+        this.mesh.scale.setScalar(0.4);
+        this.trail.scale.set(0.2, 1, 1);
         this.mesh.visible = true;
-        // Reset light intensity just in case
         this.light.intensity = 2.0;
     }
 
@@ -73,6 +82,19 @@ export class Projectile {
         if (!this.active) return;
 
         this.mesh.position.addScaledVector(this.velocity, delta);
+        this.age += delta;
+
+        // Visual: muzzle pop-in, trail grows out behind the bolt.
+        const grow = Math.min(1, this.age / 0.06);
+        this.mesh.scale.setScalar(0.4 + 0.6 * grow);
+        const trailGrow = Math.min(1, this.age / 0.12);
+        if (this.kind === 'pyro') {
+            const flicker = 0.85 + Math.random() * 0.3; // visual-only
+            this.trail.scale.set(trailGrow * flicker, flicker, flicker);
+        } else {
+            this.trail.scale.set(trailGrow, 1, 1);
+        }
+        if (this.kind === 'cryo') this.mesh.rotateX(delta * 14); // shard spins on its long axis
 
         // Flicker light
         this.light.intensity = 1.5 + Math.random(); // visual-only
@@ -88,8 +110,8 @@ export class WeaponSystem {
     projectiles: Projectile[] = [];
     poolSize: number = 20;
 
-    // Uniform for shared material color
-    uProjectileColor: any;
+    /** Loadout the next shot is fired with (set from the active upgrade). */
+    currentKind: ProjectileKind = 'plasma';
 
     // Cooldown logic
     lastFireTime: number = -Infinity;
@@ -97,23 +119,14 @@ export class WeaponSystem {
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
-
-        // Shared uniform
-        this.uProjectileColor = uniform(new THREE.Color(0x00ffff)); // Default Cyan
-
-        const mat = createPlasmaBoltMaterial(this.uProjectileColor);
-
         for (let i = 0; i < this.poolSize; i++) {
-            this.projectiles.push(new Projectile(scene, mat));
+            this.projectiles.push(new Projectile(scene));
         }
     }
 
-    setColor(hex: number) {
-        // Update the shared uniform (affects all active projectiles material immediately)
-        this.uProjectileColor.value.setHex(hex);
-
-        // Update the lights of all projectiles
-        this.projectiles.forEach(p => p.setColor(hex));
+    /** Select the bolt shape / trail / colour for shots fired from now on. */
+    setKind(kind: ProjectileKind) {
+        this.currentKind = kind;
     }
 
     fire(position: THREE.Vector3, forwardDirection: THREE.Vector3) {
@@ -133,7 +146,7 @@ export class WeaponSystem {
             // Spawn slightly in front of ship
             const spawnPos = position.clone().add(new THREE.Vector3(1.5, -0.2, 0)); // Offset for gun position
 
-            proj.spawn(spawnPos, velocity);
+            proj.spawn(spawnPos, velocity, this.currentKind);
         }
     }
 

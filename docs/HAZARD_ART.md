@@ -24,7 +24,7 @@ and boss sits on a turntable; the toolbar switches:
 
 | Control | URL param | What it checks |
 |---|---|---|
-| Show | `only=hazard,enemy,boss` | category filter |
+| Show | `only=hazard,enemy,boss` (also `pickup,powerup,projectile,slingable,player`) | category filter |
 | State | `mode=idle\|telegraph\|hit` | bar #4: the tells |
 | Boss | `phase=entering\|phase1\|phase2\|phase3\|defeated` | boss anatomy per phase |
 | Chapter | `chapter=1..6` | rock palette + the chapter's `enemyTintColor` |
@@ -41,9 +41,11 @@ game; headless Chrome works with the Vulkan SwiftShader flags
 (`--enable-unsafe-webgpu --enable-features=Vulkan --use-vulkan=swiftshader
 --use-angle=vulkan`).
 
-**Adding entries** (#417 / #418): create `src/asset_gallery/<area>_entries.ts`
+**Adding entries** (#418): create `src/asset_gallery/<area>_entries.ts`
 that calls `registerGalleryEntries({ id, label, category, build })` and import
-it next to `hazard_entries` in `gallery.ts`. `build(ctx)` returns the object
+it next to `hazard_entries` / `pickup_entries` in `gallery.ts`. Pickups,
+power-ups, projectiles, slingables and the placeholder rocket are in
+`pickup_entries.ts` ([PICKUP_ART.md](PICKUP_ART.md)). `build(ctx)` returns the object
 plus optional `update(dt, t, ctx)` (pose for the state) and `hitboxes(ctx)`.
 
 ## Audit

@@ -24,6 +24,7 @@ import type { LightningBoltSystem } from './lightning_bolt';
 import * as THREE from 'three';
 import { ParticleSystem, DebrisSystem } from './particles';
 import { WeaponSystem } from './weapons';
+import { projectileKindForUpgrade } from './pickup_art/upgrade_art';
 import { WeaponLightManager } from './lighting';
 import type { AsteroidFieldSystem } from './asteroid_field';
 import type { GodRaySystem } from './godrays';
@@ -362,12 +363,8 @@ export function createGameSystems(deps: CreateGameSystemsDeps): GameSystems {
 
         audioSystem.playShoot(Math.random()); // visual-only
 
-        const upgradeColor = upgradeSystem.getProjectileColor();
-        if (upgradeColor) {
-            this.setColor(upgradeColor);
-        } else {
-            this.setColor(0x00ffff);
-        }
+        // Bolt shape, trail and colour follow the active upgrade (pickup_art/upgrade_art.ts).
+        this.setKind(projectileKindForUpgrade(upgradeSystem.activeUpgrade));
 
         originalFire(position, direction);
     };

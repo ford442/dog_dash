@@ -7,7 +7,7 @@
  * silhouettes, fronts, tells and hitboxes.
  *
  * Toolbar / URL parameters (all optional, so a review link can pin a view):
- * - `only=hazard,enemy,boss`  category filter
+ * - `only=hazard,enemy,boss`  category filter (also pickup, powerup, projectile, slingable, player)
  * - `mode=idle|telegraph|hit` gameplay state to preview
  * - `phase=entering|phase1|phase2|phase3|defeated` boss phase
  * - `chapter=1..6`            palette / tint chapter
@@ -23,6 +23,7 @@ import { createGameRenderer, WebGpuBootError } from '../renderer_mode';
 import type { BossPhase } from '../boss_system/types';
 import {
     GALLERY_CATEGORY_LABELS,
+    GALLERY_CATEGORY_ORDER,
     getGalleryEntries,
     type GalleryCategory,
     type GalleryContext,
@@ -219,6 +220,7 @@ export async function startAssetGallery(): Promise<void> {
 
     // Entry modules register on import; keep this lazy so the game bundle never pulls them in.
     await import('./hazard_entries');
+    await import('./pickup_entries');
 
     const state = readState();
     let cells: Cell[] = [];
@@ -330,9 +332,7 @@ export async function startAssetGallery(): Promise<void> {
             renderBar();
             if (rebuildNeeded) rebuild(); else layout();
         };
-        const cats = (['hazard', 'enemy', 'boss'] as GalleryCategory[])
-            .filter((c) => getGalleryEntries().some((e) => e.category === c))
-            .concat((['pickup', 'projectile', 'scenery'] as GalleryCategory[]).filter((c) => getGalleryEntries().some((e) => e.category === c)));
+        const cats = GALLERY_CATEGORY_ORDER.filter((c) => getGalleryEntries().some((e) => e.category === c));
         bar.append(
             h1,
             group('Show', [

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { shouldSkipGpuBoot } from './webgpu_probe';
+import { createPlaceholderRocketModel, PLACEHOLDER_ROCKET_NOZZLE_Y } from './pickup_art/placeholder_rocket';
 
 // =============================================================================
 // PLAYER (Rocket Character) - GLB Model Integration
@@ -65,14 +66,14 @@ export function createPlaceholderPlayer(
 ): THREE.Group {
     const group = new THREE.Group();
 
-    const geometry = new THREE.ConeGeometry(0.5, 2, 8);
-    const material = new THREE.MeshStandardMaterial({ color: 0xe94560 });
-    const placeholder = new THREE.Mesh(geometry, material);
-    placeholder.rotation.x = Math.PI;
-    placeholder.castShadow = true;
-    group.add(placeholder);
+    // Reads as the real rocket (nose, porthole, fins, nozzle): pickup_art/placeholder_rocket.ts.
+    // Built nose-up like the normalised GLB; player_update turns it to +X.
+    group.add(createPlaceholderRocketModel());
+    group.rotation.z = -Math.PI / 2;
 
     const tiltGroup = attachFlameAndShadow(group, targetScene);
+    // Flame at the nozzle exit rather than mid-hull.
+    (group.userData.flame as THREE.Mesh).position.y = PLACEHOLDER_ROCKET_NOZZLE_Y - 0.2;
     onReady?.(tiltGroup);
     playerLoadCallbacks.forEach((cb) => cb(tiltGroup, group));
     return tiltGroup;

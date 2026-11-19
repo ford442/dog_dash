@@ -592,6 +592,9 @@ export async function composeGameContext(options: { headless?: boolean } = {}): 
     onPlayerLoaded((loadedPlayer: THREE.Group, rocketModelOrGroup: unknown) => {
         ctx.player = loadedPlayer;
         game.effectManager.setTarget(loadedPlayer);
+        // Power-up attachments (shield bubble, crown, comet tail…) ride on the
+        // player group. This was never wired, so none of them ever showed.
+        game.powerUpManager.setRocket(loadedPlayer);
         const dogTarget = (rocketModelOrGroup as THREE.Group) || loadedPlayer;
         try { game.dogController.initialize(dogTarget); } catch { game.dogController.initialize(loadedPlayer); }
         console.log('🚀 Rocket loaded via player_loader onto canonical scene');
