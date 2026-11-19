@@ -13,13 +13,15 @@ export type ArchitectPlacementSeed = {
 
 export type RunModifier =
     | { kind: 'ng_plus'; tier: number }
-    | { kind: 'architect'; placements: ArchitectPlacementSeed[] };
+    | { kind: 'architect'; placements: ArchitectPlacementSeed[] }
+    | { kind: 'lost_sector'; sectorId: string };
 
 /**
  * `'endless'` runs fly the Endless Dash chapter sequence generated from `rngSeed` (src/endless/).
  * `'architect'` runs fly the Architect Lab sandbox described by their `architect` modifier (src/architect/).
+ * `'lost'` runs fly the authored Lost Sector named by their `lost_sector` modifier (src/lost_sector/).
  */
-export type RunCampaignId = 'campaign' | 'endless' | 'architect';
+export type RunCampaignId = 'campaign' | 'endless' | 'architect' | 'lost';
 
 export type RunSeed = {
     version: typeof RUN_SEED_SCHEMA_VERSION;

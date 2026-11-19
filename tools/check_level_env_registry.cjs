@@ -5,6 +5,9 @@
  * - ENV_SYSTEM_MANIFEST flags match DEFERRED_ENV_FLAGS
  * - PLUGIN_ORDER covers every flag that needs activate/deactivate (except load-only flags)
  * - LEVEL_CONFIG enabled deferred flags resolve to manifest entries
+ * - Lost Sector configs (src/lost_sector/configs.ts) are in the same loop: every
+ *   LostSectorId has a level slot and a LOST_SECTORS entry, and their deferred
+ *   flags resolve to manifest entries
  * - Each defineEnvSystem spec includes budget + descriptor metadata
  * - Hand-written DEFERRED_ENV_REGISTRY file must not exist
  */
@@ -49,6 +52,35 @@ function parseEnabledDeferredFlagsInLevels(levelConfigSource, deferredFlags) {
         if (re.test(levelConfigSource)) enabled.add(flag);
     }
     return enabled;
+}
+
+function parseLostSectorIds(constantsSource) {
+    const match = constantsSource.match(/export const LOST_SECTOR_IDS: readonly LostSectorId\[\] = \[([\s\S]*?)\];/);
+    if (!match) throw new Error('Could not parse LOST_SECTOR_IDS');
+    // \x27 is a single quote; a literal one here would unbalance tools/check_braces.cjs.
+    return [...match[1].matchAll(/\x27([^\x27]+)\x27/g)].map((m) => m[1]);
+}
+
+function checkLostSectors(constantsSource, configsSource, deferredFlags, manifestFlags) {
+    const ids = parseLostSectorIds(constantsSource);
+    if (ids.length === 0) fail('LOST_SECTOR_IDS is empty');
+    const slots = constantsSource.match(/LOST_SECTOR_LEVEL_INDEX[^=]*=\s*\x7b([\s\S]*?)\x7d;/);
+    if (!slots) fail('Could not parse LOST_SECTOR_LEVEL_INDEX');
+    const slotValues = new Set();
+    for (const id of ids) {
+        const slot = slots[1].match(new RegExp(`'${id}':\\s*(\\d+)`));
+        if (!slot) fail(`Lost Sector "${id}" has no LOST_SECTOR_LEVEL_INDEX slot`);
+        const n = Number(slot[1]);
+        if (n <= 6 || (n > 100 && n < 300)) fail(`Lost Sector "${id}" slot ${n} collides with campaign / Endless / Architect chapters`);
+        if (slotValues.has(n)) fail(`Lost Sector slot ${n} is used twice`);
+        slotValues.add(n);
+        if (!configsSource.includes(`'${id}': \x7b`)) fail(`Lost Sector "${id}" has no LOST_SECTORS entry`);
+    }
+    const enabled = parseEnabledDeferredFlagsInLevels(configsSource, deferredFlags);
+    for (const flag of enabled) {
+        if (!manifestFlags.includes(flag)) fail(`Lost Sector config enables deferred flag "${flag}" with no manifest loader`);
+    }
+    return { ids, enabled };
 }
 
 function fail(msg) {
@@ -133,8 +165,15 @@ function main() {
         }
     }
 
+    const lost = checkLostSectors(
+        read('src/lost_sector/constants.ts'),
+        read('src/lost_sector/configs.ts'),
+        deferredFlags,
+        manifestFlags
+    );
+
     console.log(
-        `level_env_registry check OK — ${deferredFlags.length} deferred, ${eagerFlags.length} eager, ${pluginOrder.length} plugins, ${enabledInLevels.size} deferred flags used in levels`
+        `level_env_registry check OK — ${deferredFlags.length} deferred, ${eagerFlags.length} eager, ${pluginOrder.length} plugins, ${enabledInLevels.size} deferred flags used in levels, ${lost.ids.length} Lost Sectors (${lost.enabled.size} deferred flags)`
     );
 }
 

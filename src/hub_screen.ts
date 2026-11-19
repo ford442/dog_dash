@@ -16,6 +16,8 @@ import { LEVEL_CONFIG } from './level_config';
 import { parseRunSeed } from './run_seed';
 import { setPendingRunSeed } from './hub_pending_seed';
 import { loadGhostRecording, ghostMatchesSeed } from './ghost_run';
+import { LOST_SECTOR_FRAGMENTS } from './lost_sector/constants';
+import { hasDebugUrlFlag } from './renderer_mode';
 
 export { setPendingStartChapter, consumePendingStartChapter } from './hub_pending_chapter';
 
@@ -73,7 +75,7 @@ const SHOP_ITEMS: ShopItem[] = [
     { key: 'speedBonus', icon: '🚀', name: 'Super Thrusters', desc: 'Fly 10% faster' }
 ];
 
-export type HubTab = 'home' | 'shop' | 'craft' | 'log' | 'journey' | 'endless' | 'architect';
+export type HubTab = 'home' | 'shop' | 'craft' | 'log' | 'journey' | 'endless' | 'architect' | 'lost';
 
 export function createHubScreen(saveManager: SaveManager, options: HubScreenOptions): HTMLDivElement {
     const play = options.playSound ?? (() => {});
@@ -154,6 +156,10 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
         { id: 'endless', label: '♾️ Endless' },
         { id: 'architect', label: '🏗️ Lab' }
     ];
+    // Lost Sectors stay secret until the buoy fragments reveal them (?debug always shows the tab).
+    if (saveManager.getMapFragments() >= LOST_SECTOR_FRAGMENTS || hasDebugUrlFlag('debug')) {
+        tabs.push({ id: 'lost', label: '📡 Lost Sector' });
+    }
     const tabButtons = new Map<HubTab, HTMLButtonElement>();
 
     // Scrollable content panel
@@ -286,6 +292,7 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
             case 'journey': renderJourney(); break;
             case 'endless': renderEndless(); break;
             case 'architect': renderArchitect(); break;
+            case 'lost': renderLostSectors(); break;
         }
     }
 
@@ -648,8 +655,24 @@ export function createHubScreen(saveManager: SaveManager, options: HubScreenOpti
         });
     }
 
+    /** Lost Sector tab: its own chunk (the authored configs); loaded on first open. */
+    function renderLostSectors(): void {
+        const loading = card();
+        loading.textContent = '📡 Tuning the buoy radio…';
+        panel.appendChild(loading);
+        void import('./lost_sector/hub_tab').then(({ renderLostSectorTab }) => {
+            if (activeTab !== 'lost' || !loading.isConnected) return;
+            panel.innerHTML = '';
+            renderLostSectorTab(panel, { saveManager, card, bigButton, statRow, play, colors: HUB_COLORS });
+        }, (err) => {
+            console.warn('[hub] Lost Sector tab failed to load:', err);
+            loading.textContent = '📡 The Lost Sectors could not load. Check your connection and try again.';
+        });
+    }
+
     refreshCores();
-    switchTab(options.initialTab ?? 'home');
+    const initialTab = options.initialTab ?? 'home';
+    switchTab(tabButtons.has(initialTab) ? initialTab : 'home');
 
     return container;
 }

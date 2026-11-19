@@ -30,6 +30,7 @@ import { spawnDeferredPrototypeContent, spawnDeferredVideoStars } from './startu
 import { ensureBestiaryUi, prefetchMetaUi } from '../meta_ui_loader';
 import { restartRun } from './restart_run';
 import { parseDebugLevel } from '../debug_system';
+import { setQuantumCompassEnabled } from '../quantum_compass';
 
 async function beginGameplay(): Promise<void> {
     const endlessSeed = consumeEndlessSeedFromHash();
@@ -59,10 +60,29 @@ async function beginGameplay(): Promise<void> {
         }
     }
 
+    // Lost Sectors open at LOST_SECTOR_FRAGMENTS map fragments; a queued
+    // sector seed on a save that has not found them (or names an unknown
+    // sector) flies the campaign instead (?debug skips the fragment check).
+    if (seed.campaignId === 'lost') {
+        const [{ resolveLostSector }, { lostSectorUnlockState }] = await Promise.all([
+            import('../lost_sector/run'),
+            import('../lost_sector/unlock')
+        ]);
+        const known = resolveLostSector(seed) !== null;
+        const unlocked = hasDebugUrlFlag('debug') || lostSectorUnlockState(game.saveManager).unlocked;
+        if (!known || !unlocked) {
+            console.warn('[lost_sector] Sector unknown or not revealed yet; starting the campaign.');
+            game.hudManager.showNotice(known
+                ? '📡 Hack more Derelict Buoys to find the Lost Sectors!'
+                : '📡 That Lost Sector is not on the map.');
+            seed = createDefaultRunSeed();
+        }
+    }
+
     // A hub "Go to chapter" request survives the reload via localStorage.
     // `?level=N` (debug) wins over it and skips the unlock check.
     const pending = consumePendingStartChapter();
-    const isCampaignSeed = seed.campaignId !== 'endless' && seed.campaignId !== 'architect';
+    const isCampaignSeed = seed.campaignId === 'campaign';
     const debugLevel = isCampaignSeed ? parseDebugLevel() : null;
     // startRun only preloads chapter 1's deferred systems; chapter N's must be in
     // before startLevel(N) (the old paste-in snippets skipped this).
@@ -91,8 +111,8 @@ export async function startRun(
     }
 ): Promise<void> {
     // The journey this run flies: the campaign, the Endless chapter sequence
-    // generated from the seed, or an Architect sandbox course (both
-    // code-split; never loaded otherwise).
+    // generated from the seed, an Architect sandbox course, or an authored
+    // Lost Sector (all code-split; never loaded otherwise).
     if (options.layout) {
         setJourneyLayout(options.layout);
     } else if (seed.campaignId === 'endless') {
@@ -101,6 +121,9 @@ export async function startRun(
     } else if (seed.campaignId === 'architect') {
         const { createArchitectRunLayout } = await import('../architect/run');
         setJourneyLayout(createArchitectRunLayout(seed));
+    } else if (seed.campaignId === 'lost') {
+        const { createLostSectorRunLayout } = await import('../lost_sector/run');
+        setJourneyLayout(createLostSectorRunLayout(seed));
     } else {
         setJourneyLayout(CAMPAIGN_LAYOUT);
     }
@@ -121,6 +144,8 @@ export async function startRun(
     prefetchMetaUi();
 
     biomeNoise.bindRunSeed(seed.rngSeed);
+    // Visual-only HUD pip; on for every run once the save has decoded the buoy network.
+    setQuantumCompassEnabled(game.saveManager.hasQuantumCompass());
     game.activeRunSeed = seed;
     game.runRng = getRunRng();
     resetSimClock();

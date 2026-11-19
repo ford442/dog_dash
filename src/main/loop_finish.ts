@@ -4,9 +4,10 @@ import { updateDistanceDisplay } from '../ui_controls';
 import { VictoryState } from '../victory_system/victory_state';
 import { DogAnimationState } from '../dog_cockpit';
 import { saveLastRunSummary } from '../run_seed/save_last_run';
-import { isArchitectRun, isCampaignRun } from '../journey_layout';
+import { getJourneyLayout, hasFinishLine, isArchitectRun, isCampaignRun } from '../journey_layout';
 import { getLevelSpan } from '../depth_layers';
 import { restartRun } from './restart_run';
+import { updateQuantumCompass } from '../quantum_compass';
 import { updateHeatBar, updateCoresDisplay, updateBoostDisplay, updateRollDisplay, updateBarkDisplay, updateTetherDisplay, updateGrenadeDisplay } from './hud_displays';
 
 export function updateLoopFinish(_time: number): void {
@@ -24,11 +25,14 @@ export function updateLoopFinish(_time: number): void {
         updateTetherDisplay();
         updateGrenadeDisplay();
         
-        // Architect sandbox: the finish line is the end of the course.
-        if (player && isArchitectRun() && !playerState.hasWon && !playerState.bossActive
+        // Architect sandbox / Lost Sector: the finish line is the end of the chapter span.
+        if (player && hasFinishLine() && !playerState.hasWon && !playerState.bossActive
             && player.position.x >= getLevelSpan(game.levelManager.currentLevel).endX) {
-            finishArchitectCourse();
+            if (isArchitectRun()) finishArchitectCourse();
+            else finishLostSector();
         }
+
+        updateQuantumCompass(player);
 
         // Check if player reached the moon (or defeated boss in level 1).
         // Endless and Architect runs have no Moon.
@@ -72,4 +76,27 @@ function finishArchitectCourse(): void {
         orbsCollected: playerState.cores,
         powerUpsUsed: 0
     }, restartRun);
+}
+
+/**
+ * A Lost Sector is real play, not a playtest: cores bank and the first clear
+ * is recorded (hub ✅), but no high score and no campaign unlock.
+ */
+function finishLostSector(): void {
+    const player = game.player;
+    const layout = getJourneyLayout();
+    const sectorId = 'sectorId' in layout ? String(layout.sectorId) : '';
+    playerState.hasWon = true;
+    saveLastRunSummary();
+    game.saveManager.addCores(playerState.cores);
+    const firstClear = sectorId !== '' && game.saveManager.recordLostSectorComplete(sectorId);
+    game.audioSystem.playMagicSequence('power_up');
+    game.dogController.triggerAnimation(DogAnimationState.VICTORY, 5.0);
+    setIsGamePaused(true);
+    game.hudManager.showSectorCompleteScreen({
+        score: game.hudManager.getScore(),
+        distance: player ? Math.floor(player.position.x) : 0,
+        orbsCollected: playerState.cores,
+        powerUpsUsed: 0
+    }, layout.chapterLabel(game.levelManager.currentLevel), firstClear, restartRun);
 }

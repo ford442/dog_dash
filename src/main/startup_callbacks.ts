@@ -10,7 +10,7 @@ import { recordChapterComplete } from '../journey_progress';
 import { openHubScreenLazy } from '../meta_ui_loader';
 import { getSimTime, getSimTimeMs } from '../sim_clock';
 import { gameplayRandom } from '../run_seed';
-import { isArchitectRun, isCampaignRun } from '../journey_layout';
+import { isArchitectRun, isCampaignRun, isLostSectorRun } from '../journey_layout';
 
 export function reportComboObjectiveProgress(): void {
     const objective = game.levelManager.config[game.levelManager.currentLevel]?.objective;
@@ -29,8 +29,11 @@ export function wireStartupCallbacks(): void {
     game.hudManager.getJourneyLevel = () => game.levelManager?.currentLevel ?? 1;
     game.hudManager.getRescuedFriendCount = () => game.friendsManager?.getRescuedCount?.() ?? 0;
     game.hudManager.getCompletedChapters = () => [...(game.completedChaptersThisRun || [])];
-    // After a playtest the hub opens straight onto the Architect Lab.
-    game.hudManager.openHub = (mode) => { void openHubScreenLazy(mode, isArchitectRun() ? 'architect' : undefined); };
+    // After a playtest the hub opens straight onto the Architect Lab; after a Lost Sector, onto its tab.
+    game.hudManager.openHub = (mode) => {
+        const tab = isArchitectRun() ? 'architect' : isLostSectorRun() ? 'lost' : undefined;
+        void openHubScreenLazy(mode, tab);
+    };
 
     game.resourceHarvester.onMaterialCollected = (evt) => {
         const name = getMaterialDisplayName(evt.id);
@@ -253,7 +256,7 @@ function wireObjectiveComplete(): void {
         if (!game.completedChaptersThisRun.includes(level)) {
             game.completedChaptersThisRun.push(level);
         }
-        // Endless chapters and Architect sandboxes never unlock campaign chapters.
+        // Endless chapters, Architect sandboxes and Lost Sectors never unlock campaign chapters.
         const campaign = isCampaignRun();
         if (campaign) recordChapterComplete(game.saveManager, level);
 

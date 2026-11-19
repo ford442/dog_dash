@@ -66,6 +66,8 @@ export interface SaveData {
     mapFragments: number;
     /** Quantum Compass HUD upgrade unlocked (full buoy network decoded). */
     quantumCompassUnlocked: boolean;
+    /** Lost Sector ids (src/lost_sector/) flown to their finish line at least once. */
+    lostSectorsCompleted: string[];
     /** Crafting material bag (Plasma Caster economy Phase A). */
     resources: ResourceInventory;
     /** Crafted items queued for the next run (recipeId -> charges). Consumed at boot. */
@@ -194,6 +196,7 @@ export class SaveManager {
             architectLoreUnlocked: [],
             mapFragments: 0,
             quantumCompassUnlocked: false,
+            lostSectorsCompleted: [],
             resources: createEmptyInventory(),
             loadout: {},
             audio: { ...DEFAULT_AUDIO_SETTINGS },
@@ -215,6 +218,9 @@ export class SaveManager {
             architectLoreUnlocked: Array.isArray(raw?.architectLoreUnlocked) ? raw.architectLoreUnlocked : [],
             mapFragments: typeof raw?.mapFragments === 'number' ? raw.mapFragments : 0,
             quantumCompassUnlocked: raw?.quantumCompassUnlocked === true,
+            lostSectorsCompleted: Array.isArray(raw?.lostSectorsCompleted)
+                ? raw.lostSectorsCompleted.filter((id: unknown): id is string => typeof id === 'string')
+                : [],
             resources: normalizeInventory(raw?.resources),
             loadout: normalizeLoadout(raw?.loadout),
             lastRun: normalizeLastRun(raw?.lastRun),
@@ -435,6 +441,20 @@ export class SaveManager {
     unlockQuantumCompass(): boolean {
         if (this.data.quantumCompassUnlocked) return false;
         this.data.quantumCompassUnlocked = true;
+        this.save();
+        return true;
+    }
+
+    // --- Lost Sectors (secret chapters the buoy fragments reveal) ---
+    getCompletedLostSectors(): string[] {
+        return [...(this.data.lostSectorsCompleted || [])];
+    }
+
+    /** Records a Lost Sector finish. True the first time that sector is cleared. */
+    recordLostSectorComplete(sectorId: string): boolean {
+        if (!this.data.lostSectorsCompleted) this.data.lostSectorsCompleted = [];
+        if (this.data.lostSectorsCompleted.includes(sectorId)) return false;
+        this.data.lostSectorsCompleted.push(sectorId);
         this.save();
         return true;
     }

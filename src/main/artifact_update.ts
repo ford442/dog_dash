@@ -17,12 +17,14 @@ import {
     nextArchitectLoreId, ARCHITECT_LORE, hasFullArchitectSet,
     createLoreRevealUI
 } from '../architect_lore';
-import type { LevelConfig } from '../level_config';
+import type { DerelictBuoyConfig, LevelConfig } from '../level_config';
+import { gameplayRandom } from '../run_seed';
+import { LOST_SECTOR_FRAGMENTS, QUANTUM_COMPASS_FRAGMENTS } from '../lost_sector/constants';
+import { setQuantumCompassEnabled } from '../quantum_compass';
 
-// Fragments needed to reveal the "Lost Sector" (plan §III).
-const LOST_SECTOR_FRAGMENTS = 3;
-// Quantum Compass unlocks once the buoy network is well-mapped.
-const QUANTUM_COMPASS_FRAGMENTS = 5;
+/** How far a buoy may drift from its authored spot, per run seed (fragment count stays persistent). */
+const BUOY_JITTER_X = 40;
+const BUOY_JITTER_Y = 2;
 
 interface ActiveHack {
     handle: BuoyHackHandle | MonolithHackHandle;
@@ -93,13 +95,14 @@ async function beginBuoyHack(buoy: DerelictBuoyInstance): Promise<void> {
             );
             if (fragments === LOST_SECTOR_FRAGMENTS) {
                 game.juiceManager.showFloatingText(
-                    'Lost Sector revealed!', game.player!.position.clone(), '#ffd76a', 24
+                    '\u{1F4E1} Lost Sector revealed! Check Space Base', game.player!.position.clone(), '#ffd76a', 24
                 );
             }
             if (fragments >= QUANTUM_COMPASS_FRAGMENTS && game.saveManager.unlockQuantumCompass()) {
                 game.juiceManager.showFloatingText(
                     '\u{1F9ED} Quantum Compass online!', game.player!.position.clone(), '#33e0ff', 24
                 );
+                setQuantumCompassEnabled(true);
             }
         },
         onFail: () => {
@@ -190,13 +193,25 @@ function awardMonolithReward(monolith: DataMonolithInstance): void {
     document.body.appendChild(modal);
 }
 
+/**
+ * Buoy spots drift per run seed so the network is not memorised, drawn from
+ * their own stream so no other system's rolls shift. Two draws per buoy.
+ */
+export function jitterBuoys(placements: readonly DerelictBuoyConfig[]): DerelictBuoyConfig[] {
+    return placements.map((p) => ({
+        ...p,
+        x: Math.round(p.x + (gameplayRandom('artifacts') - 0.5) * 2 * BUOY_JITTER_X),
+        y: p.y + (gameplayRandom('artifacts') - 0.5) * 2 * BUOY_JITTER_Y
+    }));
+}
+
 /** Spawns the artifacts declared by a level config. Call on level start. */
 export function spawnArtifactsForLevel(cfg: LevelConfig, baseX: number): void {
     game.derelictBuoyManager.clear();
     game.dataMonolithManager.clear();
     armed.clear();
     if (cfg.derelictBuoys?.length) {
-        game.derelictBuoyManager.spawnForLevel(cfg.derelictBuoys, baseX);
+        game.derelictBuoyManager.spawnForLevel(jitterBuoys(cfg.derelictBuoys), baseX);
     }
     if (cfg.dataMonoliths?.length) {
         game.dataMonolithManager.spawnForLevel(cfg.dataMonoliths, baseX);

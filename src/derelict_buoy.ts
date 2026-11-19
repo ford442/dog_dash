@@ -147,6 +147,13 @@ export class DerelictBuoyManager {
         return this.buoys.map(b => b.group);
     }
 
+    /** Buoys not yet hacked (Quantum Compass targets). */
+    getUnhackedBuoys(): THREE.Group[] {
+        const out: THREE.Group[] = [];
+        for (const b of this.buoys) if (!b.consumed) out.push(b.group);
+        return out;
+    }
+
     getScannables(): THREE.Object3D[] {
         return this.buoys.map(b => b.group);
     }
