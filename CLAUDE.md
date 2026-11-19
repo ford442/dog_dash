@@ -91,6 +91,7 @@ After any `alloc*` call JS must call `refreshMemoryView()` (memory growth detach
 | UI / UX | `ui_controls.ts`, `ui_factory.ts`, `hud_system.ts`, `touch_controls.ts`, `touch_settings.ts`, `docs/touch_integration_example.ts`, `tutorial_system.ts`, `victory_system.ts`, `debug_system.ts` |
 | Performance guardrails | `decoration_budget.ts`, `decoration_budget_auditor.ts` (dev-only declared-vs-observed drift check), `docs/PERFORMANCE_BUDGETS.md` |
 | Progression & economy | `upgrade_system.ts`, `powerup_manager.ts`, `collectibles.ts`, `save_manager.ts`, `boost_system.ts`, `roll_system.ts` |
+| Player verbs: Extractor Beam + solar wind | `extractor/` (pure `yields.ts` grant table, `beam.ts` cone picker + state machine, `candidates.ts` GeologicalWorld allowlist, `vfx.ts`), `main/extractor_update.ts` (sim step), `solar_wind.ts` (pure `applySailForces`), `solar_sail_ferns.ts` (unfold + field vectors). Hold **E** / touch 🧪; input bit `GhostAction.EXTRACT` |
 | Characters | `dog_cockpit/`, `space_friends.ts`, `player_loader.ts` |
 | GPU chores (visual-only helper compute) | `gpu_chores/`, `ports/gpu_chores_port.ts` — [docs/GPU_CHORES.md](docs/GPU_CHORES.md). **Not** a particle-sim port; gameplay authority stays on AS/WASM |
 | GPU integrate (visual particles/debris, opt-in `?gpu_integrate`) | `gpu_integrate/` (WGSL `kernels.ts`, `f32_reference.ts` mirror, `binding.ts`), `particles.ts` — [docs/GPU_INTEGRATE.md](docs/GPU_INTEGRATE.md). Change kernels + reference together and re-record with `npm run gpu-integrate:record` |

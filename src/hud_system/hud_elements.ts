@@ -56,16 +56,29 @@ export function createSparkle(x: number, y: number, color: string = COLORS.gold)
     setTimeout(() => sparkle.remove(), 1000);
 }
 
-export function updateFloraStatusDisplay(energy: number, maxEnergy: number, cryoStacks: number): void {
+export function updateFloraStatusDisplay(
+    energy: number,
+    maxEnergy: number,
+    cryoStacks: number,
+    extract: { label: string; progress: number } | null = null
+): void {
     const row = document.getElementById('hud-flora-status');
     const energyLabel = document.getElementById('hud-energy-label');
     const cryoLabel = document.getElementById('hud-cryo-label');
     if (!row || !energyLabel || !cryoLabel) return;
-    const show = energy < maxEnergy - 0.5 || cryoStacks > 0;
+    const show = energy < maxEnergy - 0.5 || cryoStacks > 0 || extract !== null;
     row.style.display = show ? 'flex' : 'none';
     energyLabel.textContent = `⚡ ${Math.round(energy)}`;
     cryoLabel.textContent = cryoStacks > 0 ? `❄️ Cryo ×${cryoStacks}` : '';
     cryoLabel.style.color = '#9fe8ff';
+    // Extractor Beam readout: target + siphon progress.
+    const extractLabel = document.getElementById('hud-extract-label');
+    if (extractLabel) {
+        extractLabel.textContent = extract
+            ? `🧪 ${extract.label}${extract.progress > 0 ? ` ${Math.round(extract.progress * 100)}%` : ''}`
+            : '';
+        extractLabel.style.color = '#8cffcc';
+    }
 }
 
 export function updateHealthDisplay(currentHealth: number, maxHealth: number): void {
@@ -368,7 +381,7 @@ export class HUDElementsBuilder {
             font-size: 13px;
             font-weight: 600;
         `;
-        floraRow.innerHTML = '<span id="hud-energy-label">⚡ 100</span><span id="hud-cryo-label"></span>';
+        floraRow.innerHTML = '<span id="hud-energy-label">⚡ 100</span><span id="hud-cryo-label"></span><span id="hud-extract-label"></span>';
         this.healthContainer.appendChild(floraRow);
 
         document.body.appendChild(this.healthContainer);

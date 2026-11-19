@@ -21,6 +21,7 @@ export function captureSimInput(): GhostActionFlags {
     if (game.wantsTether) mask |= GhostAction.TETHER;
     if (game.wantsReleaseTether) mask |= GhostAction.RELEASE_TETHER;
     if (game.wantsGrenade) mask |= GhostAction.GRENADE;
+    if (keys.extract || touchExtractHeld()) mask |= GhostAction.EXTRACT;
     return mask;
 }
 
@@ -28,7 +29,17 @@ export function captureSimInput(): GhostActionFlags {
 export function touchInputActive(): boolean {
     if (!touchControls) return false;
     const t = touchControls.getInput();
-    return Math.abs(t.vertical) > 0.1 || t.boost || t.fire || t.roll || t.bark;
+    return Math.abs(t.vertical) > 0.1 || t.boost || t.fire || t.roll || t.bark || t.extract;
+}
+
+/** Touch 🧪 Extract button held this step. */
+export function touchExtractHeld(): boolean {
+    return !!touchControls && touchControls.getInput().extract;
+}
+
+/** Extractor Beam held this step (keyboard E or touch). Read by the sim. */
+export function extractHeld(): boolean {
+    return keys.extract || touchExtractHeld();
 }
 
 /**
@@ -48,4 +59,5 @@ export function applySimInput(mask: GhostActionFlags): void {
     game.wantsTether = (mask & GhostAction.TETHER) !== 0;
     game.wantsReleaseTether = (mask & GhostAction.RELEASE_TETHER) !== 0;
     game.wantsGrenade = (mask & GhostAction.GRENADE) !== 0;
+    keys.extract = (mask & GhostAction.EXTRACT) !== 0;
 }

@@ -21,6 +21,8 @@ export interface TouchSettings {
     hapticEnabled: boolean;
     visualFeedback: boolean;
     leftHanded: boolean;
+    /** Show the 🧪 hold-to-Extract button (Extractor Beam alt-fire). */
+    showExtractButton: boolean;
 }
 
 export const DEFAULT_SETTINGS: TouchSettings = {
@@ -30,7 +32,8 @@ export const DEFAULT_SETTINGS: TouchSettings = {
     buttonSize: 'large',
     hapticEnabled: true,
     visualFeedback: true,
-    leftHanded: false
+    leftHanded: false,
+    showExtractButton: true
 };
 
 const SETTINGS_KEY = 'dog_dash_touch_settings';
@@ -240,6 +243,16 @@ export function createTouchSettingsUI(
         }
     );
     toggleContainer.appendChild(leftHandToggle);
+
+    // Extractor Beam button toggle
+    const extractToggle = createToggle(
+        '🧪 Extract Button (hold to siphon)',
+        settings.showExtractButton,
+        (checked) => {
+            settings.showExtractButton = checked;
+        }
+    );
+    toggleContainer.appendChild(extractToggle);
     
     panel.appendChild(toggleContainer);
     
@@ -275,6 +288,7 @@ export function createTouchSettingsUI(
         () => {
             saveTouchSettings(settings);
             touchManager.setMode(settings.mode);
+            touchManager.setExtractButtonEnabled(settings.showExtractButton);
             if (onClose) onClose();
             panel.remove();
         }

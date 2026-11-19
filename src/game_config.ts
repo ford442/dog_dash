@@ -70,7 +70,12 @@ export const playerState = {
     kelpContactSeconds: 0,
     kelpSpeedMul: 1,
     cryoStacks: 0,
-    cryoTimer: 0
+    cryoTimer: 0,
+    /** Solar-wind ride buff (solar_wind.ts): peak multiplier + seconds left. */
+    sailRideMul: 1,
+    sailRideTimer: 0,
+    /** Scroll multiplier from the sail ride this step (1 = none). */
+    sailSpeedMul: 1
 };
 
 /**

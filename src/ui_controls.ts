@@ -4,7 +4,9 @@ export const keys = {
     left: false,
     right: false,
     jump: false,
-    run: false
+    run: false,
+    /** Extractor Beam (hold E). Touch folds in via sim_input / player_update. */
+    extract: false
 };
 
 type UIOptions = {
@@ -163,6 +165,9 @@ export function setupKeyboardControls(options: ControlOptions) {
             case 'ShiftRight':
                 keys.run = true;
                 break;
+            case 'KeyE':
+                keys.extract = true;
+                break;
             case 'Enter':
             case 'KeyK': {
                 if (options.getPlayer()) options.requestFire();
@@ -198,6 +203,9 @@ export function setupKeyboardControls(options: ControlOptions) {
             case 'ShiftLeft':
             case 'ShiftRight':
                 keys.run = false;
+                break;
+            case 'KeyE':
+                keys.extract = false;
                 break;
         }
     };

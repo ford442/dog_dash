@@ -105,15 +105,32 @@ export class TouchControlsManager extends TouchControlsInput {
         document.body.appendChild(this.boostButton);
         document.body.appendChild(this.barkButton);
         document.body.appendChild(this.fireButton);
+
+        // Extractor Beam — hold to siphon. Lives in every control mode (it is
+        // an alt-fire, not a movement scheme), left of the fire column.
+        this.extractButton = document.createElement('div');
+        this.extractButton.id = 'touch-extract-btn';
+        this.extractButton.innerHTML = '🧪';
+        this.extractButton.style.cssText = this.getButtonStyles('extract');
+        this.extractButton.style.right = '150px';
+        this.extractButton.style.bottom = '60px';
+        this.extractButton.setAttribute('aria-label', 'Extract (hold)');
+        const extractLabel = document.createElement('span');
+        extractLabel.textContent = 'EXTRACT';
+        extractLabel.style.cssText = this.getLabelStyles();
+        this.extractButton.appendChild(extractLabel);
+        document.body.appendChild(this.extractButton);
     }
 
-    private getButtonStyles(type: 'boost' | 'bark' | 'fire'): string {
+    private getButtonStyles(type: 'boost' | 'bark' | 'fire' | 'extract'): string {
         const size = this.BUTTON_SIZE;
         const pastelColor = type === 'boost'
             ? 'rgba(255,182,193,0.8)'
             : type === 'bark'
                 ? 'rgba(255,204,136,0.85)'
-                : 'rgba(173,216,230,0.8)';
+                : type === 'extract'
+                    ? 'rgba(140,255,204,0.8)'
+                    : 'rgba(173,216,230,0.8)';
 
         return `
             position: fixed;
@@ -303,6 +320,11 @@ export class TouchControlsManager extends TouchControlsInput {
     }
 
     protected updateUIForMode(): void {
+        if (this.extractButton) {
+            // Desktop uses the E key; only touch devices get the on-screen button.
+            this.extractButton.style.display =
+                this.extractButtonEnabled && this.isTouchDevice() ? 'flex' : 'none';
+        }
         switch (this.mode) {
             case ControlMode.VIRTUAL_JOYSTICK:
                 if (this.boostButton) this.boostButton.style.display = 'flex';
@@ -327,6 +349,7 @@ export class TouchControlsManager extends TouchControlsInput {
         this.boostButton?.remove();
         this.barkButton?.remove();
         this.fireButton?.remove();
+        this.extractButton?.remove();
         this.fingerFollower?.remove();
         this.touchIndicators.forEach(indicator => indicator.remove());
         this.touchIndicators.clear();

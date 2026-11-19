@@ -354,8 +354,13 @@ export class HUDManager {
         }
     }
 
-    updateFloraStatus(energy: number, maxEnergy: number, cryoStacks: number): void {
-        updateFloraStatusDisplay(energy, maxEnergy, cryoStacks);
+    updateFloraStatus(
+        energy: number,
+        maxEnergy: number,
+        cryoStacks: number,
+        extract: { label: string; progress: number } | null = null
+    ): void {
+        updateFloraStatusDisplay(energy, maxEnergy, cryoStacks, extract);
     }
 
     showPowerUpIcon(type: PowerUpType, duration: number): void {

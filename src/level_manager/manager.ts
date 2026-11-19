@@ -354,6 +354,11 @@ export class LevelManager {
         getAudioSystem().setChapterMusic(layout.campaignTwin(levelIndex));
         applyLevelDecorationBudgets(cfg, this.objectDensityMultiplier);
 
+        // Clear the previous level's streamed flora *before* the first
+        // populate — clearing it afterwards (in disposeLevelStreamingResources)
+        // wiped the opening 470 units of sails, pinwheels and chimes on every
+        // level start.
+        this.clearStreamedFlora();
         populateZone(this, playerX + STREAM_AHEAD_START, playerX + STREAM_AHEAD_END, cfg);
 
 
@@ -561,11 +566,16 @@ export class LevelManager {
         return { percent, level: this.currentLevel };
     }
 
-    disposeLevelStreamingResources(): void {
+    /** Chunk-streamed flora (populateZone fills these); cleared before each level-start populate. */
+    clearStreamedFlora(): void {
         this.pinwheelManager.clear();
         this.windChimeManager.clear();
         this.solarSailFernManager.clear();
         this.crystalChimeManager.clear();
+    }
+
+    /** Env-plugin decorations; runs after the level-start populate, before applyEnvironmentPlugins. */
+    disposeLevelStreamingResources(): void {
 
         // Newly added to clean up decorative leaks
         if (this.auroraSystem) this.auroraSystem.cleanup?.();

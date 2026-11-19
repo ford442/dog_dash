@@ -88,6 +88,7 @@ function createWindChimeStub(): WindChimeManager {
 function createSolarSailStub(): SolarSailFernManager {
     return {
         update: () => [],
+        getFieldForces: () => [],
         cleanupFarBehind: noop,
         streamChunk: noop,
         clear: noop
