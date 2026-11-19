@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildAsteroidGeometry } from './hazard_art/asteroid_kit';
 // @ts-ignore
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 // @ts-ignore
@@ -186,23 +187,9 @@ export class ChromaShiftSystem {
     }
 
     private _initMesh() {
-        // High detail Icosahedron for the crystalline look
-        const geometry = new THREE.IcosahedronGeometry(1, 1);
-
-        // Add random displacement to base geometry to make each rock unique
-        const posAttr = geometry.attributes.position;
-        for (let i = 0; i < posAttr.count; i++) {
-            const vx = posAttr.getX(i);
-            const vy = posAttr.getY(i);
-            const vz = posAttr.getZ(i);
-
-            const scaleX = 1 + (Math.random() - 0.5) * 0.4; // visual-only
-            const scaleY = 1 + (Math.random() - 0.5) * 0.4; // visual-only
-            const scaleZ = 1 + (Math.random() - 0.5) * 0.4; // visual-only
-
-            posAttr.setXYZ(i, vx * scaleX, vy * scaleY, vz * scaleZ);
-        }
-        geometry.computeVertexNormals();
+        // Kit ore rock (owned copy): raised seams catch the chroma shader's
+        // iridescence, so these read as crystal-veined rock, not spheres.
+        const geometry = buildAsteroidGeometry('ore');
 
         this.uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
         const material = createChromaShiftMaterial(this.uPlayerPos);

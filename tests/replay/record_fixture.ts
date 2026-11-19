@@ -40,10 +40,10 @@ const endlessChapters = Number(arg('--chapters', '2'));
 const DEFAULT_SEEDS: Record<number, number> = {
     // Chapters 4 and 6: seeds the autopilot clears (squid lanes and the
     // final chapter are the hardest dodges in the campaign).
-    1: 0xd06d0001, 2: 0xd06d0002, 3: 0xd06d0003, 4: 101, 5: 0xd06d0005, 6: 600
+    1: 0xd06d0001, 2: 0xd06d0002, 3: 0xd06d0003, 4: 103, 5: 0xd06d0005, 6: 602
 };
 /** Endless default: chapter 2 is a Star-Eater gate, so the fixture covers a boundary and a boss fight. */
-const DEFAULT_ENDLESS_SEED = 0xd06de002;
+const DEFAULT_ENDLESS_SEED = 0xd06de00e;
 const rngSeed = Number(arg('--seed', String(endless ? DEFAULT_ENDLESS_SEED : DEFAULT_SEEDS[chapter] ?? 0xd06d0000))) >>> 0;
 const fixtureName = endless ? 'endless' : `chapter${chapter}`;
 const maxSteps = Number(arg('--max-steps', endless ? '12000' : '9000'));

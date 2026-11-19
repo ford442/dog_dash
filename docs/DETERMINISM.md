@@ -85,7 +85,7 @@ collision. For each fixture in `tests/fixtures/replays/` it asserts:
   through the real accumulator reach the identical pose.
 
 Fixtures exist for chapters 1, 4 and 6 (the test fails if any of those is
-missing), plus `endless.json`: an Endless Dash run (seed `0xd06de002`) that
+missing), plus `endless.json`: an Endless Dash run (seed `0xd06de00e`) that
 crosses into a generated chapter 2 and its Star-Eater gate. Endless replays
 preload the first generated chapters, and their chapter sequence is itself a
 pure function of the seed ([ENDLESS_DASH.md](ENDLESS_DASH.md)). The suite

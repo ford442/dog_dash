@@ -5,8 +5,16 @@
  */
 import { bootstrap } from './main/bootstrap';
 
-void bootstrap().catch((error) => {
-    // bootstrap() already renders the WebGPU boot-failure screen; anything
-    // reaching here is an unexpected startup fault worth surfacing loudly.
-    console.error('[bootstrap] fatal:', error);
-});
+if (new URLSearchParams(window.location.search).has('gallery')) {
+    // Asset review page (hazards, enemies, bosses on turntables). Lazy chunk:
+    // the game never loads it. See docs/HAZARD_ART.md.
+    void import('./asset_gallery')
+        .then((m) => m.startAssetGallery())
+        .catch((error) => console.error('[gallery] fatal:', error));
+} else {
+    void bootstrap().catch((error) => {
+        // bootstrap() already renders the WebGPU boot-failure screen; anything
+        // reaching here is an unexpected startup fault worth surfacing loudly.
+        console.error('[bootstrap] fatal:', error);
+    });
+}

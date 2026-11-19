@@ -5,6 +5,7 @@ import { PowerUpType } from '../../powerup_manager';
 import { MagicalEffectType } from '../../magical_effects';
 import { CollisionLayer } from '../../spatial_index';
 import { gameplayRandom } from '../../run_seed';
+import { primaryMaterial, setObstacleSurfaceColor } from '../../obstacle_system/surface';
 
 function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
     const hits = game.spatialIndex.query(playerPos.x, playerPos.y, playerPos.z, radius, CollisionLayer.Obstacle);
@@ -17,9 +18,9 @@ function applyAsteroidsToCandy(playerPos: THREE.Vector3, radius: number): void {
 
         const pastelColors = [0xffb6c1, 0xffc0cb, 0xe6e6fa, 0xb0e0e6, 0x98fb98];
         const candyColor = pastelColors[Math.floor(Math.random() * pastelColors.length)]; // visual-only
-        (obs.material as THREE.MeshStandardMaterial).color.setHex(candyColor);
-        (obs.material as THREE.MeshStandardMaterial).emissive.setHex(candyColor);
-        (obs.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.3;
+        setObstacleSurfaceColor(obs, candyColor);
+        primaryMaterial(obs).emissive.setHex(candyColor);
+        primaryMaterial(obs).emissiveIntensity = 0.3;
         obs.userData.isCandy = true;
 
         game.particleSystem.emit(obs.position.clone(), candyColor, 5, 3.0, 0.4, 0.6);

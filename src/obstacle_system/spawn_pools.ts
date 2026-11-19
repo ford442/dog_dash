@@ -6,7 +6,13 @@ import {
     getRandomPattern,
     getPatternName
 } from '../enemy_patterns';
-import { applyLevelVariant } from '../enemy_variants';
+import {
+    createEnemyCharacter,
+    enemyCharacterForLevel,
+    rollEnemyBodyColor
+} from '../hazard_art/enemy_characters';
+import { createAsteroidMaterial, getAsteroidGeometry, pickAsteroidKind } from '../hazard_art/asteroid_kit';
+import { artChapterFor } from '../hazard_art/art_chapter';
 import {
     createCandyObstacleMaterial,
     emitSugarCrystalBurst,
@@ -17,7 +23,7 @@ import {
     type CandyAsteroidVariant,
     type CandyFlavor
 } from '../candy_materials';
-import { SHARED_ASTEROID_GEOMETRY, SHARED_CANDY_GEOMETRY } from './types';
+import { SHARED_CANDY_GEOMETRY } from './types';
 import type { ObstacleSystemHost } from './host';
 import { disposeObject } from '../utils';
 import { getRunRngFork } from '../run_seed';
@@ -87,25 +93,20 @@ export function spawnPatternFormation(host: ObstacleSystemHost, playerX: number,
         const positions = generatePatternPositions(pattern);
         
         const config = host.options.getCurrentConfig();
+        const character = enemyCharacterForLevel(artChapterFor(host.options.getCurrentLevel(), config));
 
         for (let i = 0; i < positions.length; i++) {
             const pos = positions[i];
             const size = 0.4 + obstacleRng().random() * 0.8;
-            
-            // Create different colored enemies for visual variety
-            const hue = obstacleRng().random();
-            const color = new THREE.Color().setHSL(hue, 0.7, 0.5);
-            
-            // Environment Tinting: Tint enemies based on the level configuration
-            if (config?.enemyTintColor !== undefined) {
-                const tintColor = new THREE.Color(config.enemyTintColor);
-                color.lerp(tintColor, 0.6); // 60% environment color tint
-            }
+
+            // Visual-only body colour: the chapter character's own colour with a
+            // little jitter, recoloured (not replaced) by the level's enemy tint.
+            const color = rollEnemyBodyColor(character, config?.enemyTintColor);
 
             const enemy = createPatternEnemy(host, 
                 pos.x, pos.y, pos.z || 0, 
                 size, 
-                color.getHex(),
+                color,
                 pattern,
                 i
             );
@@ -124,39 +125,25 @@ export function createPatternEnemy(
     pattern: PatternConfig,
     index: number
 ): EnemyInstance {
-    const geo = new THREE.IcosahedronGeometry(size, 1);
-    const positions = geo.attributes.position;
-    for (let i = 0; i < positions.count; i++) {
-        const noise = (obstacleRng().random() - 0.5) * 0.3;
-        positions.setXYZ(
-            i,
-            positions.getX(i) * (1 + noise),
-            positions.getY(i) * (1 + noise),
-            positions.getZ(i) * (1 + noise)
-        );
-    }
-    geo.computeVertexNormals();
-
-    const mat = new THREE.MeshStandardMaterial({
-        color: color,
-        roughness: 0.4,
-        metalness: 0.6,
-        emissive: color,
-        emissiveIntensity: 0.3,
-        flatShading: true
-    });
-
-    const mesh = new THREE.Mesh(geo, mat);
+    // Chapter character (shared geometry, built at unit radius). Its front
+    // faces -X toward the player; the rig animates idle + telegraph in
+    // ObstacleSystem.update. Rotation speeds are zero so the generic obstacle
+    // spin leaves the face pointing forward.
+    const artChapter = artChapterFor(host.options.getCurrentLevel(), host.options.getCurrentConfig?.());
+    const mesh = createEnemyCharacter(enemyCharacterForLevel(artChapter), color);
     mesh.position.set(x, y, z);
-    mesh.castShadow = true;
+    mesh.scale.setScalar(size);
     mesh.receiveShadow = true;
     mesh.userData = {
+        ...mesh.userData,
         radius: size,
         isPatternEnemy: true,
-        health: 1
+        health: 1,
+        rotationSpeed: 0,
+        rotationSpeedY: 0,
+        rotationSpeedZ: 0
     };
 
-    applyLevelVariant(mesh, host.options.getCurrentLevel(), size, color);
     host.scene.add(mesh);
     host.obstacles.push(mesh);
 
@@ -178,31 +165,29 @@ export function createAsteroid(host: ObstacleSystemHost, x: number, y: number, z
         const finalSize = (size > 0) ? size : (0.5 + obstacleRng().random() * 1.5);
         const scale = finalSize;
 
-        const colorVariation = obstacleRng().random() * 0.2;
-        const baseColor = 0x666666 + Math.floor(colorVariation * 0x222222);
-        const mat = new THREE.MeshStandardMaterial({
-            color: baseColor,
-            roughness: 0.95,
-            metalness: 0.05,
-            flatShading: true
-        });
-        const asteroid = new THREE.Mesh(SHARED_ASTEROID_GEOMETRY.clone(), mat);
+        // Visual-only: shape and palette never feed gameplay (collision uses
+        // userData.radius), so they stay off the run RNG. The kit geometry is
+        // shared (markShared) — never clone it per spawn.
+        const kind = pickAsteroidKind();
+        const level = host.options.getCurrentLevel();
+        const mat = createAsteroidMaterial(kind, artChapterFor(level, host.options.getCurrentConfig?.()));
+        const asteroid = new THREE.Mesh(getAsteroidGeometry(kind), mat);
         asteroid.position.set(x, y, z);
         asteroid.scale.setScalar(scale);
-        asteroid.rotation.set(obstacleRng().random() * Math.PI, obstacleRng().random() * Math.PI, obstacleRng().random() * Math.PI);
+        asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI); // visual-only
         asteroid.castShadow = true;
         asteroid.receiveShadow = true;
         asteroid.userData = {
-            rotationSpeed: (obstacleRng().random() - 0.5) * 2,
-            rotationSpeedY: (obstacleRng().random() - 0.5) * 1.5,
-            rotationSpeedZ: (obstacleRng().random() - 0.5) * 1.8,
+            rotationSpeed: (Math.random() - 0.5) * 2, // visual-only
+            rotationSpeedY: (Math.random() - 0.5) * 1.5, // visual-only
+            rotationSpeedZ: (Math.random() - 0.5) * 1.8, // visual-only
             radius: finalSize,
             baseScale: finalSize,
             velocity: velocity || new THREE.Vector3(0, 0, 0),
+            asteroidKind: kind,
             squashTimer: 0,
-            sparkleTimer: 1 + obstacleRng().random() * 3
+            sparkleTimer: 1 + Math.random() * 3 // visual-only
         };
-        applyLevelVariant(asteroid, host.options.getCurrentLevel(), finalSize);
 
         host.scene.add(asteroid);
         host.obstacles.push(asteroid);
@@ -229,13 +214,13 @@ export function createCandyAsteroid(
     const asteroid = new THREE.Mesh(SHARED_CANDY_GEOMETRY, mat);
     asteroid.position.set(x, y, z);
     asteroid.scale.setScalar(scale);
-    asteroid.rotation.set(obstacleRng().random() * Math.PI, obstacleRng().random() * Math.PI, obstacleRng().random() * Math.PI);
+    asteroid.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI); // visual-only
     asteroid.castShadow = true;
     asteroid.receiveShadow = true;
     asteroid.userData = {
-        rotationSpeed: (obstacleRng().random() - 0.5) * 1.6,
-        rotationSpeedY: (obstacleRng().random() - 0.5) * 1.2,
-        rotationSpeedZ: (obstacleRng().random() - 0.5) * 1.4,
+        rotationSpeed: (Math.random() - 0.5) * 1.6, // visual-only
+        rotationSpeedY: (Math.random() - 0.5) * 1.2, // visual-only
+        rotationSpeedZ: (Math.random() - 0.5) * 1.4, // visual-only
         radius: finalSize,
         baseScale: scale,
         velocity: velocity || new THREE.Vector3(0, 0, 0),
@@ -243,7 +228,7 @@ export function createCandyAsteroid(
         candyFlavor,
         candyVariant,
         squashTimer: 0,
-        sparkleTimer: 0.5 + obstacleRng().random() * 2
+        sparkleTimer: 0.5 + Math.random() * 2 // visual-only
     };
 
     host.scene.add(asteroid);
@@ -276,14 +261,14 @@ export function _updateCandyAsteroid(host: ObstacleSystemHost, obs: THREE.Mesh, 
 
         obs.userData.sparkleTimer = (obs.userData.sparkleTimer ?? 2) - delta;
         if (obs.userData.sparkleTimer <= 0) {
-            obs.userData.sparkleTimer = 1.5 + obstacleRng().random() * 3;
+            obs.userData.sparkleTimer = 1.5 + Math.random() * 3; // visual-only
             const flavor = obs.userData.candyFlavor as CandyFlavor;
             const sparkleColor = (CANDY_FLAVOR_COLORS as Record<CandyFlavor, { sparkle: number }>)[flavor]?.sparkle ?? 0xffffff;
             host.options.particleSystem.emit(
                 obs.position.clone().add(new THREE.Vector3(
-                    (obstacleRng().random() - 0.5) * obs.userData.radius,
-                    (obstacleRng().random() - 0.5) * obs.userData.radius,
-                    (obstacleRng().random() - 0.5) * obs.userData.radius * 0.5
+                    (Math.random() - 0.5) * obs.userData.radius, // visual-only
+                    (Math.random() - 0.5) * obs.userData.radius, // visual-only
+                    (Math.random() - 0.5) * obs.userData.radius * 0.5 // visual-only
                 )),
                 sparkleColor,
                 obs.userData.candyVariant === 'comet' ? 3 : 2,
@@ -342,7 +327,7 @@ export function createMineRobot(host: ObstacleSystemHost, x: number, y: number, 
 
         mine.userData = {
             rotationSpeed: 0,
-            rotationSpeedY: (obstacleRng().random() - 0.5) * 0.3,
+            rotationSpeedY: (Math.random() - 0.5) * 0.3, // visual-only
             rotationSpeedZ: 0,
             radius: size,
             velocity: new THREE.Vector3(0, 0, 0),
@@ -371,9 +356,9 @@ export function createBarnaclePod(host: ObstacleSystemHost, x: number, y: number
         barnacle.castShadow = true;
         barnacle.receiveShadow = true;
         barnacle.userData = {
-            rotationSpeed: (obstacleRng().random() - 0.5) * 0.4,
-            rotationSpeedY: (obstacleRng().random() - 0.5) * 0.4,
-            rotationSpeedZ: (obstacleRng().random() - 0.5) * 0.4,
+            rotationSpeed: (Math.random() - 0.5) * 0.4, // visual-only
+            rotationSpeedY: (Math.random() - 0.5) * 0.4, // visual-only
+            rotationSpeedZ: (Math.random() - 0.5) * 0.4, // visual-only
             radius: size,
             velocity: new THREE.Vector3(0, 0, 0),
             type: 'barnacle',

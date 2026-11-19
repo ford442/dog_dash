@@ -343,6 +343,23 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'creatures',
         maxActive: 1
     });
+    // Gameplay hazards (obstacle_system) — observe-only via syncCount; the
+    // caps are review thresholds for the debug panel, never spawn gates.
+    decorationBudget.register('hazard_obstacles', {
+        label: 'Hazards (asteroids, mines, pods)',
+        category: 'creatures',
+        maxActive: 60
+    });
+    decorationBudget.register('formation_enemies', {
+        label: 'Formation enemies (chapter characters)',
+        category: 'creatures',
+        maxActive: 48
+    });
+    decorationBudget.register('zephyr_boss', {
+        label: 'Zephyr (boss)',
+        category: 'creatures',
+        maxActive: 1
+    });
     decorationBudget.register('star_eater_minions', {
         label: 'Star-Eater minion orbiters',
         category: 'creatures',

@@ -26,6 +26,9 @@ import {
 } from './collision_hooks';
 import { disposeObject } from '../utils';
 import { CollisionLayer, type SpatialIndex } from '../spatial_index';
+import { enemyTellTarget, updateEnemyRig } from '../hazard_art/enemy_characters';
+import { decorationBudget } from '../decoration_budget';
+import { applyObstacleDepthFade } from './surface';
 import { getRunRngFork } from '../run_seed';
 
 function obstacleRng() {
@@ -168,8 +171,15 @@ export class ObstacleSystem implements ObstacleSystemHost {
         for (const enemy of this.patternEnemies) {
             const newPos = updatePatternPosition(enemy, this.time, delta);
             enemy.mesh.position.copy(newPos);
-            enemy.mesh.rotation.x += delta * enemy.speed;
-            enemy.mesh.rotation.y += delta * enemy.speed * 0.7;
+            // Visual-only: idle loop + telegraph when the player is ahead of the
+            // enemy's face. Replaces the old free spin, which hid the front.
+            updateEnemyRig(
+                enemy.mesh,
+                delta,
+                this.time,
+                enemyTellTarget(newPos.x, newPos.y, playerX, playerY),
+                playerY - newPos.y
+            );
         }
 
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
@@ -222,17 +232,8 @@ export class ObstacleSystem implements ObstacleSystemHost {
                 }
             }
 
-            const zDepth = Math.abs(obs.position.z);
             if (!obs.userData.isCandyAsteroid) {
-                if (zDepth > 1.0) {
-                    const mat = obs.material as THREE.MeshStandardMaterial;
-                    const depthFactor = Math.min(1.0, zDepth / 25.0);
-                    const brightness = 1.0 - depthFactor * 0.9;
-                    mat.color.setScalar(0.4 * brightness);
-                } else {
-                    const mat = obs.material as THREE.MeshStandardMaterial;
-                    if (mat.color.r < 0.3) mat.color.setScalar(0.4);
-                }
+                applyObstacleDepthFade(obs);
             }
 
             if (obs.position.x < playerX - 30 || Math.abs(obs.position.z) > 50) {
@@ -250,6 +251,11 @@ export class ObstacleSystem implements ObstacleSystemHost {
                 this.patternEnemies.splice(i, 1);
             }
         }
+
+        // Observe-only budget counts (debug panel). Hazards are gameplay
+        // spawns, so the budget reports them but never gates them.
+        decorationBudget.syncCount('hazard_obstacles', this.obstacles.length - this.patternEnemies.length);
+        decorationBudget.syncCount('formation_enemies', this.patternEnemies.length);
 
         const squidRate = currentCfg?.squidSpawnRate || 0;
         const currentLevel = this.options.getCurrentLevel();

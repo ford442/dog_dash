@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildAsteroidGeometry } from './hazard_art/asteroid_kit';
 import { time, color, sin, mix, float, instanceIndex, hash, fract } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 
@@ -20,24 +21,9 @@ export class GhostDebrisSystem {
     }
 
     private _initMesh() {
-        // Irregular rocky shape: icosahedron + random extrusion
-        const geometry = new THREE.IcosahedronGeometry(1.2, 0);
-
-        // Slight random extrusion for organic look
-        const positions = geometry.attributes.position;
-        for (let i = 0; i < positions.count; i++) {
-            const vx = positions.getX(i);
-            const vy = positions.getY(i);
-            const vz = positions.getZ(i);
-
-            // Random scaling factor between 1.0 and 1.3
-            const scaleX = 1 + Math.random() * 0.3;
-            const scaleY = 1 + Math.random() * 0.3;
-            const scaleZ = 1 + Math.random() * 0.3;
-
-            positions.setXYZ(i, vx * scaleX, vy * scaleY, vz * scaleZ);
-        }
-        geometry.computeVertexNormals();
+        // Kit shard rock (owned copy) at the old ~1.2 radius: reads as broken
+        // debris rather than a blob.
+        const geometry = buildAsteroidGeometry('shard', 1.3);
 
         // TSL Material for Phase Shifting
         const material = new MeshStandardNodeMaterial({
