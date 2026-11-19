@@ -221,7 +221,7 @@ export class StarEaterBoss {
 
         const center = this.group.position;
         for (const minion of this.minions) {
-            minion.update(delta, center, this.time);
+            minion.update(delta, center, this.time, this.rageTimer > 0);
         }
 
         switch (this.phase) {

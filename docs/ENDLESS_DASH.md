@@ -155,7 +155,7 @@ Two descriptors were retagged when the generator landed:
   bestiary entries and Endless records persist, and that no campaign
   chapter was unlocked.
 - `tests/fixtures/replays/endless.json` is a recorded Endless replay
-  (seed `0xd06de002`). It crosses into chapter 2 and its Star-Eater gate,
+  (seed `0xd06de00e`). It crosses into chapter 2 and its Star-Eater gate,
   and gets the same snapshot / Math.random / 30-60-144 Hz checks as the
   campaign fixtures. Re-record it with `npm run replay:record -- --endless`.
 

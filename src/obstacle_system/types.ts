@@ -4,10 +4,11 @@ import type { LevelConfig } from '../level_config';
 import type { SporeCloud } from '../geological';
 import { markShared, noteGeometryCreated } from '../gpu_resources';
 
-/** Shared unit geometry — scaled per instance (pooled, not reallocated). */
-export const SHARED_ASTEROID_GEOMETRY = markShared(new THREE.IcosahedronGeometry(1, 0));
+/**
+ * Shared unit candy geometry — scaled per instance. Rock asteroids use the
+ * five-shape kit in `hazard_art/asteroid_kit.ts` (`getAsteroidGeometry`).
+ */
 export const SHARED_CANDY_GEOMETRY = markShared(new THREE.IcosahedronGeometry(1, 1));
-noteGeometryCreated();
 noteGeometryCreated();
 
 export type GameplayModifiers = {

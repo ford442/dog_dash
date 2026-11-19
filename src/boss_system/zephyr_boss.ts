@@ -1,8 +1,14 @@
 import * as THREE from 'three';
 import { decorationBudget } from '../decoration_budget';
-import { time, vec3, color, uniform, sin, cos, float, positionLocal, normalLocal } from 'three/tsl';
-import { MeshStandardNodeMaterial, MeshBasicNodeMaterial } from 'three/webgpu';
 import { PHASE_NAMES, type BossConfig, type BossHitboxEntry, type BossPhase } from './types';
+import {
+    ZephyrRig,
+    ZEPHYR_EYE_DURATION,
+    ZEPHYR_EYE_RADIUS,
+    ZEPHYR_GALE_DURATION,
+    ZEPHYR_SHEAR_DURATION,
+    ZEPHYR_SHIELD_RADIUS
+} from './zephyr_rig';
 
 export class ZephyrBoss {
     scene: THREE.Scene;
@@ -24,9 +30,8 @@ export class ZephyrBoss {
     pullForceX = 0;
     isSnapping = false;
 
-    coreMesh!: THREE.Mesh;
-    windRings: THREE.Mesh[] = [];
-    outerHurricane!: THREE.Mesh;
+    /** Eye-of-the-storm visuals (eye = weak point, cloud wreath = shield). */
+    rig!: ZephyrRig;
     glowLight!: THREE.PointLight;
 
     onDefeated: () => void;
@@ -58,11 +63,11 @@ export class ZephyrBoss {
     }
 
     activate(startX: number): void {
-        if (!decorationBudget.canSpawn('star_eater_boss')) {
+        if (!decorationBudget.canSpawn('zephyr_boss')) {
             console.warn('Zephyr Boss blocked by decoration budget');
             return;
         }
-        decorationBudget.reportSpawn('star_eater_boss');
+        decorationBudget.reportSpawn('zephyr_boss');
         this.isActive = true;
         this.group.position.x = startX + 120;
         this.setPhase('entering');
@@ -71,76 +76,15 @@ export class ZephyrBoss {
 
     destroy(): void {
         this.isActive = false;
-        decorationBudget.reportDestroy('star_eater_boss');
+        decorationBudget.reportDestroy('zephyr_boss');
         this.scene.remove(this.group);
-
-        this.group.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(m => m.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
-                }
-            }
-        });
+        this.rig.dispose();
     }
 
     private buildVisuals() {
-        // 1. Core Orb
-        const coreGeo = new THREE.SphereGeometry(4, 32, 32);
-        const coreMat = new MeshStandardNodeMaterial({
-            roughness: 0.1,
-            metalness: 0.8,
-            transparent: true,
-            opacity: 0.9,
-            depthWrite: true
-        });
+        this.rig = new ZephyrRig();
+        this.group.add(this.rig.root);
 
-        const corePulse = sin(time.mul(2.0)).mul(0.2).add(0.8);
-        coreMat.colorNode = color(0x00ffff).mul(corePulse);
-        coreMat.emissiveNode = color(0x00ffff).mul(corePulse.mul(0.5));
-
-        this.coreMesh = new THREE.Mesh(coreGeo, coreMat);
-        this.group.add(this.coreMesh);
-
-        // 2. Wind Rings
-        const ringGeo = new THREE.TorusGeometry(8, 0.5, 16, 64);
-        for(let i=0; i<3; i++) {
-            const ringMat = new MeshBasicNodeMaterial({
-                transparent: true,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
-            });
-            const t = time.mul(3.0).add(i * 2.0);
-            ringMat.colorNode = color(0x88ffff).mul(sin(t).mul(0.5).add(0.5));
-
-            const ring = new THREE.Mesh(ringGeo, ringMat);
-            ring.rotation.x = Math.random() * Math.PI; // visual-only
-            ring.rotation.y = Math.random() * Math.PI; // visual-only
-            this.windRings.push(ring);
-            this.group.add(ring);
-        }
-
-        // 3. Outer Hurricane Shield
-        const stormGeo = new THREE.SphereGeometry(12, 32, 32);
-        const stormMat = new MeshBasicNodeMaterial({
-            transparent: true,
-            opacity: 0.3,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-            blending: THREE.AdditiveBlending
-        });
-
-        const stormSway = sin(time.mul(5.0).add(positionLocal.y)).mul(0.5);
-        stormMat.colorNode = color(0xaaffff).mul(stormSway.add(0.5));
-
-        this.outerHurricane = new THREE.Mesh(stormGeo, stormMat);
-        this.group.add(this.outerHurricane);
-
-        // 4. Glow
         this.glowLight = new THREE.PointLight(0x00ffff, 2.0, 100);
         this.group.add(this.glowLight);
     }
@@ -180,15 +124,7 @@ export class ZephyrBoss {
     }
 
     private flashGroup(): void {
-        const mat = this.coreMesh.material as any;
-        if (!mat) return;
-        const oldColor = mat.colorNode;
-        mat.colorNode = color(0xffffff);
-        setTimeout(() => {
-            if (this.isActive) {
-                mat.colorNode = oldColor;
-            }
-        }, 100);
+        this.rig.hit();
     }
 
     collectWasmHitboxes(): BossHitboxEntry[] {
@@ -196,10 +132,11 @@ export class ZephyrBoss {
         const coreX = this.group.position.x;
         const coreY = this.group.position.y;
 
+        // Radii track the rig: the eye (r ≈ 3.6) when exposed, the cloud wreath (r 8) when shielded.
         if (this.weakPointExposed) {
-            boxes.push({ x: coreX, y: coreY, radius: 4, target: 'boss', dealsDamage: true });
+            boxes.push({ x: coreX, y: coreY, radius: Math.ceil(ZEPHYR_EYE_RADIUS), target: 'boss', dealsDamage: true });
         } else {
-            boxes.push({ x: coreX, y: coreY, radius: 8, target: 'boss', dealsDamage: false });
+            boxes.push({ x: coreX, y: coreY, radius: ZEPHYR_SHIELD_RADIUS, target: 'boss', dealsDamage: false });
         }
 
         return boxes;
@@ -214,12 +151,6 @@ export class ZephyrBoss {
 
         this.time += delta;
         if (this.rageTimer > 0) this.rageTimer -= delta;
-
-        // Visual animations
-        this.windRings.forEach((ring, index) => {
-            ring.rotation.x += delta * (1.0 + index * 0.5);
-            ring.rotation.y += delta * (1.5 - index * 0.2);
-        });
 
         let currentPullForce = 0;
         this.pullForceY = 0;
@@ -251,6 +182,17 @@ export class ZephyrBoss {
         // Apply Y shear to group so player pull is affected
         this.group.position.y = Math.sin(this.time * 2.0) * 5 + this.pullForceY;
 
+        const player = this.getPlayerPosition();
+        this.rig.update(delta, {
+            phase: this.phase,
+            phaseTime: this.time,
+            weakPointExposed: this.weakPointExposed,
+            pullForceY: this.pullForceY,
+            target: player
+                ? { x: player.x - this.group.position.x, y: player.y - this.group.position.y }
+                : null
+        });
+
         return { pullForce: currentPullForce, isSnapping: this.isSnapping };
     }
 
@@ -266,10 +208,8 @@ export class ZephyrBoss {
     private updateGale(delta: number): number {
         // High pull force, shield is up
         this.weakPointExposed = false;
-        if (this.outerHurricane) this.outerHurricane.visible = true;
 
-        const cycle = this.time % 12;
-        if (cycle > 10) {
+        if (this.time > ZEPHYR_GALE_DURATION) {
             this.setPhase('phase2');
             console.log('🌪️ Zephyr entering Phase 2 - SHEAR');
             return 0;
@@ -281,10 +221,8 @@ export class ZephyrBoss {
     private updateShear(delta: number): number {
         // Shifting updraft/downdrafts
         this.weakPointExposed = false;
-        if (this.outerHurricane) this.outerHurricane.visible = true;
 
-        const cycle = this.time % 10;
-        if (cycle > 8) {
+        if (this.time > ZEPHYR_SHEAR_DURATION) {
             this.setPhase('phase3');
             console.log('🌪️ Zephyr entering Phase 3 - EYE');
             return 0;
@@ -297,10 +235,8 @@ export class ZephyrBoss {
     private updateEye(delta: number): number {
         // Core exposed, calm winds
         this.weakPointExposed = true;
-        if (this.outerHurricane) this.outerHurricane.visible = false;
 
-        const cycle = this.time % 8;
-        if (cycle > 6) {
+        if (this.time > ZEPHYR_EYE_DURATION) {
             this.setPhase('phase1');
             console.log('🌪️ Zephyr returning to Phase 1 - GALE');
             return 0;
@@ -311,7 +247,6 @@ export class ZephyrBoss {
 
     private updateDefeated(delta: number) {
         this.weakPointExposed = false;
-        if (this.outerHurricane) this.outerHurricane.visible = false;
         this.group.position.y -= delta * 10;
         this.group.rotation.z += delta * 5;
     }

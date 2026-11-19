@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildAsteroidGeometry } from './hazard_art/asteroid_kit';
 import { uniform } from 'three/tsl';
 import { WeaponLightManager } from './lighting';
 import { createAsteroidFieldMaterial } from './candy_materials';
@@ -53,8 +54,8 @@ export class AsteroidLayer {
         this.sizeMax = config.sizeMax;
         this.candyChance = config.candyChance ?? 0;
 
-        // Geometry: Icosahedron for jagged rock look
-        const geometry = new THREE.IcosahedronGeometry(1, 0);
+        // Geometry: the kit's chunk rock (owned copy; the field disposes it).
+        const geometry = buildAsteroidGeometry('chunk');
 
         // Material: TSL Node Material (rock + optional candy mix per instance)
         const material = createAsteroidFieldMaterial(

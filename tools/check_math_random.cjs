@@ -41,7 +41,7 @@ const GAMEPLAY_PATHS = [
     'src/sim_clock.ts',
     'src/obstacle_system/',
     'src/enemy_patterns.ts',
-    'src/enemy_variants.ts',
+    'src/hazard_art/',
     'src/space_robot_squid.ts',
     'src/weapons.ts',
     'src/boss_system/',
