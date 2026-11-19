@@ -490,6 +490,20 @@ export class HUDManager {
         });
     }
 
+    /** Lost Sector finish line: an authored secret chapter, flown again or back to the hub. */
+    showSectorCompleteScreen(stats: GameStats, sectorTitle: string, firstClear: boolean, onFlyAgain: () => void): void {
+        this.screens.showVictoryScreen(stats, {
+            title: `${sectorTitle} explored! 📡`,
+            message: firstClear
+                ? 'You found a Lost Sector your friends have not opened yet! 🐕✨'
+                : 'Back through the secret sector — nice flying! 🐕',
+            playAgainLabel: '🔁 Fly it again',
+            onPlayAgain: onFlyAgain,
+            hubLabel: '📡 Back to Lost Sectors',
+            onOpenHub: this.openHub ? () => this.openHub!('victory') : undefined
+        });
+    }
+
     /** Short HUD banner, e.g. why a shared Architect course was refused. */
     showNotice(text: string, seconds = 7): void {
         this.screens.showNotice(text, seconds);

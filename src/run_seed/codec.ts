@@ -1,6 +1,6 @@
 import { RUN_SEED_SCHEMA_VERSION, type RunCampaignId, type RunModifier, type RunSeed } from './types';
 
-const CAMPAIGN_IDS: readonly RunCampaignId[] = ['campaign', 'endless', 'architect'];
+const CAMPAIGN_IDS: readonly RunCampaignId[] = ['campaign', 'endless', 'architect', 'lost'];
 /** Mirrors `ARCHITECT_MAX_PLACEMENTS`; the architect chunk re-checks every placement with its schema. */
 const MAX_ARCHITECT_PLACEMENTS = 24;
 
@@ -32,6 +32,10 @@ function isValidModifier(raw: unknown): raw is RunModifier {
         return Array.isArray(m.placements)
             && m.placements.length <= MAX_ARCHITECT_PLACEMENTS
             && m.placements.every((p) => !!p && typeof p === 'object' && !Array.isArray(p));
+    }
+    if (m.kind === 'lost_sector') {
+        // The lost_sector chunk checks the id against its allowlist before building a layout.
+        return typeof m.sectorId === 'string' && m.sectorId.length <= 32;
     }
     return false;
 }

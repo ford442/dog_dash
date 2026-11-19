@@ -10,7 +10,7 @@
  */
 import { LEVEL_CONFIG, LEVEL_DISTANCE_BOUNDARIES, type LevelConfig } from './level_config';
 
-export type JourneyMode = 'campaign' | 'endless' | 'architect';
+export type JourneyMode = 'campaign' | 'endless' | 'architect' | 'lost';
 
 export type ChapterSpan = { startX: number; endX: number; length: number };
 
@@ -79,6 +79,15 @@ export function isEndlessRun(): boolean {
 
 export function isArchitectRun(): boolean {
     return activeLayout.mode === 'architect';
+}
+
+export function isLostSectorRun(): boolean {
+    return activeLayout.mode === 'lost';
+}
+
+/** Single-chapter runs (Architect sandbox, Lost Sector) finish at the end of their span. */
+export function hasFinishLine(): boolean {
+    return activeLayout.mode === 'architect' || activeLayout.mode === 'lost';
 }
 
 /** Only campaign chapters unlock chapters, open the Moon journey map and end at the Moon. */

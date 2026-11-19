@@ -16,6 +16,8 @@ export const CollisionLayer = {
     Boss: 1 << 4,
     Spore: 1 << 5,
     Projectile: 1 << 6,
+    /** Quantum Compass targets (visual-only HUD; filled only while the compass is on). */
+    Rare: 1 << 7,
 } as const;
 
 export type CollisionLayerMask = number;
@@ -29,7 +31,8 @@ export type SpatialKind =
     | 'creature'
     | 'tether'
     | 'boss'
-    | 'projectile';
+    | 'projectile'
+    | 'rare';
 
 export type SpatialRecord = {
     slot: number;

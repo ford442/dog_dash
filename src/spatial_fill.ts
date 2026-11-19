@@ -1,6 +1,7 @@
 import { game } from './game_runtime';
 import { CollisionLayer, type SpatialIndex } from './spatial_index';
 import type { GeologicalWorldPort } from './ports/geological_world_port';
+import { collectRareSpatial, isQuantumCompassTracking } from './quantum_compass/spatial';
 
 /**
  * Rebuild the gameplay spatial hash from live world objects.
@@ -52,6 +53,9 @@ export function rebuildGameplaySpatialHash(
         const pos = p.mesh.position;
         index.add(pos.x, pos.y, pos.z, 0.5, CollisionLayer.Projectile, i, 'projectile');
     }
+
+    // Appended last and on their own layer, so no gameplay query sees them.
+    if (isQuantumCompassTracking()) collectRareSpatial(index, geologicalPort);
 
     index.commit();
     const handle = index.getHandle();

@@ -29,7 +29,7 @@ locked to 60 Hz.
 
 `gameplayRandom('obstacles' | 'candy' | 'enemies' | 'boss' | 'pickups' |
 'powerups' | 'creatures' | 'friends' | 'geology' | 'flora' | 'slingables' |
-'environment' | 'player' | 'harvest' | 'comboCorridor')`. Each domain has
+'environment' | 'player' | 'harvest' | 'comboCorridor' | 'artifacts')`. Each domain has
 its own stream, so one system drawing more or fewer numbers never shifts
 another system's rolls. Decorative world-dressing uses `'environment'`, which
 is seeded too so two machines see the same scenery, and is kept apart from

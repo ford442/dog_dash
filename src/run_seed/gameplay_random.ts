@@ -30,7 +30,8 @@ export type GameplayStream =
     | 'slingables'
     | 'environment'
     | 'player'
-    | 'harvest';
+    | 'harvest'
+    | 'artifacts';
 
 export interface RandomSource {
     random(): number;
