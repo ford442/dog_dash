@@ -46,6 +46,12 @@ export class ObstacleSystem implements ObstacleSystemHost {
     private patternProgress = 0;
     time = 0;
     bounceCooldown = 0;
+    /**
+     * While the Extractor Beam roots the ship, nearby mine robots and barnacle
+     * pods drift toward it (plan.md: "attracts enemies"). Set per sim step;
+     * null when the beam is off.
+     */
+    attraction: { x: number; y: number; radius: number; speed: number } | null = null;
 
     grazeCombo = 0;
     lastGrazeTime = 0;
@@ -189,6 +195,18 @@ export class ObstacleSystem implements ObstacleSystemHost {
 
             if (obs.userData.isCandyAsteroid) {
                 _updateCandyAsteroid(this, obs, delta);
+            }
+
+            const pull = this.attraction;
+            if (pull && (obs.userData.isMineRobot || obs.userData.type === 'barnacle')) {
+                const ax = pull.x - obs.position.x;
+                const ay = pull.y - obs.position.y;
+                const d = Math.hypot(ax, ay);
+                if (d > 2 && d < pull.radius) {
+                    const step = Math.min(d - 2, pull.speed * delta * slowMult);
+                    obs.position.x += (ax / d) * step;
+                    obs.position.y += (ay / d) * step;
+                }
             }
 
             if (obs.userData.isMineRobot && obs.userData.pupils) {

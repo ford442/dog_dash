@@ -25,7 +25,9 @@ export const GhostAction = {
     DOWN: 128,
     /** Shift held (hold-to-boost, fairy-wing float). */
     RUN: 256,
-    GRENADE: 512
+    GRENADE: 512,
+    /** Extractor Beam held: E key or touch 🧪 (Plasma Caster alt-fire). */
+    EXTRACT: 1024
 } as const;
 
 export type GhostFrame = {

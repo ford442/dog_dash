@@ -61,6 +61,18 @@ export abstract class TouchControlsInput extends TouchControlsBase {
             isButton: false
         };
 
+        // Extract is a hold button in every mode — claim the touch before
+        // double-tap boost or finger-follow movement can read it.
+        if (this.extractButtonEnabled && this.isPointInButton(x, y, 'extract')) {
+            touchPoint.isButton = true;
+            this.extractTouchId = id;
+            this.currentInput.extract = true;
+            this.animateButton(this.extractButton);
+            this.triggerHaptic(25);
+            this.touches.set(id, touchPoint);
+            return;
+        }
+
         if (now - this.lastTapTime < this.doubleTapThreshold) {
             this.currentInput.boost = true;
             this.triggerHaptic(50);
@@ -122,6 +134,7 @@ export abstract class TouchControlsInput extends TouchControlsBase {
     protected processTouchMove(id: number, x: number, y: number): void {
         const touch = this.touches.get(id);
         if (!touch) return;
+        if (id === this.extractTouchId) return;
 
         touch.x = x;
         touch.y = y;
@@ -165,6 +178,12 @@ export abstract class TouchControlsInput extends TouchControlsBase {
     protected processTouchEnd(id: number): void {
         const touch = this.touches.get(id);
         if (!touch) return;
+        if (id === this.extractTouchId) {
+            this.extractTouchId = null;
+            this.currentInput.extract = false;
+            this.touches.delete(id);
+            return;
+        }
 
         const dx = touch.x - touch.startX;
         const dy = touch.y - touch.startY;
@@ -242,12 +261,15 @@ export abstract class TouchControlsInput extends TouchControlsBase {
         }
     }
 
-    protected isPointInButton(x: number, y: number, buttonType: 'boost' | 'bark' | 'fire'): boolean {
+    protected isPointInButton(x: number, y: number, buttonType: 'boost' | 'bark' | 'fire' | 'extract'): boolean {
         const button = buttonType === 'boost'
             ? this.boostButton
             : buttonType === 'bark'
                 ? this.barkButton
-                : this.fireButton;
+                : buttonType === 'extract'
+                    ? this.extractButton
+                    : this.fireButton;
+        if (button && button.style.display === 'none') return false;
         if (!button) return false;
 
         const rect = button.getBoundingClientRect();

@@ -5,6 +5,7 @@ export const cleanupMixin = bindMixin({
 destroy() {
     this.stopGravityHum();
     this.stopMagmaRumble();
+    this.stopExtractorHum();
     this.stopEngine();
     this.stopHover();
     this.stopDrone();

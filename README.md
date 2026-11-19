@@ -120,6 +120,8 @@ npm run test:smoke          # alias for: npx playwright test
 - **Mouse Click** - Shoot plasma bolts
 - **K / Enter** - Fire weapon
 - **G** - Throw Glitch Grenade (when crafted — see [docs/CRAFTING.md](docs/CRAFTING.md))
+- **E (hold)** - Extractor Beam: siphon a jelly-moss, charged geode, vacuum kelp or cooling magma heart in front of the ship without destroying it (jelly-moss → 5 Pure Extract over ~10 s). Holding it switches off the blaster, slows the ship and draws in nearby mines; it drains ⚡ energy instead of weapon heat. Touch: hold the 🧪 **Extract** button (Touch Settings → Extract Button)
+- **Solar Sail Ferns** - fly near one and it unfolds (glows); its wind field pushes the ship along the blade facing. Overlapping sails stack the push and give a 5 s speed ride (1.25×, +0.15× per extra sail, max 1.8×)
 - **H** - Toggle heat effects (debug)
 - **`** - Toggle debug panel
 

@@ -21,6 +21,7 @@ import type { GameManagers } from './game_managers';
 import type { GameSystems } from './create_game_systems';
 import type { WasmBackend, WasmExports } from './wasm_loader';
 import { SpatialIndex } from './spatial_index';
+import { ExtractorBeam } from './extractor/beam';
 import { playerState } from './game_config';
 import type {
     CollisionDebugOverlay,
@@ -177,6 +178,8 @@ export type GameContextExtensions = {
     galaxy2: THREE.Object3D;
     galaxy3: THREE.Object3D;
     videoTumblingStars: VideoTumblingStar[];
+    /** Extractor Beam alt-fire state (sim-side; see src/extractor/). */
+    extractorBeam: ExtractorBeam<THREE.Object3D>;
     wireframeDebugHelper: WireframeDebugHelper;
     collisionDebugOverlay: CollisionDebugOverlay;
     webglMaterialFallbackRenderer: WebGLMaterialFallbackRenderer;
@@ -353,6 +356,7 @@ export function createGameContextFrameState(): Pick<
     | 'handleGameOver'
     | 'rewireSlingableCallbacks'
     | 'videoTumblingStars'
+    | 'extractorBeam'
 > {
     return {
         wasmExports: null,
@@ -404,6 +408,7 @@ export function createGameContextFrameState(): Pick<
         reportComboObjectiveProgress: () => {},
         handleGameOver: () => {},
         rewireSlingableCallbacks: () => {},
-        videoTumblingStars: []
+        videoTumblingStars: [],
+        extractorBeam: new ExtractorBeam<THREE.Object3D>()
     };
 }

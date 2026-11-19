@@ -22,6 +22,7 @@ import {
     applyEnergyDrain, regenEnergy, CRYO_DURATION
 } from '../geological/flora_gameplay';
 import { scheduleSim } from '../sim_clock';
+import { updateExtractorBeam } from './extractor_update';
 
 export function updateLoopGeological(delta: number, time: number): void {
         const { scene, camera, player } = game;
@@ -344,6 +345,10 @@ export function updateLoopGeological(delta: number, time: number): void {
                     }
                 }
             }
+            // Extractor Beam (alt-fire): siphon living flora without destroying it.
+            const extractor = updateExtractorBeam(delta);
+            const siphoning = extractor.step?.target != null;
+
             let kelpContact = false;
             let kelpDrain = 0;
             let kelpSpeed = 1;
@@ -377,7 +382,10 @@ export function updateLoopGeological(delta: number, time: number): void {
             } else {
                 playerState.kelpContactSeconds = 0;
                 playerState.kelpSpeedMul = 1;
-                playerState.energy = regenEnergy(playerState.energy, playerState.maxEnergy, delta);
+                // No regen while the beam is drawing energy.
+                if (!siphoning) {
+                    playerState.energy = regenEnergy(playerState.energy, playerState.maxEnergy, delta);
+                }
             }
 
             iceNeedleClusters.forEach((cluster) => updateIceNeedleCluster(cluster, delta, time));
@@ -445,7 +453,8 @@ export function updateLoopGeological(delta: number, time: number): void {
             game.hudManager.updateFloraStatus(
                 playerState.energy,
                 playerState.maxEnergy,
-                playerState.cryoStacks
+                playerState.cryoStacks,
+                extractor.hud
             );
     
             // Update Gravity Anchors — apply inverse-square field forces to player Y velocity

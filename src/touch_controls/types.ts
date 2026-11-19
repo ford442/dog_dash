@@ -28,6 +28,8 @@ export interface TouchInput {
     fire: boolean;
     /** Bark Blast companion ability */
     bark: boolean;
+    /** Extractor Beam held (Plasma Caster alt-fire) */
+    extract: boolean;
     /** Pause requested */
     pause: boolean;
     /** Whether there's any active touch */
@@ -71,6 +73,7 @@ export const DEFAULT_INPUT: TouchInput = {
     roll: false,
     fire: false,
     bark: false,
+    extract: false,
     pause: false,
     active: false
 };

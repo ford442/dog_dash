@@ -368,6 +368,18 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'foliage',
         maxActive: 6
     });
+    // Solar-wind lane (solar_sail_ferns.ts) — instanced blades, MAX_FERNS hard cap.
+    decorationBudget.register('solar_sail_ferns', {
+        label: 'Solar Sail Ferns',
+        category: 'foliage',
+        maxActive: 12
+    });
+    // Extractor Beam alt-fire (extractor/vfx.ts) — one beam line + target bracket.
+    decorationBudget.register('extractor_beam', {
+        label: 'Extractor Beam',
+        category: 'effects',
+        maxActive: 1
+    });
     // Artifacts (plan §III) — hero props, 1–2 per run in industrial zones.
     decorationBudget.register('derelict_buoy', {
         label: 'Derelict Buoys',

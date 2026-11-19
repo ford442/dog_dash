@@ -15,6 +15,7 @@ import { reactiveSoundsMixin } from './mixins/reactive_sounds';
 import { reactiveSoundsMixin2 } from './mixins/reactive_sounds_2';
 import { gravityAudioMixin } from './mixins/gravity_audio';
 import { magmaAudioMixin } from './mixins/magma_audio';
+import { extractorAudioMixin } from './mixins/extractor_audio';
 import { hackingSoundsMixin } from './mixins/hacking_sounds';
 import { cleanupMixin } from './mixins/cleanup';
 
@@ -91,6 +92,10 @@ export class AudioSystem {
     protected magmaRumbleOsc: OscillatorNode | null = null;
     protected magmaRumbleGain: GainNode | null = null;
     protected magmaRumbleActive: boolean = false;
+    protected extractorHumOsc: OscillatorNode | null = null;
+    protected extractorHumLfo: OscillatorNode | null = null;
+    protected extractorHumGain: GainNode | null = null;
+    protected extractorHumActive: boolean = false;
     
     // ========== PER-CHAPTER ADAPTIVE MUSIC ==========
     protected chapterGraph: ChapterGraph | null = null;
@@ -381,6 +386,7 @@ Object.assign(
     reactiveSoundsMixin2,
     gravityAudioMixin,
     magmaAudioMixin,
+    extractorAudioMixin,
     hackingSoundsMixin,
     cleanupMixin,
 );
@@ -401,6 +407,7 @@ type RawAudioSystemMixins = typeof musicLayerMixin
     & typeof reactiveSoundsMixin2
     & typeof gravityAudioMixin
     & typeof magmaAudioMixin
+    & typeof extractorAudioMixin
     & typeof hackingSoundsMixin
     & typeof cleanupMixin;
 

@@ -28,6 +28,11 @@ export abstract class TouchControlsBase {
     protected boostButton: HTMLElement | null = null;
     protected barkButton: HTMLElement | null = null;
     protected fireButton: HTMLElement | null = null;
+    /** Hold-to-siphon Extractor Beam button; shown in every control mode. */
+    protected extractButton: HTMLElement | null = null;
+    protected extractButtonEnabled: boolean = true;
+    /** Touch id currently holding the Extract button (null = none). */
+    protected extractTouchId: number | null = null;
     protected fingerFollower: HTMLElement | null = null;
     protected touchIndicators: Map<number, HTMLElement> = new Map();
 
@@ -118,6 +123,13 @@ export abstract class TouchControlsBase {
         this.updateUIForMode();
     }
 
+    /** Show/hide the 🧪 Extract button (touch settings). */
+    setExtractButtonEnabled(enabled: boolean): void {
+        this.extractButtonEnabled = enabled;
+        if (!enabled) this.currentInput.extract = false;
+        this.updateUIForMode();
+    }
+
     getInput(): TouchInput {
         return { ...this.currentInput };
     }
@@ -159,6 +171,9 @@ export abstract class TouchControlsBase {
         if (this.barkButton) {
             this.barkButton.style.opacity = String(this.visualFeedback.buttonOpacity);
         }
+        if (this.extractButton) {
+            this.extractButton.style.opacity = String(this.visualFeedback.buttonOpacity);
+        }
     }
 
     hide(): void {
@@ -175,6 +190,9 @@ export abstract class TouchControlsBase {
         }
         if (this.barkButton) {
             this.barkButton.style.opacity = '0';
+        }
+        if (this.extractButton) {
+            this.extractButton.style.opacity = '0';
         }
     }
 
@@ -233,6 +251,7 @@ export abstract class TouchControlsBase {
     protected resetInput(): void {
         this.currentInput = { ...DEFAULT_INPUT };
         this.touches.clear();
+        this.extractTouchId = null;
     }
 
     protected abstract handleTouchStart(e: TouchEvent): void;

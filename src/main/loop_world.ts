@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { playerState } from '../game_config';
+import { CONFIG, playerState } from '../game_config';
+import { applySailForces } from '../solar_wind';
 import { game } from '../game_runtime';
 import { keys } from '../ui_controls';
 import { DogAnimationState } from '../dog_cockpit';
@@ -197,17 +198,37 @@ export function updateLoopWorld(delta: number, time: number): void {
                     player.position,
                     playerState.velocity
                 );
+                // Solar wind: overlapping unfolded fields vector-sum into a capped
+                // vertical nudge + a lingering scroll ride (see solar_wind.ts).
+                const ride = applySailForces(
+                    game.solarSailFernManager.getFieldForces(),
+                    delta,
+                    { multiplier: playerState.sailRideMul, timer: playerState.sailRideTimer },
+                    playerState.currentSpeedY,
+                    CONFIG.player
+                );
+                playerState.sailRideMul = ride.ride.multiplier;
+                playerState.sailRideTimer = ride.ride.timer;
+                playerState.sailSpeedMul = ride.scrollMultiplier;
+                playerState.currentSpeedY = ride.currentSpeedY;
                 for (const hit of sailHits) {
-                    playerState.velocity.add(hit.force);
                     if (hit.type === 'boost') {
                         game.juiceManager.showFloatingText('Solar wind!', hit.position.clone(), '#88eeff', 16);
                         game.audioSystem.play('sparkle', 0.4);
                     } else if (hit.type === 'clip') {
+                        playerState.currentSpeedY = THREE.MathUtils.clamp(
+                            playerState.currentSpeedY + hit.force.y,
+                            -CONFIG.player.maxDescentSpeed,
+                            CONFIG.player.maxSpeedY
+                        );
                         game.juiceManager.showFloatingText('Rustle', hit.position.clone(), '#ffddaa', 14);
                         game.audioSystem.play('sparkle', 0.2);
                     }
                 }
                 game.solarSailFernManager.cleanupFarBehind(player.position.x);
+            } else {
+                playerState.sailSpeedMul = 1;
+                playerState.sailRideTimer = 0;
             }
     
             // Crystal chime clusters — proximity rings, sparkles, micro stars

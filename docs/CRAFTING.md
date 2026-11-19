@@ -5,6 +5,7 @@ The meta loop: **scan / destroy / sling → bag fills → craft at the Space Bas
 ## Flow
 
 1. **Harvest** — Tagged flora & geology roll drop tables in `src/resource_inventory.ts` on `destroy` / `scan` / `sling` events (routed through `game.resourceHarvester`, see `src/resource_harvester.ts`). Grants surface as the "Resource Pop" HUD pill.
+   - **Extract** (Extractor Beam, hold **E** / touch 🧪) siphons a living target instead of destroying it: a fixed, RNG-free yield from `EXTRACT_YIELDS` in `src/extractor/yields.ts` (jelly-moss → 5 Pure Extract over ~10 s; geode → Void Gems; kelp → Luminous Dust; cooling magma heart → Pyroclast Ore), granted via `resourceHarvester.grant(..., 'extract')`. Destroying a jelly-moss still rolls its `destroy` table (precision → Pure, overload → Tainted).
 2. **Bag** — Materials persist in `SaveData.resources` (`src/save_manager.ts`).
 3. **Craft Bay** — The 🔨 Craft tab in the Space Base hub (`src/hub_screen.ts`) lists recipes from `src/crafting_system.ts`, disables cards you can't afford, and deducts via `SaveManager.spendMaterial`.
 4. **Loadout** — Crafted charges queue in `SaveData.loadout` (recipeId → charges). Because launching a chapter reloads the page, the loadout lives in the save and is **consumed once at boot** by `applyCraftedLoadout()` (`src/main/loadout.ts`, called from `src/main/startup.ts`). Effects last one run.

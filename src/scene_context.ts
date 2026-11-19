@@ -139,6 +139,7 @@ export async function initializeSceneAndRenderer(options?: { basePixelRatio?: nu
 
     const savedSettings = loadTouchSettings();
     touchControls.setMode(savedSettings.mode);
+    touchControls.setExtractButtonEnabled(savedSettings.showExtractButton);
 
     if (detectTouchDevice()) {
         touchSettingsBtn = createTouchSettingsButton(touchControls);

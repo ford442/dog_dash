@@ -11,6 +11,10 @@ import { maybePrefetchNextLevel } from '../level_systems_loader';
 import { PowerUpType } from '../powerup_manager';
 import { DogAnimationState } from '../dog_cockpit';
 import { ShakeType } from '../juice_effects/shared';
+import { extractHeld } from './sim_input';
+import {
+    EXTRACT_MIN_ENERGY, EXTRACT_SCROLL_MUL, EXTRACT_THRUST_MUL
+} from '../extractor/beam';
 
 export function updatePlayer(delta: number) {
     const player = game.player;
@@ -30,9 +34,14 @@ export function updatePlayer(delta: number) {
         windForceY = windForce.y;
         windForceX = windForce.x;
     }
+    // Extractor Beam: holding it is the alt-fire (no blaster); a lock roots the ship.
+    const extracting = extractHeld() && playerState.energy >= EXTRACT_MIN_ENERGY;
+    const rooted = extracting && game.extractorBeam.isRooted();
     const speedMult = (modifiers.speedMultiplier ?? 1.0)
         * (playerState.kelpSpeedMul ?? 1)
-        * (1 - 0.1 * (playerState.cryoStacks ?? 0));
+        * (1 - 0.1 * (playerState.cryoStacks ?? 0))
+        * (playerState.sailSpeedMul ?? 1)
+        * (rooted ? EXTRACT_SCROLL_MUL : 1);
     player.position.x += (playerState.autoScrollSpeed + windForceX) * speedMult * delta;
 
 
@@ -64,7 +73,7 @@ export function updatePlayer(delta: number) {
         }
         
         // Handle fire from touch
-        if (touchInput.fire && player && game.weaponSystem) {
+        if (touchInput.fire && !extracting && player && game.weaponSystem) {
             const fireDirection = new THREE.Vector3(1, 0, 0);
             game.weaponSystem.fire(player.position, fireDirection);
         }
@@ -74,7 +83,7 @@ export function updatePlayer(delta: number) {
     // the step as touch fire so replays reproduce the shot exactly.
     if (game.wantsFire) {
         game.wantsFire = false;
-        game.weaponSystem.fire(player.position, new THREE.Vector3(1, 0, 0));
+        if (!extracting) game.weaponSystem.fire(player.position, new THREE.Vector3(1, 0, 0));
     }
     
     if (isMovingUp) {
@@ -92,6 +101,10 @@ export function updatePlayer(delta: number) {
         targetSpeed *= (modifiers.gravityMultiplier ?? 1.0);
     }
     
+    if (rooted && (isMovingUp || isMovingDown)) {
+        targetSpeed *= EXTRACT_THRUST_MUL;
+    }
+
     const accel = (targetSpeed !== -CONFIG.player.gravity && targetSpeed !== 0)
         ? CONFIG.player.acceleration
         : CONFIG.player.deceleration;

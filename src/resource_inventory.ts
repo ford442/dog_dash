@@ -20,7 +20,7 @@ export type MaterialId =
     | 'architectKey';
 
 /** How a resource was obtained — drives drop-table selection. */
-export type HarvestEvent = 'destroy' | 'scan' | 'sling';
+export type HarvestEvent = 'destroy' | 'scan' | 'sling' | 'extract';
 
 export type MaterialRarity = 'common' | 'uncommon' | 'rare' | 'legendary';
 
