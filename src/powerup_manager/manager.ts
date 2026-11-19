@@ -57,6 +57,8 @@ export class PowerUpManager {
     private cometGlowMesh?: THREE.Mesh;
     private cometTrailParticles: THREE.Mesh[] = [];
     private shieldBounceTime = 0;
+    /** Visual clock for the attachment rigs. */
+    private visualTime = 0;
     
     // Orb collection for triggering power-ups
     orbCount: number;
@@ -105,6 +107,7 @@ export class PowerUpManager {
             cometTrailParticles: this.cometTrailParticles,
             get shieldBounceTime() { return manager.shieldBounceTime; },
             set shieldBounceTime(v: number) { manager.shieldBounceTime = v; },
+            get visualTime() { return manager.visualTime; },
             activeEffects: this.activeEffects,
             hasPowerUp: (type) => manager.hasPowerUp(type),
         };
@@ -116,12 +119,13 @@ export class PowerUpManager {
      */
     update(dt: number, rocketPosition?: THREE.Vector3): void {
         const ctx = this.getVisualContext();
+        this.visualTime += dt;
 
         mapEntriesToArray(this.activeEffects).forEach(([type, effect]) => {
             effect.update(dt);
             
             if (rocketPosition) {
-                updateEffectPosition(ctx, type, rocketPosition);
+                updateEffectPosition(ctx, type, rocketPosition, dt);
             }
             
             if (!effect.isActive) {
@@ -330,11 +334,14 @@ export class PowerUpManager {
             if (mods.butterflyCharges && mods.butterflyCharges > 0) {
                 mods.butterflyCharges--;
                 
-                if (this.butterflies.length > 0) {
-                    const butterfly = this.butterflies.pop();
-                    if (butterfly) {
-                        this.scene.remove(butterfly);
-                    }
+                // One butterfly per charge: the one that blocked the hit flies off.
+                // (They live on the rocket, not the scene; hide it so the rig
+                // still owns and frees its shared materials.)
+                const butterfly = this.butterflies.pop();
+                if (butterfly) {
+                    butterfly.visible = false;
+                    const pos = butterfly.getWorldPosition(new THREE.Vector3());
+                    this.particleSystem.emit(pos, POWER_UP_CONFIGS[PowerUpType.BUTTERFLY_ESCORT].color, 10, 3.5, 0.5, 0.5);
                 }
                 
                 if (mods.butterflyCharges <= 0) {

@@ -10,6 +10,17 @@ import {
 
 import { CollisionLayer, type SpatialIndex } from './spatial_index';
 import { gameplayRandom } from './run_seed';
+import { decorationBudget } from './decoration_budget';
+import {
+    buildSlingableRig,
+    getSlingableHintRingGeometry,
+    getSlingableShellGeometry,
+    slingableUsesFlatShading,
+    updateSlingableRig,
+    SLINGABLE_CREATURES,
+    type SlingableArtKind,
+    type SlingableRig
+} from './pickup_art/slingable_art';
 
 const _collisionNormal = new THREE.Vector3();
 const _impactVelocity = new THREE.Vector3();
@@ -29,6 +40,22 @@ const CHROMA_SLIPSTREAM_RADIUS_SCALE = 4.5;
 const CHROMA_SLIPSTREAM_DURATION = 5.0;
 /** World distance within which the "grab me" highlight appears. */
 const GRAB_HINT_RANGE = 16;
+/** Puffballs and sprites keep their faces toward the camera: only a gentle roll. */
+const CREATURE_SPIN = new THREE.Vector3(0, 0, 0.25);
+const FREE_SPIN = new THREE.Vector3(1, 1, 1);
+/** Tether-state shell: faint at rest so the body's shape reads, bright once latched. */
+const SHELL_REST_OPACITY = 0.07;
+const SHELL_TETHERED_OPACITY = 0.38;
+
+/** Resting self-glow per kind (the tether flare is 1.8 for all). Steel shouldn't glow orange. */
+function restEmissiveFor(kind: SlingableKind): number {
+    switch (kind) {
+        case 'wreckingBall': return 0.12;
+        case 'rock':
+        case 'puffball': return 0.3;
+        default: return 0.55;
+    }
+}
 
 export interface SlingableObjectConfig {
     radius?: number;
@@ -61,6 +88,8 @@ export interface SlingableObjectInstance {
     toyVariant?: ToyRocketVariant;
     /** Gentle idle wobble timer for toy rockets when player is near. */
     idlePhase?: number;
+    /** Body, details and animated parts (all kinds except the toy rocket). */
+    rig?: SlingableRig;
 }
 
 /** A temporary rainbow trail left behind by a slung chroma rock. */
@@ -118,7 +147,7 @@ export class SlingableObjectSystem {
         group.position.copy(position);
 
         let bodyMaterial: THREE.MeshPhysicalMaterial;
-        let body: THREE.Mesh;
+        let rig: SlingableRig | undefined;
 
         if (kind === 'toyRocket') {
             bodyMaterial = TOY_ROCKET_MATERIALS.hull.clone();
@@ -128,102 +157,38 @@ export class SlingableObjectSystem {
             const toyVariant = config.toyVariant ?? 'bentFin';
             const toyGroup = buildToyRocketGroup(radius, toyVariant, bodyMaterial);
             group.add(toyGroup);
-            body = toyGroup.children[1] as THREE.Mesh;
         } else {
-            // --- Body geometry: shape varies by personality ---
-            let bodyGeometry: THREE.BufferGeometry;
-            switch (kind) {
-                case 'puffball':
-                    bodyGeometry = new THREE.SphereGeometry(radius, 12, 10);
-                    break;
-                case 'tetherSprite':
-                    bodyGeometry = new THREE.ConeGeometry(radius * 0.8, radius * 1.6, 5);
-                    break;
-                case 'wreckingBall':
-                    bodyGeometry = new THREE.DodecahedronGeometry(radius * 1.15, 0);
-                    break;
-                case 'chromaRock':
-                case 'rock':
-                default:
-                    bodyGeometry = new THREE.IcosahedronGeometry(radius, 0);
-                    break;
-            }
-
+            // Body shape per personality (pickup_art/slingable_art.ts): pet rock,
+            // geode, puffball, tether sprite, wrecking ball. Shared unit geometry
+            // scaled by radius; this material is the instance's own (tether glow,
+            // geode hue cycle) and multiplies the baked vertex shading.
             bodyMaterial = new THREE.MeshPhysicalMaterial({
                 color: bodyColor,
                 emissive,
-                emissiveIntensity: 0.55,
-                roughness: 0.28,
+                emissiveIntensity: restEmissiveFor(kind),
+                roughness: kind === 'wreckingBall' ? 0.35 : 0.28,
                 metalness: kind === 'wreckingBall' ? 0.6 : 0.25,
                 clearcoat: 0.8,
                 clearcoatRoughness: 0.15,
-                flatShading: true
+                vertexColors: true,
+                flatShading: slingableUsesFlatShading(kind as SlingableArtKind)
             });
-            body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-            body.castShadow = true;
-            body.receiveShadow = true;
-            group.add(body);
-        }
-
-        // --- Kind-specific decorations ---
-        if (kind === 'puffball') {
-            // Stubby stem beneath the cap
-            const stem = new THREE.Mesh(
-                new THREE.CylinderGeometry(radius * 0.35, radius * 0.45, radius * 0.6, 8),
-                new THREE.MeshPhysicalMaterial({ color: 0xe8c8a0, roughness: 0.6, flatShading: true })
-            );
-            stem.position.y = -radius * 0.7;
-            group.add(stem);
-            // Little spore freckles
-            for (let i = 0; i < 5; i++) {
-                const fleck = new THREE.Mesh(
-                    new THREE.SphereGeometry(radius * 0.08, 6, 6),
-                    new THREE.MeshBasicMaterial({ color: 0x66ff99 })
-                );
-                const a = Math.random() * Math.PI * 2; // visual-only
-                const h = Math.random() * Math.PI * 0.5; // visual-only
-                fleck.position.set(
-                    Math.cos(a) * Math.sin(h) * radius * 0.95,
-                    Math.cos(h) * radius * 0.95,
-                    Math.sin(a) * Math.sin(h) * radius * 0.95
-                );
-                group.add(fleck);
-            }
-        } else if (kind === 'tetherSprite') {
-            // Paper-crane "wings"
-            const wingGeo = new THREE.ConeGeometry(radius * 0.9, radius * 0.15, 3);
-            const wingMat = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide });
-            const wingL = new THREE.Mesh(wingGeo, wingMat);
-            wingL.rotation.z = Math.PI / 2;
-            wingL.position.x = -radius * 0.7;
-            group.add(wingL);
-            const wingR = wingL.clone();
-            wingR.position.x = radius * 0.7;
-            group.add(wingR);
-        } else if (kind === 'wreckingBall') {
-            // Riveted bands for an industrial/whale-rib salvage look
-            for (let i = 0; i < 3; i++) {
-                const band = new THREE.Mesh(
-                    new THREE.TorusGeometry(radius * 1.05, radius * 0.08, 6, 16),
-                    new THREE.MeshStandardMaterial({ color: 0x332211, metalness: 0.8, roughness: 0.4 })
-                );
-                band.rotation.x = Math.PI / 2;
-                band.rotation.y = (i / 3) * Math.PI;
-                group.add(band);
-            }
+            rig = buildSlingableRig(kind as SlingableArtKind, radius, bodyMaterial);
+            group.add(rig.root);
         }
 
         const shell = new THREE.Mesh(
-            new THREE.IcosahedronGeometry(radius * 1.25, 0),
+            getSlingableShellGeometry(),
             new THREE.MeshBasicMaterial({
                 color: emissive,
                 transparent: true,
-                opacity: 0.16,
+                opacity: SHELL_REST_OPACITY,
                 blending: THREE.AdditiveBlending,
                 depthWrite: false,
                 side: THREE.BackSide
             })
         );
+        shell.scale.setScalar(radius);
         group.add(shell);
 
         // --- "Grab me" highlight: an orbiting glow ring, hidden until needed ---
@@ -236,10 +201,8 @@ export class SlingableObjectSystem {
             depthWrite: false,
             side: THREE.DoubleSide
         });
-        const highlightRing = new THREE.Mesh(
-            new THREE.TorusGeometry(radius * 1.7, radius * 0.05, 8, 24),
-            highlightMaterial
-        );
+        const highlightRing = new THREE.Mesh(getSlingableHintRingGeometry(), highlightMaterial);
+        highlightRing.scale.setScalar(radius);
         highlightGroup.add(highlightRing);
         // A couple of orbiting sparkle motes
         for (let i = 0; i < 3; i++) {
@@ -275,7 +238,7 @@ export class SlingableObjectSystem {
                 (Math.random() - 0.5) * 1.4, // visual-only
                 (Math.random() - 0.5) * 1.2, // visual-only
                 (Math.random() - 0.5) * 1.4 // visual-only
-            ),
+            ).multiply(SLINGABLE_CREATURES.has(kind) ? CREATURE_SPIN : FREE_SPIN),
             shellMaterial: shell.material as THREE.MeshBasicMaterial,
             bodyMaterial,
             kind,
@@ -283,8 +246,10 @@ export class SlingableObjectSystem {
             highlightMaterial,
             chromaHue: kind === 'chromaRock' ? Math.random() : undefined, // visual-only
             toyVariant: kind === 'toyRocket' ? (config.toyVariant ?? 'bentFin') : undefined,
-            idlePhase: kind === 'toyRocket' ? Math.random() * Math.PI * 2 : undefined // visual-only
+            idlePhase: kind === 'toyRocket' ? Math.random() * Math.PI * 2 : undefined, // visual-only
+            rig
         };
+        if (rig) rig.t = Math.random() * 10; // visual-only
 
         group.userData = {
             type: 'slingableObject',
@@ -330,8 +295,8 @@ export class SlingableObjectSystem {
             if (!obj.active) continue;
             const tethered = obj.group === target;
             obj.group.userData.isTethered = tethered;
-            obj.bodyMaterial.emissiveIntensity = tethered ? 1.8 : 0.55;
-            obj.shellMaterial.opacity = tethered ? 0.42 : 0.16;
+            obj.bodyMaterial.emissiveIntensity = tethered ? 1.8 : restEmissiveFor(obj.kind);
+            obj.shellMaterial.opacity = tethered ? SHELL_TETHERED_OPACITY : SHELL_REST_OPACITY;
         }
     }
 
@@ -508,6 +473,15 @@ export class SlingableObjectSystem {
                 }
             }
 
+            if (obj.rig) {
+                updateSlingableRig(obj.rig, delta, {
+                    near: THREE.MathUtils.clamp((GRAB_HINT_RANGE - dist) / GRAB_HINT_RANGE, 0, 1),
+                    tethered: isTethered,
+                    inflate: obj.inflateTimer !== undefined ? obj.inflateTimer / PUFFBALL_INFLATE_DURATION : 0,
+                    speed: obj.velocity.length()
+                });
+            }
+
             obj.group.position.addScaledVector(obj.velocity, delta);
             obj.group.rotation.x += obj.spin.x * delta;
             obj.group.rotation.y += obj.spin.y * delta;
@@ -535,6 +509,7 @@ export class SlingableObjectSystem {
                 this.removeObjectAtIndex(i);
             }
         }
+        decorationBudget.syncCount('slingable_objects', this.objects.length);
     }
 
     /** Returns true if `position` falls inside an active rainbow slipstream zone. */

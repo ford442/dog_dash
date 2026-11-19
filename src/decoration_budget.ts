@@ -360,6 +360,24 @@ export function registerDefaultDecorationBudgets(): void {
         category: 'creatures',
         maxActive: 1
     });
+    // Pickups / power-ups / slingables (pickup_art/) — observe-only via
+    // syncCount like the hazards above: drops and slingables come from the
+    // run RNG, so these caps are review thresholds, never spawn gates.
+    decorationBudget.register('upgrade_pickups', {
+        label: 'Weapon-upgrade tokens',
+        category: 'effects',
+        maxActive: 8
+    });
+    decorationBudget.register('slingable_objects', {
+        label: 'Slingables (pet rocks, puffballs, sprites…)',
+        category: 'creatures',
+        maxActive: 16
+    });
+    decorationBudget.register('powerup_attachments', {
+        label: 'Power-up attachments on the rocket',
+        category: 'effects',
+        maxActive: 6
+    });
     decorationBudget.register('star_eater_minions', {
         label: 'Star-Eater minion orbiters',
         category: 'creatures',

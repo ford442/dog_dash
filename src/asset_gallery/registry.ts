@@ -7,22 +7,34 @@
  * chapter). The gallery lays each entry out on a turntable with an optional
  * flat-black silhouette and hitbox overlay.
  *
- * Hazards, enemies and bosses register in `hazard_entries.ts`. Pickups /
- * power-ups / projectiles (#417) and scenery (#418) add their own entry
- * modules and import them from `index.ts`.
+ * Hazards, enemies and bosses register in `hazard_entries.ts`; pickups,
+ * power-ups, projectiles, slingables and the placeholder rocket in
+ * `pickup_entries.ts`. Scenery (#418) adds its own module; `gallery.ts`
+ * imports each one lazily.
  */
 
 import type * as THREE from 'three';
 import type { BossPhase } from '../boss_system/types';
 
-export type GalleryCategory = 'hazard' | 'enemy' | 'boss' | 'pickup' | 'projectile' | 'scenery';
+export type GalleryCategory =
+    | 'hazard' | 'enemy' | 'boss'
+    | 'pickup' | 'powerup' | 'projectile' | 'slingable' | 'player'
+    | 'scenery';
+
+/** Toolbar order. */
+export const GALLERY_CATEGORY_ORDER: readonly GalleryCategory[] = [
+    'hazard', 'enemy', 'boss', 'pickup', 'powerup', 'projectile', 'slingable', 'player', 'scenery'
+];
 
 export const GALLERY_CATEGORY_LABELS: Record<GalleryCategory, string> = {
     hazard: 'Hazards',
     enemy: 'Enemies',
     boss: 'Bosses',
     pickup: 'Pickups',
+    powerup: 'Power-ups',
     projectile: 'Projectiles',
+    slingable: 'Slingables',
+    player: 'Player',
     scenery: 'Scenery'
 };
 
