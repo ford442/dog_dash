@@ -9,8 +9,8 @@
  *
  * Hazards, enemies and bosses register in `hazard_entries.ts`; pickups,
  * power-ups, projectiles, slingables and the placeholder rocket in
- * `pickup_entries.ts`. Scenery (#418) adds its own module; `gallery.ts`
- * imports each one lazily.
+ * `pickup_entries.ts`; scenery, backdrops and flavor creatures (#418) in
+ * `scenery_entries.ts`. `gallery.ts` imports each one lazily.
  */
 
 import type * as THREE from 'three';

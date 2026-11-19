@@ -3,6 +3,8 @@ import { ParticleSystem } from '../particles';
 import type { AudioPort } from '../ports';
 import { OrbType, ORB_CONFIG, PASTEL_COLORS, STAR_COLORS } from './types';
 import { gameplayRandom } from '../run_seed';
+import { getStarBodyGeometry } from '../scenery_art/star';
+import { isSharedResource } from '../gpu_resources';
 
 /** Collectible orb with magical floating animation */
 export class CollectibleOrb {
@@ -162,17 +164,9 @@ export class CollectibleOrb {
         return this.glowBoostMultiplier > 1 ? Math.floor(8 * this.glowBoostMultiplier) : 0;
     }
 
-    /** Create star-shaped geometry */
+    /** Five-point star: the shared scenery star, so pickup and backdrop stars match (#418). */
     private createStarGeometry(): THREE.BufferGeometry {
-        // Create a star using a cone with 5 sides
-        const geometry = new THREE.ConeGeometry(0.5, 1, 5);
-
-        // Create a group-like geometry by merging with an inverted cone
-        const topCone = geometry.clone();
-        topCone.rotateX(Math.PI); // Flip upside down
-
-        // Use a dodecahedron for a nice faceted star look
-        return new THREE.DodecahedronGeometry(0.5, 0);
+        return getStarBodyGeometry();
     }
 
     /** Create bone-shaped geometry */
@@ -339,7 +333,7 @@ export class CollectibleOrb {
         // Dispose geometries and materials
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
+                if (child.geometry && !isSharedResource(child.geometry)) child.geometry.dispose();
                 if (child.material) {
                     if (Array.isArray(child.material)) {
                         child.material.forEach(m => m.dispose());

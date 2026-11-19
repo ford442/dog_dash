@@ -1,7 +1,8 @@
 import * as THREE from 'three';
-import { time, vec3, color, float, positionLocal, normalLocal, sin, cos, mix } from 'three/tsl';
+import { time, color, positionLocal, normalLocal, sin, cos, mix, vertexColor } from 'three/tsl';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import { decorationBudget } from './decoration_budget';
+import { getMirrorShardGeometry } from './scenery_art/mirror';
 
 export type QuantumMirrorsConfig = {
     density?: number;
@@ -10,6 +11,30 @@ export type QuantumMirrorsConfig = {
 
 const dummyObj = new THREE.Object3D();
 const mat4Obj = new THREE.Matrix4();
+
+/** Chromatic mirror material for the shard (shared with the gallery). */
+export function createQuantumMirrorMaterial(): MeshStandardNodeMaterial {
+    const mat = new MeshStandardNodeMaterial({
+        transparent: true,
+        depthWrite: false,
+        side: THREE.DoubleSide,
+        metalness: 0.9,
+        roughness: 0.1
+    });
+
+    const uTime = time;
+    // Prism-like chromatic shift based on time and position
+    const pulse = sin(uTime.mul(1.5).add(positionLocal.x).add(positionLocal.y)).mul(0.5).add(0.5);
+    const mirrorColor = mix(color(0x00ffff), color(0xff00ff), pulse);
+
+    // Add a subtle shimmering glow
+    const shimmer = cos(uTime.mul(3.0).add(normalLocal.x.mul(5.0))).mul(0.2).add(0.8);
+
+    // Vertex colour: bright pane faces, darker cut edges.
+    mat.colorNode = mirrorColor.mul(vertexColor());
+    mat.emissiveNode = mirrorColor.mul(pulse.add(0.2)).mul(shimmer).mul(vertexColor());
+    return mat;
+}
 
 export class QuantumMirrorsSystem {
     scene: THREE.Scene;
@@ -25,38 +50,10 @@ export class QuantumMirrorsSystem {
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
-        // Use Icosahedron for jagged crystal/mirror shard look
-        const geo = new THREE.IcosahedronGeometry(2, 0);
+        // Thin shard of a broken mirror (shared geometry, same 20 triangles as the old lump).
+        const geo = getMirrorShardGeometry();
 
-        // One-time vertex displacement for jaggedness
-        const posAttr = geo.attributes.position;
-        const v = new THREE.Vector3();
-        for (let i = 0; i < posAttr.count; i++) {
-            v.fromBufferAttribute(posAttr, i);
-            const noise = (Math.random() - 0.5) * 1.5;
-            v.add(v.clone().normalize().multiplyScalar(noise));
-            posAttr.setXYZ(i, v.x, v.y, v.z);
-        }
-        geo.computeVertexNormals();
-
-        const mat = new MeshStandardNodeMaterial({
-            transparent: true,
-            depthWrite: false,
-            side: THREE.DoubleSide,
-            metalness: 0.9,
-            roughness: 0.1
-        });
-
-        const uTime = time;
-        // Prism-like chromatic shift based on time and position
-        const pulse = sin(uTime.mul(1.5).add(positionLocal.x).add(positionLocal.y)).mul(0.5).add(0.5);
-        const mirrorColor = mix(color(0x00ffff), color(0xff00ff), pulse);
-
-        // Add a subtle shimmering glow
-        const shimmer = cos(uTime.mul(3.0).add(normalLocal.x.mul(5.0))).mul(0.2).add(0.8);
-
-        mat.colorNode = mirrorColor;
-        mat.emissiveNode = mirrorColor.mul(pulse.add(0.2)).mul(shimmer);
+        const mat = createQuantumMirrorMaterial();
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.baseCount);
         this.mesh.frustumCulled = false;
@@ -66,17 +63,17 @@ export class QuantumMirrorsSystem {
         const dummy = new THREE.Object3D();
         for (let i = 0; i < this.baseCount; i++) {
             dummy.position.set(
-                (Math.random() - 0.5) * this.width,
-                (Math.random() - 0.5) * this.height,
-                (Math.random() - 0.5) * this.depth - 150
+                (Math.random() - 0.5) * this.width, // visual-only
+                (Math.random() - 0.5) * this.height, // visual-only
+                (Math.random() - 0.5) * this.depth - 150 // visual-only
             );
             dummy.rotation.set(
-                Math.random() * Math.PI,
-                Math.random() * Math.PI,
-                Math.random() * Math.PI
+                Math.random() * Math.PI, // visual-only
+                Math.random() * Math.PI, // visual-only
+                Math.random() * Math.PI // visual-only
             );
             // Uniform or near-uniform scale as requested
-            const scale = 0.8 + Math.random() * 0.4;
+            const scale = 0.8 + Math.random() * 0.4; // visual-only
             dummy.scale.set(scale, scale, scale);
             dummy.updateMatrix();
             this.mesh.setMatrixAt(i, dummy.matrix);
@@ -138,11 +135,11 @@ export class QuantumMirrorsSystem {
                 while (dummyObj.position.x < limitBack) {
                     dummyObj.position.x += this.width + margin * 2;
                 }
-                dummyObj.position.y = (Math.random() - 0.5) * this.height;
+                dummyObj.position.y = (Math.random() - 0.5) * this.height; // visual-only
                 dummyObj.rotation.set(
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI,
-                    Math.random() * Math.PI
+                    Math.random() * Math.PI, // visual-only
+                    Math.random() * Math.PI, // visual-only
+                    Math.random() * Math.PI // visual-only
                 );
             }
 
@@ -154,7 +151,7 @@ export class QuantumMirrorsSystem {
 
     cleanup() {
         this.scene.remove(this.mesh);
-        this.mesh.geometry.dispose();
+        // Geometry is the shared shard (markShared); only the material is ours.
         (this.mesh.material as any).dispose?.();
         decorationBudget.syncCount('quantumMirrors', 0);
     }

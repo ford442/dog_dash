@@ -1,8 +1,33 @@
 import * as THREE from 'three';
 import { disposeObject } from './utils';
-import { time, vec3, color, uniform, sin, cos, positionLocal, positionWorld, length, smoothstep, normalLocal } from 'three/tsl';
-import { MeshPhysicalNodeMaterial } from 'three/webgpu';
+import { time, vec3, color, uniform, sin, cos, positionLocal, positionWorld, length, smoothstep, vertexColor, instanceIndex, float, clamp } from 'three/tsl';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
 import type { ParticleSystem } from './particles';
+import { getSpacePetGeometry, PET_EAR_BASE_Y } from './scenery_art/space_pet';
+
+/**
+ * Space-bunny material: vertex colours, a hop-and-sway, ears that flop, and a
+ * white glow when the player is close (shared with the gallery).
+ */
+export function createSpacePetMaterial(uPlayerPos: ReturnType<typeof uniform>): MeshStandardNodeMaterial {
+    const mat = new MeshStandardNodeMaterial({ roughness: 0.45, metalness: 0.05 });
+    mat.colorNode = vertexColor();
+
+    // Glow interaction based on player proximity
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    const interactGlow = smoothstep(20.0, 0.0, distToPlayer);
+    mat.emissiveNode = color(0xffffff).mul(interactGlow.mul(0.6));
+
+    // Gentle bob, plus the ears flopping side to side (phase per instance)
+    const t = time.mul(1.5).add(float(instanceIndex).mul(0.73));
+    const ear = clamp(positionLocal.y.sub(PET_EAR_BASE_Y).mul(3.0), 0, 1);
+    mat.positionNode = positionLocal.add(vec3(
+        sin(t.mul(2.0)).mul(0.08).mul(ear),
+        sin(t).mul(0.15),
+        cos(t.mul(0.7)).mul(0.1)
+    ));
+    return mat;
+}
 
 export class SpacePetsSwarmSystem {
     private particles: ParticleSystem | null = null;
@@ -19,36 +44,9 @@ export class SpacePetsSwarmSystem {
         this.burstCooldowns = new Float32Array(this.count);
         this.scene = scene;
 
-        // Simplified pet body (a fluffy sphere) with a glass helmet
-        const geo = new THREE.SphereGeometry(0.5, 12, 12);
-
-        const mat = new MeshPhysicalNodeMaterial({
-            transparent: true,
-            depthWrite: false,
-            side: THREE.FrontSide,
-            transmission: 0.2, // slight glass look for helmet
-            roughness: 0.3,
-            metalness: 0.1,
-            ior: 1.2,
-        });
-
-        const baseColor = color(0xe6e6fa); // Lavender base (Space Bunny color)
-
-        // Add a "helmet" glass look at the front
-        const isHelmet = smoothstep(0.5, 0.7, normalLocal.z);
-        const helmetColor = color(0xaaddff);
-        const finalColor = baseColor.mix(helmetColor, isHelmet.mul(0.5));
-
-        // Glow interaction based on player proximity
-        const distToPlayer = length(positionWorld.sub(this.uPlayerPos));
-        const interactGlow = smoothstep(20.0, 0.0, distToPlayer);
-
-        mat.colorNode = finalColor;
-        mat.emissiveNode = color(0xffffff).mul(interactGlow.mul(0.8));
-
-        // Gentle bobbing and wave
-        const t = time.mul(1.5).add(positionWorld.x);
-        mat.positionNode = positionLocal.add(vec3(0, sin(t).mul(0.15), cos(t.mul(0.7)).mul(0.1)));
+        // Merged low-poly space bunny (ears, helmet, tail), one draw call for the swarm.
+        const geo = getSpacePetGeometry();
+        const mat = createSpacePetMaterial(this.uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false;
@@ -65,8 +63,8 @@ export class SpacePetsSwarmSystem {
             );
 
             dummy.rotation.set(
-                (Math.random() - 0.5) * 0.4, // visual-only
-                Math.PI + (Math.random() - 0.5) * 0.4, // visual-only; facing roughly towards camera
+                (Math.random() - 0.5) * 0.2, // visual-only
+                0.9 + (Math.random() - 0.5) * 0.4, // visual-only; three-quarter view: drifting +X, visor toward the camera
                 (Math.random() - 0.5) * 0.2 // visual-only
             );
 

@@ -2,24 +2,17 @@ import * as THREE from 'three';
 import { MeshStandardNodeMaterial } from 'three/webgpu';
 import {
     time,
-    positionWorld,
-    positionLocal,
-    uv,
-    vec3,
-    vec4,
     color,
-    uniform,
-    mix,
     sin,
     float,
-    smoothstep,
-    length,
-    distance,
-    Loop,
-    normalView,
-    normalLocal,
-    dot
+    max,
+    attribute,
+    vertexColor,
+    faceDirection,
+    instancedDynamicBufferAttribute
 } from 'three/tsl';
+import type { Node } from 'three/src/nodes/Nodes.js';
+import { getGeodeGeometry } from './scenery_art/geodes';
 import { playerState } from './game_config';
 import { gameplayRandom } from './run_seed';
 
@@ -29,33 +22,36 @@ export type StormGeodeFxDeps = {
 };
 
 /**
- * Creates a TSL material for Storm Geodes.
- * Features: Time-based pulsing, noise-based internal glow.
+ * Storm geode material (shared with the gallery). Dark stone boulder; the
+ * needle shards (`aMask` = 1) and the inside of the zig-zag crack (back
+ * faces) carry the electric glow. `flash` (0..1, per instance in game) spikes
+ * when that geode throws an arc, so you can see which one struck.
  */
-function createStormGeodeMaterial(baseColorHex: number, emissiveColorHex: number) {
+export function createStormGeodeMaterial(flash: Node = float(0), emissiveColorHex = 0x4488ff) {
     const mat = new MeshStandardNodeMaterial({
-        color: baseColorHex,
         roughness: 0.8,
         metalness: 0.3,
         flatShading: true,
-        transparent: false,
-        depthWrite: true
+        side: THREE.DoubleSide
     });
 
     const uTime = time;
+    const crystal = attribute('aMask', 'float');
+    const inside = faceDirection.mul(-0.5).add(0.5); // 1 on back faces
+    const charged = max(crystal, inside.mul(0.8));
 
     const pulse = sin(uTime.mul(2.0)).add(1.0).mul(0.5); // 0..1
     const fastPulse = sin(uTime.mul(10.0)).mul(0.1);
-
     const glowIntensity = pulse.add(fastPulse).clamp(0.0, 1.0).mul(0.8);
 
-    // Base emissive color
-    const baseEmissive = color(emissiveColorHex);
-
-    mat.emissiveNode = baseEmissive.mul(glowIntensity);
-
+    mat.colorNode = vertexColor();
+    mat.emissiveNode = color(emissiveColorHex).mul(charged).mul(glowIntensity.add(flash.mul(2.5)))
+        .add(color(0xffffff).mul(crystal.mul(flash).mul(0.8)));
     return mat;
 }
+
+/** Arc flash fall-off per second (the merged geode is unit radius, like the old icosphere). */
+const STORM_FLASH_DECAY = 4.0;
 
 export class StormGeodeSystem {
     scene: THREE.Scene;
@@ -71,13 +67,19 @@ export class StormGeodeSystem {
     scales: Float32Array;
     rotations: Float32Array;
     timers: Float32Array; // Timer for lightning arcs
+    /** Per-instance arc flash (1 on a strike, decays). */
+    private flashAttr: THREE.InstancedBufferAttribute;
+    private elapsed = 0;
 
     constructor(scene: THREE.Scene, fx: StormGeodeFxDeps = {}) {
         this.scene = scene;
         this.fx = fx;
 
-        const geo = new THREE.IcosahedronGeometry(1, 1);
-        const mat = createStormGeodeMaterial(0x222233, 0x4488ff);
+        // Flat angular boulder split by a zig-zag crack, needle shards bursting out (shared merged geometry).
+        const geo = getGeodeGeometry('storm');
+        this.flashAttr = new THREE.InstancedBufferAttribute(new Float32Array(this.maxCount), 1);
+        this.flashAttr.setUsage(THREE.DynamicDrawUsage);
+        const mat = createStormGeodeMaterial(instancedDynamicBufferAttribute(this.flashAttr, 'float'));
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.maxCount);
         this.mesh.frustumCulled = false;
@@ -128,9 +130,11 @@ export class StormGeodeSystem {
 
         this.scales[index] = 2.0 + gameplayRandom('geology') * 3.0;
 
-        this.rotations[index * 3] = Math.random() * Math.PI; // visual-only
-        this.rotations[index * 3 + 1] = Math.random() * Math.PI; // visual-only
-        this.rotations[index * 3 + 2] = Math.random() * Math.PI; // visual-only
+        // Crack roughly toward the camera so the shards read; the update rocks it.
+        this.rotations[index * 3] = (Math.random() - 0.5) * 0.5; // visual-only
+        this.rotations[index * 3 + 1] = (Math.random() - 0.5) * 1.0; // visual-only
+        this.rotations[index * 3 + 2] = (Math.random() - 0.5) * 0.8; // visual-only
+        this.flashAttr.setX(index, 0);
 
         this.timers[index] = gameplayRandom('geology') * 3.0; // Randomize start phase
 
@@ -146,10 +150,11 @@ export class StormGeodeSystem {
 
         this.dummy.scale.setScalar(this.scales[index]);
 
+        const rock = Math.sin(this.elapsed * 0.5 + index * 2.1);
         this.dummy.rotation.set(
             this.rotations[index * 3],
-            this.rotations[index * 3 + 1],
-            this.rotations[index * 3 + 2]
+            this.rotations[index * 3 + 1] + rock * 0.3,
+            this.rotations[index * 3 + 2] + rock * 0.1
         );
 
         this.dummy.updateMatrix();
@@ -166,12 +171,13 @@ export class StormGeodeSystem {
         if (!this.active) return;
 
         let needsUpdate = false;
+        this.elapsed += delta;
+        const flashDecay = Math.exp(-delta * STORM_FLASH_DECAY);
 
         for (let i = 0; i < this.count; i++) {
-            // Very slow drift
+            // Very slow drift (the rocking lives in updateInstance)
             this.positions[i * 3] -= delta * 5.0;
-            this.rotations[i * 3] += delta * 0.2;
-            this.rotations[i * 3 + 1] += delta * 0.3;
+            this.flashAttr.setX(i, this.flashAttr.getX(i) * flashDecay);
 
             // Re-wrap
             if (this.positions[i * 3] < cameraX - 100) {
@@ -195,6 +201,7 @@ export class StormGeodeSystem {
 
                 // Only arc if near the player
                 if (pos.distanceTo(new THREE.Vector3(cameraX, 0, 0)) < 150) {
+                    this.flashAttr.setX(i, 1);
                     // Decide where to strike. If player is close enough, chain to player!
                     let strikePos = pos.clone();
                     if (playerPos && pos.distanceTo(playerPos) < 40) {
@@ -227,11 +234,12 @@ export class StormGeodeSystem {
         if (needsUpdate) {
             this.mesh.instanceMatrix.needsUpdate = true;
         }
+        this.flashAttr.needsUpdate = true;
     }
 
     cleanup() {
         this.scene.remove(this.mesh);
-        this.mesh.geometry.dispose();
+        // Geometry is shared (scenery_art/geodes.ts); only the material is ours.
         if (this.mesh.material && (this.mesh.material as any).dispose) {
             (this.mesh.material as any).dispose();
         }

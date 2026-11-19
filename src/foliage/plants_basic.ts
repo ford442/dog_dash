@@ -1,5 +1,19 @@
 import * as THREE from 'three';
+import { MeshStandardNodeMaterial } from 'three/webgpu';
+import { attribute, materialColor, materialEmissive, mix, vertexColor } from 'three/tsl';
 import { createClayMaterial, foliageMaterials, reactiveMaterials, registerReactiveMaterial } from '../foliage_shared';
+import {
+    CLOUD_BASE_Y,
+    FOLIAGE_VARIANTS,
+    getBalloonBushBaseGeometry,
+    getBalloonGeometry,
+    getCloudGeometry,
+    getSeedPodGeometry,
+    getShrubFlowerGeometry,
+    getShrubLeafGeometry,
+    getTreeBlossomGeometry,
+    getTreeWoodGeometry
+} from '../scenery_art/foliage_shapes';
 export { reactiveMaterials };
 
 // --- STANDARD PLANTS ---
@@ -124,71 +138,71 @@ export function createFlower(options: any = {}) {
     return group;
 }
 
+/** Pick one of the shared foliage variants (visual-only). */
+function pickVariant(): number {
+    return Math.floor(Math.random() * FOLIAGE_VARIANTS); // visual-only
+}
+
+/** Clay material that takes the merged geometry's vertex shading (and its own colour). */
+function vertexClay(color: number, opts: { doubleSide?: boolean } = {}): THREE.MeshStandardMaterial {
+    const mat = createClayMaterial(color);
+    mat.vertexColors = true;
+    if (opts.doubleSide) mat.side = THREE.DoubleSide;
+    return mat;
+}
+
+/**
+ * Flowering tree (#418): forked trunk with branches into lumpy blossom
+ * clumps (petal speckle), two merged shared meshes.
+ */
 export function createFloweringTree(options: any = {}) {
     const { color = 0xFF69B4 } = options;
     const group = new THREE.Group();
+    const variant = pickVariant();
 
-    const trunkH = 3 + Math.random() * 2;
-    const trunkGeo = new THREE.CylinderGeometry(0.3, 0.5, trunkH, 8);
-    const trunk = new THREE.Mesh(trunkGeo, createClayMaterial(0x8B5A2B));
-    trunk.position.y = trunkH / 2;
-    trunk.castShadow = true;
-    group.add(trunk);
+    const wood = new THREE.Mesh(getTreeWoodGeometry(variant), vertexClay(0x8B5A2B));
+    wood.castShadow = true;
+    group.add(wood);
 
-    const bloomMat = createClayMaterial(color);
+    const bloomMat = vertexClay(color);
     registerReactiveMaterial(bloomMat);
+    const bloom = new THREE.Mesh(getTreeBlossomGeometry(variant), bloomMat);
+    bloom.castShadow = true;
+    group.add(bloom);
 
-    const bloomCount = 5 + Math.floor(Math.random() * 5);
-    for (let i = 0; i < bloomCount; i++) {
-        const bloomGeo = new THREE.SphereGeometry(0.8 + Math.random() * 0.4, 8, 8);
-        const bloom = new THREE.Mesh(bloomGeo, bloomMat);
-        bloom.position.set(
-            (Math.random() - 0.5) * 2,
-            trunkH + Math.random() * 1.5,
-            (Math.random() - 0.5) * 2
-        );
-        bloom.castShadow = true;
-        group.add(bloom);
-    }
-
+    group.scale.setScalar(0.9 + Math.random() * 0.25); // visual-only
+    group.rotation.y = Math.random() * Math.PI * 2; // visual-only
     group.userData.animationType = 'gentleSway';
-    group.userData.animationOffset = Math.random() * 10;
+    group.userData.animationOffset = Math.random() * 10; // visual-only
     group.userData.type = 'tree';
     return group;
 }
 
+/**
+ * Shrub (#418): leaf dome ringed by folded leaf blades, topped with
+ * five-petal flowers. Two merged shared meshes (was a sphere + one sphere
+ * per flower).
+ */
 export function createShrub(options: any = {}) {
     const { color = 0x32CD32 } = options;
     const group = new THREE.Group();
+    const variant = pickVariant();
 
-    const baseGeo = new THREE.SphereGeometry(1 + Math.random() * 0.5, 16, 16);
-    const base = new THREE.Mesh(baseGeo, createClayMaterial(color));
-    base.position.y = 0.5;
-    base.castShadow = true;
-    group.add(base);
+    const leaves = new THREE.Mesh(getShrubLeafGeometry(variant), vertexClay(color, { doubleSide: true }));
+    leaves.castShadow = true;
+    group.add(leaves);
 
-    const flowerMat = createClayMaterial(0xFF69B4);
+    const flowerMat = vertexClay(0xFF69B4, { doubleSide: true });
     registerReactiveMaterial(flowerMat);
+    group.add(new THREE.Mesh(getShrubFlowerGeometry(variant), flowerMat));
 
-    const flowerCount = 3 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < flowerCount; i++) {
-        const flowerGeo = new THREE.SphereGeometry(0.2, 8, 8);
-        const flower = new THREE.Mesh(flowerGeo, flowerMat);
-        flower.position.set(
-            (Math.random() - 0.5) * 1.5,
-            1 + Math.random() * 0.5,
-            (Math.random() - 0.5) * 1.5
-        );
-        group.add(flower);
-    }
-
+    group.scale.setScalar(0.85 + Math.random() * 0.35); // visual-only
+    group.rotation.y = Math.random() * Math.PI * 2; // visual-only
     group.userData.animationType = 'bounce';
-    group.userData.animationOffset = Math.random() * 10;
+    group.userData.animationOffset = Math.random() * 10; // visual-only
     group.userData.type = 'shrub';
     return group;
 }
-
-// --- SPECIAL PLANTS (Restored) ---
 
 export function createGlowingFlower(options: any = {}) {
     const { color = 0xFFD700, intensity = 1.5 } = options;
@@ -226,16 +240,27 @@ export function createGlowingFlower(options: any = {}) {
     return group;
 }
 
+/**
+ * Floating orb (#418): a glowing seed pod cupped by leaf sepals with a stem
+ * curl. One merged mesh; only the bulb (`aMask`) glows, and it still takes
+ * the reactive emissive the music drives.
+ */
 export function createFloatingOrb(options: any = {}) {
     const { color = 0x87CEEB, size = 0.5 } = options;
-    const geo = new THREE.SphereGeometry(size, 16, 16);
-    const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.8 });
+    const mat = new MeshStandardNodeMaterial({ color, emissive: color, emissiveIntensity: 0.8, roughness: 0.6 });
+    // No `vertexColors`: the colorNode below already reads the vertex colour (the flag would multiply it in twice).
+    mat.side = THREE.DoubleSide;
+    const bulb = attribute('aMask', 'float');
+    // Leaves take their vertex green; the bulb takes the orb colour and the (music-reactive) emissive.
+    mat.colorNode = mix(vertexColor(), materialColor, bulb);
+    mat.emissiveNode = materialEmissive.mul(bulb);
     registerReactiveMaterial(mat);
 
-    const orb = new THREE.Mesh(geo, mat);
+    const orb = new THREE.Mesh(getSeedPodGeometry(), mat);
+    orb.scale.setScalar(size);
     orb.castShadow = true;
     orb.userData.animationType = 'float';
-    orb.userData.animationOffset = Math.random() * 10;
+    orb.userData.animationOffset = Math.random() * 10; // visual-only
     orb.userData.type = 'orb';
     return orb;
 }
@@ -463,41 +488,42 @@ export function createPuffballFlower(options: any = {}) {
     return group;
 }
 
+/**
+ * Balloon bush (#418): a leafy base with balloons on strings (knots and
+ * all). Two merged shared meshes (was 5–9 loose spheres).
+ */
 export function createBalloonBush(options: any = {}) {
     const { color = 0xFF4500 } = options;
     const group = new THREE.Group();
+    const variant = pickVariant();
 
-    const sphereCount = 5 + Math.floor(Math.random() * 5);
-    const mat = createClayMaterial(color);
+    const base = new THREE.Mesh(getBalloonBushBaseGeometry(variant), vertexClay(0x3fae55, { doubleSide: true }));
+    base.castShadow = true;
+    group.add(base);
+
+    const mat = vertexClay(color);
     registerReactiveMaterial(mat);
+    const balloons = new THREE.Mesh(getBalloonGeometry(variant), mat);
+    balloons.castShadow = true;
+    group.add(balloons);
 
-    for (let i = 0; i < sphereCount; i++) {
-        const r = 0.3 + Math.random() * 0.4;
-        const geo = new THREE.SphereGeometry(r, 16, 16);
-        const mesh = new THREE.Mesh(geo, mat);
-
-        mesh.position.set(
-            (Math.random() - 0.5) * 0.8,
-            r + (Math.random()) * 0.8,
-            (Math.random() - 0.5) * 0.8
-        );
-        mesh.castShadow = true;
-        group.add(mesh);
-    }
-
+    group.rotation.y = Math.random() * Math.PI * 2; // visual-only
     group.userData.animationType = 'bounce';
-    group.userData.animationOffset = Math.random() * 10;
+    group.userData.animationOffset = Math.random() * 10; // visual-only
     group.userData.type = 'shrub';
     return group;
 }
 
+/**
+ * Raining cloud (#418): a row of puffs with a flat, darker base (one merged
+ * shared mesh) and the rain below. Keep the rain at `children[1]`: the
+ * 'rain' animation in `grass_system.ts` reads it there.
+ */
 export function createRainingCloud(options: any = {}) {
     const { color = 0xB0C4DE, rainIntensity = 50 } = options;
     const group = new THREE.Group();
 
-    const cloudGeo = new THREE.SphereGeometry(1.5, 16, 16);
-    const cloudMat = createClayMaterial(color);
-    const cloud = new THREE.Mesh(cloudGeo, cloudMat);
+    const cloud = new THREE.Mesh(getCloudGeometry(pickVariant()), vertexClay(color));
     cloud.castShadow = true;
     group.add(cloud);
 
@@ -505,9 +531,9 @@ export function createRainingCloud(options: any = {}) {
     const rainCount = rainIntensity;
     const positions = new Float32Array(rainCount * 3);
     for (let i = 0; i < rainCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 3;
-        positions[i * 3 + 1] = Math.random() * -2;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 3;
+        positions[i * 3] = (Math.random() - 0.5) * 3; // visual-only
+        positions[i * 3 + 1] = CLOUD_BASE_Y - Math.random() * 2; // visual-only
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 1.2; // visual-only
     }
     rainGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
@@ -516,7 +542,7 @@ export function createRainingCloud(options: any = {}) {
     group.add(rain);
 
     group.userData.animationType = 'rain';
-    group.userData.animationOffset = Math.random() * 10;
+    group.userData.animationOffset = Math.random() * 10; // visual-only
     group.userData.type = 'cloud';
     return group;
 }

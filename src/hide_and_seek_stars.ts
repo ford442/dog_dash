@@ -1,6 +1,25 @@
 import * as THREE from 'three';
 import { MeshBasicNodeMaterial } from 'three/webgpu';
-import { time, vec3, color, uniform, sin, mix, positionLocal, positionWorld, float, uv, length, smoothstep } from 'three/tsl';
+import { time, color, uniform, sin, mix, positionWorld, float, length, smoothstep, vertexColor } from 'three/tsl';
+import { getPeekingStarGeometry } from './scenery_art/star';
+
+/** Peek-a-boo star material (shared with the gallery). */
+export function createHideAndSeekStarMaterial(uPlayerPos: ReturnType<typeof uniform>): MeshBasicNodeMaterial {
+    const distToPlayer = length(positionWorld.sub(uPlayerPos));
+    // Base peek logic: star brightens when the player is close (peek-a-boo)
+    const peekIntensity = smoothstep(60.0, 15.0, distToPlayer);
+    // Colour shifts between pastel yellow and pink
+    const baseColor = mix(color(0xffeb99), color(0xffb6c1), sin(time.add(positionWorld.z)).mul(0.5).add(0.5));
+    const intensity = mix(float(0.3), float(1.2), peekIntensity);
+    return new MeshBasicNodeMaterial({
+        // Vertex colour keeps the eyes dark on the glowing body.
+        colorNode: baseColor.mul(intensity).mul(vertexColor()),
+        transparent: true,
+        opacity: 0.9,
+        depthWrite: false,
+        side: THREE.FrontSide,
+    });
+}
 
 export class HideAndSeekStarsSystem {
     scene: THREE.Scene;
@@ -12,35 +31,14 @@ export class HideAndSeekStarsSystem {
     private dummy = new THREE.Object3D();
     private instanceData: Float32Array;
     private uPlayerPos = uniform(new THREE.Vector3(0, 0, 0));
+    private elapsed = 0;
 
     constructor(scene: THREE.Scene) {
         this.scene = scene;
 
-        const geo = new THREE.IcosahedronGeometry(0.8, 1);
-
-        // TSL Material setup
-        const distToPlayer = length(positionWorld.sub(this.uPlayerPos));
-
-        // Base peek logic: star gets bigger when player is close (peek-a-boo)
-        const peekIntensity = smoothstep(60.0, 15.0, distToPlayer);
-
-        // Bobbing and twinkling
-        const bob = sin(time.mul(2.0).add(positionWorld.x.mul(0.1))).mul(0.5);
-
-        // Color shifts between pastel yellow and pink
-        const baseColor = mix(color(0xffeb99), color(0xffb6c1), sin(time.add(positionWorld.z)).mul(0.5).add(0.5));
-
-        // Intensity
-        const intensity = mix(float(0.3), float(1.2), peekIntensity);
-        const finalColor = baseColor.mul(intensity);
-
-        const mat = new MeshBasicNodeMaterial({
-            colorNode: finalColor,
-            transparent: true,
-            opacity: 0.9,
-            depthWrite: false,
-            side: THREE.FrontSide,
-        });
+        // Five-point star with eyes: the same silhouette as the collectible star.
+        const geo = getPeekingStarGeometry();
+        const mat = createHideAndSeekStarMaterial(this.uPlayerPos);
 
         this.mesh = new THREE.InstancedMesh(geo, mat, this.count);
         this.mesh.frustumCulled = false;
@@ -60,9 +58,8 @@ export class HideAndSeekStarsSystem {
 
             this.dummy.position.set(x, y, z);
 
-            // Random initial rotation
-            this.dummy.rotation.x = Math.random() * Math.PI; // visual-only
-            this.dummy.rotation.y = Math.random() * Math.PI; // visual-only
+            // Face the camera; tilt a little so they do not all line up
+            this.dummy.rotation.set(0, 0, (Math.random() - 0.5) * 0.6); // visual-only
             this.dummy.updateMatrix();
 
             this.mesh.setMatrixAt(i, this.dummy.matrix);
@@ -90,6 +87,7 @@ export class HideAndSeekStarsSystem {
         if (playerPos) {
             this.uPlayerPos.value.copy(playerPos);
         }
+        this.elapsed += delta;
 
         const cameraX = playerPos ? playerPos.x : 0;
 
@@ -106,8 +104,8 @@ export class HideAndSeekStarsSystem {
             this.instanceData[i * 4] = x;
 
             this.dummy.position.set(x, y, z);
-            this.dummy.rotation.x += delta * 0.5;
-            this.dummy.rotation.y += delta * 0.3;
+            // Face the camera (the star outline is the point); rock side to side, peeking.
+            this.dummy.rotation.set(0, Math.sin(this.elapsed * 0.9 + phase) * 0.5, Math.sin(this.elapsed * 0.6 + phase) * 0.3);
 
             // Calculate distance for dynamic scaling
             let dist = 100;
@@ -127,7 +125,7 @@ export class HideAndSeekStarsSystem {
             }
 
             // Add a little pulsing
-            scale *= 1.0 + Math.sin(Date.now() * 0.003 + phase) * 0.2;
+            scale *= 1.0 + Math.sin(this.elapsed * 3 + phase) * 0.2;
 
             this.dummy.scale.setScalar(scale);
             this.dummy.updateMatrix();
@@ -140,7 +138,7 @@ export class HideAndSeekStarsSystem {
 
     cleanup() {
         this.deactivate();
-        this.mesh.geometry.dispose();
+        // Geometry is the shared star (markShared); only the material is ours.
         if ((this.mesh.material as THREE.Material).dispose) {
             (this.mesh.material as THREE.Material).dispose();
         }
